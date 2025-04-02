@@ -18,12 +18,12 @@ const Login = () => {
             <div className="mb-4">
             <p className="text-sm mb-2 text-gray-600">Email </p>
 
-              <input type="text" placeholder="enasil" 
+              <input type="text" placeholder="someone@test.com" 
                      className="w-full p-3 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500" />
             </div>
             <div className="mb-4">
             <p className="text-sm mb-2 text-gray-600">Password </p>
-              <input type="password" placeholder=" password" 
+              <input type="password" placeholder="****" 
                      className="w-full p-3 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500" />
             </div>
             <button type="submit" 
