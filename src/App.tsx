@@ -30,12 +30,13 @@ function App() {
         <Routes>
           {/* Auth Routes */}
           <Route path="/" element={<Login />} />
-          <Route path="/1" element={<Signup />} />
-          <Route path="/2" element={<CreatePassword />} />
-          <Route path="/3" element={<VerifyEmail />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/registration" element={<Signup />} />
+          <Route path="/first-time-user" element={<CreatePassword />} />
+          <Route path="/verification" element={<VerifyEmail />} />
           
           {/* Onboarding Routes */}
-          <Route path="/4" element={<Welcome />} />
+          <Route path="/home" element={<Welcome />} />
           
           {/* Farm Routes */}
           <Route path="/5" element={<FarmDetails />} />

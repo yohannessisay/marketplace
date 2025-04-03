@@ -1,4 +1,5 @@
 
+import { Button } from '@/components/ui/button';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -74,12 +75,13 @@ const VerifyEmail: React.FC = () => {
           </p>
 
           {/* Okay Button */}
-          <button
+          <Button
             onClick={handleOkayClick}
-            className="w-full py-3 bg-teal-500 text-white rounded-md font-medium hover:bg-teal-600 transition-colors"
+            className="w-ful"
+            variant={'secondary'}
           >
-            Okay
-          </button>
+            I have verified my email
+          </Button>
         </div>
       </div>
     </div>
