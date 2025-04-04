@@ -6,9 +6,11 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { apiService } from "@/services/apiService";
+import { useNotification } from "@/hooks/useNotification";
+import Cookies from "js-cookie";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
-
 const Login = () => {
   const {
     register,
@@ -17,11 +19,49 @@ const Login = () => {
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
   });
-  const navigate = useNavigate(); 
-  const onSubmit = (data: LoginFormInputs) => {
-    console.log(data);
-    
-    navigate("/first-time-user");
+  const navigate = useNavigate();
+  const { successMessage, errorMessage } = useNotification();
+  const onSubmit = async (data: LoginFormInputs) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await apiService().post("/auth/login", {
+        username: "emilys",
+        password: "emilyspass",
+        expiresInMins: 30,
+      });
+      successMessage("Login successful!");
+
+      // Set cookies and add secure flag on prod
+      // httpOnly: true,
+      //sameSite: "strict",
+      Cookies.set("accessToken", response.accessToken, {
+        expires: 1 / 48,
+      });
+      Cookies.set("refreshToken", response.refreshToken, {
+        expires: 1,
+      });
+      const userProfile = {
+        email: response.email,
+        firstName: response.firstName,
+        gender: response.gender,
+        id: response.id,
+        image: response.image,
+        lastName: response.lastName,
+        username: response.username,
+      };
+
+      localStorage.setItem("userProfile", JSON.stringify(userProfile));
+      const firstTimeUser = localStorage.getItem("first_time_user");
+      if (firstTimeUser === "false") {
+        navigate("/home");
+      } else {
+        navigate("/first-time-user");
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      errorMessage(error);
+    }
   };
 
   return (
@@ -79,11 +119,7 @@ const Login = () => {
               )}
             </div>
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full"
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Logging in..." : "Login"}
             </Button>
           </form>

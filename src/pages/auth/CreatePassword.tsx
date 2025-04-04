@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useNotification } from "@/hooks/useNotification";
 const CreatePassword = () => {
   const {
     register,
@@ -19,21 +20,22 @@ const CreatePassword = () => {
   } = useForm<PasswordValidationType>({
     resolver: zodResolver(passwordSchema),
   });
-
+  const { successMessage, errorMessage } = useNotification();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
   const [showConfirmPassword, setShowConfirmPassword] = useState(false); // State to toggle confirm password visibility
 
   const onSubmit = (data: PasswordValidationType) => {
     if (data.password !== data.confirmPassword) {
+      errorMessage("Passwords do not match");
       setError("confirmPassword", {
         type: "manual",
         message: "Passwords don't match",
       });
       return;
     }
-
-    console.log("Password Data:", data);
+    successMessage("Password created successfully!");
+    localStorage.setItem("first_time_user", JSON.stringify(false));
     navigate("/home");
   };
 
@@ -104,7 +106,7 @@ const CreatePassword = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2"
                 >
                   {showConfirmPassword ? (
@@ -121,11 +123,7 @@ const CreatePassword = () => {
               )}
             </div>
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full"
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Saving..." : "Save Password"}
             </Button>
           </form>

@@ -1,61 +1,175 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+// App.tsx
 
-const Login = lazy(() => import('./pages/auth/Login'));
-const Signup = lazy(() => import('./pages/auth/Signup'));
-const CreatePassword = lazy(() => import('./pages/auth/CreatePassword'));
-const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
-const Welcome = lazy(() => import('./pages/onboarding/Welcome'));
-const FarmManagement = lazy(() => import('./pages/farms/FarmManagement'));
-const FarmDetails = lazy(() => import('./pages/farms/FarmDetails'));
-const CoffeeListing = lazy(() => import('./pages/crops/CoffeeListing'));
+import React, { Suspense, lazy, useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
+import { initializeApiService } from "./services/apiService";
 
-const BankInformation = lazy(() => import('./pages/bank/BankInformation'));
-const ProfilePhoto = lazy(() => import('./pages/profile/ProfilePhoto'));
-const UserProfile = lazy(() => import('./pages/profile/UserProfile'));
-const Dashboard = lazy(() => import('./pages/seller/Dashboard'));
-const CompanyVerification = lazy(() => import('./pages/company/CompanyVerification'));
+const Login = lazy(() => import("./pages/auth/Login"));
+const Signup = lazy(() => import("./pages/auth/Signup"));
+const CreatePassword = lazy(() => import("./pages/auth/CreatePassword"));
+const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
+const Welcome = lazy(() => import("./pages/onboarding/Welcome"));
+const FarmManagement = lazy(() => import("./pages/farms/FarmManagement"));
+const FarmDetails = lazy(() => import("./pages/farms/FarmDetails"));
+const CoffeeListing = lazy(() => import("./pages/crops/CoffeeListing"));
+const BankInformation = lazy(() => import("./pages/bank/BankInformation"));
+const ProfilePhoto = lazy(() => import("./pages/profile/ProfilePhoto"));
+const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
+const Dashboard = lazy(() => import("./pages/seller/Dashboard"));
+const CompanyVerification = lazy(
+  () => import("./pages/company/CompanyVerification")
+);
 
-// Fallback loading component
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+
+if (!baseURL) {
+  console.error("Internal error has occurred. Please view logs.");
+} else {
+  initializeApiService(baseURL);
+}
+
 const Loading = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
   </div>
 );
 
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const accessToken = Cookies.get("accessToken");
+
+
+    if (accessToken) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const decodedToken: any = jwtDecode(accessToken);
+        if (decodedToken.exp * 1000 > Date.now()) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.log("Error decoding token:", error);
+
+        setIsAuthenticated(false);
+      }
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <Loading />;
+  }
+
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+};
+
 function App() {
   return (
     <Router>
       <Suspense fallback={<Loading />}>
         <Routes>
-          {/* Auth Routes */}
+          {/* Auth Routes (Public) */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registration" element={<Signup />} />
-          <Route path="/first-time-user" element={<CreatePassword />} />
           <Route path="/verification" element={<VerifyEmail />} />
-          
-          {/* Onboarding Routes */}
-          <Route path="/home" element={<Welcome />} />
-          
-          {/* Farm Routes */}
-          <Route path="/5" element={<FarmDetails />} />
-          
-          {/* Coffee Crop Routes */}
-          <Route path="/6" element={<CoffeeListing />} />
-          
-          {/* Bank Routes */}
-          <Route path="/7" element={<BankInformation />} />
-          
-          {/* Profile Routes */}
-          <Route path="/8" element={<ProfilePhoto />} />
-          
-          {/* Dashboard */}
-          <Route path="/9" element={<FarmManagement />} />
-          <Route path="/10" element={<Dashboard />} />
-          <Route path="/11" element={<UserProfile />} />
-            {/* Buyer onboarding */}
-          <Route path="/12" element={<CompanyVerification />} />
+
+          {/* Protected Routes */}
+          <Route
+            path="/first-time-user"
+            element={
+              <ProtectedRoute>
+                <CreatePassword />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Welcome />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/5"
+            element={
+              <ProtectedRoute>
+                <FarmDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/6"
+            element={
+              <ProtectedRoute>
+                <CoffeeListing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/7"
+            element={
+              <ProtectedRoute>
+                <BankInformation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/8"
+            element={
+              <ProtectedRoute>
+                <ProfilePhoto />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/9"
+            element={
+              <ProtectedRoute>
+                <FarmManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/10"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/11"
+            element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/12"
+            element={
+              <ProtectedRoute>
+                <CompanyVerification />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Suspense>
     </Router>
