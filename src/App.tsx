@@ -91,9 +91,7 @@ function App() {
           <Route path="/otp" element={<OTPInputPage />} />
           <Route path="/registration" element={<Signup />} />
           <Route path="/verification" element={<VerifyEmail />} />
-
-          {/* Protected Routes */}
-          <Route
+           <Route
             path="/first-time-user"
             element={
               <ProtectedRoute>
@@ -101,6 +99,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Protected Routes */}
+         
           <Route
             path="/home"
             element={

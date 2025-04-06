@@ -6,44 +6,20 @@ import { useNavigate } from 'react-router-dom';
 const VerifyEmail: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleBackClick = () => {
-    navigate(-1);
-  };
+
 
   const handleOkayClick = () => {
-    // Redirect to login page or dashboard after verification
     navigate('/login');
   };
 
   return (
     <div className="flex h-screen w-full bg-white">
-      {/* Left Section - Coffee Plantation Image with Back Button */}
-      <div className="relative w-1/2 h-full">
-        <img 
-          src="/images/coffee-plantation.jpg" 
-          alt="Coffee plantation in Ethiopia" 
-          className="w-full h-full object-cover"
-        />
-        <button 
-          onClick={handleBackClick}
-          className="absolute top-4 left-4 flex items-center px-3 py-2 bg-white rounded-md shadow-sm"
-        >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            width="20" 
-            height="20" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          <span className="ml-1">Back</span>
-        </button>
-      </div>
+       <div
+        className="hidden md:flex w-1/2 bg-cover bg-center border rounded-md border-green-500 m-2 shadow-2xl" 
+        style={{
+          backgroundImage: "url('images/email.svg')",
+        }}
+      ></div>
 
       {/* Right Section - Verification Message */}
       <div className="w-1/2 h-full flex flex-col items-center justify-center bg-gray-50 px-8">
@@ -78,7 +54,7 @@ const VerifyEmail: React.FC = () => {
           <Button
             onClick={handleOkayClick}
             className="w-ful"
-            variant={'secondary'}
+            variant={'default'}
           >
             I have verified my email
           </Button>

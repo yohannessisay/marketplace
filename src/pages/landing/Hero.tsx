@@ -8,14 +8,13 @@ export default function Hero() {
         <div
           className="absolute inset-0 bg-gradient-to-b from-amber-900/90 via-amber-800/80 to-amber-950/90"
           style={{
-            backgroundImage: "url(hero.png)",
+            backgroundImage: "url(images/hero.png)",
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundBlendMode: "overlay",
           }}
         ></div>
-      </div>
-      {/* Header with glassmorphism effect */}
+      </div> 
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/10 border-b border-white/20">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center">

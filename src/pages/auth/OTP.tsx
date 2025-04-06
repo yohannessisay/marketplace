@@ -44,9 +44,9 @@ export default function OTPInputPage() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <div
-        className="hidden md:flex w-1/2 bg-cover bg-center"
+        className="hidden md:flex w-1/2 bg-cover bg-center border rounded-md border-green-500 m-2 shadow-2xl" 
         style={{
-          backgroundImage: "url('/otp.svg?height=800&width=600')",
+          backgroundImage: "url('images/otp.svg')",
         }}
       ></div>
 
@@ -91,10 +91,10 @@ export default function OTPInputPage() {
 
               <Button
                 type="submit"
-                disabled={form.formState.isSubmitting}
+                disabled={form.formState.isSubmitting||form.getValues("otp").length < 6}
                 className="w-full"
               >
-                {form.formState.isSubmitting ? "Submitting..." : "Submit OTP"}
+                {form.formState.isSubmitting ? "Submitting..." : "Verify OTP"}
               </Button>
             </form>
           </Form>

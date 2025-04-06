@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { buyerSchema, sellerSchema } from "@/types/validation/auth";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 
 // Buyer schema
@@ -31,7 +31,7 @@ type SellerFormValues = z.infer<typeof sellerSchema>;
 
 export default function SignupPage() {
   const [role, setRole] = useState<"buyer" | "seller">("seller");
-  const navigate = useNavigate();
+ 
   const buyerForm = useForm<BuyerFormValues>({
     resolver: zodResolver(buyerSchema),
     defaultValues: {
@@ -100,7 +100,7 @@ export default function SignupPage() {
       {/* Left Side - Image */}
       <div
         className="hidden md:flex w-1/2 bg-cover bg-center  rounded-r-2xl shadow-lg"
-        style={{ backgroundImage: "url('/registration.png')" }}
+        style={{ backgroundImage: "url('/images/registration.png')" }}
       ></div>
 
       {/* Right Side - Form */}

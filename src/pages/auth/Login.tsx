@@ -67,7 +67,7 @@ const Login = () => {
       {/* Left Image Section */}
       <div
         className="hidden md:flex w-1/2 bg-cover bg-center  rounded-r-2xl shadow-lg"
-        style={{ backgroundImage: "url('/login.png')" }}
+        style={{ backgroundImage: "url('/images/login.png')" }}
       ></div>
 
       {/* Right Form Section */}
