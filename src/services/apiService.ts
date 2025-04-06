@@ -1,113 +1,86 @@
-import Cookies from 'js-cookie'
-export interface ApiError {
-    message: string;
-    status?: number;
-    data?: unknown;
-  }
-  
-  class ApiService {
-    private baseURL: string;
-  
-    constructor(baseURL: string) {
-      this.baseURL = baseURL;
+import { ApiError, ApiResponse } from "@/types/api";
+import Cookies from "js-cookie";
+
+
+
+class ApiService {
+  constructor(private baseURL: string) {}
+
+  private async handleResponse<T>(response: Response): Promise<T> {
+    const contentType = response.headers.get("content-type");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+
+    try {
+      data = contentType?.includes("application/json") ? await response.json() : await response.text();
+      if (typeof data === "string") data = JSON.parse(data);
+    } catch {
+      if (!response.ok) data = await response.text();
     }
-  
-    private async handleResponse<T>(response: Response): Promise<T> {
-      const contentType = response.headers.get('content-type');
-      let data;
-  
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        data = await response.text();
-      }
-  
-      if (!response.ok) {
-        const error: ApiError = {
-          message: data?.message || response.statusText,
-          status: response.status,
-          data: data,
-        };
-        throw error;
-      }
-  
+
+    if (!response.ok) {
+      const error: ApiError = {
+        message: data?.Messages?.join(", ") || data?.message || response.statusText,
+        status: response.status,
+        data: data?.Data || data,
+      };
+      return Promise.reject(error);
+    }
+
+    const apiResponse = data as ApiResponse<T>;
+    if (apiResponse?.Status === "success" && apiResponse.Data !== undefined) {
+      return apiResponse.Data;
+    }
+
+    if (response.status >= 200 && response.status < 400) {
       return data as T;
     }
-  
-    private async makeRequest<T>(
-      url: string,
-      method: string,
-      body?: unknown,
-      useAuth = false,
-    ): Promise<T> {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-  
-      if (useAuth) {
-        const token = this.getToken();
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        } else {
-          throw { message: 'Authentication token not available', status: 401 };
-        }
-      }
-  
-      const options: RequestInit = {
+
+    return Promise.reject( { message: "Unexpected response format.", status: response.status, data });
+  }
+
+  private async makeRequest<T>(
+    url: string,
+    method: string,
+    body?: unknown,
+    useAuth = false
+  ): Promise<T> {
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (useAuth) {
+      const token = Cookies.get("accessToken");
+      if (!token) throw { message: "Auth token missing.", status: 401 };
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}${url}`, {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
-      };
-  
-      const response = await fetch(`${this.baseURL}${url}`, options);
+      });
       return this.handleResponse<T>(response);
-    }
-  
-    private getToken(): string | null {
-      return Cookies.get('accessToken') || null;
-    }
-  
-    async get<T>(url: string): Promise<T> {
-      return this.makeRequest<T>(url, 'GET');
-    }
-  
-    async getWithAuth<T>(url: string): Promise<T> {
-      return this.makeRequest<T>(url, 'GET', undefined, true);
-    }
-  
-    async post<T>(url: string, body: unknown): Promise<T> {
-      return this.makeRequest<T>(url, 'POST', body);
-    }
-  
-    async postWithAuth<T>(url: string, body: unknown): Promise<T> {
-      return this.makeRequest<T>(url, 'POST', body, true);
-    }
-  
-    async put<T>(url: string, body: unknown): Promise<T> {
-      return this.makeRequest<T>(url, 'PUT', body, true);
-    }
-  
-    async patch<T>(url: string, body: unknown): Promise<T> {
-      return this.makeRequest<T>(url, 'PATCH', body, true);
-    }
-  
-    async delete<T>(url: string): Promise<T> {
-      return this.makeRequest<T>(url, 'DELETE', undefined, true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      return Promise.reject({ message: err?.message || "Network error.", status: err?.status || 500, data: err });
     }
   }
-  
-  
-  let apiServiceInstance: ApiService | null = null;
-  
-  export const initializeApiService = (baseURL: string) => {
-    if (!apiServiceInstance) {
-      apiServiceInstance = new ApiService(baseURL);
-    }
-  };
-  
-  export const apiService = () => {
-    if (!apiServiceInstance) {
-      throw new Error('ApiService not initialized. Call initializeApiService first.');
-    }
-    return apiServiceInstance;
-  };
+
+  get<T>(url: string): Promise<T> { return this.makeRequest<T>(url, "GET"); }
+  getWithoutAuth<T>(url: string): Promise<T> { return this.makeRequest<T>(url, "GET", undefined, false); }
+  post<T>(url: string, body: unknown): Promise<T> { return this.makeRequest<T>(url, "POST", body); }
+  postWithoutAuth<T>(url: string, body: unknown): Promise<T> { return this.makeRequest<T>(url, "POST", body, false); }
+  put<T>(url: string, body: unknown): Promise<T> { return this.makeRequest<T>(url, "PUT", body, true); }
+  patch<T>(url: string, body: unknown): Promise<T> { return this.makeRequest<T>(url, "PATCH", body, true); }
+  delete<T>(url: string): Promise<T> { return this.makeRequest<T>(url, "DELETE", undefined, true); }
+}
+
+let apiServiceInstance: ApiService | null = null;
+
+export const initializeApiService = (baseURL: string) => {
+  apiServiceInstance = apiServiceInstance || new ApiService(baseURL);
+};
+
+export const apiService = () => {
+  if (!apiServiceInstance) throw new Error("ApiService not initialized.");
+  return apiServiceInstance;
+};

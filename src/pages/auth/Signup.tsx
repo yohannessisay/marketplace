@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { buyerSchema, sellerSchema } from "@/types/validation/auth";
 import { Link, useNavigate } from "react-router-dom";
+import { apiService } from "@/services/apiService";
 
 // Buyer schema
 
@@ -34,8 +35,8 @@ export default function SignupPage() {
   const buyerForm = useForm<BuyerFormValues>({
     resolver: zodResolver(buyerSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      first_name: "",
+      last_name: "",
       phone: "",
       email: "",
       password: "",
@@ -47,8 +48,8 @@ export default function SignupPage() {
   const sellerForm = useForm<SellerFormValues>({
     resolver: zodResolver(sellerSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      first_name: "",
+      last_name: "",
       phone: "",
       email: "",
       password: "",
@@ -58,30 +59,34 @@ export default function SignupPage() {
     mode: "onChange",
   });
 
-  const onBuyerSubmit = (data: BuyerFormValues) => {
-    console.log("Buyer form submitted:", data);
-    navigate("/verification");
+  const onBuyerSubmit = async (data: BuyerFormValues) => {
+    const response=await apiService().postWithoutAuth("/auth/signup", {
+      ...data,
+      userType: "buyer"
+    });
+    console.log("HERE",response);
+    
   };
 
   const onSellerSubmit = (data: SellerFormValues) => {
     console.log("Seller form submitted:", data);
-    navigate("/verification");
+    // navigate("/verification");
   };
 
   const handleRoleChange = (newRole: "buyer" | "seller") => {
     if (newRole === "buyer" && role === "seller") {
-      const { firstName, lastName, phone, email, password } =
+      const { first_name, last_name, phone, email, password } =
         sellerForm.getValues();
-      buyerForm.setValue("firstName", firstName);
-      buyerForm.setValue("lastName", lastName);
+      buyerForm.setValue("first_name", first_name);
+      buyerForm.setValue("last_name", last_name);
       buyerForm.setValue("phone", phone);
       buyerForm.setValue("email", email);
       buyerForm.setValue("password", password);
     } else if (newRole === "seller" && role === "buyer") {
-      const { firstName, lastName, phone, email, password } =
+      const { first_name, last_name, phone, email, password } =
         buyerForm.getValues();
-      sellerForm.setValue("firstName", firstName);
-      sellerForm.setValue("lastName", lastName);
+      sellerForm.setValue("first_name", first_name);
+      sellerForm.setValue("last_name", last_name);
       sellerForm.setValue("phone", phone);
       sellerForm.setValue("email", email);
       sellerForm.setValue("password", password);
@@ -93,17 +98,14 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Left Side - Image */}
-      <div className="hidden md:flex w-1/2 h-screen">
-        <img
-          src="/placeholder.svg?height=800&width=600"
-          alt="Ethiopian Coffee Farms"
-          className="w-full h-full object-cover"
-        />
-      </div>
+      <div
+        className="hidden md:flex w-1/2 bg-cover bg-center  rounded-r-2xl shadow-lg"
+        style={{ backgroundImage: "url('/registration.png')" }}
+      ></div>
 
       {/* Right Side - Form */}
       <div className="flex w-full md:w-1/2 items-center justify-center bg-white p-8">
-        <div className="max-w-md w-full">
+        <div className="max-w-md w-full border border-green-500 shadow-md rounded-md p-4">
           {/* Logo */}
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold text-gray-800">
@@ -140,10 +142,11 @@ export default function SignupPage() {
               >
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
+                    
                     control={buyerForm.control}
-                    name="firstName"
+                    name="first_name"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem id="first_name">
                         <FormControl>
                           <Input placeholder="First name*" {...field} />
                         </FormControl>
@@ -154,9 +157,9 @@ export default function SignupPage() {
 
                   <FormField
                     control={buyerForm.control}
-                    name="lastName"
+                    name="last_name"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem id="last_name">
                         <FormControl>
                           <Input placeholder="Last name*" {...field} />
                         </FormControl>
@@ -170,7 +173,7 @@ export default function SignupPage() {
                   control={buyerForm.control}
                   name="phone"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="phone">
                       <FormControl>
                         <Input placeholder="Phone*" type="tel" {...field} />
                       </FormControl>
@@ -183,7 +186,7 @@ export default function SignupPage() {
                   control={buyerForm.control}
                   name="email"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="email">
                       <FormControl>
                         <Input placeholder="Email*" type="email" {...field} />
                       </FormControl>
@@ -196,7 +199,7 @@ export default function SignupPage() {
                   control={buyerForm.control}
                   name="password"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="">
                       <FormControl>
                         <Input
                           placeholder="Password*"
@@ -213,7 +216,7 @@ export default function SignupPage() {
                   control={buyerForm.control}
                   name="preferredCurrency"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="preferredCurrency">
                       <FormLabel>Preferred Currency</FormLabel>
                       <Select
                         onValueChange={field.onChange}
@@ -238,10 +241,7 @@ export default function SignupPage() {
                 />
 
                 {/* Submit Button */}
-                <Button
-                  type="submit"
-                  className="w-full py-6"
-                >
+                <Button type="submit" className="w-full py-6">
                   Create account
                 </Button>
               </form>
@@ -258,9 +258,9 @@ export default function SignupPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={sellerForm.control}
-                    name="firstName"
+                    name="first_name"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem id="first_name">
                         <FormControl>
                           <Input placeholder="First name*" {...field} />
                         </FormControl>
@@ -271,9 +271,9 @@ export default function SignupPage() {
 
                   <FormField
                     control={sellerForm.control}
-                    name="lastName"
+                    name="last_name"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem id="last_name">
                         <FormControl>
                           <Input placeholder="Last name*" {...field} />
                         </FormControl>
@@ -287,7 +287,7 @@ export default function SignupPage() {
                   control={sellerForm.control}
                   name="phone"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="phone">
                       <FormControl>
                         <Input placeholder="Phone*" type="tel" {...field} />
                       </FormControl>
@@ -300,7 +300,7 @@ export default function SignupPage() {
                   control={sellerForm.control}
                   name="email"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="email">
                       <FormControl>
                         <Input placeholder="Email*" type="email" {...field} />
                       </FormControl>
@@ -313,7 +313,7 @@ export default function SignupPage() {
                   control={sellerForm.control}
                   name="password"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="password">
                       <FormControl>
                         <Input
                           placeholder="Password*"
@@ -330,7 +330,7 @@ export default function SignupPage() {
                   control={sellerForm.control}
                   name="companyName"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="companyName">
                       <FormControl>
                         <Input placeholder="Company name*" {...field} />
                       </FormControl>
@@ -343,7 +343,7 @@ export default function SignupPage() {
                   control={sellerForm.control}
                   name="productCategory"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="productCategory">
                       <FormLabel>Product Category</FormLabel>
                       <Select
                         onValueChange={field.onChange}
@@ -367,10 +367,7 @@ export default function SignupPage() {
                 />
 
                 {/* Submit Button */}
-                <Button
-                  type="submit"
-                  className="w-full py-6 "
-                >
+                <Button type="submit" className="w-full py-6 ">
                   Create account
                 </Button>
               </form>
@@ -380,7 +377,7 @@ export default function SignupPage() {
           {/* Sign-in Option */}
           <p className="mt-4 text-center text-gray-600">
             Already have an account?{" "}
-            <Link to="/login" className="font-semibold">
+            <Link to="/login" className="font-semibold text-green-500 ">
               Sign in
             </Link>
           </p>

@@ -5,7 +5,7 @@ import { loginSchema } from "../../types/validation/auth";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
@@ -24,16 +24,15 @@ const Login = () => {
   const onSubmit = async (data: LoginFormInputs) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response: any = await apiService().post("/auth/login", {
-        username: "emilys",
-        password: "emilyspass",
-        expiresInMins: 30,
+      const response: any = await apiService().postWithoutAuth("/auth/login", {
+        ...data,
       });
       successMessage("Login successful!");
 
-      // Set cookies and add secure flag on prod
+      // Set these properties on prod
+      // secure:true
       // httpOnly: true,
-      //sameSite: "strict",
+      // sameSite: "strict",
       Cookies.set("accessToken", response.accessToken, {
         expires: 1 / 48,
       });
@@ -57,7 +56,6 @@ const Login = () => {
       } else {
         navigate("/first-time-user");
       }
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       errorMessage(error);
@@ -65,18 +63,19 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen   ">
       {/* Left Image Section */}
       <div
-        className="hidden md:flex w-1/2 bg-cover bg-center"
-        style={{ backgroundImage: "url('/path-to-your-image.jpg')" }}
+        className="hidden md:flex w-1/2 bg-cover bg-center  rounded-r-2xl shadow-lg"
+        style={{ backgroundImage: "url('/login.png')" }}
       ></div>
 
       {/* Right Form Section */}
-      <div className="w-full md:w-1/2 flex flex-col justify-center items-center bg-white p-8">
-        <div className="w-full max-w-sm">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Afrovalley</h1>
-          <p className="text-gray-600 mb-4">Login</p>
+      <div className="w-full md:w-1/2 flex flex-col justify-center items-center ">
+        <div className="w-full max-w-md shadow-lg rounded-lg p-6 bg-white border border-green-500 ">
+          <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
+            <span className="text-green-600">Afro</span>valley
+          </h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
@@ -119,9 +118,23 @@ const Login = () => {
               )}
             </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full my-4"
+            >
               {isSubmitting ? "Logging in..." : "Login"}
             </Button>
+
+            <p className="mt-4 text-center text-gray-600">
+              {"Don't "}have an account?{" "}
+              <Link
+                to="/registration"
+                className="font-semibold text-green-500 "
+              >
+                Sign Up
+              </Link>
+            </p>
           </form>
         </div>
       </div>

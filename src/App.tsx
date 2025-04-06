@@ -10,6 +10,8 @@ import {
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import { initializeApiService } from "./services/apiService";
+import Hero from "./pages/landing/Hero";
+import OTPInputPage from "./pages/auth/OTP";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -84,8 +86,9 @@ function App() {
       <Suspense fallback={<Loading />}>
         <Routes>
           {/* Auth Routes (Public) */}
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Hero />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/otp" element={<OTPInputPage />} />
           <Route path="/registration" element={<Signup />} />
           <Route path="/verification" element={<VerifyEmail />} />
 
