@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
+import FarmerManagement from './pages/agent/FarmerManagement';
 
 const Login = lazy(() => import('./pages/auth/Login'));
 const Signup = lazy(() => import('./pages/auth/Signup'));
@@ -55,6 +56,8 @@ function App() {
           <Route path="/11" element={<UserProfile />} />
             {/* Buyer onboarding */}
           <Route path="/12" element={<CompanyVerification />} />
+
+          <Route path="/13" element={<FarmerManagement />} />
         </Routes>
       </Suspense>
     </Router>
