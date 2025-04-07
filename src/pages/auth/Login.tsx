@@ -9,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
+import { useState } from "react";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 const Login = () => {
@@ -21,46 +22,62 @@ const Login = () => {
   });
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
+  const [loginCompleted, setLoginCompleted] = useState(false);
   const onSubmit = async (data: LoginFormInputs) => {
-    try {
+     
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response: any = await apiService().postWithoutAuth("/auth/login", {
-        ...data,
-      });
-      successMessage("Login successful!");
-
-      // Set these properties on prod
-      // secure:true
-      // httpOnly: true,
-      // sameSite: "strict",
-      Cookies.set("accessToken", response.accessToken, {
-        expires: 1 / 48,
-      });
-      Cookies.set("refreshToken", response.refreshToken, {
-        expires: 1,
-      });
-      const userProfile = {
-        email: response.email,
-        firstName: response.firstName,
-        gender: response.gender,
-        id: response.id,
-        image: response.image,
-        lastName: response.lastName,
-        username: response.username,
-      };
-
-      localStorage.setItem("userProfile", JSON.stringify(userProfile));
-      const firstTimeUser = localStorage.getItem("first_time_user");
-      if (firstTimeUser === "false") {
-        navigate("/home");
-      } else {
-        navigate("/first-time-user");
-      }
+      // const response: any = await apiService().postWithoutAuth("/auth/login", {
+      //   ...data,
+      // });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      try {
+        // ... your fetch logic ...
+        await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: 'emilys',
+                password: 'emilyspass',
+                expiresInMins: 30,
+            }),
+            credentials: 'include',
+        })
+            .then((res) => res.json())
+            .then((response) => {
+                successMessage("Login successful!");
+                console.log(response);
+
+                Cookies.set("accessToken", response.accessToken, {
+                    expires: 1 / 48,
+                });
+                Cookies.set("refreshToken", response.refreshToken, {
+                    expires: 1,
+                });
+                const userProfile = {
+                    email: response.email,
+                    firstName: response.firstName,
+                    gender: response.gender,
+                    id: response.id,
+                    image: response.image,
+                    lastName: response.lastName,
+                    username: response.username,
+                };
+
+                localStorage.setItem("userProfile", JSON.stringify(userProfile));
+                const firstTimeUser = localStorage.getItem("first_time_user");
+
+                if (firstTimeUser && firstTimeUser === "false") {
+                    navigate("/home");
+                } else {
+                    navigate("/first-time-user");
+                }
+                setLoginCompleted(true);
+            });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      errorMessage(error);
+        errorMessage(error);
     }
-  };
+  }
 
   return (
     <div className="flex min-h-screen   ">

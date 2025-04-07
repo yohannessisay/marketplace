@@ -6,6 +6,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
@@ -48,34 +49,34 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(true);
+  const location = useLocation();
 
-  useEffect(() => {
-    const accessToken = Cookies.get("accessToken");
+  // useEffect(() => {
+  //     const accessToken = Cookies.get("accessToken");
+  //     console.log(accessToken);
 
+  //     if (accessToken) {
+  //         try {
+  //             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //             const decodedToken: any = jwtDecode(accessToken);
+  //             if (decodedToken.exp * 1000 > Date.now()) {
+  //                 setIsAuthenticated(true);
+  //             } else {
+  //                 setIsAuthenticated(false);
+  //             }
+  //         } catch (error) {
+  //             console.log("Error decoding token:", error);
+  //             setIsAuthenticated(false);
+  //         }
+  //     } else {
+  //         setIsAuthenticated(false);
+  //     }
+  // }, [location]); // Rerun effect when the location changes.
 
-    if (accessToken) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const decodedToken: any = jwtDecode(accessToken);
-        if (decodedToken.exp * 1000 > Date.now()) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.log("Error decoding token:", error);
-
-        setIsAuthenticated(false);
-      }
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, []);
-
-  if (isAuthenticated === null) {
-    return <Loading />;
-  }
+  // if (isAuthenticated === null) {
+  //     return <Loading />;
+  // }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
@@ -91,17 +92,10 @@ function App() {
           <Route path="/otp" element={<OTPInputPage />} />
           <Route path="/registration" element={<Signup />} />
           <Route path="/verification" element={<VerifyEmail />} />
-           <Route
-            path="/first-time-user"
-            element={
-              <ProtectedRoute>
-                <CreatePassword />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/first-time-user" element={<CreatePassword />} />
 
           {/* Protected Routes */}
-         
+
           <Route
             path="/home"
             element={
