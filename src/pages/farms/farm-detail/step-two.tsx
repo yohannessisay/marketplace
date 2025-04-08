@@ -1,0 +1,738 @@
+import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Camera, Plus, Upload } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import Stepper from "@/components/ui/stepper";
+import {
+  coffeeCropsSchema,
+  type CoffeeCropsFormData,
+} from "@/types/validation/seller-onboarding";
+import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { FileUpload } from "@/components/common/file-upload";
+
+export default function StepTwo() {
+  const navigation = useNavigate();
+  const [isClient, setIsClient] = useState(false);
+  const [gradingReport, setGradingReport] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+
+  const handleFilesSelected = (selectedFiles: File[]) => {
+    setFiles(selectedFiles);
+    setUploadSuccess(false);
+  };
+
+  const handleUpload = async () => {
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+
+    // Simulate upload delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // In a real application, you would upload the files to your server here
+    console.log("Files to upload:", files);
+
+    setIsUploading(false);
+    setUploadSuccess(true);
+  };
+
+  // Initialize form with default values or values from local storage
+  const form = useForm<CoffeeCropsFormData>({
+    resolver: zodResolver(coffeeCropsSchema),
+    defaultValues: {
+      coffeeVariety: "Ethiopian Heirloom",
+      cupScore: "85",
+      initialGrading: "Grade 1",
+      beanType: "Green beans",
+      cropYear: "2024",
+      farmingPractice: "Organic farm",
+      processingMethod: "Washed (Wet Process)",
+      moisture: "11.5%",
+      screenSize: "14",
+      dryingMethod: "Sun dried on raised beds",
+      wetMill: "Hand-pulped and fermented",
+      aroma: "Fruity",
+      acidity: "Delicate",
+      body: "Heavy",
+      sweetness: "Honey-like",
+      aftertaste: "Long-lasting",
+      balance: "Complex",
+      quantity: "5,000",
+      price: "$4.50",
+      readinessDate: "October 2024",
+      lotNumber: "",
+      deliveryType: "FOB (Free on Board) - Port of Djibouti",
+    },
+  });
+
+  // Load saved data from local storage on component mount
+  useEffect(() => {
+    setIsClient(true);
+    const savedData = getFromLocalStorage<CoffeeCropsFormData>(
+      "step-two",
+      {} as CoffeeCropsFormData
+    );
+    if (savedData && Object.keys(savedData).length > 0) {
+      form.reset(savedData);
+    }
+  }, [form]);
+
+  // Handle grading report upload
+  const handleGradingReportUpload = (file: File) => {
+    setGradingReport(file);
+  };
+
+  // Handle photo upload
+  const handlePhotoUpload = (file: File) => {
+    setPhotos([...photos, file]);
+  };
+
+  // Handle form submission
+  const onSubmit = (data: CoffeeCropsFormData) => {
+    saveToLocalStorage("step-two", data);
+    navigation("/onboarding/step-three");
+  };
+
+  // Go back to previous step
+  const goBack = () => {
+    navigation("/onboarding/step-one");
+  };
+
+  if (!isClient) {
+    return null; // Prevent hydration errors
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <header className="bg-white border-b border-gray-200 p-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center">
+            <h1 className="text-green-800 text-xl font-bold">Afrovalley</h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Link
+              to="/dashboard"
+              className="text-sm text-green-600 flex items-center"
+            >
+              <span className="mr-1">🏠</span> My dashboard
+            </Link>
+            <Link
+              to="/marketplace"
+              className="text-sm text-gray-600 flex items-center"
+            >
+              <span className="mr-1">🛒</span> Marketplace
+            </Link>
+            <Link
+              to="/chats"
+              className="text-sm text-gray-600 flex items-center"
+            >
+              <span className="mr-1">💬</span> Chats
+            </Link>
+            <div className="w-8 h-8 rounded-full bg-green-700 text-white flex items-center justify-center">
+              <span>👤</span>
+            </div>
+          </div>
+        </div>
+      </header>
+      <main className="container mx-auto p-4 max-w-4xl">
+        <Stepper currentStep={2} />
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Step 1: Upload Grading Report */}
+            <div className="mb-8">
+              <Card className="max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle>Upload grading report</CardTitle>
+                  <CardDescription>
+                    Upload PDF documents and images. Drag and drop or click to
+                    select files.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FileUpload
+                    onFilesSelected={handleFilesSelected}
+                    maxFiles={5}
+                    maxSizeMB={5}
+                  />
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    {files.length > 0
+                      ? `${files.length} file(s) selected`
+                      : "No files selected"}
+                  </div>
+                </CardFooter>
+              </Card>
+              <p className="text-sm text-gray-600 mb-4">
+                Submit your Grading Report to provide a detailed quality
+                assessment of your coffee, including bean size, moisture
+                content, and cup profile.
+              </p>
+            </div>
+
+            {/* Step 2: Check and edit coffee crop information */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-2">
+                Check and edit coffee crop information
+              </h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Provide details on crop variety, quality, quantity, and base
+                price to help buyers assess availability and cost
+              </p>
+
+              {/* Coffee basic info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <FormField
+                  control={form.control}
+                  name="coffeeVariety"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Coffee variety</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="cupScore"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cup score</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="initialGrading"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Initial grading</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="beanType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bean type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select bean type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Green beans">
+                            Green beans
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="cropYear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Crop year</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Crop specification */}
+              <h3 className="text-lg font-medium mb-4">Crop specification</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <FormField
+                  control={form.control}
+                  name="farmingPractice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Farming practice</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select farming practice" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Organic farm">
+                            Organic farm
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="processingMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Primary Processing Method</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select processing method" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Washed (Wet Process)">
+                            Washed (Wet Process)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="moisture"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Moisture</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="screenSize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Screen size</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dryingMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type of drying</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select drying method" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Sun dried on raised beds">
+                            Sun dried on raised beds
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="wetMill"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Wet mill</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select wet mill" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Hand-pulped and fermented">
+                            Hand-pulped and fermented
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Cup taste */}
+              <h3 className="text-lg font-medium mb-4">Cup taste</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <FormField
+                  control={form.control}
+                  name="aroma"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Aroma</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select aroma" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Fruity">Fruity</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="acidity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Acidity</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select acidity" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Delicate">Delicate</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="body"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Body</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select body" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Heavy">Heavy</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="sweetness"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sweetness</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select sweetness" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Honey-like">Honey-like</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="aftertaste"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Aftertaste</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select aftertaste" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Long-lasting">
+                            Long-lasting
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="balance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Balance</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select balance" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Complex">Complex</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Coffee crop photos */}
+              <h3 className="text-lg font-medium mb-4">Coffee crop photos</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Upload high-quality images of your coffee crop to create a clear
+                representation. Start with a primary photo that best showcases
+                your crop, then add additional images if needed.
+              </p>
+
+              <div className="mb-8">
+                <h4 className="text-base font-medium mb-2">
+                  Coffee Crop photos
+                </h4>
+                <div className="flex flex-wrap gap-4">
+                <Card className="max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle>Coffee crop photos</CardTitle>
+                  <CardDescription>
+                    Upload PDF documents and images. Drag and drop or click to
+                    select files.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FileUpload
+                    onFilesSelected={handleFilesSelected}
+                    maxFiles={6}
+                    maxSizeMB={5}
+                  />
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    {files.length > 0
+                      ? `${files.length} file(s) selected`
+                      : "No files selected"}
+                  </div>
+                </CardFooter>
+              </Card>
+                </div>
+              </div>
+
+              {/* Set the price and discounts */}
+              <div className="mb-8">
+                <h3 className="text-lg font-medium mb-2">
+                  Set the price and discounts
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Provide details on crop variety, quality, quantity, and base
+                  price to help buyers assess availability and cost
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Crop Quantity (kg)</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Community Base Price per kg</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add discount</span>
+                </Button>
+              </div>
+
+              {/* Readiness and Delivery Details */}
+              <div className="mb-8">
+                <h3 className="text-lg font-medium mb-2">
+                  Readiness and Delivery Details
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Specify the harvest readiness date, bagging period, and
+                  delivery type to inform buyers
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="readinessDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Readiness date</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lotNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lot number</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Optional" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="deliveryType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Delivery type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select delivery type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="FOB (Free on Board) - Port of Djibouti">
+                              FOB (Free on Board) - Port of Djibouti
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mb-8">
+              <Button type="button" variant="outline" onClick={goBack}>
+                Back
+              </Button>
+              <Button type="submit">Save and continue</Button>
+            </div>
+          </form>
+        </Form>
+      </main>
+    </div>
+  );
+}

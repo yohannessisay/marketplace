@@ -13,6 +13,9 @@ import { jwtDecode } from "jwt-decode";
 import { initializeApiService } from "./services/apiService";
 import Hero from "./pages/landing/Hero";
 import OTPInputPage from "./pages/auth/OTP";
+import StepFour from "./pages/farms/farm-detail/step-four";
+import StepThree from "./pages/farms/farm-detail/step-three";
+import StepTwo from "./pages/farms/farm-detail/step-two";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -105,10 +108,34 @@ function App() {
             }
           />
           <Route
-            path="/5"
+            path="/onboarding/step-one"
             element={
               <ProtectedRoute>
                 <FarmDetails />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+            path="/onboarding/step-two"
+            element={
+              <ProtectedRoute>
+                <StepTwo />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+            path="/onboarding/step-three"
+            element={
+              <ProtectedRoute>
+                <StepThree />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+            path="/onboarding/step-four"
+            element={
+              <ProtectedRoute>
+                <StepFour />
               </ProtectedRoute>
             }
           />
@@ -137,7 +164,7 @@ function App() {
             }
           />
           <Route
-            path="/9"
+            path="/seller-dashboard"
             element={
               <ProtectedRoute>
                 <FarmManagement />

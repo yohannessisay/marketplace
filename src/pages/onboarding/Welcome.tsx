@@ -114,7 +114,7 @@ const WelcomePage: React.FC = () => {
           {/* Action button */}
           <div className="flex justify-center">
             <Link 
-              to="/onboarding/step-1" 
+              to="/onboarding/step-one" 
               className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 px-8 rounded-md transition-colors duration-200"
             >
               Lets do it!
