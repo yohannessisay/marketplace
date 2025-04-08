@@ -20,8 +20,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { buyerSchema, sellerSchema } from "@/types/validation/auth";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
+import { useNotification } from "@/hooks/useNotification";
 
 // Buyer schema
 
@@ -31,7 +32,8 @@ type SellerFormValues = z.infer<typeof sellerSchema>;
 
 export default function SignupPage() {
   const [role, setRole] = useState<"buyer" | "seller">("seller");
- 
+  const navigate = useNavigate();
+  const { successMessage, errorMessage } = useNotification();
   const buyerForm = useForm<BuyerFormValues>({
     resolver: zodResolver(buyerSchema),
     defaultValues: {
@@ -60,17 +62,35 @@ export default function SignupPage() {
   });
 
   const onBuyerSubmit = async (data: BuyerFormValues) => {
-    const response=await apiService().postWithoutAuth("/auth/signup", {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await apiService().postWithoutAuth("/auth/signup", {
       ...data,
-      userType: "buyer"
+      userType: "buyer",
     });
-    console.log("HERE",response);
-    
+    if (response.success) {
+      successMessage("Registration successful! Please verify your email.");
+      navigate("/verification");
+    } else {
+      errorMessage("Something went wrong");
+    }
   };
 
-  const onSellerSubmit = (data: SellerFormValues) => {
-    console.log("Seller form submitted:", data);
-    // navigate("/verification");
+  const onSellerSubmit = async (data: SellerFormValues) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await apiService().postWithoutAuth("/auth/signup", {
+        ...data,
+        userType: "seller",
+      });
+      if (response.success) {
+        successMessage("Registration successful! Please verify your email.");
+        navigate("/verification");
+      } else {
+        errorMessage("Something went wrong");
+      }
+    } catch  {
+      errorMessage("Something went wrong");
+    }
   };
 
   const handleRoleChange = (newRole: "buyer" | "seller") => {
@@ -105,7 +125,7 @@ export default function SignupPage() {
 
       {/* Right Side - Form */}
       <div className="flex w-full md:w-1/2 items-center justify-center bg-white p-8">
-        <div className="max-w-md w-full border border-green-500 shadow-md rounded-md p-4">
+        <div className="max-w-md w-full border border-green-200 shadow-md rounded-md p-4">
           {/* Logo */}
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold text-gray-800">
@@ -142,7 +162,6 @@ export default function SignupPage() {
               >
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
-                    
                     control={buyerForm.control}
                     name="first_name"
                     render={({ field }) => (

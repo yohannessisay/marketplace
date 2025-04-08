@@ -1,5 +1,3 @@
-import type React from "react";
-
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -45,51 +43,44 @@ export default function StepOne() {
   const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const handleFilesSelected = (selectedFiles: File[]) => {
-    setFiles(selectedFiles);
-    setUploadSuccess(false);
+    setFiles((prev) => [...prev, ...selectedFiles]);
   };
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-
-    setIsUploading(true);
-
-    // Simulate upload delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // In a real application, you would upload the files to your server here
-    console.log("Files to upload:", files);
-
-    setIsUploading(false);
-    setUploadSuccess(true);
-  };
   // Initialize form with default values or values from local storage
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
-      farmLocation: "",
+      farm_location: "",
       region: "",
-      totalFarmSize: "",
-      coffeeCoveredLand: "",
+      total_farm_size: "",
+      coffee_covered_and: "",
       longitude: "",
       latitude: "",
-      cropType: "",
-      cropSource: "",
+      crop_type: "",
+      crop_source: "",
       origin: "",
-      cropCapacity: "",
-      treeType: "",
-      treeVariety: "",
-      averageTemperature: "",
-      soilType: "",
+      crop_capacity: "",
+      tree_type: "",
+      tree_variety: "",
+      average_temperature: "",
+      soil_type: "",
       altitude: "",
-      annualRainfall: "",
-      farmName: "",
+      annual_rainfall: "",
+      farm_name: "",
+      town_location: "",
+      country: "",
+      total_size_hectares: "",
+      coffee_area_hectares: "",
+      altitude_meters: "",
+      capacity_kg: "",
+      avg_annual_temp: "",
+      annual_rainfall_mm: "",
     },
   });
+
+  const { handleSubmit, reset } = form;
 
   // Load saved data from local storage on component mount
   useEffect(() => {
@@ -99,23 +90,53 @@ export default function StepOne() {
       {} as FarmDetailsFormData
     );
     if (savedData && Object.keys(savedData).length > 0) {
-      form.reset(savedData);
+      reset(savedData);
     }
-  }, [form]);
+  }, [reset]);
 
   const onSubmit = async (data: FarmDetailsFormData) => {
-      // const response: { success: boolean } = await apiService().post("/onboarding/seller/farm-details", data);
-      // if (response && response.success) {
-      //   saveToLocalStorage("step-one", data);
-      //   navigate("/onboarding/step-two");
-      // }else{
-      //   errorMessage("Failed to save farm details");
-      // }
-      saveToLocalStorage("step-one", data);
-      navigate("/onboarding/step-two");
-    };
+    try {
+      const formData = new FormData();
 
- 
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          formData.append(key, String(data[key as keyof FarmDetailsFormData]));
+        }
+      }
+      console.log(files);
+
+      files.forEach((file, index) => {
+        console.log(`  [${index}]:`, file); // This will show the properties of each File object
+        formData.append("files", file);
+      });
+      const response: { success: boolean } = await apiService().postFormData(
+        "/onboarding/seller/farm-details",
+        formData,
+        true
+      );
+
+      if (response && response.success) {
+        saveToLocalStorage("step-one", data);
+        navigate("/onboarding/step-two");
+        successMessage("Farm details saved successfully!");
+      } else {
+        errorMessage("Failed to save farm details");
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.log(error);
+      
+      errorMessage(
+        error?.message || "An error occurred while saving farm details"
+      );
+    } finally {
+      saveToLocalStorage("step-one", data);
+    }
+  };
+
+  if (!isClient) {
+    return null; // Or a loading indicator
+  }
 
   return (
     <>
@@ -206,10 +227,23 @@ export default function StepOne() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="farmLocation"
+                  name="town_location"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Town or Farm Location</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -232,10 +266,23 @@ export default function StepOne() {
                 />
                 <FormField
                   control={form.control}
-                  name="totalFarmSize"
+                  name="total_size_hectares"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Total farm size (hectar)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="coffee_area_hectares"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total coffee size (hectar)</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -254,7 +301,7 @@ export default function StepOne() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="coffeeCoveredLand"
+                  name="coffee_covered_and"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Coffee Covered Land (hectar)</FormLabel>
@@ -291,6 +338,19 @@ export default function StepOne() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="altitude_meters"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Altitude (meters)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
@@ -302,7 +362,7 @@ export default function StepOne() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="cropType"
+                  name="crop_type"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Crop type</FormLabel>
@@ -315,7 +375,7 @@ export default function StepOne() {
                 />
                 <FormField
                   control={form.control}
-                  name="cropSource"
+                  name="crop_source"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Crop Source</FormLabel>
@@ -347,10 +407,38 @@ export default function StepOne() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="cropCapacity"
+                  name="capacity_kg"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Crop Capacity (kg)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="avg_annual_temp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Average Annual Temp</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="annual_rainfall_mm"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Annual Rainfall (mm)</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -369,7 +457,7 @@ export default function StepOne() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="treeType"
+                  name="tree_type"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tree Type</FormLabel>
@@ -396,7 +484,7 @@ export default function StepOne() {
                 />
                 <FormField
                   control={form.control}
-                  name="treeVariety"
+                  name="tree_variety"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tree Variety</FormLabel>
@@ -431,7 +519,7 @@ export default function StepOne() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <FormField
                   control={form.control}
-                  name="averageTemperature"
+                  name="average_temperature"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Average Annual Temperature</FormLabel>
@@ -444,7 +532,7 @@ export default function StepOne() {
                 />
                 <FormField
                   control={form.control}
-                  name="soilType"
+                  name="soil_type"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Soil type</FormLabel>
@@ -487,31 +575,12 @@ export default function StepOne() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="annualRainfall"
+                  name="annual_rainfall"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Annual Rainfall (mm)</FormLabel>
                       <FormControl>
                         <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Farm Name */}
-            <div className="mb-6">
-              <h4 className="font-medium mb-4 text-gray-700">Name your farm</h4>
-              <div className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={form.control}
-                  name="farmName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter farm name" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

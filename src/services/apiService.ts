@@ -1,8 +1,6 @@
 import { ApiError, ApiResponse } from "@/types/api";
 import Cookies from "js-cookie";
 
-
-
 class ApiService {
   constructor(private baseURL: string) {}
 
@@ -36,10 +34,10 @@ class ApiService {
       return data as T;
     }
 
-    return Promise.reject( { message: "Unexpected response format.", status: response.status, data });
+    return Promise.reject({ message: "Unexpected response format.", status: response.status, data });
   }
 
-  private async makeRequest<T>(
+  private async makeJsonRequest<T>(
     url: string,
     method: string,
     body?: unknown,
@@ -59,19 +57,75 @@ class ApiService {
         body: body ? JSON.stringify(body) : undefined,
       });
       return this.handleResponse<T>(response);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return Promise.reject({ message: err?.message || "Network error.", status: err?.status || 500, data: err });
     }
   }
 
-  get<T>(url: string): Promise<T> { return this.makeRequest<T>(url, "GET"); }
-  getWithoutAuth<T>(url: string): Promise<T> { return this.makeRequest<T>(url, "GET", undefined, false); }
-  post<T>(url: string, body: unknown): Promise<T> { return this.makeRequest<T>(url, "POST", body); }
-  postWithoutAuth<T>(url: string, body: unknown): Promise<T> { return this.makeRequest<T>(url, "POST", body, false); }
-  put<T>(url: string, body: unknown): Promise<T> { return this.makeRequest<T>(url, "PUT", body, true); }
-  patch<T>(url: string, body: unknown): Promise<T> { return this.makeRequest<T>(url, "PATCH", body, true); }
-  delete<T>(url: string): Promise<T> { return this.makeRequest<T>(url, "DELETE", undefined, true); }
+  private async makeFormDataRequest<T>(
+    url: string,
+    method: string,
+    body?: FormData,
+    useAuth = false
+  ): Promise<T> {
+    const headers: HeadersInit = {}; // Browser handles Content-Type for FormData
+    if (useAuth) {
+      const token = Cookies.get("accessToken");
+      console.log("TOKEN IS",token);
+      
+      if (!token) throw { message: "Auth token missing.", status: 401 };
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}${url}`, {
+        method,
+        headers,
+        body,
+      });
+      return this.handleResponse<T>(response);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      return Promise.reject({ message: err?.message || "Network error.", status: err?.status || 500, data: err });
+    }
+  }
+
+  // JSON Request Methods
+  get<T>(url: string): Promise<T> {
+    return this.makeJsonRequest<T>(url, "GET");
+  }
+  getWithoutAuth<T>(url: string): Promise<T> {
+    return this.makeJsonRequest<T>(url, "GET", undefined, false);
+  }
+  post<T>(url: string, body: unknown): Promise<T> {
+    return this.makeJsonRequest<T>(url, "POST", body);
+  }
+  postWithoutAuth<T>(url: string, body: unknown): Promise<T> {
+    return this.makeJsonRequest<T>(url, "POST", body, false);
+  }
+  put<T>(url: string, body: unknown): Promise<T> {
+    return this.makeJsonRequest<T>(url, "PUT", body, true);
+  }
+  patch<T>(url: string, body: unknown): Promise<T> {
+    return this.makeJsonRequest<T>(url, "PATCH", body, true);
+  }
+  delete<T>(url: string): Promise<T> {
+    return this.makeJsonRequest<T>(url, "DELETE", undefined, true);
+  }
+
+  // FormData Request Methods
+  postFormData<T>(url: string, formData: FormData, useAuth = false): Promise<T> {
+    return this.makeFormDataRequest<T>(url, "POST", formData, useAuth);
+  }
+
+  putFormData<T>(url: string, formData: FormData, useAuth = true): Promise<T> {
+    return this.makeFormDataRequest<T>(url, "PUT", formData, useAuth);
+  }
+
+  patchFormData<T>(url: string, formData: FormData, useAuth = true): Promise<T> {
+    return this.makeFormDataRequest<T>(url, "PATCH", formData, useAuth);
+  }
 }
 
 let apiServiceInstance: ApiService | null = null;

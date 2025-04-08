@@ -34,7 +34,7 @@ interface StepItemProps {
 const StepItem: React.FC<StepItemProps> = ({ step, title, description, Icon, isLast = false }) => (
   <div className="flex items-start mb-4">
     <div className="flex flex-col items-center mr-4">
-      <div className="bg-white rounded-full p-2 border-2 border-green-500">
+      <div className="bg-white rounded-full p-2 border-2 border-green-200">
         <Icon />
       </div>
       {!isLast && <div className="w-0.5 h-16 bg-gray-300 mt-2"></div>}

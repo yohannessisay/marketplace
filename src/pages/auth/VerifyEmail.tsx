@@ -9,13 +9,13 @@ const VerifyEmail: React.FC = () => {
 
 
   const handleOkayClick = () => {
-    navigate('/login');
+    navigate('/otp');
   };
 
   return (
     <div className="flex h-screen w-full bg-white">
        <div
-        className="hidden md:flex w-1/2 bg-cover bg-center border rounded-md border-green-500 m-2 shadow-2xl" 
+        className="hidden md:flex w-1/2 bg-cover bg-center border rounded-md border-green-200 m-2 shadow-2xl" 
         style={{
           backgroundImage: "url('images/email.svg')",
         }}
@@ -56,7 +56,7 @@ const VerifyEmail: React.FC = () => {
             className="w-ful"
             variant={'default'}
           >
-            I have verified my email
+            I have received my
           </Button>
         </div>
       </div>

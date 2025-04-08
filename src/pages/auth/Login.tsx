@@ -24,60 +24,65 @@ const Login = () => {
   const { successMessage, errorMessage } = useNotification();
   const [loginCompleted, setLoginCompleted] = useState(false);
   const onSubmit = async (data: LoginFormInputs) => {
-     
+    try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // const response: any = await apiService().postWithoutAuth("/auth/login", {
-      //   ...data,
-      // });
+      const response: any = await apiService().postWithoutAuth("/auth/login", {
+        ...data,
+      });
+      
+      
+      if (response.success) {
+        successMessage("Login successful!");
+
+        Cookies.set("accessToken", response.data.access_token, {
+          expires: 1 / 48,
+        });
+        Cookies.set("refreshToken", response.data.refresh_token, {
+          expires: 1,
+        });
+
+        const user = response.data.user;
+        const userProfile = {
+          email: user.email,
+          firstName: user.first_name,
+          gender: user.gender,
+          id: user.id,
+          image: user.image,
+          phone: user.phone,
+          userType: user.userType,
+          verificationStatus: user.verification_status,
+          onboardingStage: user.onboarding_stage,
+          lastName: user.last_name,
+          username: user.username,
+        };
+
+        localStorage.setItem("userProfile", JSON.stringify(userProfile));
+        const firstTimeUser = localStorage.getItem("first_time_user");
+
+        if (firstTimeUser && firstTimeUser === "false") {
+          navigate("/home");
+        } else {
+          navigate("/first-time-user");
+        }
+        setLoginCompleted(true);
+      } else {
+        errorMessage("Credential error");
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      try {
-        // ... your fetch logic ...
-        await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: 'emilys',
-                password: 'emilyspass',
-                expiresInMins: 30,
-            }),
-            credentials: 'include',
-        })
-            .then((res) => res.json())
-            .then((response) => {
-                successMessage("Login successful!");
-                console.log(response);
-
-                Cookies.set("accessToken", response.accessToken, {
-                    expires: 1 / 48,
-                });
-                Cookies.set("refreshToken", response.refreshToken, {
-                    expires: 1,
-                });
-                const userProfile = {
-                    email: response.email,
-                    firstName: response.firstName,
-                    gender: response.gender,
-                    id: response.id,
-                    image: response.image,
-                    lastName: response.lastName,
-                    username: response.username,
-                };
-
-                localStorage.setItem("userProfile", JSON.stringify(userProfile));
-                const firstTimeUser = localStorage.getItem("first_time_user");
-
-                if (firstTimeUser && firstTimeUser === "false") {
-                    navigate("/home");
-                } else {
-                    navigate("/first-time-user");
-                }
-                setLoginCompleted(true);
-            });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-        errorMessage(error);
+      if (
+        error.data.error.details ==
+        "Email verification is required for this account"
+      ) {
+        localStorage.setItem("email", data.email);
+        navigate("/otp");
+        successMessage("Verify your email to continue");
+        return;
+      }
+      errorMessage(error);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen   ">
@@ -89,7 +94,7 @@ const Login = () => {
 
       {/* Right Form Section */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center ">
-        <div className="w-full max-w-md shadow-lg rounded-lg p-6 bg-white border border-green-500 ">
+        <div className="w-full max-w-md shadow-lg rounded-lg p-6 bg-white border border-green-200 ">
           <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
             <span className="text-green-600">Afro</span>valley
           </h2>
