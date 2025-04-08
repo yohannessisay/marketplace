@@ -143,7 +143,7 @@ export default function StepTwo() {
 
   return (
     <div className="min-h-screen bg-white">
-    <Header></Header>
+ 
       <main className="container mx-auto p-4 max-w-5xl">
         <Stepper currentStep={2} />
 

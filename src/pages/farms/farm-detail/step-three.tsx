@@ -85,8 +85,7 @@ export default function StepThree() {
 
   return (
     <div className="min-h-screen bg-white">
-    {/* Header */}
-   <Header></Header>
+   
     {/* Main Content */}
     <main className="container mx-auto p-6">
       <Stepper currentStep={3} />
