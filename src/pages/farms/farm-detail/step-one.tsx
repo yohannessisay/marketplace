@@ -5,7 +5,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -30,33 +37,36 @@ import {
 import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { FileUpload } from "@/components/common/file-upload";
+import { apiService } from "@/services/apiService";
+import { useNotification } from "@/hooks/useNotification";
 
 export default function StepOne() {
   const navigate = useNavigate();
+  const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
-  const [files, setFiles] = useState<File[]>([])
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [files, setFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const handleFilesSelected = (selectedFiles: File[]) => {
-    setFiles(selectedFiles)
-    setUploadSuccess(false)
-  }
+    setFiles(selectedFiles);
+    setUploadSuccess(false);
+  };
 
   const handleUpload = async () => {
-    if (files.length === 0) return
+    if (files.length === 0) return;
 
-    setIsUploading(true)
+    setIsUploading(true);
 
     // Simulate upload delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // In a real application, you would upload the files to your server here
-    console.log("Files to upload:", files)
+    console.log("Files to upload:", files);
 
-    setIsUploading(false)
-    setUploadSuccess(true)
-  }
+    setIsUploading(false);
+    setUploadSuccess(true);
+  };
   // Initialize form with default values or values from local storage
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
@@ -81,8 +91,6 @@ export default function StepOne() {
     },
   });
 
-
-
   // Load saved data from local storage on component mount
   useEffect(() => {
     setIsClient(true);
@@ -95,21 +103,29 @@ export default function StepOne() {
     }
   }, [form]);
 
-  const onSubmit = (data: FarmDetailsFormData) => {
-    saveToLocalStorage("step-one", data);
-    navigate("/onboarding/step-two");
-  };
+  const onSubmit = async (data: FarmDetailsFormData) => {
+      // const response: { success: boolean } = await apiService().post("/onboarding/seller/farm-details", data);
+      // if (response && response.success) {
+      //   saveToLocalStorage("step-one", data);
+      //   navigate("/onboarding/step-two");
+      // }else{
+      //   errorMessage("Failed to save farm details");
+      // }
+      saveToLocalStorage("step-one", data);
+      navigate("/onboarding/step-two");
+    };
 
-  if (!isClient) {
-    return null; // Prevent hydration errors
-  }
+ 
 
   return (
     <>
       <Stepper currentStep={1} />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-8 shadow-lg px-8  rounded-md py-4"
+        >
           {/* Document Upload Section */}
           <div className="mb-10">
             <div className="mb-2">
@@ -145,11 +161,8 @@ export default function StepOne() {
                       ? `${files.length} file(s) selected`
                       : "No files selected"}
                   </div>
-          
                 </CardFooter>
               </Card>
-
-         
 
               <Card className="max-w-2xl mx-auto">
                 <CardHeader>
@@ -172,7 +185,6 @@ export default function StepOne() {
                       ? `${files.length} file(s) selected`
                       : "No files selected"}
                   </div>
-                
                 </CardFooter>
               </Card>
             </div>

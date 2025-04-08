@@ -24,9 +24,6 @@ const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
 const Welcome = lazy(() => import("./pages/onboarding/Welcome"));
 const FarmManagement = lazy(() => import("./pages/farms/FarmManagement"));
 const FarmDetails = lazy(() => import("./pages/farms/FarmDetails"));
-const CoffeeListing = lazy(() => import("./pages/crops/CoffeeListing"));
-const BankInformation = lazy(() => import("./pages/bank/BankInformation"));
-const ProfilePhoto = lazy(() => import("./pages/profile/ProfilePhoto"));
 const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const Dashboard = lazy(() => import("./pages/seller/Dashboard"));
 const CompanyVerification = lazy(
@@ -139,30 +136,9 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/6"
-            element={
-              <ProtectedRoute>
-                <CoffeeListing />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/7"
-            element={
-              <ProtectedRoute>
-                <BankInformation />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/8"
-            element={
-              <ProtectedRoute>
-                <ProfilePhoto />
-              </ProtectedRoute>
-            }
-          />
+    
+    
+    
           <Route
             path="/seller-dashboard"
             element={
@@ -180,7 +156,7 @@ function App() {
             }
           />
           <Route
-            path="/11"
+            path="/profile"
             element={
               <ProtectedRoute>
                 <UserProfile />

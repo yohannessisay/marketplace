@@ -29,6 +29,7 @@ import {
 } from "@/types/validation/seller-onboarding";
 import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
+import Header from "@/components/layout/header";
 
 export default function StepThree() {
   const navigation = useNavigate();
@@ -62,6 +63,13 @@ export default function StepThree() {
 
   // Handle form submission
   const onSubmit = (data: BankInfoFormData) => {
+          // const response: { success: boolean } = await apiService().post("/onboarding/seller/bank-information", data);
+      // if (response && response.success) {
+      //   saveToLocalStorage("step-one", data);
+      //   navigate("/onboarding/step-two");
+      // }else{
+      //   errorMessage("Failed to save farm details");
+      // }
     saveToLocalStorage("step-three", data);
     navigation("/onboarding/step-four");
   };
@@ -78,33 +86,13 @@ export default function StepThree() {
   return (
     <div className="min-h-screen bg-white">
     {/* Header */}
-    <header className="bg-white border-b border-gray-200 p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-green-800 text-xl font-bold">Afrovalley</h1>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Link to="/dashboard" className="text-sm text-green-600 flex items-center">
-            <span className="mr-1">🏠</span> My dashboard
-          </Link>
-          <Link to="/marketplace" className="text-sm text-gray-600 flex items-center">
-            <span className="mr-1">🛒</span> Marketplace
-          </Link>
-          <Link to="/chats" className="text-sm text-gray-600 flex items-center">
-            <span className="mr-1">💬</span> Chats
-          </Link>
-          <div className="w-8 h-8 rounded-full bg-green-700 text-white flex items-center justify-center">
-            <span>👤</span>
-          </div>
-        </div>
-      </div>
-    </header>
+   <Header></Header>
     {/* Main Content */}
     <main className="container mx-auto p-6">
       <Stepper currentStep={3} />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 shadow-lg px-8  rounded-md py-4">
           <div className="mb-10">
             <div className="mb-6">
               <h2 className="text-green-600 font-medium">Step 3</h2>

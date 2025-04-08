@@ -1,129 +1,139 @@
-import React, { useState } from 'react';
+"use client"
+
+import type React from "react"
+import { useState } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
+import { PencilIcon, LogOut } from "lucide-react"
+import Header from "@/components/layout/header"
 
 interface ProfileItemProps {
-  label: string;
-  value: string;
-  editable?: boolean;
-  onEdit?: () => void;
+  label: string
+  value: string
+  editable?: boolean
+  onEdit?: () => void
 }
 
 const ProfileItem: React.FC<ProfileItemProps> = ({ label, value, editable = false, onEdit }) => {
   return (
-    <div className="border rounded-lg p-4 mb-4">
+    <div className="flex flex-col space-y-1">
       <div className="flex justify-between items-center">
-        <div>
-          <div className="text-gray-600 text-sm">{label}</div>
-          <div className="font-medium">{value}</div>
-        </div>
+        <span className="text-sm text-muted-foreground">{label}</span>
         {editable && (
-          <button 
-            onClick={onEdit} 
-            className="bg-transparent text-gray-600 hover:text-gray-800 px-2 py-1 rounded"
-          >
-            Edit
-          </button>
+          <Button variant="ghost" size="sm" onClick={onEdit} className="h-8 px-2">
+            <PencilIcon className="h-4 w-4" />
+            <span className="sr-only">Edit {label}</span>
+          </Button>
         )}
       </div>
+      <div className="font-medium">{value}</div>
     </div>
-  );
-};
+  )
+}
 
-const UserProfile: React.FC = () => {
+export default function UserProfile() {
   const [profile, setProfile] = useState({
-    name: 'John Wick',
-    phone: '+66 (081) *** **36',
-    email: 'Email****@.com',
+    name: "John Wick",
+    phone: "+66 (081) *** **36",
+    email: "Email****@.com",
     verification: 25, // Percentage of verification progress
-  });
+  })
 
   const handleEdit = (field: string) => {
     // Implement edit functionality
-    console.log(`Editing ${field}`);
+    console.log(`Editing ${field}`)
     // In a real app, you would show a modal or form for editing
-  };
+  }
 
   const handleLogout = () => {
     // Implement logout functionality
-    console.log('Logging out');
-  };
+    console.log("Logging out")
+  }
 
   return (
-    <div className=" bg-white p-4">
-      <h1 className="text-xl font-bold mb-4">Your profile</h1>
-      
-      {/* Profile Photo */}
-      <div className="flex flex-col items-center mb-6">
-        <div className="relative">
-          <img 
-            src="/path/to/profile-image.jpg" 
-            alt="Profile" 
-            className="w-24 h-24 rounded-full object-cover bg-blue-100"
-          />
-          <button 
-            className="absolute bottom-0 right-0 text-xs border rounded-full px-2 py-1"
-            onClick={() => handleEdit('photo')}
-          >
-            Edit
-          </button>
-        </div>
-        <h2 className="text-lg font-semibold mt-3">{profile.name}</h2>
-      </div>
+    <div>
+       <Header></Header>
+       <div className="container max-w-3xl   mx-auto py-8 px-4 sm:px-6">
+     
+     <h1 className="text-2xl font-bold mb-6">Your Profile</h1>
 
-      {/* Verification Status */}
-      <div className="border rounded-lg p-4 mb-4">
-        <div className="text-gray-600 text-sm mb-2">Your profile is on verification</div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div 
-            className="bg-green-500 h-2.5 rounded-full" 
-            style={{ width: `${profile.verification}%` }}
-          ></div>
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Usually it takes few hours. Please check your email for updates
-        </div>
-      </div>
+     <div className="space-y-6">
+       {/* Profile Header with Photo */}
+       <Card>
+         <CardContent className="pt-6">
+           <div className="flex flex-col sm:flex-row items-center gap-6">
+             <div className="relative">
+               <Avatar className="h-24 w-24">
+                 <AvatarImage src="/placeholder.svg?height=96&width=96" alt={profile.name} />
+                 <AvatarFallback>
+                   {profile.name
+                     .split(" ")
+                     .map((n) => n[0])
+                     .join("")}
+                 </AvatarFallback>
+               </Avatar>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-0"
+                 onClick={() => handleEdit("photo")}
+               >
+                 <PencilIcon className="h-4 w-4" />
+                 <span className="sr-only">Edit photo</span>
+               </Button>
+             </div>
+             <div className="text-center sm:text-left">
+               <h2 className="text-xl font-semibold">{profile.name}</h2>
+               <p className="text-sm text-muted-foreground mt-1">Account holder</p>
+             </div>
+           </div>
+         </CardContent>
+       </Card>
 
-      {/* Profile Information */}
-      <ProfileItem 
-        label="Phone number" 
-        value={profile.phone} 
-        editable 
-        onEdit={() => handleEdit('phone')}
-      />
-      
-      <ProfileItem 
-        label="Email address" 
-        value={profile.email} 
-        editable 
-        onEdit={() => handleEdit('email')}
-      />
-      
-      <ProfileItem 
-        label="Legal name" 
-        value={profile.name} 
-        editable 
-        onEdit={() => handleEdit('name')}
-      />
-      
-      <ProfileItem 
-        label="Password" 
-        value="Change password" 
-        editable 
-        onEdit={() => handleEdit('password')}
-      />
+       {/* Verification Status */}
+       <Card>
+         <CardContent className="pt-6">
+           <h3 className="text-sm text-muted-foreground mb-2">Your profile is on verification</h3>
+           <Progress value={profile.verification} className="h-2" />
+           <p className="text-xs text-muted-foreground mt-2">
+             Usually it takes few hours. Please check your email for updates
+           </p>
+         </CardContent>
+       </Card>
 
-      {/* Logout Button */}
-      <button 
-        onClick={handleLogout}
-        className="flex items-center text-gray-600 mt-4 bg-white"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
-        Log out
-      </button>
+       {/* Profile Information */}
+       <Card>
+         <CardHeader>
+           <CardTitle className="text-lg">Personal Information</CardTitle>
+         </CardHeader>
+         <CardContent className="space-y-4">
+           <ProfileItem label="Phone number" value={profile.phone} editable onEdit={() => handleEdit("phone")} />
+
+           <Separator />
+
+           <ProfileItem label="Email address" value={profile.email} editable onEdit={() => handleEdit("email")} />
+
+           <Separator />
+
+           <ProfileItem label="Legal name" value={profile.name} editable onEdit={() => handleEdit("name")} />
+
+           <Separator />
+
+           <ProfileItem label="Password" value="Change password" editable onEdit={() => handleEdit("password")} />
+         </CardContent>
+       </Card>
+
+       {/* Logout Button */}
+       <Button variant="outline" className="w-full sm:w-auto" onClick={handleLogout}>
+         <LogOut className="h-4 w-4 mr-2" />
+         Log out
+       </Button>
+     </div>
+   </div>
     </div>
-  );
-};
-
-export default UserProfile;
+  
+  )
+}

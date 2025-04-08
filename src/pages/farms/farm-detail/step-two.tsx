@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Camera, Plus, Upload } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FileUpload } from "@/components/common/file-upload";
+import Header from "@/components/layout/header";
 
 export default function StepTwo() {
   const navigation = useNavigate();
@@ -120,6 +121,13 @@ export default function StepTwo() {
 
   // Handle form submission
   const onSubmit = (data: CoffeeCropsFormData) => {
+          // const response: { success: boolean } = await apiService().post("/onboarding/seller/coffee-details", data);
+      // if (response && response.success) {
+      //   saveToLocalStorage("step-one", data);
+      //   navigate("/onboarding/step-two");
+      // }else{
+      //   errorMessage("Failed to save farm details");
+      // }
     saveToLocalStorage("step-two", data);
     navigation("/onboarding/step-three");
   };
@@ -135,41 +143,12 @@ export default function StepTwo() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-white border-b border-gray-200 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <h1 className="text-green-800 text-xl font-bold">Afrovalley</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link
-              to="/dashboard"
-              className="text-sm text-green-600 flex items-center"
-            >
-              <span className="mr-1">🏠</span> My dashboard
-            </Link>
-            <Link
-              to="/marketplace"
-              className="text-sm text-gray-600 flex items-center"
-            >
-              <span className="mr-1">🛒</span> Marketplace
-            </Link>
-            <Link
-              to="/chats"
-              className="text-sm text-gray-600 flex items-center"
-            >
-              <span className="mr-1">💬</span> Chats
-            </Link>
-            <div className="w-8 h-8 rounded-full bg-green-700 text-white flex items-center justify-center">
-              <span>👤</span>
-            </div>
-          </div>
-        </div>
-      </header>
-      <main className="container mx-auto p-4 max-w-4xl">
+    <Header></Header>
+      <main className="container mx-auto p-4 max-w-5xl">
         <Stepper currentStep={2} />
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 shadow-lg px-4  rounded-md py-4">
             {/* Step 1: Upload Grading Report */}
             <div className="mb-8">
               <Card className="max-w-2xl mx-auto">

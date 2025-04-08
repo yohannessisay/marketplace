@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import Header from "@/components/layout/header"
 
 // Define TypeScript interfaces
 interface Farm {
@@ -40,24 +41,9 @@ const FarmManagement: React.FC = () => {
 
   return (
     <div className="bg-muted min-h-screen">
+      <Header></Header>
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <header className="flex justify-between items-center mb-8">
-          <div className="text-2xl font-bold text-primary">Afrovalley</div>
-          <div className="flex items-center space-x-4">
-            <Link to="/dashboard" className="text-primary hover:text-primary/80 flex items-center">
-              <span className="mr-1">My dashboard</span>
-            </Link>
-            <Link to="/marketplace" className="text-muted-foreground hover:text-foreground flex items-center">
-              <span className="mr-1">Marketplace</span>
-            </Link>
-            <Link to="/chats" className="text-muted-foreground hover:text-foreground flex items-center">
-              <span className="mr-1">Chats</span>
-            </Link>
-            <Avatar className="w-8 h-8 bg-primary">
-              <AvatarFallback>HA</AvatarFallback>
-            </Avatar>
-          </div>
-        </header>
+
 
         <h1 className="text-2xl font-normal text-muted-foreground mb-6">Farms list</h1>
 
