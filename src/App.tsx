@@ -1,6 +1,6 @@
 // App.tsx
 
-import React, { Suspense, lazy, useEffect, useState } from "react";
+import React, { Suspense, lazy, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -16,6 +16,9 @@ import OTPInputPage from "./pages/auth/OTP";
 import StepFour from "./pages/farms/farm-detail/step-four";
 import StepThree from "./pages/farms/farm-detail/step-three";
 import StepTwo from "./pages/farms/farm-detail/step-two";
+import AgentLogin from "./pages/auth/agent-login";
+import FarmersTable from "./pages/agent/farmer-management";
+import AddFarm from "./pages/farms/add-farm";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -23,7 +26,7 @@ const CreatePassword = lazy(() => import("./pages/auth/CreatePassword"));
 const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
 const Welcome = lazy(() => import("./pages/onboarding/Welcome"));
 const FarmManagement = lazy(() => import("./pages/farms/FarmManagement"));
-const FarmDetails = lazy(() => import("./pages/farms/FarmDetails"));
+const FarmDetails = lazy(() => import("./pages/farms/FarmDetails")); // Step One
 const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const Dashboard = lazy(() => import("./pages/seller/Dashboard"));
 const CompanyVerification = lazy(
@@ -47,38 +50,55 @@ const Loading = () => (
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
+const userProfile = localStorage.getItem("userProfile");
+const parsed = userProfile ? JSON.parse(userProfile) : null;
+const currentStep = parsed?.onboardingStage;
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(true);
   const location = useLocation();
 
-  // useEffect(() => {
-  //     const accessToken = Cookies.get("accessToken");
-  //     console.log(accessToken);
-
-  //     if (accessToken) {
-  //         try {
-  //             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //             const decodedToken: any = jwtDecode(accessToken);
-  //             if (decodedToken.exp * 1000 > Date.now()) {
-  //                 setIsAuthenticated(true);
-  //             } else {
-  //                 setIsAuthenticated(false);
-  //             }
-  //         } catch (error) {
-  //             console.log("Error decoding token:", error);
-  //             setIsAuthenticated(false);
-  //         }
-  //     } else {
-  //         setIsAuthenticated(false);
-  //     }
-  // }, [location]); // Rerun effect when the location changes.
-
-  // if (isAuthenticated === null) {
-  //     return <Loading />;
-  // }
+  // Uncomment this to enable real JWT auth check
+  /*
+  useEffect(() => {
+    const accessToken = Cookies.get("accessToken");
+    if (accessToken) {
+      try {
+        const decodedToken: any = jwtDecode(accessToken);
+        if (decodedToken.exp * 1000 > Date.now()) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.log("Error decoding token:", error);
+        setIsAuthenticated(false);
+      }
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, [location]);
+  */
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+};
+
+// Determine route based on user profile stage
+const getStepFromStage = () => {
+  const userProfile = localStorage.getItem("userProfile");
+  const parsed = userProfile ? JSON.parse(userProfile) : null;
+  switch (parsed?.onboardingStage) {
+    case "crops_to_sell":
+      return "/onboarding/step-two";
+    case "crop-specification":
+      return "/onboarding/step-three";
+    case "crop-history":
+      return "/onboarding/step-four";
+    case "completed":
+      return "/seller-dashboard";
+    default:
+      return "/onboarding/step-one";
+  }
 };
 
 function App() {
@@ -89,56 +109,89 @@ function App() {
           {/* Auth Routes (Public) */}
           <Route path="/" element={<Hero />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/agent/login" element={<AgentLogin />} />
           <Route path="/otp" element={<OTPInputPage />} />
           <Route path="/registration" element={<Signup />} />
           <Route path="/verification" element={<VerifyEmail />} />
           <Route path="/first-time-user" element={<CreatePassword />} />
 
-          {/* Protected Routes */}
-
+          {/* Onboarding smart redirect */}
           <Route
-            path="/home"
+            path="/onboarding"
             element={
               <ProtectedRoute>
-                <Welcome />
+                <Navigate to={getStepFromStage()} replace />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/add-farm"
+            element={
+              <ProtectedRoute>
+                <AddFarm />
+              </ProtectedRoute>
+            }
+          />
+          {/* Onboarding Step Routes */}
           <Route
             path="/onboarding/step-one"
             element={
               <ProtectedRoute>
-                <FarmDetails />
+                {currentStep === "completed" ? (
+                  <FarmManagement />
+                ) : (
+                  <FarmDetails />
+                )}
               </ProtectedRoute>
             }
           />
-           <Route
+          <Route
             path="/onboarding/step-two"
             element={
               <ProtectedRoute>
-                <StepTwo />
+                {currentStep === "completed" ? <FarmManagement /> : <StepTwo />}
               </ProtectedRoute>
             }
           />
-           <Route
+          <Route
             path="/onboarding/step-three"
             element={
               <ProtectedRoute>
-                <StepThree />
+                {currentStep === "completed" ? (
+                  <FarmManagement />
+                ) : (
+                  <StepThree />
+                )}
               </ProtectedRoute>
             }
           />
-           <Route
+          <Route
             path="/onboarding/step-four"
             element={
               <ProtectedRoute>
-                <StepFour />
+                {currentStep === "completed" ? (
+                  <FarmManagement />
+                ) : (
+                  <StepFour />
+                )}
               </ProtectedRoute>
             }
           />
-    
-    
-    
+
+          {/* Other Protected Routes */}
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                {currentStep !== "completed" ? (
+                  <Welcome />
+                ) : (
+                  <FarmManagement></FarmManagement>
+                )}
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/seller-dashboard"
             element={
@@ -168,6 +221,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CompanyVerification />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent/farmer-management"
+            element={
+              <ProtectedRoute>
+                <FarmersTable />
               </ProtectedRoute>
             }
           />

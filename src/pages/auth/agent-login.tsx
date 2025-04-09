@@ -5,15 +5,15 @@ import { loginSchema } from "../../types/validation/auth";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
-const Login = () => {
+const AgentLogin = () => {
   const {
     register,
     handleSubmit,
@@ -22,63 +22,68 @@ const Login = () => {
     resolver: zodResolver(loginSchema),
   });
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   const [loginCompleted, setLoginCompleted] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const onSubmit = async (data: LoginFormInputs) => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response: any = await apiService().postWithoutAuth("/auth/login", {
-        ...data,
-      });
+    navigate("/agent/farmer-management");
+    // try {
+    //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    //   const response: any = await apiService().postWithoutAuth("/agent/auth/login", {
+    //     ...data,
+    //   });
 
-      if (response.success) {
-        successMessage("Login successful!");
+    //   if (response.success) {
+    //     successMessage("Login successful!");
 
-        Cookies.set("accessToken", response.data.access_token, {
-          expires: 1 / 48,
-        });
-        Cookies.set("refreshToken", response.data.refresh_token, {
-          expires: 1,
-        });
+    //     Cookies.set("accessToken", response.data.access_token, {
+    //       expires: 1 / 48,
+    //     });
+    //     Cookies.set("refreshToken", response.data.refresh_token, {
+    //       expires: 1,
+    //     });
 
-        const user = response.data.user;
-        const userProfile = {
-          email: user.email,
-          firstName: user.first_name,
-          gender: user.gender,
-          id: user.id,
-          image: user.image,
-          phone: user.phone,
-          userType: user.userType,
-          verificationStatus: user.verification_status,
-          onboardingStage: user.onboarding_stage,
-          lastName: user.last_name,
-          username: user.username,
-        };
+    //     const user = response.data.user;
+    //     const userProfile = {
+    //       email: user.email,
+    //       firstName: user.first_name,
+    //       gender: user.gender,
+    //       id: user.id,
+    //       image: user.image,
+    //       phone: user.phone,
+    //       userType: user.userType,
+    //       verificationStatus: user.verification_status,
+    //       onboardingStage: user.onboarding_stage,
+    //       lastName: user.last_name,
+    //       username: user.username,
+    //     };
 
-        localStorage.setItem("userProfile", JSON.stringify(userProfile));
+    //     localStorage.setItem("userProfile", JSON.stringify(userProfile));
+    //     const firstTimeUser = localStorage.getItem("first_time_user");
 
-        navigate("/home");
+    //     if (firstTimeUser && firstTimeUser === "false") {
+    //       navigate("/home");
+    //     } else {
+    //       navigate("/first-time-user");
+    //     }
+    //     setLoginCompleted(true);
+    //   } else {
+    //     errorMessage("Credential error");
+    //   }
 
-        setLoginCompleted(true);
-      } else {
-        errorMessage("Credential error");
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (
-        error.data.error.details ==
-        "Email verification is required for this account"
-      ) {
-        localStorage.setItem("email", data.email);
-        navigate("/otp");
-        successMessage("Verify your email to continue");
-        return;
-      }
-      errorMessage(error);
-    }
+    //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // } catch (error: any) {
+    //   if (
+    //     error.data.error.details ==
+    //     "Email verification is required for this account"
+    //   ) {
+    //     localStorage.setItem("email", data.email);
+    //     navigate("/otp");
+    //     successMessage("Verify your email to continue");
+    //     return;
+    //   }
+    //   errorMessage(error);
+    // }
   };
 
   return (
@@ -86,7 +91,7 @@ const Login = () => {
       {/* Left Image Section */}
       <div
         className="hidden md:flex w-1/2 bg-cover bg-center  rounded-r-2xl shadow-lg"
-        style={{ backgroundImage: "url('/images/login.png')" }}
+        style={{ backgroundImage: "url('/images/agent.webp')" }}
       ></div>
 
       {/* Right Form Section */}
@@ -152,16 +157,6 @@ const Login = () => {
             >
               {isSubmitting ? "Logging in..." : "Login"}
             </Button>
-
-            <p className="mt-4 text-center text-gray-600">
-              {"Don't "}have an account?{" "}
-              <Link
-                to="/registration"
-                className="font-semibold text-green-500 "
-              >
-                Sign Up
-              </Link>
-            </p>
           </form>
         </div>
       </div>
@@ -169,4 +164,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default AgentLogin;

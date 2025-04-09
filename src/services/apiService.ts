@@ -43,6 +43,8 @@ class ApiService {
     body?: unknown,
     useAuth = false
   ): Promise<T> {
+
+   
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (useAuth) {
       const token = Cookies.get("accessToken");
@@ -50,12 +52,14 @@ class ApiService {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
+
     try {
       const response = await fetch(`${this.baseURL}${url}`, {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
-      });
+      }); 
+      
       return this.handleResponse<T>(response);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
@@ -71,8 +75,7 @@ class ApiService {
   ): Promise<T> {
     const headers: HeadersInit = {}; // Browser handles Content-Type for FormData
     if (useAuth) {
-      const token = Cookies.get("accessToken");
-      console.log("TOKEN IS",token);
+      const token = Cookies.get("accessToken"); 
       
       if (!token) throw { message: "Auth token missing.", status: 401 };
       headers["Authorization"] = `Bearer ${token}`;
@@ -93,13 +96,13 @@ class ApiService {
 
   // JSON Request Methods
   get<T>(url: string): Promise<T> {
-    return this.makeJsonRequest<T>(url, "GET");
+    return this.makeJsonRequest<T>(url, "GET",undefined,true);
   }
   getWithoutAuth<T>(url: string): Promise<T> {
     return this.makeJsonRequest<T>(url, "GET", undefined, false);
   }
   post<T>(url: string, body: unknown): Promise<T> {
-    return this.makeJsonRequest<T>(url, "POST", body);
+    return this.makeJsonRequest<T>(url, "POST", body,true);
   }
   postWithoutAuth<T>(url: string, body: unknown): Promise<T> {
     return this.makeJsonRequest<T>(url, "POST", body, false);

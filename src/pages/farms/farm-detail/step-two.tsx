@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/card";
 import { FileUpload } from "@/components/common/file-upload";
 import Header from "@/components/layout/header";
+import { useNotification } from "@/hooks/useNotification";
 
 export default function StepTwo() {
   const navigation = useNavigate();
@@ -47,7 +48,7 @@ export default function StepTwo() {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-
+  const { successMessage, errorMessage } = useNotification();
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles(selectedFiles);
     setUploadSuccess(false);
@@ -72,28 +73,28 @@ export default function StepTwo() {
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
-      coffeeVariety: "Ethiopian Heirloom",
-      cupScore: "85",
-      initialGrading: "Grade 1",
-      beanType: "Green beans",
-      cropYear: "2024",
-      farmingPractice: "Organic farm",
-      processingMethod: "Washed (Wet Process)",
-      moisture: "11.5%",
-      screenSize: "14",
-      dryingMethod: "Sun dried on raised beds",
-      wetMill: "Hand-pulped and fermented",
-      aroma: "Fruity",
-      acidity: "Delicate",
-      body: "Heavy",
-      sweetness: "Honey-like",
-      aftertaste: "Long-lasting",
-      balance: "Complex",
-      quantity: "5,000",
-      price: "$4.50",
-      readinessDate: "October 2024",
-      lotNumber: "",
-      deliveryType: "FOB (Free on Board) - Port of Djibouti",
+      coffee_variety: "Ethiopian Heirloom",
+      grade: "Grade 1",
+      bean_type: "Green beans",
+      crop_year: "2024",
+      processing_method: "Washed (Wet Process)",
+      moisture_percentage: "11.5%",
+      screen_size: "14",
+      drying_method: "Sun dried on raised beds",
+      wet_mill: "Hand-pulped and fermented",
+      is_organic: "yes",
+      cup_taste_acidity: "Delicate",
+      cup_taste_body: "Heavy",
+      cup_taste_sweetness: "Honey-like",
+      cup_taste_aftertaste: "Long-lasting",
+      cup_taste_balance: "Complex",
+      quantity_kg: "5,000",
+      price_per_kg: "$4.50",
+      readiness_date: "October 2024",
+      lot_length: "",
+      delivery_type: "FOB (Free on Board) - Port of Djibouti",
+      shipping_port: "",
+      listing_status: "",
     },
   });
 
@@ -121,20 +122,24 @@ export default function StepTwo() {
 
   // Handle form submission
   const onSubmit = (data: CoffeeCropsFormData) => {
-          // const response: { success: boolean } = await apiService().post("/onboarding/seller/coffee-details", data);
-      // if (response && response.success) {
-      //   saveToLocalStorage("step-one", data);
-      //   navigate("/onboarding/step-two");
-      // }else{
-      //   errorMessage("Failed to save farm details");
-      // }
+    // const response: { success: boolean } = await apiService().post("/onboarding/seller/coffee-details", data);
+    // if (response && response.success) {
+    //   saveToLocalStorage("step-one", data);
+    //   navigate("/onboarding/step-two");
+    // }else{
+    //   errorMessage("Failed to save farm details");
+    // } 
+
     saveToLocalStorage("step-two", data);
     navigation("/onboarding/step-three");
+    localStorage.setItem("current-step", "bank_information");
+    successMessage("Crop information saved successfully");
   };
 
   // Go back to previous step
   const goBack = () => {
     navigation("/onboarding/step-one");
+    localStorage.setItem("back-button-clicked", "true");
   };
 
   if (!isClient) {
@@ -143,12 +148,15 @@ export default function StepTwo() {
 
   return (
     <div className="min-h-screen bg-white">
- 
+      <Header></Header>
       <main className="container mx-auto p-4 max-w-5xl">
         <Stepper currentStep={2} />
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 shadow-lg px-4  rounded-md py-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-8 shadow-lg px-4  rounded-md py-4"
+          >
             {/* Step 1: Upload Grading Report */}
             <div className="mb-8">
               <Card className="max-w-2xl mx-auto">
@@ -195,7 +203,7 @@ export default function StepTwo() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <FormField
                   control={form.control}
-                  name="coffeeVariety"
+                  name="coffee_variety"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Coffee variety</FormLabel>
@@ -206,22 +214,10 @@ export default function StepTwo() {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
-                  name="cupScore"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cup score</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="initialGrading"
+                  name="grade"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Initial grading</FormLabel>
@@ -234,7 +230,7 @@ export default function StepTwo() {
                 />
                 <FormField
                   control={form.control}
-                  name="beanType"
+                  name="bean_type"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Bean type</FormLabel>
@@ -259,7 +255,7 @@ export default function StepTwo() {
                 />
                 <FormField
                   control={form.control}
-                  name="cropYear"
+                  name="crop_year"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Crop year</FormLabel>
@@ -274,164 +270,25 @@ export default function StepTwo() {
 
               {/* Crop specification */}
               <h3 className="text-lg font-medium mb-4">Crop specification</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <FormField
-                  control={form.control}
-                  name="farmingPractice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Farming practice</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select farming practice" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Organic farm">
-                            Organic farm
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="processingMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Primary Processing Method</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select processing method" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Washed (Wet Process)">
-                            Washed (Wet Process)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="moisture"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Moisture</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="screenSize"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Screen size</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dryingMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type of drying</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select drying method" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Sun dried on raised beds">
-                            Sun dried on raised beds
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="wetMill"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Wet mill</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select wet mill" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Hand-pulped and fermented">
-                            Hand-pulped and fermented
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+              <FormField
+                control={form.control}
+                name="is_organic"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Is Organic?</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               {/* Cup taste */}
               <h3 className="text-lg font-medium mb-4">Cup taste</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <FormField
                   control={form.control}
-                  name="aroma"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Aroma</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select aroma" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Fruity">Fruity</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="acidity"
+                  name="cup_taste_acidity"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Acidity</FormLabel>
@@ -454,7 +311,7 @@ export default function StepTwo() {
                 />
                 <FormField
                   control={form.control}
-                  name="body"
+                  name="cup_taste_body"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Body</FormLabel>
@@ -477,7 +334,7 @@ export default function StepTwo() {
                 />
                 <FormField
                   control={form.control}
-                  name="sweetness"
+                  name="cup_taste_sweetness"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Sweetness</FormLabel>
@@ -500,7 +357,7 @@ export default function StepTwo() {
                 />
                 <FormField
                   control={form.control}
-                  name="aftertaste"
+                  name="cup_taste_aftertaste"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Aftertaste</FormLabel>
@@ -525,7 +382,7 @@ export default function StepTwo() {
                 />
                 <FormField
                   control={form.control}
-                  name="balance"
+                  name="cup_taste_balance"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Balance</FormLabel>
@@ -561,29 +418,29 @@ export default function StepTwo() {
                   Coffee Crop photos
                 </h4>
                 <div className="flex flex-wrap gap-4">
-                <Card className="max-w-2xl mx-auto">
-                <CardHeader>
-                  <CardTitle>Coffee crop photos</CardTitle>
-                  <CardDescription>
-                    Upload PDF documents and images. Drag and drop or click to
-                    select files.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FileUpload
-                    onFilesSelected={handleFilesSelected}
-                    maxFiles={6}
-                    maxSizeMB={5}
-                  />
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    {files.length > 0
-                      ? `${files.length} file(s) selected`
-                      : "No files selected"}
-                  </div>
-                </CardFooter>
-              </Card>
+                  <Card className="max-w-2xl mx-auto">
+                    <CardHeader>
+                      <CardTitle>Coffee crop photos</CardTitle>
+                      <CardDescription>
+                        Upload PDF documents and images. Drag and drop or click
+                        to select files.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <FileUpload
+                        onFilesSelected={handleFilesSelected}
+                        maxFiles={6}
+                        maxSizeMB={5}
+                      />
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        {files.length > 0
+                          ? `${files.length} file(s) selected`
+                          : "No files selected"}
+                      </div>
+                    </CardFooter>
+                  </Card>
                 </div>
               </div>
 
@@ -600,7 +457,7 @@ export default function StepTwo() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                   <FormField
                     control={form.control}
-                    name="quantity"
+                    name="quantity_kg"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Crop Quantity (kg)</FormLabel>
@@ -613,10 +470,101 @@ export default function StepTwo() {
                   />
                   <FormField
                     control={form.control}
-                    name="price"
+                    name="price_per_kg"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Community Base Price per kg</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="shipping_port"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Shipping Port</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="listing_status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Listing Status</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="processing_method"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Processing Method</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="moisture_percentage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Moisture Percentage</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="screen_size"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Screen Size</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="drying_method"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Drying Method</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="wet_mill"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Wet Mill</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -649,7 +597,7 @@ export default function StepTwo() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormField
                     control={form.control}
-                    name="readinessDate"
+                    name="readiness_date"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Readiness date</FormLabel>
@@ -662,7 +610,7 @@ export default function StepTwo() {
                   />
                   <FormField
                     control={form.control}
-                    name="lotNumber"
+                    name="lot_length"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Lot number</FormLabel>
@@ -675,7 +623,7 @@ export default function StepTwo() {
                   />
                   <FormField
                     control={form.control}
-                    name="deliveryType"
+                    name="delivery_type"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Delivery type</FormLabel>

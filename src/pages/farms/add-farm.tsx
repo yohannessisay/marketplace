@@ -37,8 +37,9 @@ import { useNavigate } from "react-router-dom";
 import { FileUpload } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
+import Header from "@/components/layout/header";
 
-export default function StepOne() {
+export default function AddFarm() {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
@@ -119,8 +120,8 @@ export default function StepOne() {
       }
 
       if (response && response.success) {
-        saveToLocalStorage("step-one", data);
-        navigate("/onboarding/step-two");
+        saveToLocalStorage("new-farm", data);
+        navigate("/seller-dashboard");
         successMessage("Farm details saved successfully!");
         localStorage.setItem("current-step","crops_to_sell")
       } else {
@@ -142,13 +143,14 @@ export default function StepOne() {
   }
 
   return (
-    <>
-      <Stepper currentStep={1} />
+    <> 
+    <Header></Header>
 
+      <div className="mx-auto container">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 shadow-lg px-8  rounded-md py-4"
+          className="space-y-8 shadow-lg px-8  rounded-md py-4 mt-8"
         >
           {/* Document Upload Section */}
           <div className="mb-10">
@@ -554,10 +556,11 @@ export default function StepOne() {
 
           {/* Navigation Buttons */}
           <div className="flex justify-end mb-8">
-            <Button type="submit">Save and continue</Button>
+            <Button type="submit">Add New Farm</Button>
           </div>
         </form>
       </Form>
+      </div>
     </>
   );
 }

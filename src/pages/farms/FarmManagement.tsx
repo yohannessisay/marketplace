@@ -55,7 +55,7 @@ const FarmManagement: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Add New Farm Card */}
           <Card className="flex items-center justify-center border border-dashed hover:border-border cursor-pointer">
-            <Link to="/onboarding/step-one" className="flex flex-col items-center">
+            <Link to="/add-farm" className="flex flex-col items-center">
 
             <CardContent className="flex items-center justify-center p-6 text-center">
               <div>
