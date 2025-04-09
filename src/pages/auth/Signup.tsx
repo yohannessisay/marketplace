@@ -33,6 +33,7 @@ type SellerFormValues = z.infer<typeof sellerSchema>;
 export default function SignupPage() {
   const [role, setRole] = useState<"buyer" | "seller">("seller");
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   const buyerForm = useForm<BuyerFormValues>({
     resolver: zodResolver(buyerSchema),
@@ -62,6 +63,7 @@ export default function SignupPage() {
   });
 
   const onBuyerSubmit = async (data: BuyerFormValues) => {
+    setIsSubmitting(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response: any = await apiService().postWithoutAuth("/auth/signup", {
       ...data,
@@ -72,11 +74,13 @@ export default function SignupPage() {
       navigate("/verification");
     } else {
       errorMessage("Something went wrong");
+      setIsSubmitting(false);
     }
   };
 
   const onSellerSubmit = async (data: SellerFormValues) => {
     try {
+      setIsSubmitting(true);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: any = await apiService().postWithoutAuth("/auth/signup", {
         ...data,
@@ -86,9 +90,11 @@ export default function SignupPage() {
         successMessage("Registration successful! Please verify your email.");
         navigate("/verification");
       } else {
+        setIsSubmitting(false);
         errorMessage("Something went wrong");
       }
-    } catch  {
+    } catch {
+      setIsSubmitting(false);
       errorMessage("Something went wrong");
     }
   };
@@ -260,8 +266,12 @@ export default function SignupPage() {
                 />
 
                 {/* Submit Button */}
-                <Button type="submit" className="w-full py-6">
-                  Create account
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full my-4"
+                >
+                  {isSubmitting ? "Creating account..." : "Sign Up"}
                 </Button>
               </form>
             </Form>
@@ -386,8 +396,12 @@ export default function SignupPage() {
                 />
 
                 {/* Submit Button */}
-                <Button type="submit" className="w-full py-6 ">
-                  Create account
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full my-4"
+                >
+                  {isSubmitting ? "Creating account..." : "Sign Up"}
                 </Button>
               </form>
             </Form>
