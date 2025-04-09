@@ -182,10 +182,10 @@ const CoffeeListingPagev1 = () => {
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center">
+          <div className="flex  items-center">
             <button 
               onClick={() => window.history.back()} 
-              className="flex items-center text-gray-700 mr-4 hover:text-green-600"
+              className="flex bg-white items-center text-gray-700 mr-4 hover:text-green-600"
             >
               <ArrowLeft size={20} className="mr-1" />
               <span>Back to Marketplace</span>
@@ -245,7 +245,7 @@ const CoffeeListingPagev1 = () => {
                 {listing.photos.map((photo, index) => (
                   <button 
                     key={index}
-                    className={`flex-shrink-0 w-20 h-20 rounded border-2 ${index === activePhotoIndex ? 'border-green-500' : 'border-transparent'}`}
+                    className={`flex-shrink-0 bg-white w-20 h-20 rounded border-2 ${index === activePhotoIndex ? 'border-green-500' : 'border-transparent'}`}
                     onClick={() => setActivePhotoIndex(index)}
                   >
                     <img src={photo} alt="" className="w-full h-full object-cover rounded" />
@@ -258,7 +258,7 @@ const CoffeeListingPagev1 = () => {
             <div className="bg-white rounded-lg shadow-sm mb-6">
               <div className="flex border-b">
                 <button
-                  className={`px-4 py-3 font-medium text-sm focus:outline-none ${
+                  className={`px-4 py-3 bg-white font-medium text-sm focus:outline-none ${
                     activeTab === 'details' ? 'text-green-600 border-b-2 border-green-500' : 'text-gray-500 hover:text-gray-700'
                   }`}
                   onClick={() => setActiveTab('details')}
@@ -266,7 +266,7 @@ const CoffeeListingPagev1 = () => {
                   Coffee Details
                 </button>
                 <button
-                  className={`px-4 py-3 font-medium text-sm focus:outline-none ${
+                  className={`px-4 py-3 bg-white font-medium text-sm focus:outline-none ${
                     activeTab === 'farm' ? 'text-green-600 border-b-2 border-green-500' : 'text-gray-500 hover:text-gray-700'
                   }`}
                   onClick={() => setActiveTab('farm')}
@@ -274,7 +274,7 @@ const CoffeeListingPagev1 = () => {
                   Farm Information
                 </button>
                 <button
-                  className={`px-4 py-3 font-medium text-sm focus:outline-none ${
+                  className={`px-4 py-3 bg-white font-medium text-sm focus:outline-none ${
                     activeTab === 'cup' ? 'text-green-600 border-b-2 border-green-500' : 'text-gray-500 hover:text-gray-700'
                   }`}
                   onClick={() => setActiveTab('cup')}
@@ -524,7 +524,7 @@ const CoffeeListingPagev1 = () => {
                     value={chatMessage}
                     onChange={(e) => setChatMessage(e.target.value)}
                     placeholder="Type your message..."
-                    className="flex-1 focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
+                    className="flex-1 bg-white focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
                   />
                   <button
                     onClick={handleSendMessage}
