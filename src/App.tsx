@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import FarmerManagement from './pages/agent/FarmerManagement';
+import CoffeeMarketplace from './pages/marketplace/CoffeeMarketplace';
+import CoffeeListingPage from './pages/marketplace/CoffeeListingPage';
 
 const Login = lazy(() => import('./pages/auth/Login'));
 const Signup = lazy(() => import('./pages/auth/Signup'));
@@ -58,6 +60,10 @@ function App() {
           <Route path="/12" element={<CompanyVerification />} />
 
           <Route path="/13" element={<FarmerManagement />} />
+
+          <Route path="/14" element={<CoffeeMarketplace />} />
+
+          <Route path="/15" element={<CoffeeListingPage />} />
         </Routes>
       </Suspense>
     </Router>
