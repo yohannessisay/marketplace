@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table" 
 import {
   Pagination,
   PaginationContent,
@@ -12,11 +11,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Eye, Plus } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
+import { Eye, Plus } from "lucide-react" 
 import Header from "@/components/layout/header"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 // Mock data for farmers
 const farmers = [
@@ -114,10 +111,8 @@ const farmers = [
 
 export default function FarmersTable() {
   const [currentPage, setCurrentPage] = useState(1)
-  const [selectedFarmer, setSelectedFarmer] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-
+const navigate=useNavigate();
   // Filter farmers based on search term
   const filteredFarmers = farmers.filter(
     (farmer) =>
@@ -133,9 +128,8 @@ export default function FarmersTable() {
   const indexOfFirstFarmer = indexOfLastFarmer - itemsPerPage
   const currentFarmers = filteredFarmers.slice(indexOfFirstFarmer, indexOfLastFarmer)
 
-  const handleViewFarmer = (farmer) => {
-    setSelectedFarmer(farmer)
-    setIsModalOpen(true)
+  const handleViewFarmer = () => {
+    navigate("/home")
   }
 
   const handlePageChange = (page) => {
@@ -204,7 +198,7 @@ export default function FarmersTable() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleViewFarmer(farmer)}
+                    onClick={() => handleViewFarmer()}
                     className="flex items-center gap-1"
                   >
                     <Eye className="h-4 w-4" />
@@ -245,67 +239,7 @@ export default function FarmersTable() {
         </Pagination>
       </div>
 
-      {/* Farmer Details Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          {selectedFarmer && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-2xl">{selectedFarmer.name}</DialogTitle>
-                <DialogDescription>Farmer ID: {selectedFarmer.id}</DialogDescription>
-              </DialogHeader>
-
-              <div className="grid gap-6 py-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Contact Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3">
-                    <div className="grid grid-cols-3 items-center">
-                      <Label className="font-medium">Phone:</Label>
-                      <span className="col-span-2">{selectedFarmer.phone}</span>
-                    </div>
-                    <div className="grid grid-cols-3 items-center">
-                      <Label className="font-medium">Address:</Label>
-                      <span className="col-span-2">{selectedFarmer.address}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Farm Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3">
-                    <div className="grid grid-cols-3 items-center">
-                      <Label className="font-medium">Farm Size:</Label>
-                      <span className="col-span-2">{selectedFarmer.farmSize}</span>
-                    </div>
-                    <div className="grid grid-cols-3 items-center">
-                      <Label className="font-medium">Crops:</Label>
-                      <div className="col-span-2 flex flex-wrap gap-1">
-                        {selectedFarmer.crops.map((crop) => (
-                          <span key={crop} className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-sm">
-                            {crop}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 items-center">
-                      <Label className="font-medium">Join Date:</Label>
-                      <span className="col-span-2">{new Date(selectedFarmer.joinDate).toLocaleDateString()}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={() => setIsModalOpen(false)}>Close</Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+   
     </div>
   )
 }
