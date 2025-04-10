@@ -10,7 +10,9 @@ class ApiService {
     let data: any;
 
     try {
-      data = contentType?.includes("application/json") ? await response.json() : await response.text();
+      data = contentType?.includes("application/json")
+        ? await response.json()
+        : await response.text();
       if (typeof data === "string") data = JSON.parse(data);
     } catch {
       if (!response.ok) data = await response.text();
@@ -18,7 +20,8 @@ class ApiService {
 
     if (!response.ok) {
       const error: ApiError = {
-        message: data?.Messages?.join(", ") || data?.message || response.statusText,
+        message:
+          data?.Messages?.join(", ") || data?.message || response.statusText,
         status: response.status,
         data: data?.Data || data,
       };
@@ -34,36 +37,45 @@ class ApiService {
       return data as T;
     }
 
-    return Promise.reject({ message: "Unexpected response format.", status: response.status, data });
+    return Promise.reject({
+      message: "Unexpected response format.",
+      status: response.status,
+      data,
+    });
   }
 
   private async makeJsonRequest<T>(
     url: string,
     method: string,
     body?: unknown,
-    useAuth = false
+    useAuth = false,
+    xFmrId?: string
   ): Promise<T> {
-
-   
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (useAuth) {
       const token = Cookies.get("accessToken");
       if (!token) throw { message: "Auth token missing.", status: 401 };
       headers["Authorization"] = `Bearer ${token}`;
     }
-
-
+    // Add x-fmr-id header only if explicitly required
+    if (xFmrId) {
+      headers["x-fmr-id"] = xFmrId;
+    }
     try {
       const response = await fetch(`${this.baseURL}${url}`, {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
-      }); 
-      
+      });
+
       return this.handleResponse<T>(response);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      return Promise.reject({ message: err?.message || "Network error.", status: err?.status || 500, data: err });
+      return Promise.reject({
+        message: err?.message || "Network error.",
+        status: err?.status || 500,
+        data: err,
+      });
     }
   }
 
@@ -71,14 +83,23 @@ class ApiService {
     url: string,
     method: string,
     body?: FormData,
-    useAuth = false
+    useAuth = false,
+    xFmrId?: string
   ): Promise<T> {
-    const headers: HeadersInit = {}; // Browser handles Content-Type for FormData
+    const headers: HeadersInit = {};
+    console.log(useAuth);
+
+    // Browser handles Content-Type for FormData
     if (useAuth) {
-      const token = Cookies.get("accessToken"); 
-      
+      const token = Cookies.get("accessToken");
+
       if (!token) throw { message: "Auth token missing.", status: 401 };
       headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    // Add x-fmr-id header only if explicitly required
+    if (xFmrId) {
+      headers["x-fmr-id"] = xFmrId;
     }
 
     try {
@@ -90,19 +111,23 @@ class ApiService {
       return this.handleResponse<T>(response);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      return Promise.reject({ message: err?.message || "Network error.", status: err?.status || 500, data: err });
+      return Promise.reject({
+        message: err?.message || "Network error.",
+        status: err?.status || 500,
+        data: err,
+      });
     }
   }
 
   // JSON Request Methods
   get<T>(url: string): Promise<T> {
-    return this.makeJsonRequest<T>(url, "GET",undefined,true);
+    return this.makeJsonRequest<T>(url, "GET", undefined, true);
   }
   getWithoutAuth<T>(url: string): Promise<T> {
     return this.makeJsonRequest<T>(url, "GET", undefined, false);
   }
-  post<T>(url: string, body: unknown): Promise<T> {
-    return this.makeJsonRequest<T>(url, "POST", body,true);
+  post<T>(url: string, body: unknown, xFmrId?: string): Promise<T> {
+    return this.makeJsonRequest<T>(url, "POST", body, true,xFmrId);
   }
   postWithoutAuth<T>(url: string, body: unknown): Promise<T> {
     return this.makeJsonRequest<T>(url, "POST", body, false);
@@ -118,15 +143,24 @@ class ApiService {
   }
 
   // FormData Request Methods
-  postFormData<T>(url: string, formData: FormData, useAuth = false): Promise<T> {
-    return this.makeFormDataRequest<T>(url, "POST", formData, useAuth);
+  postFormData<T>(
+    url: string,
+    formData: FormData,
+    useAuth = false,
+    xFmrId?: string
+  ): Promise<T> {
+    return this.makeFormDataRequest<T>(url, "POST", formData, useAuth, xFmrId);
   }
 
   putFormData<T>(url: string, formData: FormData, useAuth = true): Promise<T> {
     return this.makeFormDataRequest<T>(url, "PUT", formData, useAuth);
   }
 
-  patchFormData<T>(url: string, formData: FormData, useAuth = true): Promise<T> {
+  patchFormData<T>(
+    url: string,
+    formData: FormData,
+    useAuth = true
+  ): Promise<T> {
     return this.makeFormDataRequest<T>(url, "PATCH", formData, useAuth);
   }
 }

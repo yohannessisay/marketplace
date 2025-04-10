@@ -1,8 +1,15 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table" 
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Pagination,
   PaginationContent,
@@ -10,143 +17,83 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
-import { Eye, Plus } from "lucide-react" 
-import Header from "@/components/layout/header"
-import { Link, useNavigate } from "react-router-dom"
-
-// Mock data for farmers
-const farmers = [
-  {
-    id: "F001",
-    name: "John Smith",
-    phone: "+1 (555) 123-4567",
-    address: "123 Farm Road, Countryside, CA",
-    crops: ["Corn", "Wheat", "Soybeans"],
-    farmSize: "150 acres",
-    joinDate: "2020-03-15",
-  },
-  {
-    id: "F002",
-    name: "Maria Garcia",
-    phone: "+1 (555) 234-5678",
-    address: "456 Harvest Lane, Ruralville, TX",
-    crops: ["Tomatoes", "Peppers", "Onions"],
-    farmSize: "75 acres",
-    joinDate: "2019-06-22",
-  },
-  {
-    id: "F003",
-    name: "Robert Johnson",
-    phone: "+1 (555) 345-6789",
-    address: "789 Tractor Drive, Farmington, IA",
-    crops: ["Apples", "Peaches", "Cherries"],
-    farmSize: "200 acres",
-    joinDate: "2021-01-10",
-  },
-  {
-    id: "F004",
-    name: "Sarah Williams",
-    phone: "+1 (555) 456-7890",
-    address: "101 Meadow Path, Agraria, KS",
-    crops: ["Cotton", "Peanuts"],
-    farmSize: "300 acres",
-    joinDate: "2018-09-05",
-  },
-  {
-    id: "F005",
-    name: "David Brown",
-    phone: "+1 (555) 567-8901",
-    address: "202 Silo Street, Cropville, NE",
-    crops: ["Rice", "Beans"],
-    farmSize: "125 acres",
-    joinDate: "2022-04-18",
-  },
-  {
-    id: "F006",
-    name: "Jennifer Lee",
-    phone: "+1 (555) 678-9012",
-    address: "303 Barn Avenue, Fieldtown, IL",
-    crops: ["Grapes", "Strawberries", "Blueberries"],
-    farmSize: "50 acres",
-    joinDate: "2020-07-30",
-  },
-  {
-    id: "F007",
-    name: "Michael Wilson",
-    phone: "+1 (555) 789-0123",
-    address: "404 Pasture Place, Ranchville, MT",
-    crops: ["Barley", "Oats"],
-    farmSize: "275 acres",
-    joinDate: "2019-11-12",
-  },
-  {
-    id: "F008",
-    name: "Lisa Martinez",
-    phone: "+1 (555) 890-1234",
-    address: "505 Harvest Highway, Growington, OR",
-    crops: ["Potatoes", "Carrots", "Beets"],
-    farmSize: "90 acres",
-    joinDate: "2021-08-25",
-  },
-  {
-    id: "F009",
-    name: "James Taylor",
-    phone: "+1 (555) 901-2345",
-    address: "606 Planting Path, Seedville, WA",
-    crops: ["Lettuce", "Spinach", "Kale"],
-    farmSize: "40 acres",
-    joinDate: "2022-02-14",
-  },
-  {
-    id: "F010",
-    name: "Patricia Anderson",
-    phone: "+1 (555) 012-3456",
-    address: "707 Irrigation Road, Watertown, ID",
-    crops: ["Sunflowers", "Canola"],
-    farmSize: "180 acres",
-    joinDate: "2018-05-20",
-  },
-]
+} from "@/components/ui/pagination";
+import { Eye, Plus } from "lucide-react";
+import Header from "@/components/layout/header";
+import { Link, useNavigate } from "react-router-dom";
+import { apiService } from "@/services/apiService";
+import { saveToLocalStorage } from "@/lib/utils";
 
 export default function FarmersTable() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [searchTerm, setSearchTerm] = useState("")
-const navigate=useNavigate();
-  // Filter farmers based on search term
-  const filteredFarmers = farmers.filter(
-    (farmer) =>
-      farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      farmer.phone.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  const itemsPerPage = 5
-  const totalPages = Math.ceil(filteredFarmers.length / itemsPerPage)
-
-  // Get current farmers
-  const indexOfLastFarmer = currentPage * itemsPerPage
-  const indexOfFirstFarmer = indexOfLastFarmer - itemsPerPage
-  const currentFarmers = filteredFarmers.slice(indexOfFirstFarmer, indexOfLastFarmer)
-
-  const handleViewFarmer = () => {
-    navigate("/home")
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  interface Farmer {
+    about_me: string;
+    address: string;
+    auth_id: string;
+    avatar_url_csv: string;
+    blocked_access: string;
+    created_by_agent_id: string;
+    deals_completed: number;
+    email: string;
+    first_name: string;
+    id: string;
+    identity_verified: boolean;
+    last_login_at: string;
+    last_name: string;
+    onboarding_stage: string;
+    phone: string;
+    rating: number;
+    telegram: string;
+    total_reviews: number;
+    trading_since: string;
+    verification_status: string;
   }
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page)
-  }
+  const [farmers, setFarmers] = useState<Farmer[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const navigate = useNavigate();
+
+  // Fetch farmers data from API
+  useEffect(() => {
+    const fetchFarmers = async () => {
+      try {
+        const response = await apiService().get<{
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: { sellers: any[]; pagination: any };
+        }>(
+          `/agent/farmers/management?search=${searchTerm}&page=${currentPage}&limit=5`
+        );
+        setFarmers(response.data.sellers || []);
+        setTotalPages(response.data.pagination.totalPages || 1);
+      } catch (error) {
+        console.error("Error fetching farmers:", error);
+      }
+    };
+
+    fetchFarmers();
+  }, [searchTerm, currentPage]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleViewFarmer = (data: Farmer) => {
+    saveToLocalStorage("farmer-info", data);
+    navigate("/home");
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
-
     <div className="container mx-auto">
       <Header></Header>
       <div className="flex justify-between items-center mb-6 mt-8">
         <h1 className="text-2xl font-bold">Farmers Registered By You</h1>
         <Link to={"/onboarding/step-one"}>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add New Farmer
-        </Button>
+          <Button className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add New Farmer
+          </Button>
         </Link>
       </div>
       <div className="mb-4">
@@ -157,8 +104,8 @@ const navigate=useNavigate();
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             value={searchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value)
-              setCurrentPage(1) // Reset to first page on search
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on search
             }}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -189,16 +136,18 @@ const navigate=useNavigate();
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentFarmers.map((farmer) => (
+            {farmers.map((farmer) => (
               <TableRow key={farmer.id}>
                 <TableCell>{farmer.id}</TableCell>
-                <TableCell>{farmer.name}</TableCell>
+                <TableCell>
+                  {farmer.first_name} {farmer.last_name}
+                </TableCell>
                 <TableCell>{farmer.phone}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleViewFarmer()}
+                    onClick={() => handleViewFarmer(farmer)}
                     className="flex items-center gap-1"
                   >
                     <Eye className="h-4 w-4" />
@@ -217,13 +166,20 @@ const navigate=useNavigate();
             <PaginationItem>
               <PaginationPrevious
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                className={
+                  currentPage === 1
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
               />
             </PaginationItem>
 
             {Array.from({ length: totalPages }).map((_, index) => (
               <PaginationItem key={index}>
-                <PaginationLink onClick={() => handlePageChange(index + 1)} isActive={currentPage === index + 1}>
+                <PaginationLink
+                  onClick={() => handlePageChange(index + 1)}
+                  isActive={currentPage === index + 1}
+                >
                   {index + 1}
                 </PaginationLink>
               </PaginationItem>
@@ -231,15 +187,19 @@ const navigate=useNavigate();
 
             <PaginationItem>
               <PaginationNext
-                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                onClick={() =>
+                  handlePageChange(Math.min(totalPages, currentPage + 1))
+                }
+                className={
+                  currentPage === totalPages
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
               />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
       </div>
-
-   
     </div>
-  )
+  );
 }

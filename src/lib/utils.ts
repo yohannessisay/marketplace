@@ -15,16 +15,22 @@ export function saveToLocalStorage(key: string, data: any) {
 
 export function getFromLocalStorage<T>(key: string, defaultValue: T): T {
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(key)
+    const stored = localStorage.getItem(key);
     if (stored) {
       try {
-        return JSON.parse(stored) as T
+        return JSON.parse(stored) as T;
       } catch (error) {
-        console.error("Error parsing stored data:", error)
-        return defaultValue
+        console.error(`Error parsing stored data for key "${key}":`, error);
+        return defaultValue;
       }
     }
   }
-  return defaultValue
+  return defaultValue;
+}
+
+export function removeFromLocalStorage(key: string) {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(key);
+  }
 }
 

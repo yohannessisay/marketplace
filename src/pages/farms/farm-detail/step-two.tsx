@@ -44,7 +44,8 @@ export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userProfile: any = getFromLocalStorage("userProfile", {});
   const { successMessage, errorMessage } = useNotification();
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles((prev) => [...prev, ...selectedFiles]);
@@ -96,33 +97,51 @@ export default function StepTwo() {
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
+      if (
+        (userProfile.currentUserStage === "farm_profile" ||
+          userProfile.userType === "agent") &&
+        (getFromLocalStorage("current-step", "") as string) === "farm_profile"
+      ) {
+        const formData = new FormData();
 
-      for (const key in data) {
-        if (Object.prototype.hasOwnProperty.call(data, key)) {
-          formData.append(key, String(data[key as keyof CoffeeCropsFormData]));
+        for (const key in data) {
+          if (Object.prototype.hasOwnProperty.call(data, key)) {
+            formData.append(
+              key,
+              String(data[key as keyof CoffeeCropsFormData])
+            );
+          }
         }
-      }
 
-      files.forEach((file) => {
-        formData.append("files", file);
-      });
-      const farmId = localStorage.getItem("farm-id");
-      if (farmId) {
-        formData.append("farm_id", farmId.replace(/"/g, ""));
-      }
-      const response: { success: boolean } = await apiService().postFormData(
-        "/onboarding/seller/coffee-details",
-        formData,
-        true
-      );
-      if (response && response.success) {
-        saveToLocalStorage("step-two", data);
-        navigation("/onboarding/step-three");
-        localStorage.setItem("current-step", "bank_information");
-        successMessage("Crop information saved successfully");
+        files.forEach((file) => {
+          formData.append("files", file);
+        });
+        const farmId = localStorage.getItem("farm-id");
+        if (farmId) {
+          formData.append("farm_id", farmId.replace(/"/g, ""));
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isAgent: any = getFromLocalStorage("userProfile", {});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const farmer: any = getFromLocalStorage("farmer-info", {});
+
+        const response: { success: boolean } = await apiService().postFormData(
+          "/onboarding/seller/coffee-details",
+          formData,
+          true,
+          isAgent.userType === "agent" && farmer ? farmer.id : ""
+        );
+
+        if (response && response.success) {
+          saveToLocalStorage("step-two", data);
+          navigation("/onboarding/step-three");
+          localStorage.setItem("current-step", JSON.stringify("bank_information"));
+          successMessage("Crop information saved successfully");
+        } else {
+          errorMessage("Failed to save farm details");
+        }
       } else {
-        errorMessage("Failed to save farm details");
+        navigation("/onboarding/step-three");
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -653,8 +672,8 @@ export default function StepTwo() {
                 Back
               </Button>
               <Button type="submit" disabled={isSubmitting} className=" my-4">
-              {isSubmitting ? "Saving..." : "Save and continue"}
-            </Button>
+                {isSubmitting ? "Saving..." : "Save and continue"}
+              </Button>
             </div>
           </form>
         </Form>

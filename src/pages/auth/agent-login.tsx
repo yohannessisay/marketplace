@@ -24,66 +24,48 @@ const AgentLogin = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const { successMessage, errorMessage } = useNotification();
-  const [loginCompleted, setLoginCompleted] = useState(false);
   const onSubmit = async (data: LoginFormInputs) => {
-    navigate("/agent/farmer-management");
-    // try {
-    //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    //   const response: any = await apiService().postWithoutAuth("/agent/auth/login", {
-    //     ...data,
-    //   });
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await apiService().postWithoutAuth(
+        "/agent/auth/login",
+        {
+          ...data,
+        }
+      );
 
-    //   if (response.success) {
-    //     successMessage("Login successful!");
+      if (response.success) {
+        successMessage("Login successful!");
 
-    //     Cookies.set("accessToken", response.data.access_token, {
-    //       expires: 1 / 48,
-    //     });
-    //     Cookies.set("refreshToken", response.data.refresh_token, {
-    //       expires: 1,
-    //     });
+        Cookies.set("accessToken", response.data.access_token, {
+          expires: 1 / 48,
+        });
+        Cookies.set("refreshToken", response.data.refresh_token, {
+          expires: 1,
+        });
 
-    //     const user = response.data.user;
-    //     const userProfile = {
-    //       email: user.email,
-    //       firstName: user.first_name,
-    //       gender: user.gender,
-    //       id: user.id,
-    //       image: user.image,
-    //       phone: user.phone,
-    //       userType: user.userType,
-    //       verificationStatus: user.verification_status,
-    //       onboardingStage: user.onboarding_stage,
-    //       lastName: user.last_name,
-    //       username: user.username,
-    //     };
+        const user = response.data.agent;
+        const userProfile = {
+          email: user.email,
+          firstName: user.first_name, 
+          id: user.id,
+          image: user.image,
+          phone: user.phone,
+          userType: "agent",
+          lastName: user.last_name, 
+        };
 
-    //     localStorage.setItem("userProfile", JSON.stringify(userProfile));
-    //     const firstTimeUser = localStorage.getItem("first_time_user");
+        localStorage.setItem("userProfile", JSON.stringify(userProfile));
 
-    //     if (firstTimeUser && firstTimeUser === "false") {
-    //       navigate("/home");
-    //     } else {
-    //       navigate("/first-time-user");
-    //     }
-    //     setLoginCompleted(true);
-    //   } else {
-    //     errorMessage("Credential error");
-    //   }
+        navigate("/agent/farmer-management");
+      } else {
+        errorMessage("Credential error");
+      }
 
-    //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // } catch (error: any) {
-    //   if (
-    //     error.data.error.details ==
-    //     "Email verification is required for this account"
-    //   ) {
-    //     localStorage.setItem("email", data.email);
-    //     navigate("/otp");
-    //     successMessage("Verify your email to continue");
-    //     return;
-    //   }
-    //   errorMessage(error);
-    // }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      errorMessage(error);
+    }
   };
 
   return (

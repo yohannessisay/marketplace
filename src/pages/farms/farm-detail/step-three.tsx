@@ -30,6 +30,8 @@ import { apiService } from "@/services/apiService";
 export default function StepThree() {
   const navigation = useNavigate();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userProfile: any = getFromLocalStorage("userProfile", {});
   const [isClient, setIsClient] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   // Initialize form with default values or values from local storage
@@ -59,26 +61,40 @@ export default function StepThree() {
 
   // Handle form submission
   const onSubmit = async (data: BankInfoFormData) => {
-    try {
-      setIsSubmitting(true);
-
-      const response: { success: boolean } = await apiService().post(
-        "/onboarding/seller/bank-information",
-        data
-      );
-      if (response && response.success) {
-        successMessage("Farm details saved successfully!");
-        saveToLocalStorage("step-three", data);
-        localStorage.setItem("current-step", "avatar_image");
-        navigation("/onboarding/step-two");
+    try { 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const currentStep:any=getFromLocalStorage("current-step", "");
+      if (
+        (userProfile.currentUserStage === "bank_information" ||
+          userProfile.userType === "agent") &&
+          currentStep === "bank_information"
+      ) {
+        setIsSubmitting(true);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isAgent: any = getFromLocalStorage("userProfile", {});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const farmer: any = getFromLocalStorage("farmer-info", {});
+        const response: { success: boolean } = await apiService().post(
+          "/onboarding/seller/bank-information",
+          data,
+          isAgent.userType === "agent" && farmer ? farmer.id : ""
+        );
+        if (response && response.success) {
+          successMessage("Farm details saved successfully!");
+          saveToLocalStorage("step-three", data);
+          localStorage.setItem("current-four", "avatar_image");
+          navigation("/onboarding/step-two");
+        } else {
+          errorMessage("Failed to save farm details");
+        }
+        setIsSubmitting(false);
       } else {
-        errorMessage("Failed to save farm details");
+        navigation("/onboarding/step-four");
       }
-      setIsSubmitting(false);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch {
       setIsSubmitting(false);
-      errorMessage("Failed to save farm details"); 
+      errorMessage("Failed to save farm details");
     }
   };
 

@@ -22,7 +22,11 @@ import {
   profileInfoSchema,
   type ProfileInfoFormData,
 } from "@/types/validation/seller-onboarding";
-import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
+import {
+  saveToLocalStorage,
+  getFromLocalStorage,
+  removeFromLocalStorage,
+} from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useNotification } from "@/hooks/useNotification";
 import Header from "@/components/layout/header";
@@ -35,7 +39,8 @@ export default function StepFour() {
   const { successMessage, errorMessage } = useNotification();
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Initialize form with default values or values from local storage
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userProfile: any = getFromLocalStorage("userProfile", {});
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
     defaultValues: {
@@ -76,45 +81,57 @@ export default function StepFour() {
 
   // Handle form submission
   const onSubmit = async (data: ProfileInfoFormData) => {
-    saveToLocalStorage("step-four", data);
-    setIsSubmitting(true);
-    // Combine all data from all steps
-    const stepOne = getFromLocalStorage("step-one", {});
-    const stepTwo = getFromLocalStorage("step-two", {});
-    const stepThree = getFromLocalStorage("step-three", {});
-
-    // Save complete form data
-    saveToLocalStorage("complete-form-data", {
-      farmDetails: stepOne,
-      cropDetails: stepTwo,
-      bankInfo: stepThree,
-      profileInfo: data,
-      profileImage: profileImage,
-    });
-    const formData = new FormData();
-
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        formData.append(key, String(data[key as keyof ProfileInfoFormData]));
-      }
-    }
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
     try {
-      const response: { success: boolean } = await apiService().postFormData(
-        "/onboarding/seller/profile",
-        formData,
-        true
-      );
-      if (response && response.success) {
-        successMessage("Registration completed successfully!");
-        navigation("/seller-dashboard");
-        localStorage.setItem("current-step", "completed");
-      } else {
-        errorMessage("Failed to save farm details");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const currentStep: any = getFromLocalStorage("current-step", "");
+      if (
+        (userProfile.currentUserStage === "avatar_image" ||
+          userProfile.userType === "agent") &&
+        currentStep === "avatar_image"
+      ) {
+        saveToLocalStorage("step-four", data);
+        setIsSubmitting(true);
+        // Combine all data from all steps
+
+        const formData = new FormData();
+
+        for (const key in data) {
+          if (Object.prototype.hasOwnProperty.call(data, key)) {
+            formData.append(
+              key,
+              String(data[key as keyof ProfileInfoFormData])
+            );
+          }
+        }
+        files.forEach((file) => {
+          formData.append("files", file);
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isAgent: any = getFromLocalStorage("userProfile", {});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const farmer: any = getFromLocalStorage("farmer-info", {});
+
+        const response: { success: boolean } = await apiService().postFormData(
+          "/onboarding/seller/profile",
+          formData,
+          true,
+          isAgent.userType === "agent" && farmer ? farmer.id : ""
+        );
+        if (response && response.success) {
+          removeFromLocalStorage("step-one");
+          removeFromLocalStorage("step-two");
+          removeFromLocalStorage("step-three");
+          removeFromLocalStorage("step-four");
+          // Save complete form data
+
+          successMessage("Registration completed successfully!");
+          navigation("/seller-dashboard");
+          localStorage.setItem("current-step", "completed");
+        } else {
+          errorMessage("Failed to save farm details");
+        }
+        setIsSubmitting(false);
       }
-      setIsSubmitting(false);
     } catch {
       setIsSubmitting(false);
       errorMessage("Registration failed!");

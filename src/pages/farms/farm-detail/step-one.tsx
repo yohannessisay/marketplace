@@ -104,15 +104,21 @@ export default function StepOne() {
       files.forEach((file) => {
         formData.append("files", file);
       });
-
-      if (currentUserStage === "farm_profile") {
+      const isAgent = parsed.userType;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const farmer: any = getFromLocalStorage("farmer-info", {});
+      if (
+        (currentUserStage === "farm_profile" || isAgent === "agent") &&
+        (getFromLocalStorage("current-step", "") as string) === "not_started"
+      ) {
         let response: { success: boolean; data?: { farm: { id: string } } } = {
           success: false,
         };
         response = await apiService().postFormData(
           "/onboarding/seller/farm-details",
           formData,
-          true
+          true,
+          isAgent === "agent" && farmer ? farmer.id : ""
         );
         if (response && response.success) {
           saveToLocalStorage("step-one", data);
@@ -121,7 +127,7 @@ export default function StepOne() {
           }
           navigate("/onboarding/step-two");
           successMessage("Farm details saved successfully!");
-          localStorage.setItem("current-step", "crops_to_sell");
+          localStorage.setItem("current-step", JSON.stringify("crops_to_sell"));
         } else {
           errorMessage("Failed to save farm details");
         }
