@@ -3,6 +3,7 @@ import { Suspense, lazy } from 'react';
 import FarmerManagement from './pages/agent/FarmerManagement';
 import CoffeeMarketplace from './pages/marketplace/CoffeeMarketplace';
 import CoffeeListingPage from './pages/marketplace/CoffeeListingPage';
+import MyOrdersPage from './pages/marketplace/MyOrdersPage';
 
 const Login = lazy(() => import('./pages/auth/Login'));
 const Signup = lazy(() => import('./pages/auth/Signup'));
@@ -64,6 +65,7 @@ function App() {
           <Route path="/14" element={<CoffeeMarketplace />} />
 
           <Route path="/15" element={<CoffeeListingPage />} />
+          <Route path="/16" element={<MyOrdersPage />} />
         </Routes>
       </Suspense>
     </Router>
