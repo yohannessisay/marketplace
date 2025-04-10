@@ -74,10 +74,47 @@ export default function FarmersTable() {
     fetchFarmers();
   }, [searchTerm, currentPage]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleViewFarmer = (data: Farmer) => {
-    saveToLocalStorage("farmer-info", data);
-    navigate("/home");
+  const handleViewFarmer = async (data: Farmer) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await apiService().post(
+      "/agent/farmers/agent-login-for-farmer",
+      {},
+      data.id
+    );
+
+    if (response && response.success) {
+      const farmerInfo = response.data.farmer;
+      saveToLocalStorage("farmer-profile", farmerInfo);
+
+      switch (farmerInfo.onboarding_stage) {
+        case "not_started":
+          navigate("/home");
+          saveToLocalStorage("current-stage", "not_started");
+          break;
+        case "farm_profile":
+          navigate("/onboarding/step-one");
+          saveToLocalStorage("current-stage", "farm_profile");
+          break;
+        case "crops_to_sell":
+          navigate("/onboarding/step-two");
+          saveToLocalStorage("current-stage", "crops_to_sell");
+          break;
+        case "bank_information":
+          navigate("/onboarding/step-three");
+          saveToLocalStorage("current-stage", "bank_information");
+          break;
+        case "avatar_image":
+          navigate("/onboarding/step-four");
+          saveToLocalStorage("current-stage", "avatar_image");
+          break;
+        case "completed":
+          navigate("/seller-dashboard");
+          saveToLocalStorage("current-stage", "completed");
+          break;
+        default:
+          break;
+      }
+    }
   };
 
   const handlePageChange = (page: number) => {

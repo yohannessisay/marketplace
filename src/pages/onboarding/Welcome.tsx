@@ -1,129 +1,194 @@
+"use client"
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import type React from "react"
+import { Link } from "react-router-dom"
+import { TractorIcon as Farm, Coffee, User, BadgeDollarSign, ChevronRight, Sparkles } from "lucide-react"
 
-// Import SVG icons or use the appropriate icon components
-// These are placeholders that would need to be replaced with actual icons
-const FarmIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-6 h-6 text-green-600" fill="currentColor">
-    <path d="M1 22h2v-2h18v2h2v-2h-2v-8.5c0-1.1-.9-2-2-2h-3V8c0-1.1-.9-2-2-2h-6c-1.1 0-2 .9-2 2v1.5H3c-1.1 0-2 .9-2 2V20H1v2zm18-10.5H5v-2h14v2z" />
-  </svg>
-);
-
-const CoffeeBeansIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-6 h-6 text-amber-700" fill="currentColor">
-    <path d="M2 21v-2h18v2H2zM20 8h-3V5h3v3zm-6-3h-4v3h4V5zM8 5H5v3h3V5zm12 3v3c0 1.1-.9 2-2 2h-4v-3h3V8h3zm-6 0v5H9V8h5zm-6 0v5H4c-1.1 0-2-.9-2-2V8h4z" />
-  </svg>
-);
-
-const ProfileIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-6 h-6 text-amber-600" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-  </svg>
-);
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 
 // Step item component for each onboarding step
 interface StepItemProps {
-  step: number;
-  title: string;
-  description: string;
-  Icon: React.ComponentType;
-  isLast?: boolean;
+  step: number
+  title: string
+  description: string
+  icon: React.ReactNode
+  isActive?: boolean
+  isCompleted?: boolean
+  isLast?: boolean
 }
 
-const StepItem: React.FC<StepItemProps> = ({ step, title, description, Icon, isLast = false }) => (
-  <div className="flex items-start mb-4">
-    <div className="flex flex-col items-center mr-4">
-      <div className="bg-white rounded-full p-2 border-2 border-green-200">
-        <Icon />
+const StepItem: React.FC<StepItemProps> = ({
+  step,
+  title,
+  description,
+  icon,
+  isActive = false,
+  isCompleted = false,
+  isLast = false,
+}) => (
+  <div className="flex items-start group">
+    <div className="flex flex-col items-center mr-6">
+      <div
+        className={`relative flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+          isCompleted
+            ? "bg-emerald-100 border-emerald-500 text-emerald-600"
+            : isActive
+              ? "bg-emerald-50 border-emerald-500 text-emerald-600"
+              : "bg-white border-slate-200 text-slate-400 group-hover:border-emerald-200 group-hover:text-emerald-500"
+        }`}
+      >
+        {icon}
+        {isCompleted && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-white"
+            >
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+        )}
       </div>
-      {!isLast && <div className="w-0.5 h-16 bg-gray-300 mt-2"></div>}
+      {!isLast && (
+        <div
+          className={`w-0.5 h-24 ${isCompleted ? "bg-emerald-500" : "bg-slate-200"} transition-all duration-300 mt-2`}
+        ></div>
+      )}
     </div>
-    <div className="flex flex-col mt-2">
-      <span className="text-green-500 text-sm font-medium">Step {step}</span>
-      <h3 className="font-semibold text-gray-800 mb-1">{title}</h3>
-      <p className="text-gray-600 text-sm">{description}</p>
+    <div className="flex flex-col pt-2.5">
+      <span className={`text-sm font-medium mb-1 ${isActive || isCompleted ? "text-emerald-600" : "text-slate-500"}`}>
+        Step {step}
+      </span>
+      <h3 className="font-semibold text-slate-800 mb-1.5 text-lg">{title}</h3>
+      <p className="text-slate-600 text-sm leading-relaxed max-w-md">{description}</p>
     </div>
   </div>
-);
+)
 
 const WelcomePage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-12">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Header */}
+      <header className="bg-white border-b py-4 px-6 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center">
-            <img src="/logo.png" alt="Afrovalley" className="h-8" />
-            <span className="text-green-700 font-bold text-xl ml-2">Afrovalley</span>
+            <div className="w-8 h-8 bg-emerald-600 rounded-md flex items-center justify-center text-white font-bold">
+              A
+            </div>
+            <span className="text-emerald-800 font-bold text-xl ml-2">Afrovalley</span>
           </div>
           <div className="flex items-center space-x-6">
-            <Link to="/dashboard" className="text-green-600 hover:text-green-700 text-sm">
+            <Link to="/dashboard" className="text-slate-600 hover:text-emerald-600 transition-colors">
               My dashboard
             </Link>
-            <Link to="/marketplace" className="text-green-600 hover:text-green-700 text-sm">
+            <Link to="/marketplace" className="text-slate-600 hover:text-emerald-600 transition-colors">
               Marketplace
             </Link>
-            <Link to="/chats" className="text-green-600 hover:text-green-700 text-sm">
+            <Link to="/chats" className="text-slate-600 hover:text-emerald-600 transition-colors">
               Chats
             </Link>
-            <div className="w-8 h-8 bg-gray-500 rounded-full"></div>
-          </div>
-        </header>
-
-        {/* Main content */}
-        <main className="max-w-xl mx-auto">
-          {/* Welcome message */}
-          <div className="text-center mb-10">
-            <div className="flex justify-center mb-4">
-              <span className="text-3xl">👋</span>
+            <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-800 font-medium">
+              HA
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Hello, Husen Abadega</h1>
-            <p className="text-gray-600">Congratulations with registration!</p>
           </div>
+        </div>
+      </header>
 
-          {/* Onboarding steps */}
-          <div className="bg-white rounded-lg p-8 mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Let's start to sell your crops</h2>
-            
-            <div className="space-y-2">
-              <StepItem 
-                step={1} 
-                title="Add Farms to your profile" 
-                description="Add one or few farms. Share key details to help buyers choose the best coffee crops"
-                Icon={FarmIcon}
-              />
-              
-              <StepItem 
-                step={2} 
-                title="Add your coffee crops for sell" 
-                description="Enter details about your coffee crop to ensure accurate and clear information"
-                Icon={CoffeeBeansIcon}
-              />
-              
-              <StepItem 
-                step={3} 
-                title="Upload your beautiful avatar" 
-                description="Add a clear profile picture to build trust and make your account easily recognizable"
-                Icon={ProfileIcon}
-                isLast={true}
-              />
+      {/* Main content */}
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        {/* Welcome message */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
+            <Sparkles className="h-8 w-8 text-emerald-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-slate-800 mb-3">Welcome, Husen Abadega!</h1>
+          <p className="text-slate-600 text-lg">
+            Congratulations on joining Afrovalley. Let's set up your account to start selling your premium coffee.
+          </p>
+        </div>
+
+        {/* Onboarding steps */}
+        <Card className="bg-white rounded-xl p-8 mb-10 shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-slate-800">Get Started with Afrovalley</h2>
+            <div className="bg-emerald-50 text-emerald-700 text-sm font-medium px-3 py-1 rounded-full">
+              4 steps to complete
             </div>
           </div>
 
-          {/* Action button */}
-          <div className="flex justify-center">
-            <Link 
-              to="/onboarding/step-one" 
-              className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 px-8 rounded-md transition-colors duration-200"
-            >
-              Lets do it!
-            </Link>
+          <div className="space-y-8">
+            <StepItem
+              step={1}
+              title="Add Farms to Your Profile"
+              description="Register your coffee farms with key details like location, size, and production capacity to help buyers find your premium coffee."
+              icon={<Farm className="h-5 w-5" />}
+              isActive={true}
+            />
+
+            <StepItem
+              step={2}
+              title="Add Your Coffee Crops for Sale"
+              description="Showcase your coffee varieties with detailed information about processing methods, flavor profiles, and available quantities."
+              icon={<Coffee className="h-5 w-5" />}
+            />
+
+            <StepItem
+              step={3}
+              title="Set Up Your Banking Information"
+              description="Connect your bank account to receive secure and timely payments when your coffee is purchased by buyers around the world."
+              icon={<BadgeDollarSign className="h-5 w-5" />}
+            />
+
+            <StepItem
+              step={4}
+              title="Complete Your Profile"
+              description="Add a professional profile picture and additional details about your farming practices to build trust with potential buyers."
+              icon={<User className="h-5 w-5" />}
+              isLast={true}
+            />
           </div>
-        </main>
-      </div>
+        </Card>
+
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <Link 
+              to="/onboarding/step-one">
+          <Button
+            size="lg"
+            className="  transition-all duration-200 flex items-center text-base"
+          >
+            Let's Get Started
+            <ChevronRight className="ml-2 h-5 w-5" />
+          </Button>
+          </Link>
+
+          <Button
+            variant="outline"
+            size="lg"
+            className="  rounded-lg transition-all duration-200 text-base"
+          >
+            I'll Do This Later
+          </Button>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="mt-16 py-6 border-t border-slate-100 text-center text-slate-500 text-sm">
+        <div className="max-w-4xl mx-auto px-6">
+          <p>© 2025 Afrovalley. Connecting Ethiopian coffee farmers with global markets.</p>
+        </div>
+      </footer>
     </div>
-  );
-};
+  )
+}
 
-export default WelcomePage;
+export default WelcomePage

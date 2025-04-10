@@ -8,10 +8,10 @@ export default function Header() {
           <h1 className="text-green-800 text-xl font-bold">Afrovalley</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <Link to="/dashboard" className="text-sm text-green-600 flex items-center">
+          <Link to="/seller-dashboard" className="text-sm text-green-600 flex items-center">
             <span className="mr-1">🏠</span> My dashboard
           </Link>
-          <Link to="/marketplace" className="text-sm text-gray-600 flex items-center">
+          <Link to="/market-place" className="text-sm text-gray-600 flex items-center">
             <span className="mr-1">🛒</span> Marketplace
           </Link>
           <Link to="/chats" className="text-sm text-gray-600 flex items-center">
