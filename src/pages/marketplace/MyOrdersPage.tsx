@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, Coffee, Heart, Package, ShoppingBag, Clock, Star, Info, ChevronDown, Filter } from 'lucide-react';
+import { Calendar, Coffee, Heart, Package, ShoppingBag, Clock, Star, Info, ChevronDown, Filter, User, ArrowRight, CheckCircle, Circle, AlertCircle, Truck, Send } from 'lucide-react';
 
+// Mock data from your original component
 const mockHistoricalOrders = [
   {
     id: "ord-001",
@@ -70,10 +71,14 @@ const mockCurrentOrders = [
     status: "confirmed",
     created_at: "2024-03-10T09:15:00Z",
     estimated_delivery: "2024-05-20",
+    order_placed: true,
+    contract_signed: true,
     coffee_processing_completed: true,
     coffee_ready_for_shipment: false,
     pre_shipment_sample_approved: true,
     container_loaded: false,
+    container_shipped: false,
+    delivered: false,
     seller: {
       first_name: "Kafa",
       last_name: "Cooperative"
@@ -97,11 +102,14 @@ const mockCurrentOrders = [
     total_amount: 6232.5,
     status: "pending",
     created_at: "2024-04-02T11:30:00Z",
+    order_placed: true,
     contract_signed: true,
     coffee_processing_completed: false,
     coffee_ready_for_shipment: false,
     pre_shipment_sample_approved: false,
     container_loaded: false,
+    container_shipped: false,
+    delivered: false,
     seller: {
       first_name: "Tadesse",
       last_name: "Abadega"
@@ -144,12 +152,10 @@ const mockFavorites = [
   }
 ];
 
-
-
 const MyOrdersPage = () => {
   // State
   const [activeTab, setActiveTab] = useState('current');
-  const [caseSelectorOpen, setCaseSelectorOpen] = useState(false);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
   
   // Get orders based on active tab
   const getItems = () => {
@@ -165,28 +171,68 @@ const MyOrdersPage = () => {
     }
   };
 
-  // Render order status steps
-  const renderOrderStatus = (order: any) => {
+  // Toggle order expansion
+  const toggleOrderExpansion = (orderId) => {
+    if (expandedOrderId === orderId) {
+      setExpandedOrderId(null);
+    } else {
+      setExpandedOrderId(orderId);
+    }
+  };
+
+  // Render order status progress
+  const renderOrderProgress = (order) => {
     const steps = [
-      { label: 'Contract Signed', completed: order.contract_signed },
-      { label: 'Processing Completed', completed: order.coffee_processing_completed },
-      { label: 'Sample Approved', completed: order.pre_shipment_sample_approved },
-      { label: 'Ready for Shipment', completed: order.coffee_ready_for_shipment },
-      { label: 'Container Loaded', completed: order.container_loaded }
+      { key: 'order_placed', label: 'Order Placed', completed: order.order_placed },
+      { key: 'contract_signed', label: 'Contract Signed', completed: order.contract_signed },
+      { key: 'coffee_processing_completed', label: 'Processing Completed', completed: order.coffee_processing_completed },
+      { key: 'coffee_ready_for_shipment', label: 'Ready for Shipment', completed: order.coffee_ready_for_shipment },
+      { key: 'pre_shipment_sample_approved', label: 'Sample Approved', completed: order.pre_shipment_sample_approved },
+      { key: 'container_loaded', label: 'Container Loaded', completed: order.container_loaded },
+      { key: 'container_shipped', label: 'Shipped', completed: order.container_shipped },
+      { key: 'delivered', label: 'Delivered', completed: order.delivered }
     ];
+
+    // Find the current step (first incomplete step)
+    const currentStepIndex = steps.findIndex(step => !step.completed);
     
     return (
-      <div className="mt-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">Order Progress</h4>
-        <div className="flex items-center justify-between w-full">
-          {steps.map((step, index) => (
-            <div key={index} className="flex flex-col items-center">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${step.completed ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                {step.completed ? '✓' : index + 1}
+      <div className="mt-6 bg-gray-50 p-4 rounded-lg">
+        <h4 className="text-sm font-semibold text-gray-800 mb-4">Order Progress</h4>
+        <div className="space-y-4">
+          {steps.map((step, index) => {
+            // Determine the step status
+            let statusClass = "";
+            let StatusIcon = Circle;
+            
+            if (step.completed) {
+              statusClass = "text-green-600";
+              StatusIcon = CheckCircle;
+            } else if (index === currentStepIndex) {
+              statusClass = "text-blue-600";
+              StatusIcon = AlertCircle;
+            } else {
+              statusClass = "text-gray-300";
+              StatusIcon = Circle;
+            }
+            
+            return (
+              <div key={step.key} className="flex items-center">
+                <div className={`${statusClass}`}>
+                  <StatusIcon className="h-5 w-5" />
+                </div>
+                <div className={`ml-3 ${step.completed ? 'text-gray-800' : index === currentStepIndex ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
+                  {step.label}
+                </div>
+                {step.completed && index < steps.length - 1 && (
+                  <div className="ml-auto text-xs text-green-600 font-medium">Completed</div>
+                )}
+                {!step.completed && index === currentStepIndex && (
+                  <div className="ml-auto text-xs text-blue-600 font-medium">In Progress</div>
+                )}
               </div>
-              <div className="text-xs text-center max-w-[80px]">{step.label}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -196,117 +242,199 @@ const MyOrdersPage = () => {
   const OrderItem = ({ item }) => {
     const isOrderTab = activeTab === 'current' || activeTab === 'historical';
     const isFavorite = activeTab === 'favorites';
+    const isExpanded = expandedOrderId === item.id;
     
     return (
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-4 border border-gray-100">
+      <div className="bg-white rounded-lg shadow p-5 mb-4 border border-gray-100 transition-all duration-200 hover:shadow-md">
         <div className="flex justify-between items-start">
-          <div>
-            <div className="flex items-center">
+          <div className="flex-1">
+            <div className="flex items-center mb-2">
               <h3 className="font-bold text-lg text-gray-800">{item.listing?.coffee_variety || item.coffee_variety}</h3>
               {(item.listing?.is_organic || item.is_organic) && (
                 <span className="ml-2 text-xs font-semibold bg-green-500 text-white px-2 py-0.5 rounded-full">Organic</span>
               )}
-              <div className="ml-2 flex items-center">
-                <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                <span className="ml-1 text-sm text-gray-700">{item.listing?.cup_score || item.cup_score}</span>
-              </div>
             </div>
             
-            <p className="text-sm text-gray-600 mt-1">
-              {item.listing?.farm_name || item.farm_name} • {item.listing?.region || item.region}
-            </p>
+            <div className="flex items-center mb-3">
+              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+              <span className="ml-1 text-sm text-gray-700 mr-3">{item.listing?.cup_score || item.cup_score}</span>
+              <span className="text-sm text-gray-600">
+                {item.listing?.farm_name || item.farm_name} • {item.listing?.region || item.region}
+              </span>
+            </div>
           </div>
           
           <div className="text-right">
             <div className="font-bold text-lg text-green-600">
-              ${isOrderTab ? item.unit_price : item.price_per_kg}/kg
+              ${isOrderTab ? item.unit_price.toFixed(2) : item.price_per_kg.toFixed(2)}/kg
             </div>
-            {isOrderTab && (
-              <p className="text-sm text-gray-600">{item.quantity_kg} kg</p>
-            )}
-            {isFavorite && (
-              <p className="text-sm text-gray-600">{item.quantity_available} kg available</p>
-            )}
+            <div className="text-sm text-gray-600">
+              {isOrderTab ? `${item.quantity_kg.toLocaleString()} kg` : `${item.quantity_available.toLocaleString()} kg available`}
+            </div>
           </div>
         </div>
         
-        <div className="flex items-center mt-3 text-sm text-gray-500">
-          <Coffee className="h-4 w-4 mr-1" />
-          <span>{item.listing?.processing_method || item.processing_method}</span>
-          <span className="mx-2">•</span>
-          <Package className="h-4 w-4 mr-1" />
-          <span>{item.listing?.bean_type || item.bean_type}</span>
+        <div className="flex flex-wrap items-center mt-2 text-sm text-gray-500 gap-3">
+          <div className="flex items-center">
+            <Coffee className="h-4 w-4 mr-1" />
+            <span>{item.listing?.processing_method || item.processing_method}</span>
+          </div>
+          <div className="flex items-center">
+            <Package className="h-4 w-4 mr-1" />
+            <span>{item.listing?.bean_type || item.bean_type}</span>
+          </div>
+          {isOrderTab && (
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              <span>Ordered: {new Date(item.created_at).toLocaleDateString()}</span>
+            </div>
+          )}
         </div>
         
         {isOrderTab && (
-          <>
-            <div className="mt-3 flex justify-between items-center">
-              <div className="flex items-center text-sm">
-                <Calendar className="h-4 w-4 mr-1 text-gray-500" />
-                <span className="text-gray-500">
-                  Ordered: {new Date(item.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex items-center">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                  item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                  item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                </span>
-              </div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-1 text-gray-500" />
+              <span className="text-sm text-gray-700 font-medium">
+                {item.seller.first_name} {item.seller.last_name}
+              </span>
+              <a href={`/sellers/${item.seller.first_name.toLowerCase()}-${item.seller.last_name.toLowerCase()}`} 
+                className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium">
+                View Seller
+              </a>
             </div>
             
-            <div className="mt-3 border-t border-gray-100 pt-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Total Amount:</span>
-                <span className="font-medium">${item.total_amount.toLocaleString()}</span>
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+              </span>
+              <button 
+                onClick={() => toggleOrderExpansion(item.id)}
+                className="text-gray-500 hover:text-gray-700 transition-colors bg-white"
+              >
+                <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Expandable section with order details */}
+        {isOrderTab && isExpanded && (
+          <div className="mt-4 border-t border-gray-100 pt-4 animate-fadeIn">
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-800 mb-2">Order Details</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Order ID:</span>
+                    <span className="font-medium">{item.id}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Unit Price:</span>
+                    <span className="font-medium">${item.unit_price.toFixed(2)}/kg</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Quantity:</span>
+                    <span className="font-medium">{item.quantity_kg.toLocaleString()} kg</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Total Amount:</span>
+                    <span className="font-bold text-green-600">${item.total_amount.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
               
-              <div className="flex justify-between text-sm mt-1">
-                <span className="text-gray-500">Seller:</span>
-                <span>{item.seller.first_name} {item.seller.last_name}</span>
+              <div>
+                <h4 className="text-sm font-semibold text-gray-800 mb-2">Seller Information</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Name:</span>
+                    <span className="font-medium">{item.seller.first_name} {item.seller.last_name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Farm:</span>
+                    <span className="font-medium">{item.listing.farm_name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Region:</span>
+                    <span className="font-medium">{item.listing.region}</span>
+                  </div>
+                </div>
               </div>
             </div>
             
-            {activeTab === 'current' && renderOrderStatus(item)}
+            {/* Render order progress for current orders */}
+            {activeTab === 'current' && renderOrderProgress(item)}
             
             <div className="mt-4 flex justify-end space-x-3">
               {activeTab === 'current' && (
                 <>
-                  <button className="text-sm bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded">
+                  <button className="text-sm bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors">
                     Contact Seller
                   </button>
-                  <button className="text-sm bg-gray-800 text-white px-3 py-1 rounded">
-                    View Details
+                  <button className="text-sm bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors flex items-center">
+                    <span>View Details</span>
+                    <ArrowRight className="ml-1 h-4 w-4" />
                   </button>
                 </>
               )}
               {activeTab === 'historical' && (
                 <>
-                  <button className="text-sm bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded">
+                  <button className="text-sm bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors">
                     Review Order
                   </button>
-                  <button className="text-sm bg-green-600 text-white px-3 py-1 rounded">
-                    Order Again
-                  </button>
-                </>
-              )}
-              {activeTab === 'favorites' && (
-                <>
-                  <button className="text-sm bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded">
-                    Remove
-                  </button>
-                  <button className="text-sm bg-green-600 text-white px-3 py-1 rounded">
-                    Place Order
+                  <button className="text-sm bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center">
+                    <span>Order Again</span>
+                    <ArrowRight className="ml-1 h-4 w-4" />
                   </button>
                 </>
               )}
             </div>
-          </>
+          </div>
         )}
+        
+        {/* Actions for favorites */}
+        {isFavorite && (
+          <div className="mt-4 flex justify-end space-x-3">
+            <button className="text-sm bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors">
+              Remove
+            </button>
+            <button className="text-sm bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center">
+              <span>Place Order</span>
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Empty state component
+  const EmptyState = () => {
+    return (
+      <div className="bg-white rounded-lg shadow p-8 text-center">
+        <div className="flex justify-center">
+          <Info className="h-12 w-12 text-gray-400" />
+        </div>
+        <h3 className="mt-4 text-lg font-medium text-gray-900">
+          No {activeTab === 'current' ? 'active orders' : 
+            activeTab === 'historical' ? 'order history' : 'favorites'} found
+        </h3>
+        <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+          {activeTab === 'favorites' 
+            ? 'Browse the marketplace to find and save your favorite coffee offerings.'
+            : 'Head to the marketplace to place your first order of premium Ethiopian coffee.'}
+        </p>
+        <div className="mt-6">
+          <a href="/marketplace" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 transition-colors">
+            Browse Marketplace
+          </a>
+        </div>
       </div>
     );
   };
@@ -314,63 +442,62 @@ const MyOrdersPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="text-green-700 font-bold text-xl">Afrovalley</div>
-          <nav className="hidden md:flex space-x-6">
-            <a href="#" className="text-gray-600 hover:text-gray-900">My Dashboard</a>
-            <a href="#" className="text-green-700 font-medium">Marketplace</a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">Chats</a>
+          <a href="/" className="text-green-600 font-bold text-xl">Afrovalley</a>
+          <nav className="hidden md:flex space-x-8">
+            <a href="/dashboard" className="text-gray-600 hover:text-gray-900 transition-colors">My Dashboard</a>
+            <a href="/marketplace" className="text-green-700 font-medium">Marketplace</a>
+            <a href="/chats" className="text-gray-600 hover:text-gray-900 transition-colors">Chats</a>
           </nav>
-          <div className="h-8 w-8 bg-gray-600 rounded-full"></div>
+          <div className="h-8 w-8 bg-gray-500 rounded-full"></div>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 max-w-5xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">My Orders</h1>
-          
         </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm mb-6">
           <div className="flex border-b border-gray-200">
             <button
-              className={`flex-1 py-3 text-center font-medium bg-white ${
+              className={`flex-1 py-4 text-center font-medium bg-white ${
                 activeTab === 'current' 
                 ? 'text-green-600 border-b-2 border-green-600' 
                 : 'text-gray-500 hover:text-gray-700'
-              }`}
+              } transition-colors`}
               onClick={() => setActiveTab('current')}
             >
-              <div className="flex items-center justify-center bg-white">
+              <div className="flex items-center justify-center">
                 <Clock className="h-4 w-4 mr-2" />
                 Current Orders
               </div>
             </button>
             <button
-              className={`flex-1 py-3 text-center font-medium bg-white ${
+              className={`flex-1 py-4 text-center font-medium bg-white ${
                 activeTab === 'historical' 
                 ? 'text-green-600 border-b-2 border-green-600' 
                 : 'text-gray-500 hover:text-gray-700'
-              }`}
+              } transition-colors`}
               onClick={() => setActiveTab('historical')}
             >
-              <div className="flex items-center justify-center bg-white">
+              <div className="flex items-center justify-center">
                 <ShoppingBag className="h-4 w-4 mr-2" />
                 Order History
               </div>
             </button>
             <button
-              className={`flex-1 py-3 text-center font-medium bg-white ${
+              className={`flex-1 py-4 text-center font-medium bg-white ${
                 activeTab === 'favorites' 
                 ? 'text-green-600 border-b-2 border-green-600' 
                 : 'text-gray-500 hover:text-gray-700'
-              }`}
+              } transition-colors`}
               onClick={() => setActiveTab('favorites')}
             >
-              <div className="flex items-center justify-center bg-white">
+              <div className="flex items-center justify-center">
                 <Heart className="h-4 w-4 mr-2" />
                 Favorites
               </div>
@@ -378,44 +505,26 @@ const MyOrdersPage = () => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Summary Bar */}
         <div className="flex justify-between items-center mb-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-600 font-medium">
             {getItems().length} {activeTab === 'current' ? 'Active Orders' : 
               activeTab === 'historical' ? 'Past Orders' : 'Favorited Items'}
           </p>
-          <button className="flex items-center text-sm text-gray-700 bg-white border border-gray-300 rounded px-3 py-2">
-            <Filter className="h-4 w-4 mr-1" />
+          <button className="flex items-center text-sm text-gray-700 bg-white border border-gray-300 rounded-md px-3 py-2 hover:bg-gray-50 transition-colors">
+            <Filter className="h-4 w-4 mr-2" />
             Filter
           </button>
         </div>
 
         {/* Order/Favorite items */}
-        <div>
+        <div className="space-y-5">
           {getItems().length > 0 ? (
             getItems().map(item => (
               <OrderItem key={item.id} item={item} />
             ))
           ) : (
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <div className="flex justify-center">
-                <Info className="h-12 w-12 text-gray-400" />
-              </div>
-              <h3 className="mt-2 text-lg font-medium text-gray-900">
-                No {activeTab === 'current' ? 'active orders' : 
-                  activeTab === 'historical' ? 'order history' : 'favorites'} found
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {activeTab === 'favorites' 
-                  ? 'Browse the marketplace to find and save your favorite coffee offerings.'
-                  : 'Head to the marketplace to place your first order of premium Ethiopian coffee.'}
-              </p>
-              <div className="mt-6">
-                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
-                  Browse Marketplace
-                </button>
-              </div>
-            </div>
+            <EmptyState />
           )}
         </div>
       </main>
