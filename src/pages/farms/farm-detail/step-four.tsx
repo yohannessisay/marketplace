@@ -34,6 +34,7 @@ export default function StepFour() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const { successMessage, errorMessage } = useNotification();
   const [files, setFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // Initialize form with default values or values from local storage
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
@@ -76,7 +77,7 @@ export default function StepFour() {
   // Handle form submission
   const onSubmit = async (data: ProfileInfoFormData) => {
     saveToLocalStorage("step-four", data);
-
+    setIsSubmitting(true);
     // Combine all data from all steps
     const stepOne = getFromLocalStorage("step-one", {});
     const stepTwo = getFromLocalStorage("step-two", {});
@@ -106,22 +107,17 @@ export default function StepFour() {
         formData,
         true
       );
-      // if (response && response.success) {
-      //   successMessage("Registration completed successfully!");
-      //   navigation("/seller-dashboard");
-      //   localStorage.setItem("current-step", "completed");
-      // } else {
-      //   errorMessage("Failed to save farm details");
-      // }
-      successMessage("Registration completed successfully!");
-      navigation("/seller-dashboard");
-      localStorage.setItem("current-step", "completed");
-      saveToLocalStorage("step-four", data);
-    } catch (error) {
-      successMessage("Registration completed successfully!");
-      navigation("/seller-dashboard");
-      localStorage.setItem("current-step", "completed");
-      saveToLocalStorage("step-four", data);
+      if (response && response.success) {
+        successMessage("Registration completed successfully!");
+        navigation("/seller-dashboard");
+        localStorage.setItem("current-step", "completed");
+      } else {
+        errorMessage("Failed to save farm details");
+      }
+      setIsSubmitting(false);
+    } catch {
+      setIsSubmitting(false);
+      errorMessage("Registration failed!");
     }
   };
 
@@ -265,7 +261,9 @@ export default function StepFour() {
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button type="submit">Complete Registration</Button>
+              <Button type="submit" disabled={isSubmitting} className=" my-4">
+                {isSubmitting ? "Registering..." : "Complete Registration"}
+              </Button>
             </div>
           </form>
         </Form>

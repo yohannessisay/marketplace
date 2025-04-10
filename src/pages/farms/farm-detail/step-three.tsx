@@ -41,10 +41,10 @@ export default function StepThree() {
       account_number: "",
       branch_name: "",
       is_primary: "yes",
-      swift_code:""
+      swift_code: "",
     },
   });
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // Load saved data from local storage on component mount
   useEffect(() => {
     setIsClient(true);
@@ -60,8 +60,8 @@ export default function StepThree() {
   // Handle form submission
   const onSubmit = async (data: BankInfoFormData) => {
     try {
-     
-      
+      setIsSubmitting(true);
+
       const response: { success: boolean } = await apiService().post(
         "/onboarding/seller/bank-information",
         data
@@ -69,22 +69,16 @@ export default function StepThree() {
       if (response && response.success) {
         successMessage("Farm details saved successfully!");
         saveToLocalStorage("step-three", data);
-        localStorage.setItem("current-step","avatar_image")
+        localStorage.setItem("current-step", "avatar_image");
         navigation("/onboarding/step-two");
       } else {
-        
         errorMessage("Failed to save farm details");
       }
-     
+      setIsSubmitting(false);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      successMessage("Bank information saved successfully!");
-      saveToLocalStorage("step-three", data);
-      localStorage.setItem("current-step","avatar_image")
-      navigation("/onboarding/step-four");
-      // errorMessage(
-      //   error?.message || "An error occurred while saving farm details"
-      // );
+    } catch {
+      setIsSubmitting(false);
+      errorMessage("Failed to save farm details"); 
     }
   };
 
@@ -182,7 +176,7 @@ export default function StepThree() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                  <FormField
+                    <FormField
                       control={form.control}
                       name="swift_code"
                       render={({ field }) => (
@@ -239,7 +233,9 @@ export default function StepThree() {
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button type="submit">Save and continue</Button>
+              <Button type="submit" disabled={isSubmitting} className=" my-4">
+                {isSubmitting ? "Saving..." : "Save and continue"}
+              </Button>
             </div>
           </form>
         </Form>

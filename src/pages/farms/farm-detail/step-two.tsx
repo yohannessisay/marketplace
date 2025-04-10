@@ -26,7 +26,7 @@ import {
   type CoffeeCropsFormData,
 } from "@/types/validation/seller-onboarding";
 import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -38,36 +38,18 @@ import {
 import { FileUpload } from "@/components/common/file-upload";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
+import { apiService } from "@/services/apiService";
 
 export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
-  const [gradingReport, setGradingReport] = useState<File | null>(null);
-  const [photos, setPhotos] = useState<File[]>([]);
   const [files, setFiles] = useState<File[]>([]);
 
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   const handleFilesSelected = (selectedFiles: File[]) => {
-    setFiles(selectedFiles);
-    setUploadSuccess(false);
+    setFiles((prev) => [...prev, ...selectedFiles]);
   };
-
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-
-    setIsUploading(true);
-
-    // Simulate upload delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // In a real application, you would upload the files to your server here
-    console.log("Files to upload:", files);
-
-    setIsUploading(false);
-    setUploadSuccess(true);
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initialize form with default values or values from local storage
   const form = useForm<CoffeeCropsFormData>({
@@ -110,30 +92,45 @@ export default function StepTwo() {
     }
   }, [form]);
 
-  // Handle grading report upload
-  const handleGradingReportUpload = (file: File) => {
-    setGradingReport(file);
-  };
-
-  // Handle photo upload
-  const handlePhotoUpload = (file: File) => {
-    setPhotos([...photos, file]);
-  };
-
   // Handle form submission
-  const onSubmit = (data: CoffeeCropsFormData) => {
-    // const response: { success: boolean } = await apiService().post("/onboarding/seller/coffee-details", data);
-    // if (response && response.success) {
-    //   saveToLocalStorage("step-one", data);
-    //   navigate("/onboarding/step-two");
-    // }else{
-    //   errorMessage("Failed to save farm details");
-    // } 
+  const onSubmit = async (data: CoffeeCropsFormData) => {
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
 
-    saveToLocalStorage("step-two", data);
-    navigation("/onboarding/step-three");
-    localStorage.setItem("current-step", "bank_information");
-    successMessage("Crop information saved successfully");
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          formData.append(key, String(data[key as keyof CoffeeCropsFormData]));
+        }
+      }
+
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+      const farmId = localStorage.getItem("farm-id");
+      if (farmId) {
+        formData.append("farm_id", farmId.replace(/"/g, ""));
+      }
+      const response: { success: boolean } = await apiService().postFormData(
+        "/onboarding/seller/coffee-details",
+        formData,
+        true
+      );
+      if (response && response.success) {
+        saveToLocalStorage("step-two", data);
+        navigation("/onboarding/step-three");
+        localStorage.setItem("current-step", "bank_information");
+        successMessage("Crop information saved successfully");
+      } else {
+        errorMessage("Failed to save farm details");
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      errorMessage(
+        error?.message || "An error occurred while saving farm details"
+      );
+      setIsSubmitting(false);
+    }
   };
 
   // Go back to previous step
@@ -655,7 +652,9 @@ export default function StepTwo() {
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button type="submit">Save and continue</Button>
+              <Button type="submit" disabled={isSubmitting} className=" my-4">
+              {isSubmitting ? "Saving..." : "Save and continue"}
+            </Button>
             </div>
           </form>
         </Form>

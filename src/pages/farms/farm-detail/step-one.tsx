@@ -43,6 +43,7 @@ export default function StepOne() {
   const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const userProfile = localStorage.getItem("userProfile");
   const parsed = userProfile ? JSON.parse(userProfile) : null;
   const currentUserStage = parsed?.onboardingStage;
@@ -90,6 +91,7 @@ export default function StepOne() {
   }, [reset]);
 
   const onSubmit = async (data: FarmDetailsFormData) => {
+    setIsSubmitting(true);
     try {
       const formData = new FormData();
 
@@ -102,38 +104,46 @@ export default function StepOne() {
       files.forEach((file) => {
         formData.append("files", file);
       });
-      let response: { success: boolean } = { success: false };
+
       if (currentUserStage === "farm_profile") {
+        let response: { success: boolean; data?: { farm: { id: string } } } = {
+          success: false,
+        };
         response = await apiService().postFormData(
           "/onboarding/seller/farm-details",
           formData,
           true
         );
+        if (response && response.success) {
+          saveToLocalStorage("step-one", data);
+          if (response.data?.farm?.id) {
+            saveToLocalStorage("farm-id", response.data.farm.id);
+          }
+          navigate("/onboarding/step-two");
+          successMessage("Farm details saved successfully!");
+          localStorage.setItem("current-step", "crops_to_sell");
+        } else {
+          errorMessage("Failed to save farm details");
+        }
       } else {
         // response = await apiService().putFormData(
         //   "/onboarding/seller/farm-details",
         //   formData,
         //   true
         // );
-        response = { success: true };
-      }
-
-      if (response && response.success) {
-        saveToLocalStorage("step-one", data);
         navigate("/onboarding/step-two");
-        successMessage("Farm details saved successfully!");
-        localStorage.setItem("current-step","crops_to_sell")
-      } else {
-        errorMessage("Failed to save farm details");
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) { 
 
+      setIsSubmitting(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       errorMessage(
         error?.message || "An error occurred while saving farm details"
       );
+      setIsSubmitting(false);
     } finally {
       saveToLocalStorage("step-one", data);
+      setIsSubmitting(false);
     }
   };
 
@@ -155,7 +165,7 @@ export default function StepOne() {
             <div className="mb-2">
               <h2 className="text-green-600 font-medium">Step 1</h2>
               <h3 className="text-xl text-gray-900 font-semibold">
-                Upload your farm documents 
+                Upload your farm documents
               </h3>
               <p className="text-sm text-gray-600">
                 Upload a clear government registration and land rights document.
@@ -554,7 +564,9 @@ export default function StepOne() {
 
           {/* Navigation Buttons */}
           <div className="flex justify-end mb-8">
-            <Button type="submit">Save and continue</Button>
+            <Button type="submit" disabled={isSubmitting} className=" my-4">
+              {isSubmitting ? "Saving..." : "Save and continue"}
+            </Button>
           </div>
         </form>
       </Form>

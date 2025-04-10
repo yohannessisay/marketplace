@@ -69,8 +69,10 @@ export default function SignupPage() {
       ...data,
       userType: "buyer",
     });
+
     if (response.success) {
       successMessage("Registration successful! Please verify your email.");
+      localStorage.setItem("userProfile", JSON.stringify(data));
       navigate("/verification");
     } else {
       errorMessage("Something went wrong");
@@ -88,6 +90,7 @@ export default function SignupPage() {
       });
       if (response.success) {
         successMessage("Registration successful! Please verify your email.");
+        localStorage.setItem("userProfile", JSON.stringify(data));
         navigate("/verification");
       } else {
         setIsSubmitting(false);

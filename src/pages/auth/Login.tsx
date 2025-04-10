@@ -11,6 +11,7 @@ import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { saveToLocalStorage } from "@/lib/utils";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 const Login = () => {
@@ -56,11 +57,26 @@ const Login = () => {
           lastName: user.last_name,
           username: user.username,
         };
+        let redirectTo = "/home";
+        switch (userProfile?.onboardingStage) {
+          case "crops_to_sell":
+            redirectTo = "/onboarding/step-two";
+            break;
+          case "bank_information":
+            redirectTo = "/onboarding/step-three";
+            break;
+          case "avatar_image":
+            redirectTo = "/onboarding/step-four";
+            break;
+          case "completed":
+            redirectTo = "/seller-dashboard";
+            break;
+          default:
+            break;
+        }
 
-        localStorage.setItem("userProfile", JSON.stringify(userProfile));
-
-        navigate("/home");
-
+        navigate(redirectTo);
+        saveToLocalStorage("userProfile", userProfile);
         setLoginCompleted(true);
       } else {
         errorMessage("Credential error");
@@ -72,7 +88,6 @@ const Login = () => {
         error.data.error.details ==
         "Email verification is required for this account"
       ) {
-        localStorage.setItem("email", data.email);
         navigate("/otp");
         successMessage("Verify your email to continue");
         return;

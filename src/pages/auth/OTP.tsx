@@ -37,22 +37,22 @@ export default function OTPInputPage() {
   const { successMessage, errorMessage } = useNotification();
   const onSubmit = async (data: OTPValidationType) => {
     try {
+      const userProfile = localStorage.getItem("userProfile");
+      const email = userProfile ? JSON.parse(userProfile).email : "";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: any = await apiService().postWithoutAuth(
         "/auth/verify-email",
         {
           ...data,
-          email: localStorage.getItem("email"),
+          email: email
         }
-      );
-      console.log(response);
+      ); 
       if (response.success) {
         successMessage("OTP verified successfully!");
         navigate("/login");
       } else {
         errorMessage("Invalid OTP. Please try again.");
-      }
-      console.log(data);
+      } 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (
