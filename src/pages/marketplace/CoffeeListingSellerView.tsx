@@ -11,8 +11,6 @@ const CoffeeListingSellerView = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeMessageThread, setActiveMessageThread] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   
   // Mock data - in a real app this would come from an API call
   const listing = {
@@ -392,20 +390,13 @@ const CoffeeListingSellerView = () => {
               </span>
               
               <button 
-                onClick={() => setShowEditModal(true)}
                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
-                <Edit size={16} className="mr-1" />
+                
                 Edit Listing
               </button>
               
-              <button 
-                onClick={() => setShowDeleteConfirmModal(true)}
-                className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                <Trash size={16} className="mr-1" />
-                Delete
-              </button>
+
             </div>
           </div>
         </div>
@@ -685,28 +676,14 @@ const CoffeeListingSellerView = () => {
                   
                   <div className="mt-6 space-y-3">
                     <button 
-                      onClick={() => setShowEditModal(true)}
                       className="w-full bg-green-600 text-white py-2 px-4 border border-transparent rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                     >
                       Edit Listing
                     </button>
                     
-                    {listing.status === 'active' ? (
-                      <button className="w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                        Pause Listing
-                      </button>
-                    ) : (
-                      <button className="w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                        Activate Listing
-                      </button>
-                    )}
+
                     
-                    <button 
-                      onClick={() => setShowDeleteConfirmModal(true)}
-                      className="w-full bg-white border border-gray-300 text-red-700 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                      Delete Listing
-                    </button>
+
                   </div>
                 </div>
 
@@ -886,218 +863,9 @@ const CoffeeListingSellerView = () => {
 
       </main>
       
-      {/* Edit Listing Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 overflow-y-auto z-50">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <div className="absolute top-0 right-0 pt-4 pr-4">
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                >
-                  <span className="sr-only">Close</span>
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Coffee Listing</h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                      Coffee Title
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      defaultValue={listing.title}
-                      className="focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                      Price per kg (USD)
-                    </label>
-                    <input
-                      type="number"
-                      id="price"
-                      defaultValue={listing.price}
-                      className="focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-                      Available Quantity (kg)
-                    </label>
-                    <input
-                      type="number"
-                      id="quantity"
-                      defaultValue={listing.availableQuantity}
-                      className="focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      rows={3}
-                      defaultValue={listing.description}
-                      className="focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
-                    ></textarea>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="variety" className="block text-sm font-medium text-gray-700 mb-1">
-                        Variety
-                      </label>
-                      <input
-                        type="text"
-                        id="variety"
-                        defaultValue={listing.variety}
-                        className="focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="processing" className="block text-sm font-medium text-gray-700 mb-1">
-                        Processing Method
-                      </label>
-                      <select
-                        id="processing"
-                        defaultValue={listing.processing}
-                        className="focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
-                      >
-                        <option>Washed</option>
-                        <option>Natural</option>
-                        <option>Honey</option>
-                        <option>Anaerobic</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="crop-year" className="block text-sm font-medium text-gray-700 mb-1">
-                        Crop Year
-                      </label>
-                      <input
-                        type="text"
-                        id="crop-year"
-                        defaultValue={listing.cropYear}
-                        className="focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="readiness" className="block text-sm font-medium text-gray-700 mb-1">
-                        Ready By
-                      </label>
-                      <input
-                        type="date"
-                        id="readiness"
-                        defaultValue={listing.readinessDate}
-                        className="focus:ring-green-500 focus:border-green-500 block w-full rounded-md sm:text-sm border-gray-300"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input
-                      id="organic"
-                      type="checkbox"
-                      defaultChecked={listing.isOrganic}
-                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="organic" className="ml-2 block text-sm text-gray-900">
-                      Organic Certified
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowEditModal(false)}
-                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowEditModal(false)}
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
       
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirmModal && (
-        <div className="fixed inset-0 overflow-y-auto z-50">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <div>
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                  <AlertTriangle className="h-6 w-6 text-red-600" aria-hidden="true" />
-                </div>
-                <div className="mt-3 text-center sm:mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Delete Listing
-                  </h3>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      Are you sure you want to delete this coffee listing? This action cannot be undone.
-                      All associated bids, messages will remain in the system.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirmModal(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirmModal(false)}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:col-start-2 sm:text-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
