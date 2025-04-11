@@ -9,7 +9,7 @@ import {
 type OrderStatus = 'none' | 'pending' | 'confirmed' | 'processing' | 'shipping' | 'delivered' | 'completed' | 'cancelled';
 
 // Main component
-const CoffeeListingPagev1 = () => {
+const CoffeeListingBuyerView = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [quantity, setQuantity] = useState(100);
@@ -1006,4 +1006,4 @@ const CoffeeListingPagev1 = () => {
   );
 };
 
-export default CoffeeListingPagev1;
+export default CoffeeListingBuyerView;

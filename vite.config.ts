@@ -12,7 +12,7 @@ export default defineConfig({
    fs: {
       strict: true,  
       allow: [
-        '/home/crusaderwolf/Documents/web3/afrovalley/apps/ui/afrovalleyui'
+        ''
       ]
     }
   },
