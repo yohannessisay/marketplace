@@ -1,4 +1,5 @@
-import { ApiError } from "@/services/apiService";
+ 
+import { ApiError } from "@/types/api";
 import { toast } from "sonner";
 
 export const useNotification = () => {
@@ -13,6 +14,7 @@ export const useNotification = () => {
         error?.message ||
         error?.response?.data ||
         error?.response ||
+        error?.details ||
         "An error occurred. Please try again."
     );
   };

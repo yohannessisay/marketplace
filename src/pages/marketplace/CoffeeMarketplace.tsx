@@ -1,15 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
 import { Search, Filter, Map, Coffee, Droplet, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,8 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import Header from "@/components/layout/header";
 import {
@@ -32,21 +26,117 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { apiService } from "@/services/apiService";
+import ListingDetailModal from "./view-listing-modal";
 
 // Define TypeScript interfaces for our data types
-interface CoffeeListing {
+interface Farm {
   id: string;
-  coffee_variety: string;
-  bean_type: string;
+  seller_id: string;
   farm_name: string;
+  town_location: string;
   region: string;
   country: string;
+  total_size_hectares: number;
+  coffee_area_hectares: number;
+  longitude: number;
+  latitude: number;
+  altitude_meters: number;
+  crop_type: string;
+  crop_source: string;
+  origin: string;
+  capacity_kg: number;
+  tree_type: string;
+  tree_variety: string;
+  soil_type: string;
+  avg_annual_temp: number;
+  annual_rainfall_mm: number;
+  verification_status: string;
+  created_at: string;
+  updated_at: string | null;
+  created_by_agent_id: string | null;
+}
+
+interface Seller {
+  id: string;
+  auth_id: string;
+  created_by_agent_id: string | null;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  telegram: string;
+  address: string;
+  trading_since: string;
+  rating: number;
+  total_reviews: number;
+  about_me: string;
+  deals_completed: number;
+  avatar_url_csv: string;
+  verification_status: string;
+  onboarding_stage: string;
+  blocked_access: boolean;
+  identity_verified: boolean;
+  last_login_at: string;
+}
+
+interface CoffeePhoto {
+  id: string;
+  listing_id: string;
+  photo_url: string;
+  is_primary: boolean;
+  created_at: string;
+}
+
+interface CoffeeListing {
+  id: string;
+  seller_id: string;
+  farm_id: string;
+  coffee_variety: string;
+  bean_type: string;
+  crop_year: string;
+  is_organic: boolean;
   processing_method: string;
+  moisture_percentage: number;
+  screen_size: string;
+  drying_method: string;
+  wet_mill: string;
+  cup_taste_acidity: string;
+  cup_taste_body: string;
+  cup_taste_sweetness: string;
+  cup_taste_aftertaste: string;
+  cup_taste_balance: string;
+  grade: string;
   quantity_kg: number;
   price_per_kg: number;
-  cup_score: string;
-  is_organic: boolean;
-  photo_url: string;
+  readiness_date: string;
+  lot_length: string;
+  delivery_type: string;
+  shipping_port: string;
+  listing_status: string;
+  created_at: string;
+  updated_at: string | null;
+  expires_at: string | null;
+  created_by_agent_id: string | null;
+  farm: Farm;
+  seller: Seller;
+  coffee_photo: CoffeePhoto[];
+  listing_discount: any[];
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    listings: CoffeeListing[];
+    pagination: {
+      page: number;
+      limit: number;
+      totalItems: number;
+      totalPages: number;
+    };
+    searchTerm: string | null;
+    authenticationRequiredForActions: string;
+  };
 }
 
 interface FilterState {
@@ -60,9 +150,24 @@ interface FilterState {
 }
 
 // Mock filter options based on the schema
-const regions = ["Yirgacheffe", "Sidamo", "Kafa", "Limu", "Gedeo"];
-const varieties = ["Ethiopian Heirloom", "Bourbon", "SL-28", "Typica", "Gesha"];
-const processingMethods = ["Washed", "Natural", "Honey"];
+const regions = [
+  "Yirgacheffe",
+  "Sidamo",
+  "Kafa",
+  "Limu",
+  "Gedeo",
+  "Kilimanjaro",
+];
+const varieties = [
+  "Arabica",
+  "Robusta",
+  "Ethiopian Heirloom",
+  "Bourbon",
+  "SL-28",
+  "Typica",
+  "Gesha",
+];
+const processingMethods = ["Washed", "Natural", "Honey", "Sun-dried"];
 
 // Image component with loading state
 function CoffeeImage({
@@ -118,43 +223,39 @@ export default function CoffeeMarketplace() {
   });
   const [isLoading, setIsLoading] = React.useState(false);
   const [showFilters, setShowFilters] = React.useState(false);
-  const [selectedListing, setSelectedListing] =
-    React.useState<CoffeeListing | null>(null);
+  const [selectedListingId, setSelectedListingId] = React.useState<
+    string | null
+  >(null);
 
   // Fetch listings from API
   const fetchListings = async () => {
     setIsLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        search: searchQuery,
-        page: currentPage.toString(),
-        limit: "6",
-        region: filters.region,
-        variety: filters.variety,
-        processing_method: filters.processing_method,
-        is_organic: filters.is_organic,
-        min_price: filters.min_price,
-        max_price: filters.max_price,
-        min_cup_score: filters.min_cup_score,
-      }).toString();
+      // In a real implementation, you would use the query params
+      // For now, we'll use the mock data provided
+      const response = await apiService().get<ApiResponse>(
+        "/marketplace/listings/get-all-listings"
+      );
 
-      const response = await apiService().get<{
-        data: { listings: CoffeeListing[]; pagination: { totalPages: number } };
-      }>(`/marketplace/listings/get-all-listings?${queryParams}`);
-
-      setListings(response.data.listings || []);
-      setTotalPages(response.data.pagination.totalPages || 1);
+      if (response.success && response.data.listings) {
+        setListings(response.data.listings);
+        setTotalPages(response.data.pagination.totalPages);
+      } else {
+        console.error("Error fetching listings:", response.message);
+        setListings([]);
+      }
     } catch (error) {
       console.error("Error fetching listings:", error);
+      setListings([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch listings whenever filters, search query, or page changes
+  // Fetch listings on component mount
   React.useEffect(() => {
     fetchListings();
-  }, [searchQuery, filters, currentPage]);
+  }, []);
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,10 +295,16 @@ export default function CoffeeMarketplace() {
   // Check if any filters are active
   const hasActiveFilters = Object.values(filters).some((value) => value !== "");
 
+  // Get primary photo URL for a listing
+  const getPrimaryPhotoUrl = (listing: CoffeeListing): string => {
+    const primaryPhoto = listing.coffee_photo.find((photo) => photo.is_primary);
+    return primaryPhoto ? primaryPhoto.photo_url : "/placeholder.svg";
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
       {/* Header */}
-      <Header></Header>
+      <Header />
 
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 py-6">
@@ -206,7 +313,7 @@ export default function CoffeeMarketplace() {
             Coffee Marketplace
           </h2>
           <p className="text-slate-600 mt-2">
-            Discover premium coffee directly from Ethiopian farmers
+            Discover premium coffee directly from African farmers
           </p>
         </div>
 
@@ -420,11 +527,11 @@ export default function CoffeeMarketplace() {
               <Card
                 key={listing.id}
                 className="overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                onClick={() => setSelectedListing(listing)}
+                onClick={() => setSelectedListingId(listing.id)}
               >
                 <div className="relative h-48 bg-slate-200">
                   <CoffeeImage
-                    src={listing.photo_url || "/placeholder.svg"}
+                    src={getPrimaryPhotoUrl(listing)}
                     alt={listing.coffee_variety}
                     className="w-full h-full"
                   />
@@ -442,17 +549,17 @@ export default function CoffeeMarketplace() {
                     <div className="flex items-center bg-amber-50 px-2 py-1 rounded">
                       <Star className="h-4 w-4 text-amber-500 mr-1" />
                       <span className="text-sm font-medium text-amber-700">
-                        {listing.cup_score}
+                        {listing.grade}
                       </span>
                     </div>
                   </div>
                   <p className="text-slate-600 text-sm mb-2">
-                    {listing.farm_name}
+                    {listing.farm.farm_name}
                   </p>
                   <div className="flex items-center text-slate-500 text-sm mb-4">
                     <Map className="h-4 w-4 mr-1" />
                     <span>
-                      {listing.region}, {listing.country}
+                      {listing.farm.region}, {listing.farm.country}
                     </span>
                   </div>
 
@@ -476,39 +583,53 @@ export default function CoffeeMarketplace() {
               </Card>
             ))
           ) : (
-            <p className="text-center text-slate-500">No listings found.</p>
+            <p className="text-center text-slate-500 col-span-3">
+              No listings found.
+            </p>
           )}
         </div>
 
         {/* Pagination */}
-        <div className="mt-6">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-              {Array.from({ length: totalPages }).map((_, index) => (
-                <PaginationItem key={index}>
-                  <PaginationLink
-                    onClick={() => handlePageChange(index + 1)}
-                    isActive={currentPage === index + 1}
-                  >
-                    {index + 1}
-                  </PaginationLink>
+        {listings.length > 0 && (
+          <div className="mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() =>
+                      handlePageChange(Math.max(1, currentPage - 1))
+                    }
+                    className={
+                      currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                    }
+                  />
                 </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+                {Array.from({ length: totalPages }).map((_, index) => (
+                  <PaginationItem key={index}>
+                    <PaginationLink
+                      onClick={() => handlePageChange(index + 1)}
+                      isActive={currentPage === index + 1}
+                    >
+                      {index + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      handlePageChange(Math.min(totalPages, currentPage + 1))
+                    }
+                    className={
+                      currentPage === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
 
         {/* Empty State */}
         {listings.length === 0 && !isLoading && (
@@ -533,180 +654,13 @@ export default function CoffeeMarketplace() {
         )}
       </main>
 
-      {/* Detailed View Dialog */}
-      <Dialog
-        open={!!selectedListing}
-        onOpenChange={(open) => !open && setSelectedListing(null)}
-      >
-        <DialogContent className="min-w-4xl p-0 overflow-scroll max-h-[90vh] my-4">
-          {selectedListing && (
-            <>
-              <div className="relative h-64 bg-slate-200">
-                <CoffeeImage
-                  src={selectedListing.photo_url || "/placeholder.svg"}
-                  alt={selectedListing.coffee_variety}
-                  className="w-full h-full"
-                />
-                {selectedListing.is_organic && (
-                  <Badge className="absolute top-4 left-4 bg-emerald-500">
-                    Organic
-                  </Badge>
-                )}
-              </div>
-
-              <div className="p-6">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-800">
-                      {selectedListing.coffee_variety}
-                    </h2>
-                    <p className="text-slate-600">
-                      {selectedListing.farm_name}
-                    </p>
-                    <div className="flex items-center mt-2">
-                      <Map className="h-5 w-5 text-slate-500 mr-1" />
-                      <span className="text-slate-600">
-                        {selectedListing.region}, {selectedListing.country}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-start">
-                    <div className="bg-amber-50 px-3 py-2 rounded-lg flex items-center mb-2">
-                      <Star className="h-5 w-5 text-amber-500 mr-2" />
-                      <div>
-                        <span className="text-lg font-semibold text-amber-700">
-                          {selectedListing.cup_score}
-                        </span>
-                        <span className="text-slate-500 text-sm ml-1">
-                          cup score
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-2xl font-bold text-emerald-700">
-                      ${selectedListing.price_per_kg.toFixed(2)}/kg
-                    </div>
-                    <div className="text-slate-600 text-sm">
-                      {selectedListing.quantity_kg.toLocaleString()} kg
-                      available
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <h3 className="text-lg font-semibold">Coffee Details</h3>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-slate-500">Bean Type</p>
-                          <p className="font-medium">
-                            {selectedListing.bean_type}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-slate-500">Processing</p>
-                          <p className="font-medium">
-                            {selectedListing.processing_method}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-slate-500">Organic</p>
-                          <p className="font-medium">
-                            {selectedListing.is_organic ? "Yes" : "No"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-slate-500">Region</p>
-                          <p className="font-medium">
-                            {selectedListing.region}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <h3 className="text-lg font-semibold">Flavor Profile</h3>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm text-slate-500">
-                            Acidity
-                          </span>
-                          <span className="text-sm font-medium">
-                            Bright, Clean
-                          </span>
-                        </div>
-                        <Progress value={75} className="h-2" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm text-slate-500">Body</span>
-                          <span className="text-sm font-medium">Medium</span>
-                        </div>
-                        <Progress value={60} className="h-2" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm text-slate-500">
-                            Sweetness
-                          </span>
-                          <span className="text-sm font-medium">
-                            Honey, Fruity
-                          </span>
-                        </div>
-                        <Progress value={85} className="h-2" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card className="mb-6">
-                  <CardHeader className="pb-2">
-                    <h3 className="text-lg font-semibold">Farm Information</h3>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-slate-700 mb-4">
-                      {selectedListing.farm_name} is located in the{" "}
-                      {selectedListing.region} region of{" "}
-                      {selectedListing.country}
-                      at high altitude, creating ideal growing conditions for
-                      specialty coffee. The farm is dedicated to sustainable
-                      farming practices and producing high-quality coffee.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm text-slate-500">Altitude</p>
-                        <p className="font-medium">1,800 - 2,100 masl</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Harvest Period</p>
-                        <p className="font-medium">October - December</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Soil Type</p>
-                        <p className="font-medium">Volcanic Loam</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                  <Button className="flex-1 ">Contact Seller</Button>
-                  <Button variant="outline" className="flex-1 ">
-                    Request Samples
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Listing Detail Modal */}
+      {selectedListingId && (
+        <ListingDetailModal
+          listingId={selectedListingId}
+          onClose={() => setSelectedListingId(null)}
+        />
+      )}
     </div>
   );
 }
