@@ -59,6 +59,13 @@ export const sellerSchema = z.object({
   productCategory: z.string().min(1, "Please select a product category"),
 });
 
+export const sellerSchemaForAgent = z.object({
+  first_name: z.string().min(2, "First name must be at least 2 characters"),
+  last_name: z.string().min(2, "Last name must be at least 2 characters"),
+  phone: z.string().regex(phoneNumberRegex, "Please provide a valid international phone number (e.g., +1234567890)"),
+  email: z.string().email("Please enter a valid email address"),
+});
+
 export const createOTPValidationSchema = z.object({
   otp: z.string().length(6, "OTP must be 6 digits").refine((val) => /^\d+$/.test(val), "OTP must contain only numbers"),
 });

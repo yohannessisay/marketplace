@@ -20,6 +20,7 @@ import AgentLogin from "./pages/auth/agent-login";
 import FarmersTable from "./pages/agent/farmer-management";
 import AddFarm from "./pages/farms/add-farm";
 import CoffeeMarketplace from "./pages/marketplace/CoffeeMarketplace";
+import FarmerSignupViaAgentPage from "./pages/auth/farmer-signup-via-agent";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -122,6 +123,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Navigate to={getStepFromStage()} replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/farmer-signup-via-agent"
+            element={
+              <ProtectedRoute>
+                <FarmerSignupViaAgentPage />
               </ProtectedRoute>
             }
           />

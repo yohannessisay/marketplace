@@ -126,7 +126,7 @@ export default function FarmersTable() {
       <Header></Header>
       <div className="flex justify-between items-center mb-6 mt-8">
         <h1 className="text-2xl font-bold">Farmers Registered By You</h1>
-        <Link to={"/onboarding/step-one"}>
+        <Link to={"/farmer-signup-via-agent"}>
           <Button className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Add New Farmer

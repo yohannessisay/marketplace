@@ -6,6 +6,7 @@ import { TractorIcon as Farm, Coffee, User, BadgeDollarSign, ChevronRight, Spark
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { getFromLocalStorage } from "@/lib/utils"
 
 // Step item component for each onboarding step
 interface StepItemProps {
@@ -75,6 +76,8 @@ const StepItem: React.FC<StepItemProps> = ({
 )
 
 const WelcomePage: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const user:any=getFromLocalStorage("userProfile",{});
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Header */}
@@ -110,7 +113,7 @@ const WelcomePage: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
             <Sparkles className="h-8 w-8 text-emerald-600" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-3">Welcome, Husen Abadega!</h1>
+          <h1 className="text-3xl font-bold text-slate-800 mb-3">Welcome,{user.firstName}!</h1>
           <p className="text-slate-600 text-lg">
             Congratulations on joining Afrovalley. Let's set up your account to start selling your premium coffee.
           </p>
