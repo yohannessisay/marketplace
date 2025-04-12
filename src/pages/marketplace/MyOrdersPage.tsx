@@ -5,13 +5,10 @@ import type React from "react";
 
 import { useState, useEffect } from "react";
 import {
-  Calendar,
-  Coffee,
-  Heart,
-  Package,
+  Calendar, 
+  Heart, 
   ShoppingBag,
-  Clock,
-  Star,
+  Clock, 
   Info,
   ChevronDown,
   Filter,
@@ -26,8 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge"; 
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import {
@@ -157,8 +153,6 @@ export default function MyOrdersPage() {
   const [historyCurrentPage, setHistoryCurrentPage] = useState<number>(1);
   const [activeSearchTerm, setActiveSearchTerm] = useState<string>("");
   const [historySearchTerm, setHistorySearchTerm] = useState<string>("");
-  const [activeLimit, setActiveLimit] = useState<number>(10);
-  const [historyLimit, setHistoryLimit] = useState<number>(10);
   const [activeTab, setActiveTab] = useState<string>("current");
 
   // Fetch active orders from API
@@ -167,7 +161,7 @@ export default function MyOrdersPage() {
       setActiveLoading(true);
       try {
         const response: any = await apiService().get(
-          `orders/active-orders?search=${activeSearchTerm}&page=${activeCurrentPage}&limit=${activeLimit}`
+          `/orders/active-orders`
         );
 
         if (response.success) {
@@ -187,7 +181,7 @@ export default function MyOrdersPage() {
     if (activeTab === "current") {
       fetchActiveOrders();
     }
-  }, [activeCurrentPage, activeSearchTerm, activeLimit, activeTab]);
+  }, [activeCurrentPage, activeSearchTerm, activeTab]);
 
   // Fetch historical orders from API
   useEffect(() => {
@@ -195,7 +189,7 @@ export default function MyOrdersPage() {
       setHistoryLoading(true);
       try {
         const response: any = await apiService().get(
-          `/orders/order-history?search=${historySearchTerm}&page=${historyCurrentPage}&limit=${historyLimit}`
+          `/orders/order-history`
         );
 
         if (response.success) {
@@ -215,7 +209,7 @@ export default function MyOrdersPage() {
     if (activeTab === "historical") {
       fetchHistoricalOrders();
     }
-  }, [historyCurrentPage, historySearchTerm, historyLimit, activeTab]);
+  }, [historyCurrentPage, historySearchTerm, activeTab]);
 
   // Toggle order expansion
   const toggleOrderExpansion = (orderId: string) => {
@@ -356,8 +350,7 @@ export default function MyOrdersPage() {
             <div className="flex-1">
               <div className="flex items-center mb-2">
                 <h3 className="font-bold text-lg">
-                  {item.listing?.coffee_variety ||
-                    item.coffee_variety ||
+                  {item.order_id||
                     "Unknown Coffee"}
                 </h3>
                 {(item.listing?.is_organic || item.is_organic) && (
@@ -370,16 +363,7 @@ export default function MyOrdersPage() {
                 )}
               </div>
 
-              <div className="flex items-center mb-3">
-                <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                <span className="ml-1 text-sm mr-3">
-                  {item.listing?.cup_score || item.cup_score || "N/A"}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {item.listing?.farm_name || item.farm_name || "Unknown Farm"}{" "}
-                  • {item.listing?.region || item.region || "Unknown Region"}
-                </span>
-              </div>
+              
             </div>
 
             <div className="text-right">
@@ -401,20 +385,8 @@ export default function MyOrdersPage() {
           </div>
 
           <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
-            <div className="flex items-center">
-              <Coffee className="h-4 w-4 mr-1" />
-              <span>
-                {item.listing?.processing_method ||
-                  item.processing_method ||
-                  "Unknown Process"}
-              </span>
-            </div>
-            <div className="flex items-center">
-              <Package className="h-4 w-4 mr-1" />
-              <span>
-                {item.listing?.bean_type || item.bean_type || "Unknown Type"}
-              </span>
-            </div>
+             
+            
             {isOrderTab && (
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
@@ -437,7 +409,7 @@ export default function MyOrdersPage() {
                   </span>
                   {item.seller && (
                     <Link
-                      href={`/sellers/${item.seller.first_name?.toLowerCase()}-${item.seller.last_name?.toLowerCase()}`}
+                      to={`/sellers/${item.seller.first_name?.toLowerCase()}-${item.seller.last_name?.toLowerCase()}`}
                       className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
                     >
                       View Seller
@@ -451,7 +423,7 @@ export default function MyOrdersPage() {
                       item.status === "completed"
                         ? "secondary"
                         : item.status === "confirmed"
-                        ? "success"
+                        ? "default"
                         : item.status === "pending"
                         ? "warning"
                         : "outline"
@@ -663,17 +635,17 @@ export default function MyOrdersPage() {
           </TabsList>
 
           <TabsContent value="current" className="mt-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
                 {activeLoading
                   ? "Loading..."
                   : `${activeOrders.length} Active Orders`}
               </p>
 
-              <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+              <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto ">
                 <form
                   onSubmit={handleActiveSearch}
-                  className="flex gap-2 w-full md:w-auto"
+                  className="flex gap-2 w-full md:w-auto "
                 >
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
