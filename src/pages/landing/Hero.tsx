@@ -36,7 +36,7 @@ export default function Hero() {
       <section className="flex-1 flex items-center justify-center relative z-10">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-4xl md:text-6xl font-bold sm:text-amber-100 text-gray-900 mb-6">Premium Coffee Exports</h2>
+            <h2 className="text-4xl md:text-6xl font-bold sm:text-amber-100 text-gray-900 mb-6">Premium coffee marketplace</h2>
             <p className="text-xl text-amber-100 mb-8 backdrop-blur-md bg-white/10  rounded-md p-2">
               Connecting the world's finest coffee growers with global markets. Exceptional beans, sustainable
               practices, and reliable delivery.

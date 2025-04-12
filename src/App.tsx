@@ -20,9 +20,10 @@ import AgentLogin from "./pages/auth/agent-login";
 import FarmersTable from "./pages/agent/farmer-management";
 import AddFarm from "./pages/farms/add-farm";
 import CoffeeMarketplace from "./pages/marketplace/CoffeeMarketplace";
-import FarmerSignupViaAgentPage from "./pages/auth/farmer-signup-via-agent"; 
+import FarmerSignupViaAgentPage from "./pages/auth/farmer-signup-via-agent";
 import MyOrdersPage from "./pages/marketplace/MyOrdersPage";
 import CoffeeListingPage from "./pages/marketplace/coffee-listing/coffee-page";
+import CoffeeListingSellerView from "./pages/marketplace/coffee-listing-seller/coffee-listing-seller";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -256,6 +257,7 @@ function App() {
 
           <Route path="/chats" element={<CoffeeListingPage />} />
           <Route path="/my-orders" element={<MyOrdersPage />} />
+          <Route path="/coffee-listing-seller" element={<CoffeeListingSellerView/>} />
         </Routes>
       </Suspense>
     </Router>
