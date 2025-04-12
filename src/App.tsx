@@ -21,6 +21,8 @@ import FarmersTable from "./pages/agent/farmer-management";
 import AddFarm from "./pages/farms/add-farm";
 import CoffeeMarketplace from "./pages/marketplace/CoffeeMarketplace";
 import FarmerSignupViaAgentPage from "./pages/auth/farmer-signup-via-agent";
+import CoffeeListingPagev1 from "./pages/marketplace/CoffeeListingPage";
+import MyOrdersPage from "./pages/marketplace/MyOrdersPage";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -251,6 +253,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/15" element={<CoffeeListingPagev1 />} />
+          <Route path="/16" element={<MyOrdersPage />} />
         </Routes>
       </Suspense>
     </Router>

@@ -108,7 +108,7 @@ export default function StepOne() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const farmer: any = getFromLocalStorage("farmer-info", {});
       if (
-        (currentUserStage === "farm_profile" || isAgent === "agent") &&
+        (currentUserStage === "not_started" || isAgent === "agent") &&
         (getFromLocalStorage("current-step", "") as string) === "not_started"
       ) {
         let response: { success: boolean; data?: { farm: { id: string } } } = {
