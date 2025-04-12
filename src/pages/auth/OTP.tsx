@@ -21,6 +21,7 @@ import { createOTPValidationSchema } from "@/types/validation/auth";
 import { useNotification } from "@/hooks/useNotification";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
+import { saveToLocalStorage } from "@/lib/utils";
 
 type OTPValidationType = z.infer<typeof createOTPValidationSchema>;
 
@@ -48,6 +49,7 @@ export default function OTPInputPage() {
         }
       ); 
       if (response.success) {
+        saveToLocalStorage("current-step","farm_profile")
         successMessage("OTP verified successfully!");
         navigate("/login");
       } else {

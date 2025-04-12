@@ -1,4 +1,5 @@
 import { getFromLocalStorage } from "@/lib/utils";
+import { Home, List, MessageCircle, Receipt, ShoppingBagIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Header() {
@@ -14,35 +15,39 @@ export default function Header() {
           {user.userType != "agent" ? (
             <Link
               to="/seller-dashboard"
-              className="text-sm text-green-600 flex items-center"
+              className="text-sm text-green-600 flex items-center cursor-pointer"
             >
-              <span className="mr-1">🏠</span> My dashboard
+            <Home></Home> My dashboard
             </Link>
           ) : (
             ""
           )}
           <Link
             to="/market-place"
-            className="text-sm text-gray-600 flex items-center"
+            className="text-sm text-gray-600 flex items-center cursor-pointer"
           >
-            <span className="mr-1">🛒</span> Marketplace
+           <ShoppingBagIcon></ShoppingBagIcon> Marketplace
+          </Link>
+          <Link
+            to="/my-orders"
+            className="text-sm text-gray-600 flex items-center cursor-pointer"
+          >
+            <Receipt></Receipt> My Orders
           </Link>
           {user.userType === "agent" ? (
             <Link
               to="/agent/farmer-management"
-              className="text-sm text-gray-600 flex items-center"
+              className="text-sm text-gray-600 flex items-center cursor-pointer"
             >
-              <span className="mr-1">🛒</span> Farmer Management
+             <List></List> Farmer Management
             </Link>
           ) : (
             ""
           )}
-          <Link to="/chats" className="text-sm text-gray-600 flex items-center">
-            <span className="mr-1">💬</span> Chats
+          <Link to="/chats" className="text-sm text-gray-600 flex items-center cursor-pointer">
+          <MessageCircle></MessageCircle>Chats
           </Link>
-          <div className="w-8 h-8 rounded-full bg-green-700 text-white flex items-center justify-center">
-            <span>👤</span>
-          </div>
+         
         </div>
       </div>
     </header>

@@ -1,0 +1,160 @@
+import { Star, Award, Download } from "lucide-react";
+import { OrderStatus } from "@/types/order";
+import { CoffeeListing } from "@/types/coffee";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { OrderStatusCard } from "./order-status-card";
+import { useOrderStatus } from "@/hooks/useOrderStatus";
+
+interface OrderSidebarProps {
+  listing: CoffeeListing;
+  demoOrderStatus: OrderStatus;
+  setShowOrderModal: (show: boolean) => void;
+  setShowReviewModal: (show: boolean) => void;
+}
+
+export function OrderSidebar({
+  listing,
+  demoOrderStatus,
+  setShowOrderModal,
+  setShowReviewModal,
+}: OrderSidebarProps) {
+  const orderStatus = useOrderStatus(demoOrderStatus);
+
+  return (
+    <div className="space-y-6">
+      {/* Purchase Card */}
+      <Card className="sticky top-6">
+        <CardContent className="p-6">
+          <div className="flex justify-between items-start mb-4">
+            <h2 className="text-xl font-bold">{listing.title}</h2>
+            <Badge
+              variant="outline"
+              className="bg-yellow-100 text-yellow-800 border-0"
+            >
+              <Star size={16} className="mr-1 text-yellow-500 fill-current" />
+              {listing.score}
+            </Badge>
+          </div>
+
+          <div className="flex items-baseline mb-6">
+            <span className="text-2xl font-bold text-primary">
+              ${listing.price}
+            </span>
+            <span className="ml-1 text-muted-foreground">/kg</span>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">
+                Available Quantity
+              </span>
+              <span className="text-sm font-medium">
+                {listing.availableQuantity} kg
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">
+                Processing Method
+              </span>
+              <span className="text-sm font-medium">{listing.processing}</span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Region</span>
+              <span className="text-sm font-medium">
+                {listing.region}, {listing.country}
+              </span>
+            </div>
+          </div>
+
+          {orderStatus ? (
+            <OrderStatusCard
+              orderStatus={orderStatus}
+              setShowReviewModal={setShowReviewModal}
+            />
+          ) : (
+            <Button onClick={() => setShowOrderModal(true)} className="w-full">
+              Place Order
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Discount info card - only shown when no order exists */}
+      {!orderStatus && (
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-md font-medium mb-3">Volume Discounts</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center p-2 bg-primary/5 rounded-md">
+                <span className="text-sm">Order 500+ kg</span>
+                <span className="text-sm font-medium text-primary">5% off</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-primary/5 rounded-md">
+                <span className="text-sm">Order 1000+ kg</span>
+                <span className="text-sm font-medium text-primary">
+                  10% off
+                </span>
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-muted-foreground">
+              Volume discounts are automatically applied at checkout.
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Seller Info */}
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="text-lg font-medium mb-4">About the Seller</h3>
+          <div className="flex items-center mb-4">
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden">
+              {listing.sellerName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </div>
+            <div className="ml-3">
+              <h4 className="text-sm font-medium">{listing.sellerName}</h4>
+              <div className="flex items-center">
+                <Star size={14} className="text-yellow-400 fill-current" />
+                <span className="text-xs ml-1 text-muted-foreground">
+                  {listing.sellerRating} ({listing.sellerReviews} reviews)
+                </span>
+              </div>
+            </div>
+          </div>
+          <Button variant="outline" className="w-full">
+            View Seller Profile
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Coffee Certificate Card - Optional for completed orders */}
+      {orderStatus &&
+        (orderStatus.status === "completed" ||
+          orderStatus.status === "delivered") && (
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center mb-3">
+                <Award size={20} className="text-primary mr-2" />
+                <h3 className="text-md font-medium">Purchase Certificate</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Download your certificate of purchase for this premium coffee
+                lot.
+              </p>
+              <Button variant="outline" className="w-full">
+                <Download size={16} className="mr-2" />
+                Download Certificate
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+    </div>
+  );
+}

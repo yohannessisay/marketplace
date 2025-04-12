@@ -97,10 +97,12 @@ export default function StepTwo() {
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
+      console.log(userProfile.onboardingStage);
+      
       if (
-        (userProfile.currentUserStage === "farm_profile" ||
+        (userProfile.currentUserStage === "crops_to_sell" ||
           userProfile.userType === "agent") &&
-        (getFromLocalStorage("current-step", "") as string) === "farm_profile"
+        (getFromLocalStorage("current-step", "") as string) === "crops_to_sell"
       ) {
         const formData = new FormData();
 

@@ -107,9 +107,10 @@ export default function StepOne() {
       const isAgent = parsed.userType;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const farmer: any = getFromLocalStorage("farmer-info", {});
+
       if (
-        (currentUserStage === "not_started" || isAgent === "agent") &&
-        (getFromLocalStorage("current-step", "") as string) === "not_started"
+        (currentUserStage === "farm_profile" || isAgent === "agent") &&
+        (getFromLocalStorage("current-step", "") as string) === "farm_profile"
       ) {
         let response: { success: boolean; data?: { farm: { id: string } } } = {
           success: false,
@@ -121,6 +122,8 @@ export default function StepOne() {
           isAgent === "agent" && farmer ? farmer.id : ""
         );
         if (response && response.success) {
+          parsed.onboardingStage = "crops_to_sell";
+          saveToLocalStorage("userProfile", parsed);
           saveToLocalStorage("step-one", data);
           if (response.data?.farm?.id) {
             saveToLocalStorage("farm-id", response.data.farm.id);
