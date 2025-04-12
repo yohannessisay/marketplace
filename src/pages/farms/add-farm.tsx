@@ -86,9 +86,10 @@ export default function AddFarm() {
       files.forEach((file) => {
         formData.append("files", file);
       });
-      let response: { success: boolean } = { success: false };
+      // let response: { success: boolean } = { success: false };
       if (currentUserStage === "farm_profile") {
-        response = await apiService().postFormData(
+        // response = 
+        await apiService().postFormData(
           "/onboarding/seller/farm-details",
           formData,
           true
@@ -99,7 +100,7 @@ export default function AddFarm() {
         //   formData,
         //   true
         // );
-        response = { success: true };
+        // response = { success: true };
       }
 
       saveToLocalStorage("new-farm", data);
@@ -123,10 +124,10 @@ export default function AddFarm() {
   };
 
   return (
-    <>
+    <div className="bg-primary/5 py-8 px-8">
       <Header></Header>
 
-      <div className="mx-auto container">
+      <div className="bg-white mx-auto container ">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -543,6 +544,6 @@ export default function AddFarm() {
           </form>
         </Form>
       </div>
-    </>
+    </div>
   );
 }

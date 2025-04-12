@@ -122,120 +122,122 @@ export default function FarmersTable() {
   };
 
   return (
-    <div className="container mx-auto">
+    <div className=" min-h-screen bg-primary/5 p-8 w-full">
       <Header></Header>
-      <div className="flex justify-between items-center mb-6 mt-8">
-        <h1 className="text-2xl font-bold">Farmers Registered By You</h1>
-        <Link to={"/farmer-signup-via-agent"}>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add New Farmer
-          </Button>
-        </Link>
-      </div>
-      <div className="mb-4">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search by name or phone..."
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
-            }}
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-            <svg
-              className="h-5 w-5 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                clipRule="evenodd"
-              />
-            </svg>
+      <div className="mx-24 bg-white rounded-md shadow-md p-4 my-8">
+        <div className="flex justify-between items-center mb-6 mt-8">
+          <h1 className="text-2xl font-bold">Farmers Registered By You</h1>
+          <Link to={"/farmer-signup-via-agent"}>
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add New Farmer
+            </Button>
+          </Link>
+        </div>
+        <div className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by name or phone..."
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page on search
+              }}
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {farmers.map((farmer) => (
-              <TableRow key={farmer.id}>
-                <TableCell>{farmer.id}</TableCell>
-                <TableCell>
-                  {farmer.first_name} {farmer.last_name}
-                </TableCell>
-                <TableCell>{farmer.phone}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewFarmer(farmer)}
-                    className="flex items-center gap-1"
-                  >
-                    <Eye className="h-4 w-4" />
-                    View
-                  </Button>
-                </TableCell>
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {farmers.map((farmer) => (
+                <TableRow key={farmer.id}>
+                  <TableCell>{farmer.id}</TableCell>
+                  <TableCell>
+                    {farmer.first_name} {farmer.last_name}
+                  </TableCell>
+                  <TableCell>{farmer.phone}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewFarmer(farmer)}
+                      className="flex items-center gap-1"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
-      <div className="mt-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                className={
-                  currentPage === 1
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
-                }
-              />
-            </PaginationItem>
-
-            {Array.from({ length: totalPages }).map((_, index) => (
-              <PaginationItem key={index}>
-                <PaginationLink
-                  onClick={() => handlePageChange(index + 1)}
-                  isActive={currentPage === index + 1}
-                >
-                  {index + 1}
-                </PaginationLink>
+        <div className="mt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  className={
+                    currentPage === 1
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
               </PaginationItem>
-            ))}
 
-            <PaginationItem>
-              <PaginationNext
-                onClick={() =>
-                  handlePageChange(Math.min(totalPages, currentPage + 1))
-                }
-                className={
-                  currentPage === totalPages
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+              {Array.from({ length: totalPages }).map((_, index) => (
+                <PaginationItem key={index}>
+                  <PaginationLink
+                    onClick={() => handlePageChange(index + 1)}
+                    isActive={currentPage === index + 1}
+                  >
+                    {index + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    handlePageChange(Math.min(totalPages, currentPage + 1))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       </div>
     </div>
   );

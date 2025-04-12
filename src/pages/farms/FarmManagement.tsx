@@ -60,7 +60,7 @@ const FarmManagement: React.FC = () => {
   }, [farms.length])
 
   return (
-    <div className="bg-slate-50 min-h-screen">
+    <div className="bg-primary/5 min-h-screen py-8 px-8">
       <Header />
 
       <div className="max-w-6xl mx-auto px-4 py-8">

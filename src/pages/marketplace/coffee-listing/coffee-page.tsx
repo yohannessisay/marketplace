@@ -29,7 +29,7 @@ export default function CoffeeListingPage() {
   };
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-primary/5 p-8 min-h-screen">
       <Header
         demoOrderStatus={demoOrderStatus}
         setDemoOrderStatus={setDemoOrderStatus}

@@ -6,7 +6,7 @@ import Header from "@/components/layout/header";
 
 const FarmDetailsPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-primary/5">
       <Header></Header>
 
       {/* Step One */}

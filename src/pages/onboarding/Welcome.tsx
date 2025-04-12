@@ -79,7 +79,7 @@ const WelcomePage: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const user:any=getFromLocalStorage("userProfile",{});
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-primary/5">
       {/* Header */}
       <header className="bg-white border-b py-4 px-6 sticky top-0 z-10 shadow-sm">
         <div className="max-w-6xl mx-auto flex justify-between items-center">

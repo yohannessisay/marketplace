@@ -257,7 +257,7 @@ export default function CoffeeListingSellerView() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-primary/5 p-8">
       {/* Header */}
       <Header></Header>
 
@@ -268,8 +268,8 @@ export default function CoffeeListingSellerView() {
           onValueChange={setActiveTab}
         >
           <TabsList className="mb-6">
-            <TabsTrigger value="overview" className="h-14">Overview</TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-2 h-14">
+            <TabsTrigger value="overview" className="h-12">Overview</TabsTrigger>
+            <TabsTrigger value="messages" className="flex items-center gap-2 h-12">
               Messages
               {totalUnreadMessages > 0 && (
                 <Badge
@@ -280,7 +280,7 @@ export default function CoffeeListingSellerView() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="bids" className="h-14">Bids</TabsTrigger>
+            <TabsTrigger value="bids" className="h-12">Bids</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">

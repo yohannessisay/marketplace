@@ -23,7 +23,7 @@ export default function Header() {
     );
 
   return (
-    <header className="bg-white border-b border-gray-200 p-4">
+    <header className="bg-white border-b border-gray-200 p-4 rounded-md shadow-md">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center">
           <h1 className="text-green-800 text-xl font-bold">Afrovalley</h1>

@@ -594,7 +594,7 @@ export default function MyOrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-primary/5 p-8">
       {/* Header */}
       <Header></Header>
 
@@ -613,21 +613,21 @@ export default function MyOrdersPage() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger
               value="current"
-              className="flex items-center justify-center"
+              className="flex items-center justify-center h-12"
             >
               <Clock className="h-4 w-4 mr-2" />
               Current Orders
             </TabsTrigger>
             <TabsTrigger
               value="historical"
-              className="flex items-center justify-center"
+              className="flex items-center justify-center h-12"
             >
               <ShoppingBag className="h-4 w-4 mr-2" />
               Order History
             </TabsTrigger>
             <TabsTrigger
               value="favorites"
-              className="flex items-center justify-center"
+              className="flex items-center justify-center h-12"
             >
               <Heart className="h-4 w-4 mr-2" />
               Favorites
