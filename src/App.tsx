@@ -58,9 +58,8 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const userProfile:any = getFromLocalStorage("userProfile",{});
+const userProfile: any = getFromLocalStorage("userProfile", {});
 const currentStep = userProfile?.onboardingStage;
-
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(true);
@@ -93,9 +92,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
 // Determine route based on user profile stage
 const getStepFromStage = () => {
-  const userProfile = localStorage.getItem("userProfile");
-  const parsed = userProfile ? JSON.parse(userProfile) : null;
-  switch (parsed?.onboardingStage) {
+  switch (userProfile?.onboardingStage) {
     case "crops_to_sell":
       return "/onboarding/step-two";
     case "crop-specification":
@@ -148,7 +145,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-             <Route
+          <Route
             path="/add-crop"
             element={
               <ProtectedRoute>
@@ -207,10 +204,16 @@ function App() {
             path="/home"
             element={
               <ProtectedRoute>
-                {currentStep !== "completed" ? (
-                  <Welcome />
+                {userProfile.userType !== "buyer" ? (
+                  currentStep !== "completed" ? (
+                    <Welcome />
+                  ) : (
+                    <FarmManagement />
+                  )
+                ) : currentStep === "completed" ? (
+                  <CoffeeMarketplace />
                 ) : (
-                  <FarmManagement></FarmManagement>
+                  <CompanyOnboarding />
                 )}
               </ProtectedRoute>
             }

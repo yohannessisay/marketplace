@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod"; 
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +27,7 @@ import Header from "@/components/layout/header";
 import { FileUpload } from "@/components/common/file-upload";
 import { buyerOnboardingSchema } from "@/types/validation/buyer";
 import { Textarea } from "@/components/ui/textarea";
+import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 
 type CompanyDetails = z.infer<typeof buyerOnboardingSchema>;
 
@@ -38,7 +38,8 @@ export default function CompanyVerification() {
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userProfile: any = getFromLocalStorage("userProfile",{});
   const navigate = useNavigate();
   // Initialize form with default values
   const form = useForm<CompanyDetails>({
@@ -61,17 +62,14 @@ export default function CompanyVerification() {
   const onSubmit = async (data: CompanyDetails) => {
     setIsSubmitting(true);
 
-    // Create FormData for file upload
     const formData = new FormData();
 
-    // Add company details to formData
     Object.entries(data).forEach(([key, value]) => {
       formData.append(key, value);
     });
 
-    // Add files to formData
-    files.forEach((file, index) => {
-      formData.append(`file${index}`, file);
+    files.forEach((file) => {
+      formData.append(`files`, file);
     });
 
     try {
@@ -84,6 +82,10 @@ export default function CompanyVerification() {
 
       if (response && response.success) {
         navigate("/home");
+        saveToLocalStorage("userProfile", {
+          ...userProfile,
+          onboardingStage: "complete",
+        });
         successMessage(
           "Your company verification has been submitted successfully."
         );
@@ -221,10 +223,7 @@ export default function CompanyVerification() {
                     name="website_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          Website or social media link
-                          <span className="text-red-500">*</span>
-                        </FormLabel>
+                        <FormLabel>Website or social media link</FormLabel>
                         <FormControl>
                           <Input placeholder="company@email.com" {...field} />
                         </FormControl>
@@ -238,7 +237,10 @@ export default function CompanyVerification() {
                     name="company_address"
                     render={({ field }) => (
                       <FormItem className="col-span-2">
-                        <FormLabel>Company address</FormLabel>
+                        <FormLabel>
+                          Company address<span className="text-red-500">*</span>
+                        </FormLabel>
+
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -251,10 +253,7 @@ export default function CompanyVerification() {
                     name="telegram"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          Telegram
-                          <span className="text-red-500">*</span>
-                        </FormLabel>
+                        <FormLabel>Telegram</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -267,10 +266,7 @@ export default function CompanyVerification() {
                     name="about_me"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          About Me
-                          <span className="text-red-500">*</span>
-                        </FormLabel>
+                        <FormLabel>About Me</FormLabel>
                         <FormControl>
                           <Textarea {...field} />
                         </FormControl>
