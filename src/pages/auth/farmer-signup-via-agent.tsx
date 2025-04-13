@@ -15,7 +15,7 @@ import { sellerSchemaForAgent } from "@/types/validation/auth";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
-import { getFromLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 
 // Define types based on the schemas
 type SellerFormValues = z.infer<typeof sellerSchemaForAgent>;
@@ -42,14 +42,21 @@ export default function FarmerSignupViaAgentPage() {
       const agent: any = getFromLocalStorage("userProfile", {});
       setIsSubmitting(true);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response: any = await apiService().postWithoutAuth("/auth/signup", {
-        ...data,
-        agentId: agent.id,
-        userType: "seller",
-      });
+      const response: any = await apiService().postWithoutAuth(
+        `/auth/signup?agentID=${agent.id}`,
+        {
+          ...data,
+          userType: "seller",
+        }
+      );
       if (response.success) {
-        successMessage("Registration successful! Please verify your email.");
-        localStorage.setItem("userProfile", JSON.stringify(data));
+        successMessage("Registered successfully");
+        saveToLocalStorage("current-step", "farm_profile");
+        saveToLocalStorage("farmer-profile", {
+          id: response.data.userId,
+          email: response.data.email,
+        });
+
         navigate("/home");
       } else {
         setIsSubmitting(false);

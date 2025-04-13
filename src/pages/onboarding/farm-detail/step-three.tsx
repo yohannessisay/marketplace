@@ -74,7 +74,7 @@ export default function StepThree() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isAgent: any = getFromLocalStorage("userProfile", {});
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmer: any = getFromLocalStorage("farmer-info", {});
+        const farmer: any = getFromLocalStorage("farmer-profile", {});
         const response: { success: boolean } = await apiService().post(
           "/onboarding/seller/bank-information",
           data,
@@ -85,6 +85,7 @@ export default function StepThree() {
           saveToLocalStorage("userProfile", userProfile);
           successMessage("Bank details saved successfully!");
           saveToLocalStorage("step-three", data); 
+          saveToLocalStorage("current-step","avatar_image")
           navigation("/onboarding/step-four");
         } else {
           errorMessage("Failed to save farm details");

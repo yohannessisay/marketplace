@@ -106,7 +106,7 @@ export default function StepOne() {
       });
       const isAgent = parsed.userType;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const farmer: any = getFromLocalStorage("farmer-info", {});
+      const farmer: any = getFromLocalStorage("farmer-profile", {}); 
 
       if (
         (currentUserStage === "farm_profile" || isAgent === "agent") &&

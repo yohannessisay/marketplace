@@ -128,7 +128,7 @@ export default function StepTwo() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isAgent: any = getFromLocalStorage("userProfile", {});
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmer: any = getFromLocalStorage("farmer-info", {});
+        const farmer: any = getFromLocalStorage("farmer-profile", {});
 
         const response: { success: boolean } = await apiService().postFormData(
           "/onboarding/seller/coffee-details",

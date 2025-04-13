@@ -122,7 +122,7 @@ export default function AddCrop() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isAgent: any = getFromLocalStorage("userProfile", {});
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmer: any = getFromLocalStorage("farmer-info", {});
+        const farmer: any = getFromLocalStorage("farmer-profile", {});
 
         const response: { success: boolean } = await apiService().postFormData(
           "/sellers/listings/create-listing",
@@ -696,7 +696,7 @@ export default function AddCrop() {
                 Back
               </Button>
               <Button type="submit" disabled={isSubmitting} className=" my-4">
-                {isSubmitting ? "Saving..." : "Save and continue"}
+                {isSubmitting ? "Adding..." : "Add crop listing"}
               </Button>
             </div>
           </form>

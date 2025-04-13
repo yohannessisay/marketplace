@@ -26,7 +26,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiService } from "@/services/apiService";
-import { saveToLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 
 // Farm Type
 interface Farm {
@@ -47,8 +47,14 @@ const FarmManagement: React.FC = () => {
     const fetchFarms = async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const user: any = getFromLocalStorage("userProfile", {});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const farmer: any = getFromLocalStorage("farmer-profile", {});
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response: any = await apiService().get(
-          "/sellers/farms/get-farms"
+          "/sellers/farms/get-farms",
+          user.userType == "agent" ? farmer.id : ""
         );
         if (response && response.data.farms) {
           setFarms(response.data.farms);
@@ -214,15 +220,15 @@ const FarmManagement: React.FC = () => {
 
                   <Button
                     variant={"secondary"}
-                          className="w-full flex items-center justify-center group mt-2"
+                    className="w-full flex items-center justify-center group mt-2"
                     onClick={() => {
                       saveToLocalStorage("current-farm-id", farm.id);
                     }}
                     asChild
                   >
                     <Link to="/add-crop">
-                    <span>Add Crop</span>
-                    <Plus className="ml-2 h-4 w-4   group-hover:translate-x-0.5 transition-transform" />
+                      <span>Add Crop</span>
+                      <Plus className="ml-2 h-4 w-4   group-hover:translate-x-0.5 transition-transform" />
                     </Link>
                   </Button>
                 </CardFooter>
