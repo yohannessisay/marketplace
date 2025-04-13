@@ -19,13 +19,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import Stepper from "@/components/ui/stepper";
+} from "@/components/ui/form"; 
 import {
   coffeeCropsSchema,
   type CoffeeCropsFormData,
 } from "@/types/validation/seller-onboarding";
-import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
+import {  getFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -49,8 +48,7 @@ export default function AddCrop() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userProfile: any = getFromLocalStorage("userProfile", {});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any 
   const { successMessage, errorMessage } = useNotification();
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles((prev) => [...prev, ...selectedFiles]);

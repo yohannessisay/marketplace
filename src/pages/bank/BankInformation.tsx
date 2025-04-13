@@ -30,8 +30,7 @@ const BankInformation: React.FC = () => {
 
   const handleSaveAndContinue = () => {
     // Save the data and navigate to the next step
-    // Here you would typically make an API call to save the data
-    console.log('Bank details saved:', bankDetails);
+    // Here you would typically make an API call to save the data 
     navigate('/upload-avatar');
   };
 

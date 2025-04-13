@@ -62,7 +62,7 @@ export default function FarmersTable() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           data: { sellers: any[]; pagination: any };
         }>(
-          `/agent/farmers/management?search=${searchTerm}&page=${currentPage}&limit=5`
+          `/agent/farmers/management`
         );
         setFarmers(response.data.sellers || []);
         setTotalPages(response.data.pagination.totalPages || 1);
@@ -89,27 +89,27 @@ export default function FarmersTable() {
       switch (farmerInfo.onboarding_stage) {
         case "not_started":
           navigate("/home");
-          saveToLocalStorage("current-stage", "not_started");
+          saveToLocalStorage("current-step", "not_started");
           break;
         case "farm_profile":
           navigate("/onboarding/step-one");
-          saveToLocalStorage("current-stage", "farm_profile");
+          saveToLocalStorage("current-step", "farm_profile");
           break;
         case "crops_to_sell":
           navigate("/onboarding/step-two");
-          saveToLocalStorage("current-stage", "crops_to_sell");
+          saveToLocalStorage("current-step", "crops_to_sell");
           break;
         case "bank_information":
           navigate("/onboarding/step-three");
-          saveToLocalStorage("current-stage", "bank_information");
+          saveToLocalStorage("current-step", "bank_information");
           break;
         case "avatar_image":
           navigate("/onboarding/step-four");
-          saveToLocalStorage("current-stage", "avatar_image");
+          saveToLocalStorage("current-step", "avatar_image");
           break;
         case "completed":
           navigate("/seller-dashboard");
-          saveToLocalStorage("current-stage", "completed");
+          saveToLocalStorage("current-step", "completed");
           break;
         default:
           break;
