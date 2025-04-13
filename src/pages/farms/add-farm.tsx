@@ -95,7 +95,7 @@ export default function AddFarm() {
 
       if (userProfile && userProfile.userType == "agent") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmerProfile: any = getFromLocalStorage("on-behalf-farmer", {});
+        const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
         xfmrId = farmerProfile.id ?? "";
       }
       // response =

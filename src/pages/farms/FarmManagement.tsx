@@ -26,9 +26,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiService } from "@/services/apiService";
+import { saveToLocalStorage } from "@/lib/utils";
 
 // Farm Type
 interface Farm {
+  id: string;
   farm_name: string;
   town_location: string;
   total_size_hectares?: string;
@@ -45,7 +47,9 @@ const FarmManagement: React.FC = () => {
     const fetchFarms = async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const response: any = await apiService().get("/sellers/farms/get-farms");
+        const response: any = await apiService().get(
+          "/sellers/farms/get-farms"
+        );
         if (response && response.data.farms) {
           setFarms(response.data.farms);
         } else {
@@ -76,12 +80,14 @@ const FarmManagement: React.FC = () => {
               Manage your coffee farms and track their verification status
             </p>
           </div>
-          <Button className="mt-4 md:mt-0" asChild>
-            <Link to="/add-farm">
-              <Plus className="mr-2 h-4 w-4" />
-              Add New Farm
-            </Link>
-          </Button>
+          <div className="flex gap-4">
+            <Button className="mt-4 md:mt-0" asChild>
+              <Link to="/add-farm">
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Farm
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <Separator className="mb-8" />
@@ -197,13 +203,27 @@ const FarmManagement: React.FC = () => {
                   )}
                 </CardContent>
 
-                <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4">
+                <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col">
                   <Button
                     variant="outline"
                     className="w-full flex items-center justify-center group"
                   >
                     <span>Manage Farm</span>
-                    <ChevronRight className="ml-2 h-4 w-4 opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                    <ChevronRight className="ml-2 h-4 w-4  group-hover:translate-x-0.5 transition-transform" />
+                  </Button>
+
+                  <Button
+                    variant={"secondary"}
+                          className="w-full flex items-center justify-center group mt-2"
+                    onClick={() => {
+                      saveToLocalStorage("current-farm-id", farm.id);
+                    }}
+                    asChild
+                  >
+                    <Link to="/add-crop">
+                    <span>Add Crop</span>
+                    <Plus className="ml-2 h-4 w-4   group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>

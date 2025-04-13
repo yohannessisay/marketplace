@@ -24,6 +24,7 @@ import FarmerSignupViaAgentPage from "./pages/auth/farmer-signup-via-agent";
 import MyOrdersPage from "./pages/marketplace/MyOrdersPage";
 import CoffeeListingPage from "./pages/marketplace/coffee-listing/coffee-page";
 import CoffeeListingSellerView from "./pages/marketplace/coffee-listing-seller/coffee-listing-seller";
+import AddCrop from "./pages/farms/add-crop";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -143,6 +144,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AddFarm />
+              </ProtectedRoute>
+            }
+          />
+             <Route
+            path="/add-crop"
+            element={
+              <ProtectedRoute>
+                <AddCrop />
               </ProtectedRoute>
             }
           />
