@@ -122,12 +122,12 @@ const WelcomePage: React.FC = () => {
               Get Started with Afrovalley
             </h2>
             <div className="bg-emerald-50 text-emerald-700 text-sm font-medium px-3 py-1 rounded-full">
-              {user.userType == "buyer" ? "1 step" : "4 steps"} to complete
+              {user.userType === "buyer" ? "1 step" : "4 steps"} to complete
             </div>
           </div>
 
           <div className="space-y-8">
-            {user.userType == "buyer" ? (
+            {user.userType === "buyer" ? (
               <>
                 {" "}
                 <StepItem

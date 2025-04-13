@@ -59,12 +59,23 @@ export default function Header() {
               <Home className="mr-1" /> My dashboard
             </Link>
           )}
-          <Link to="/market-place" className={linkClasses("/market-place")}>
-            <ShoppingBagIcon className="mr-1" /> Marketplace
-          </Link>
-          <Link to="/my-orders" className={linkClasses("/my-orders")}>
-            <Receipt className="mr-1" /> My Orders
-          </Link>
+          {user.onboardingStage === "completed" ? (
+            <>
+              {" "}
+              <Link to="/market-place" className={linkClasses("/market-place")}>
+                <ShoppingBagIcon className="mr-1" /> Marketplace
+              </Link>
+              <Link to="/my-orders" className={linkClasses("/my-orders")}>
+                <Receipt className="mr-1" /> My Orders
+              </Link>
+              <Link to="/chats" className={linkClasses("/chats")}>
+                <MessageCircle className="mr-1" /> Chats
+              </Link>
+            </>
+          ) : (
+            <></>
+          )}
+
           {user.userType === "agent" && (
             <Link
               to="/agent/farmer-management"
@@ -81,14 +92,15 @@ export default function Header() {
               <BeanIcon className="mr-1" /> Coffee Listing
             </Link>
           )}
-          <Link to="/chats" className={linkClasses("/chats")}>
-            <MessageCircle className="mr-1" /> Chats
-          </Link>
 
           {/* User Dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild >
-              <Button variant="ghost" size="icon" className="rounded-full border-2 border-primary/40">
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full border-2 border-primary/40"
+              >
                 <User className="h-5 w-5 text-slate-700 border rounded-full" />
               </Button>
             </DropdownMenuTrigger>
