@@ -36,8 +36,8 @@ const FarmManagement = lazy(() => import("./pages/farms/FarmManagement"));
 const FarmDetails = lazy(() => import("./pages/farms/FarmDetails")); // Step One
 const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const Dashboard = lazy(() => import("./pages/seller/Dashboard"));
-const CompanyVerification = lazy(
-  () => import("./pages/company/CompanyVerification")
+const CompanyOnboarding = lazy(
+  () => import("./pages/company/company-onboarding")
 );
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -241,10 +241,10 @@ function App() {
             }
           />
           <Route
-            path="/12"
+            path="/company-onboarding"
             element={
               <ProtectedRoute>
-                <CompanyVerification />
+                <CompanyOnboarding />
               </ProtectedRoute>
             }
           />

@@ -64,7 +64,8 @@ export default function SignupPage() {
 
   const onBuyerSubmit = async (data: BuyerFormValues) => {
     setIsSubmitting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response: any = await apiService().postWithoutAuth("/auth/signup", {
       ...data,
       userType: "buyer",
@@ -78,6 +79,12 @@ export default function SignupPage() {
       errorMessage("Something went wrong");
       setIsSubmitting(false);
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error:any) {
+      successMessage(error.data.error.message);
+      setIsSubmitting(false);
+    }
+
   };
 
   const onSellerSubmit = async (data: SellerFormValues) => {
