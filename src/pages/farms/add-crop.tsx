@@ -79,8 +79,7 @@ export default function AddCrop() {
       readiness_date: new Date().toISOString(),
       lot_length: "",
       delivery_type: "",
-      shipping_port: "",
-      listing_status: "",
+      shipping_port: "", 
     },
   });
 
@@ -510,19 +509,7 @@ export default function AddCrop() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="listing_status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Listing Status</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            
                   <FormField
                     control={form.control}
                     name="processing_method"

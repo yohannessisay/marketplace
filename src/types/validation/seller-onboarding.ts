@@ -67,8 +67,7 @@ export const coffeeCropsSchema = z.object({
   readiness_date: z.string().min(1, "Readiness date is required"),
   lot_length: z.string().optional(),
   delivery_type: z.string().min(1, "Delivery type is required"),
-  shipping_port: z.string().min(1, "Shipping port is required"),
-  listing_status: z.string().min(1, "Listing status is required"),
+  shipping_port: z.string().min(1, "Shipping port is required"), 
 });
 
 export type CoffeeCropsFormData = z.infer<typeof coffeeCropsSchema>;

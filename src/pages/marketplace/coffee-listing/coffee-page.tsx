@@ -16,17 +16,12 @@ export default function CoffeeListingPage() {
   const { id } = useParams();
   const [demoOrderStatus, setDemoOrderStatus] = useState<OrderStatus>("none");
   const [listing, setListing] = useState<CoffeeListing | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const { successMessage, errorMessage } = useNotification();
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [quantity, setQuantity] = useState(100);
   useEffect(() => {
-    setIsLoading(true);
     const fetchListingDetails = async () => {
-      setIsLoading(true);
-
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response: any = await apiService().get(
@@ -37,20 +32,13 @@ export default function CoffeeListingPage() {
           response.success &&
           response.data.listings &&
           response.data.listings.length > 0
-        ) { 
-          
+        ) {
           setListing(response.data.listings[0]);
-          // Reset photo index when loading a new listing
-          setCurrentPhotoIndex(0);
         } else {
           errorMessage("Failed to fetch listing details");
         }
-        setIsLoading(false);
       } catch {
         errorMessage("An error occurred while fetching the listing");
-        setIsLoading(true);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -68,7 +56,7 @@ export default function CoffeeListingPage() {
       });
       if (response.success) {
         successMessage("Order placed successfully");
-        
+
         setDemoOrderStatus("pending");
       } else {
         errorMessage(response.data.error.message);

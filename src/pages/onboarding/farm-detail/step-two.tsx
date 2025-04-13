@@ -81,8 +81,7 @@ export default function StepTwo() {
       readiness_date: new Date().toISOString(),
       lot_length: "",
       delivery_type: "FOB (Free on Board) - Port of Djibouti",
-      shipping_port: "",
-      listing_status: "",
+      shipping_port: "", 
     },
   });
 
@@ -520,19 +519,7 @@ export default function StepTwo() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="listing_status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Listing Status</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          
                   <FormField
                     control={form.control}
                     name="processing_method"
