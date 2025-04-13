@@ -29,7 +29,7 @@ export function Header({
             <ArrowLeft size={20} className="mr-1" />
             <span>Back to Marketplace</span>
           </button>
-          <h1 className="text-xl font-semibold text-foreground flex-1">Coffee Details</h1>
+          <h1 className="text-xl font-semibold text-foreground flex-1">Coffee Detailss</h1>
           
           {/* Demo Mode Selector - Remove in production */}
           <div className="mr-4 w-64">

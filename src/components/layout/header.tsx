@@ -2,8 +2,7 @@ import { getFromLocalStorage } from "@/lib/utils";
 import {
   BeanIcon,
   Home,
-  List,
-  MessageCircle,
+  List, 
   Receipt,
   ShoppingBagIcon,
   Settings,
@@ -68,9 +67,7 @@ export default function Header() {
               <Link to="/my-orders" className={linkClasses("/my-orders")}>
                 <Receipt className="mr-1" /> My Orders
               </Link>
-              <Link to="/chats" className={linkClasses("/chats")}>
-                <MessageCircle className="mr-1" /> Chats
-              </Link>
+           
             </>
           ) : (
             <></>
