@@ -74,12 +74,23 @@ const Login = () => {
             case "farm_profile":
               saveToLocalStorage("current-step", "farm_profile");
               break;
-            default: 
+            default:
               break;
           }
-        }
-        else if (userProfile?.userType === "agent") {
+        } else if (userProfile?.userType === "agent") {
           redirectTo = "/agent/farmer-management";
+        } else if (userProfile?.userType === "buyer") {
+          switch (userProfile?.onboardingStage) {
+            case "onboarding":
+              redirectTo = "/home";
+              saveToLocalStorage("current-step", "onboarding");
+              break;
+            case "completed":
+              redirectTo = "/market-place";
+              break;
+            default:
+              break;
+          } 
         }
 
         navigate(redirectTo);

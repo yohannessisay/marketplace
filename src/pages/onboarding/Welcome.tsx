@@ -111,7 +111,7 @@ const WelcomePage: React.FC = () => {
             Welcome,{user.firstName}!
           </h1>
           <p className="text-slate-600 text-lg">
-            Congratulations on joining Afrovalley. Let's set up your account.
+            Congratulations on joining AfroValley. Let's set up your account.
           </p>
         </div>
 
@@ -119,7 +119,7 @@ const WelcomePage: React.FC = () => {
         <Card className="bg-white rounded-xl p-8 mb-10 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-slate-800">
-              Get Started with Afrovalley
+              Get Started with AfroValley
             </h2>
             <div className="bg-emerald-50 text-emerald-700 text-sm font-medium px-3 py-1 rounded-full">
               {user.userType === "buyer" ? "1 step" : "4 steps"} to complete
