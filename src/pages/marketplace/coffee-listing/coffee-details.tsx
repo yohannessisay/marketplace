@@ -15,7 +15,7 @@ import { useOrderStatus } from "@/hooks/useOrderStatus"
 import { FarmInformation } from "./farm-information"
 
 interface CoffeeDetailsProps {
-  listing: CoffeeListing
+  listing: CoffeeListing|null
   demoOrderStatus: OrderStatus
 }
 
@@ -40,7 +40,7 @@ export function CoffeeDetails({ listing, demoOrderStatus }: CoffeeDetailsProps) 
 
   return (
     <div className="space-y-6">
-      <PhotoGallery photos={listing.photos} isOrganic={listing.isOrganic} />
+      <PhotoGallery photos={listing?.coffee_photo??null} isOrganic={listing?.is_organic??false} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
@@ -54,7 +54,7 @@ export function CoffeeDetails({ listing, demoOrderStatus }: CoffeeDetailsProps) 
         </TabsContent>
         
         <TabsContent value="farm" className="border rounded-md mt-2">
-          <FarmInformation listing={listing} />
+          <FarmInformation listing={listing?.farm} />
         </TabsContent>
         
         <TabsContent value="cup" className="border rounded-md mt-2">

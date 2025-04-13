@@ -1,25 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { OrderStatus } from "@/types/order";
 import { Header } from "./header";
 import { CoffeeDetails } from "./coffee-details";
 import { OrderSidebar } from "./order-sidebar";
 import { ReviewModal } from "./review-modal";
-import { useCoffeeListing } from "@/hooks/useCoffeeListing";
 import { OrderModal } from "./order-modal";
+import { useParams } from "react-router-dom";
+import { apiService } from "@/services/apiService";
+import { CoffeeListing } from "@/types/coffee";
+import { useNotification } from "@/hooks/useNotification";
 
 export default function CoffeeListingPage() {
-  const { listing } = useCoffeeListing();
+  const { id } = useParams();
   const [demoOrderStatus, setDemoOrderStatus] = useState<OrderStatus>("none");
+  const [listing, setListing] = useState<CoffeeListing | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const { successMessage, errorMessage } = useNotification();
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [quantity, setQuantity] = useState(100);
+  useEffect(() => {
+    setIsLoading(true);
+    const fetchListingDetails = async () => {
+      setIsLoading(true);
 
-  const handleOrderSubmit = () => {
-    console.log("Placing order for", quantity, "kg");
-    setShowOrderModal(false);
-    setDemoOrderStatus("pending");
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response: any = await apiService().get(
+          `/marketplace/listings/get-listing?listingId=${id}`
+        );
+
+        if (
+          response.success &&
+          response.data.listings &&
+          response.data.listings.length > 0
+        ) { 
+          
+          setListing(response.data.listings[0]);
+          // Reset photo index when loading a new listing
+          setCurrentPhotoIndex(0);
+        } else {
+          errorMessage("Failed to fetch listing details");
+        }
+        setIsLoading(false);
+      } catch {
+        errorMessage("An error occurred while fetching the listing");
+        setIsLoading(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchListingDetails();
+    }
+  }, [id]);
+  const handleOrderSubmit = async () => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await apiService().post("/orders/place-order", {
+        listingId: listing?.id,
+        unit_price: listing?.price_per_kg,
+        quantity_kg: listing?.quantity_kg,
+      });
+      if (response.success) {
+        successMessage("Order placed successfully");
+        
+        setDemoOrderStatus("pending");
+      } else {
+        errorMessage(response.data.error.message);
+      }
+      setShowOrderModal(false);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      setShowOrderModal(false);
+      errorMessage(err.data.error.message);
+    }
   };
 
   const handleSubmitReview = () => {
@@ -33,12 +92,12 @@ export default function CoffeeListingPage() {
       <Header
         demoOrderStatus={demoOrderStatus}
         setDemoOrderStatus={setDemoOrderStatus}
-        sellerName={listing.sellerName}
-        sellerRating={listing.sellerRating}
-        sellerReviews={listing.sellerReviews}
+        sellerName={listing?.seller.first_name ?? ""}
+        sellerRating={listing?.seller.rating ?? 0}
+        sellerReviews={listing?.seller.total_reviews ?? 0}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <CoffeeDetails

@@ -47,11 +47,11 @@ export default function Header() {
     <header className="bg-white border-b border-gray-200 p-4 rounded-md shadow-md">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center">
-          <h1 className="text-green-800 text-xl font-bold">Afrovalley</h1>
+          <h1 className="text-green-800 text-xl font-bold">AfroValley</h1>
         </div>
 
         <div className="flex items-center space-x-4">
-          {user.userType !== "agent" && (
+          {user.userType === "seller" && (
             <Link
               to="/seller-dashboard"
               className={linkClasses("/seller-dashboard")}

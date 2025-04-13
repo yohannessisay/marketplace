@@ -1,8 +1,8 @@
-import { MapPin } from "lucide-react"
-import type { CoffeeListing } from "@/types/coffee"
+import { Farm } from "@/types/coffee"
+import { MapPin } from "lucide-react" 
 
 interface FarmInformationProps {
-  listing: CoffeeListing
+  listing: Farm|undefined
 }
 
 export function FarmInformation({ listing }: FarmInformationProps) {
@@ -13,9 +13,9 @@ export function FarmInformation({ listing }: FarmInformationProps) {
           <MapPin size={24} className="text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-medium">{listing.farmName}</h3>
+          <h3 className="text-lg font-medium">{listing?.farm_name}</h3>
           <p className="text-muted-foreground">
-            {listing.region}, {listing.country}
+            {listing?.region}, {listing?.country}
           </p>
         </div>
       </div>
@@ -23,11 +23,11 @@ export function FarmInformation({ listing }: FarmInformationProps) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <h4 className="text-sm font-medium text-muted-foreground">Altitude</h4>
-          <p>{listing.altitude} meters</p>
+          <p>{listing?.altitude_meters} meters</p>
         </div>
         <div>
           <h4 className="text-sm font-medium text-muted-foreground">Region</h4>
-          <p>{listing.region}</p>
+          <p>{listing?.region}</p>
         </div>
       </div>
 

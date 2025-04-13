@@ -8,7 +8,7 @@ import { OrderStatusCard } from "./order-status-card";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
 
 interface OrderSidebarProps {
-  listing: CoffeeListing;
+  listing: CoffeeListing|null;
   demoOrderStatus: OrderStatus;
   setShowOrderModal: (show: boolean) => void;
   setShowReviewModal: (show: boolean) => void;
@@ -28,19 +28,19 @@ export function OrderSidebar({
       <Card className="sticky top-6">
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
-            <h2 className="text-xl font-bold">{listing.title}</h2>
+            <h2 className="text-xl font-bold">{listing?.farm.farm_name}</h2>
             <Badge
               variant="outline"
               className="bg-yellow-100 text-yellow-800 border-0"
             >
               <Star size={16} className="mr-1 text-yellow-500 fill-current" />
-              {listing.score}
+              {listing?.grade}
             </Badge>
           </div>
 
           <div className="flex items-baseline mb-6">
             <span className="text-2xl font-bold text-primary">
-              ${listing.price}
+              ${listing?.price_per_kg}
             </span>
             <span className="ml-1 text-muted-foreground">/kg</span>
           </div>
@@ -51,7 +51,7 @@ export function OrderSidebar({
                 Available Quantity
               </span>
               <span className="text-sm font-medium">
-                {listing.availableQuantity} kg
+                {listing?.quantity_kg} kg
               </span>
             </div>
 
@@ -59,13 +59,13 @@ export function OrderSidebar({
               <span className="text-sm text-muted-foreground">
                 Processing Method
               </span>
-              <span className="text-sm font-medium">{listing.processing}</span>
+              <span className="text-sm font-medium">{listing?.processing_method}</span>
             </div>
 
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Region</span>
               <span className="text-sm font-medium">
-                {listing.region}, {listing.country}
+                {listing?.farm.region}, {listing?.farm.country}
               </span>
             </div>
           </div>
@@ -111,23 +111,7 @@ export function OrderSidebar({
       <Card>
         <CardContent className="p-6">
           <h3 className="text-lg font-medium mb-4">About the Seller</h3>
-          <div className="flex items-center mb-4">
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground overflow-hidden">
-              {listing.sellerName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </div>
-            <div className="ml-3">
-              <h4 className="text-sm font-medium">{listing.sellerName}</h4>
-              <div className="flex items-center">
-                <Star size={14} className="text-yellow-400 fill-current" />
-                <span className="text-xs ml-1 text-muted-foreground">
-                  {listing.sellerRating} ({listing.sellerReviews} reviews)
-                </span>
-              </div>
-            </div>
-          </div>
+           
           <Button variant="outline" className="w-full">
             View Seller Profile
           </Button>

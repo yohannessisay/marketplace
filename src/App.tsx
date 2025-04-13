@@ -19,7 +19,7 @@ import StepTwo from "./pages/onboarding/farm-detail/step-two";
 import AgentLogin from "./pages/auth/agent-login";
 import FarmersTable from "./pages/agent/farmer-management";
 import AddFarm from "./pages/farms/add-farm";
-import CoffeeMarketplace from "./pages/marketplace/CoffeeMarketplace";
+import CoffeeMarketplace from "./pages/marketplace/coffee-marketplace";
 import FarmerSignupViaAgentPage from "./pages/auth/farmer-signup-via-agent";
 import MyOrdersPage from "./pages/marketplace/MyOrdersPage";
 import CoffeeListingPage from "./pages/marketplace/coffee-listing/coffee-page";
@@ -270,7 +270,7 @@ function App() {
           />
 
           <Route
-            path="/chats"
+            path="/listing/:id"
             element={
               <ProtectedRoute>
                 <CoffeeListingPage />

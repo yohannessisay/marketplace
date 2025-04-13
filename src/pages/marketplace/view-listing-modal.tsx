@@ -16,114 +16,9 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiService } from "@/services/apiService";
 import SampleRequestModal from "./sample-request-modal";
+import { Link } from "react-router-dom";
+import { ApiResponse, CoffeeListing, CoffeePhoto } from "@/types/coffee";
 
-interface Farm {
-  id: string;
-  seller_id: string;
-  farm_name: string;
-  town_location: string;
-  region: string;
-  country: string;
-  total_size_hectares: number;
-  coffee_area_hectares: number;
-  longitude: number;
-  latitude: number;
-  altitude_meters: number;
-  crop_type: string;
-  crop_source: string;
-  origin: string;
-  capacity_kg: number;
-  tree_type: string;
-  tree_variety: string;
-  soil_type: string;
-  avg_annual_temp: number;
-  annual_rainfall_mm: number;
-  verification_status: string;
-  created_at: string;
-  updated_at: string | null;
-  created_by_agent_id: string | null;
-}
-
-interface Seller {
-  id: string;
-  auth_id: string;
-  created_by_agent_id: string | null;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  telegram: string;
-  address: string;
-  trading_since: string;
-  rating: number;
-  total_reviews: number;
-  about_me: string;
-  deals_completed: number;
-  avatar_url_csv: string;
-  verification_status: string;
-  onboarding_stage: string;
-  blocked_access: boolean;
-  identity_verified: boolean;
-  last_login_at: string;
-}
-
-interface CoffeePhoto {
-  id: string;
-  listing_id: string;
-  photo_url: string;
-  is_primary: boolean;
-  created_at: string;
-}
-
-interface CoffeeListing {
-  id: string;
-  seller_id: string;
-  farm_id: string;
-  coffee_variety: string;
-  bean_type: string;
-  crop_year: string;
-  is_organic: boolean;
-  processing_method: string;
-  moisture_percentage: number;
-  screen_size: string;
-  drying_method: string;
-  wet_mill: string;
-  cup_taste_acidity: string;
-  cup_taste_body: string;
-  cup_taste_sweetness: string;
-  cup_taste_aftertaste: string;
-  cup_taste_balance: string;
-  grade: string;
-  quantity_kg: number;
-  price_per_kg: number;
-  readiness_date: string;
-  lot_length: string;
-  delivery_type: string;
-  shipping_port: string;
-  listing_status: string;
-  created_at: string;
-  updated_at: string | null;
-  expires_at: string | null;
-  created_by_agent_id: string | null;
-  farm: Farm;
-  seller: Seller;
-  coffee_photo: CoffeePhoto[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  listing_discount: any[];
-}
-
-interface ApiResponse {
-  success: boolean;
-  message: string;
-  data: {
-    listings: CoffeeListing[];
-    pagination: null;
-    searchTerm: null;
-    authenticationRequiredForActions: string;
-  };
-}
-
-// Image component with loading state
 function CoffeeImage({
   src,
   alt,
@@ -177,7 +72,6 @@ export default function ListingDetailModal({
   const [showSampleRequestModal, setShowSampleRequestModal] =
     React.useState(false);
 
-  // Fetch listing details
   React.useEffect(() => {
     const fetchListingDetails = async () => {
       setIsLoading(true);
@@ -274,7 +168,9 @@ export default function ListingDetailModal({
               <Coffee className="h-5 w-5 text-emerald-600" />
               View Detail
             </DialogTitle>
-            <DialogDescription className="flex justify-center ">Request a sample</DialogDescription>
+            <DialogDescription className="flex justify-center ">
+              Request a sample
+            </DialogDescription>
           </DialogHeader>
           {isLoading ? (
             <div className="p-6 space-y-4">
@@ -607,12 +503,12 @@ export default function ListingDetailModal({
                 </Card>
 
                 <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-                    Contact Seller
-                  </Button>
+                  <Link className="flex-1" to={`/listing/${listingId}`}>
+                    <Button className="">Contact Seller</Button>
+                  </Link>
                   <Button
                     variant="outline"
-                    className="flex-1 border-emerald-600 text-emerald-600 hover:bg-emerald-50"
+                    className="flex-1"
                     onClick={() => setShowSampleRequestModal(true)}
                   >
                     Request Samples

@@ -1,51 +1,53 @@
-import { CoffeeListing } from "@/types/coffee"
+import { CoffeeListing } from "@/types/coffee";
 
 interface CoffeeDetailsTabProps {
-  listing: CoffeeListing
+  listing: CoffeeListing | null;
 }
 
 export function CoffeeDetailsTab({ listing }: CoffeeDetailsTabProps) {
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-2">Description</h3>
-        <p className="text-muted-foreground text-sm">{listing.description}</p>
-      </div>
-      
       <div className="grid grid-cols-2 gap-4">
         <div>
           <h4 className="text-sm font-medium text-muted-foreground">Variety</h4>
-          <p>{listing.variety}</p>
+          <p>{listing?.coffee_variety}</p>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-muted-foreground">Processing</h4>
-          <p>{listing.processing}</p>
+          <h4 className="text-sm font-medium text-muted-foreground">
+            Processing
+          </h4>
+          <p>{listing?.processing_method}</p>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-muted-foreground">Bean Type</h4>
-          <p>{listing.beanType}</p>
+          <h4 className="text-sm font-medium text-muted-foreground">
+            Bean Type
+          </h4>
+          <p>{listing?.bean_type || "N/A"}</p>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-muted-foreground">Crop Year</h4>
-          <p>{listing.cropYear}</p>
+          <h4 className="text-sm font-medium text-muted-foreground">
+            Crop Year
+          </h4>
+          <p>{listing?.crop_year || "N/A"}</p>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-muted-foreground">Quantity Available</h4>
-          <p>{listing.availableQuantity} kg</p>
+          <h4 className="text-sm font-medium text-muted-foreground">
+            Quantity Available
+          </h4>
+          <p>{listing?.quantity_kg ? `${listing.quantity_kg} kg` : "N/A"}</p>
         </div>
         <div>
-          <h4 className="text-sm font-medium text-muted-foreground">Ready By</h4>
-          <p>{listing.readinessDate}</p>
+          <h4 className="text-sm font-medium text-muted-foreground">
+            Ready By
+          </h4>
+          <p>{listing?.readiness_date || "N/A"}</p>
         </div>
-        <div>
-          <h4 className="text-sm font-medium text-muted-foreground">Farming Practice</h4>
-          <p>{listing.farmingPractice}</p>
-        </div>
+
         <div>
           <h4 className="text-sm font-medium text-muted-foreground">Organic</h4>
-          <p>{listing.isOrganic ? 'Yes' : 'No'}</p>
+          <p>{listing?.is_organic ? "Yes" : "No"}</p>
         </div>
       </div>
     </div>
-  )
+  );
 }

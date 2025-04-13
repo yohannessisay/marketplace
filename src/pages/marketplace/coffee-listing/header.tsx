@@ -41,14 +41,14 @@ export function Header({
                 <SelectValue placeholder="Select demo order status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No Order (Demo)</SelectItem>
-                <SelectItem value="pending">Pending Order (Demo)</SelectItem>
-                <SelectItem value="confirmed">Confirmed Order (Demo)</SelectItem>
-                <SelectItem value="processing">Processing Order (Demo)</SelectItem>
-                <SelectItem value="shipping">Shipping Order (Demo)</SelectItem>
-                <SelectItem value="delivered">Delivered Order (Demo)</SelectItem>
-                <SelectItem value="completed">Completed Order (Demo)</SelectItem>
-                <SelectItem value="cancelled">Cancelled Order (Demo)</SelectItem>
+                <SelectItem value="none">No Order</SelectItem>
+                <SelectItem value="pending">Pending Order</SelectItem>
+                <SelectItem value="confirmed">Confirmed Order</SelectItem>
+                <SelectItem value="processing">Processing Order</SelectItem>
+                <SelectItem value="shipping">Shipping Order</SelectItem>
+                <SelectItem value="delivered">Delivered Order</SelectItem>
+                <SelectItem value="completed">Completed Order</SelectItem>
+                <SelectItem value="cancelled">Cancelled Order</SelectItem>
               </SelectContent>
             </Select>
           </div>
