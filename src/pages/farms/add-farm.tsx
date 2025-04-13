@@ -36,18 +36,16 @@ import { FileUpload } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Header from "@/components/layout/header";
+import { getFromLocalStorage } from "@/lib/utils";
 
 export default function AddFarm() {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
   const [files, setFiles] = useState<File[]>([]);
-  const userProfile = localStorage.getItem("userProfile");
-  const parsed = userProfile ? JSON.parse(userProfile) : null;
-  const currentUserStage = parsed?.onboardingStage;
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // Initialize form with default values or values from local storage
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
@@ -74,6 +72,7 @@ export default function AddFarm() {
   });
 
   const onSubmit = async (data: FarmDetailsFormData) => {
+    setIsSubmitting(true);
     try {
       const formData = new FormData();
 
@@ -86,34 +85,44 @@ export default function AddFarm() {
       files.forEach((file) => {
         formData.append("files", file);
       });
-      // let response: { success: boolean } = { success: false };
-      if (currentUserStage === "farm_profile") {
-        // response = 
-        await apiService().postFormData(
-          "/onboarding/seller/farm-details",
-          formData,
-          true
-        );
-      } else {
-        // response = await apiService().putFormData(
-        //   "/onboarding/seller/farm-details",
-        //   formData,
-        //   true
-        // );
-        // response = { success: true };
+      let response: { success: boolean } = { success: false };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const userProfile: any = getFromLocalStorage("userProfile", {});
+      let xfmrId = null;
+      if (userProfile && userProfile.userType == "seller") {
+        formData.append("sellerId", userProfile.id);
       }
 
-      saveToLocalStorage("new-farm", data);
-      navigate("/seller-dashboard");
-      successMessage("Farm details saved successfully!");
+      if (userProfile && userProfile.userType == "agent") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const farmerProfile: any = getFromLocalStorage("on-behalf-farmer", {});
+        xfmrId = farmerProfile.id ?? "";
+      }
+      // response =
+      response = await apiService().postFormData(
+        "/sellers/farms/create-farm",
+        formData,
+        true,
+        xfmrId ? xfmrId : ""
+      );
+      if (response && response.success) {
+        successMessage("Farm details saved successfully!");
+        navigate("/seller-dashboard");
+      } else {
+        errorMessage("Something went wrong!");
+        setIsSubmitting(false);
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
+      console.log(error);
+      
       errorMessage(
         error?.message || "An error occurred while saving farm details"
       );
     } finally {
       saveToLocalStorage("step-one", data);
+      setIsSubmitting(false);
     }
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -539,7 +548,9 @@ export default function AddFarm() {
 
             {/* Navigation Buttons */}
             <div className="flex justify-end mb-8">
-              <Button type="submit">Add New Farm</Button>
+              <Button type="submit" disabled={isSubmitting} className=" my-4">
+                {isSubmitting ? "Adding..." : "Add a new farm"}
+              </Button>
             </div>
           </form>
         </Form>

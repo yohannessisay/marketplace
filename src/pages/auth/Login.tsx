@@ -24,7 +24,6 @@ const Login = () => {
   });
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
-  const [loginCompleted, setLoginCompleted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const onSubmit = async (data: LoginFormInputs) => {
     try {
@@ -58,26 +57,33 @@ const Login = () => {
           username: user.username,
         };
         let redirectTo = "/home";
-        switch (userProfile?.onboardingStage) {
-          case "crops_to_sell":
-            redirectTo = "/onboarding/step-two";
-            break;
-          case "bank_information":
-            redirectTo = "/onboarding/step-three";
-            break;
-          case "avatar_image":
-            redirectTo = "/onboarding/step-four";
-            break;
-          case "completed":
-            redirectTo = "/seller-dashboard";
-            break;
-          default:
-            break;
+        if (userProfile?.userType === "seller") {
+          switch (userProfile?.onboardingStage) {
+            case "crops_to_sell":
+              redirectTo = "/onboarding/step-two";
+              break;
+            case "bank_information":
+              redirectTo = "/onboarding/step-three";
+              break;
+            case "avatar_image":
+              redirectTo = "/onboarding/step-four";
+              break;
+            case "completed":
+              redirectTo = "/seller-dashboard";
+              break;
+            case "farm_profile":
+              saveToLocalStorage("current-step", "farm_profile");
+              break;
+            default: 
+              break;
+          }
+        }
+        else if (userProfile?.userType === "agent") {
+          redirectTo = "/agent/farmer-management";
         }
 
         navigate(redirectTo);
         saveToLocalStorage("userProfile", userProfile);
-        setLoginCompleted(true);
       } else {
         errorMessage("Credential error");
       }
@@ -92,7 +98,7 @@ const Login = () => {
         successMessage("Verify your email to continue");
         return;
       }
-      errorMessage(error);
+      errorMessage("Credential Error");
     }
   };
 

@@ -16,8 +16,7 @@ import {
   ArrowRight,
   CheckCircle,
   Circle,
-  AlertCircle,
-  Loader2,
+  AlertCircle, 
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,7 @@ import {
 import { apiService } from "@/services/apiService";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/header";
+import { LoadingState } from "@/components/common/loading";
 
 // Types for API response
 interface Seller {
@@ -584,14 +584,7 @@ export default function MyOrdersPage() {
   };
 
   // Loading state component
-  const LoadingState = () => {
-    return (
-      <div className="flex justify-center items-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-lg">Loading orders...</span>
-      </div>
-    );
-  };
+
 
   return (
     <div className="min-h-screen bg-primary/5 p-8">

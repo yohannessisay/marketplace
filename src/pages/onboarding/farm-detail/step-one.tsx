@@ -167,7 +167,7 @@ export default function StepOne() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 shadow-lg px-8  rounded-md py-4"
+          className="space-y-8 shadow-lg px-8  rounded-md py-4 bg-white"
         >
           {/* Document Upload Section */}
           <div className="mb-10">

@@ -82,10 +82,12 @@ export default function StepFour() {
   // Handle form submission
   const onSubmit = async (data: ProfileInfoFormData) => {
     try {
+   
+      
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const currentStep: any = getFromLocalStorage("current-step", "");
+      const currentStep: any = getFromLocalStorage("current-step", ""); 
       if (
-        (userProfile.currentUserStage === "avatar_image" ||
+        (userProfile.onboardingStage === "avatar_image" ||
           userProfile.userType === "agent") &&
         currentStep === "avatar_image"
       ) {
@@ -122,6 +124,7 @@ export default function StepFour() {
           removeFromLocalStorage("step-two");
           removeFromLocalStorage("step-three");
           removeFromLocalStorage("step-four");
+          removeFromLocalStorage("profile-image");
           // Save complete form data
 
           successMessage("Registration completed successfully!");

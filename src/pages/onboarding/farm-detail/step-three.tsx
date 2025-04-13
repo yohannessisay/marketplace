@@ -63,9 +63,10 @@ export default function StepThree() {
   const onSubmit = async (data: BankInfoFormData) => {
     try { 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const currentStep:any=getFromLocalStorage("current-step", "");
+      const currentStep:any=getFromLocalStorage("current-step", ""); 
+      
       if (
-        (userProfile.currentUserStage === "bank_information" ||
+        (userProfile.onboardingStage === "bank_information" ||
           userProfile.userType === "agent") &&
           currentStep === "bank_information"
       ) {
@@ -80,10 +81,11 @@ export default function StepThree() {
           isAgent.userType === "agent" && farmer ? farmer.id : ""
         );
         if (response && response.success) {
-          successMessage("Farm details saved successfully!");
-          saveToLocalStorage("step-three", data);
-          localStorage.setItem("current-four", "avatar_image");
-          navigation("/onboarding/step-two");
+          userProfile.onboardingStage = "avatar_image";
+          saveToLocalStorage("userProfile", userProfile);
+          successMessage("Bank details saved successfully!");
+          saveToLocalStorage("step-three", data); 
+          navigation("/onboarding/step-four");
         } else {
           errorMessage("Failed to save farm details");
         }

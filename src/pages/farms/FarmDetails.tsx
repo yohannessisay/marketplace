@@ -1,7 +1,7 @@
 // pages/farms/FarmDetails.tsx
 
 import React from "react";
-import StepOne from "./farm-detail/step-one";
+import StepOne from "../onboarding/farm-detail/step-one";
 import Header from "@/components/layout/header";
 
 const FarmDetailsPage: React.FC = () => {

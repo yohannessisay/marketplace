@@ -54,7 +54,7 @@ class ApiService {
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (useAuth) {
       const token = Cookies.get("accessToken");
-      if (!token) throw { message: "Auth token missing.", status: 401 };
+      if (!token)  window.location.href = "/login";
       headers["Authorization"] = `Bearer ${token}`;
     }
     // Add x-fmr-id header only if explicitly required
@@ -86,14 +86,13 @@ class ApiService {
     useAuth = false,
     xFmrId?: string
   ): Promise<T> {
-    const headers: HeadersInit = {};
-    console.log(useAuth);
+    const headers: HeadersInit = {}; 
 
     // Browser handles Content-Type for FormData
     if (useAuth) {
       const token = Cookies.get("accessToken");
 
-      if (!token) throw { message: "Auth token missing.", status: 401 };
+      if (!token) window.location.href = "/login";
       headers["Authorization"] = `Bearer ${token}`;
     }
 

@@ -1,6 +1,6 @@
 // App.tsx
 
-import React, { Suspense, lazy, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,9 +13,9 @@ import { jwtDecode } from "jwt-decode";
 import { initializeApiService } from "./services/apiService";
 import Hero from "./pages/landing/Hero";
 import OTPInputPage from "./pages/auth/OTP";
-import StepFour from "./pages/farms/farm-detail/step-four";
-import StepThree from "./pages/farms/farm-detail/step-three";
-import StepTwo from "./pages/farms/farm-detail/step-two";
+import StepFour from "./pages/onboarding/farm-detail/step-four";
+import StepThree from "./pages/onboarding/farm-detail/step-three";
+import StepTwo from "./pages/onboarding/farm-detail/step-two";
 import AgentLogin from "./pages/auth/agent-login";
 import FarmersTable from "./pages/agent/farmer-management";
 import AddFarm from "./pages/farms/add-farm";
@@ -59,16 +59,18 @@ const userProfile = localStorage.getItem("userProfile");
 const parsed = userProfile ? JSON.parse(userProfile) : null;
 const currentStep = parsed?.onboardingStage;
 
+
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(true);
   const location = useLocation();
 
   // Uncomment this to enable real JWT auth check
-  /*
+
   useEffect(() => {
     const accessToken = Cookies.get("accessToken");
     if (accessToken) {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const decodedToken: any = jwtDecode(accessToken);
         if (decodedToken.exp * 1000 > Date.now()) {
           setIsAuthenticated(true);
@@ -83,7 +85,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       setIsAuthenticated(false);
     }
   }, [location]);
-  */
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
@@ -255,9 +256,30 @@ function App() {
             }
           />
 
-          <Route path="/chats" element={<CoffeeListingPage />} />
-          <Route path="/my-orders" element={<MyOrdersPage />} />
-          <Route path="/coffee-listing-seller" element={<CoffeeListingSellerView/>} />
+          <Route
+            path="/chats"
+            element={
+              <ProtectedRoute>
+                <CoffeeListingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-orders"
+            element={
+              <ProtectedRoute>
+                <MyOrdersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coffee-listing-seller"
+            element={
+              <ProtectedRoute>
+                <CoffeeListingSellerView />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Suspense>
     </Router>

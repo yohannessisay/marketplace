@@ -39,7 +39,12 @@ import { FileUpload } from "@/components/common/file-upload";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
-
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
@@ -73,7 +78,7 @@ export default function StepTwo() {
       cup_taste_balance: "Complex",
       quantity_kg: "5,000",
       price_per_kg: "$4.50",
-      readiness_date: "October 2024",
+      readiness_date: new Date().toISOString(),
       lot_length: "",
       delivery_type: "FOB (Free on Board) - Port of Djibouti",
       shipping_port: "",
@@ -97,10 +102,8 @@ export default function StepTwo() {
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
-      console.log(userProfile.onboardingStage);
-      
       if (
-        (userProfile.currentUserStage === "crops_to_sell" ||
+        (userProfile.onboardingStage === "crops_to_sell" ||
           userProfile.userType === "agent") &&
         (getFromLocalStorage("current-step", "") as string) === "crops_to_sell"
       ) {
@@ -135,9 +138,14 @@ export default function StepTwo() {
         );
 
         if (response && response.success) {
+          userProfile.onboardingStage = "bank_information";
+          saveToLocalStorage("userProfile", userProfile);
           saveToLocalStorage("step-two", data);
           navigation("/onboarding/step-three");
-          localStorage.setItem("current-step", JSON.stringify("bank_information"));
+          localStorage.setItem(
+            "current-step",
+            JSON.stringify("bank_information")
+          );
           successMessage("Crop information saved successfully");
         } else {
           errorMessage("Failed to save farm details");
@@ -617,11 +625,35 @@ export default function StepTwo() {
                     control={form.control}
                     name="readiness_date"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Readiness date</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button variant="outline" className="w-full">
+                                {field.value
+                                  ? new Date(field.value).toDateString()
+                                  : "Pick a date"}
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                field.value ? new Date(field.value) : undefined
+                              }
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formatted = date
+                                    .toISOString()
+                                    .slice(0, 10);
+                                  field.onChange(formatted);
+                                }
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
