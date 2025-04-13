@@ -7,6 +7,7 @@ import { TractorIcon as Farm, Coffee, User, BadgeDollarSign, ChevronRight, Spark
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { getFromLocalStorage } from "@/lib/utils"
+import Header from "@/components/layout/header"
 
 // Step item component for each onboarding step
 interface StepItemProps {
@@ -79,32 +80,9 @@ const WelcomePage: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const user:any=getFromLocalStorage("userProfile",{});
   return (
-    <div className="min-h-screen bg-primary/5">
+    <div className="min-h-screen bg-primary/5 p-8">
       {/* Header */}
-      <header className="bg-white border-b py-4 px-6 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-emerald-600 rounded-md flex items-center justify-center text-white font-bold">
-              A
-            </div>
-            <span className="text-emerald-800 font-bold text-xl ml-2">Afrovalley</span>
-          </div>
-          <div className="flex items-center space-x-6">
-            <Link to="/dashboard" className="text-slate-600 hover:text-emerald-600 transition-colors">
-              My dashboard
-            </Link>
-            <Link to="/marketplace" className="text-slate-600 hover:text-emerald-600 transition-colors">
-              Marketplace
-            </Link>
-            <Link to="/chats" className="text-slate-600 hover:text-emerald-600 transition-colors">
-              Chats
-            </Link>
-            <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-800 font-medium">
-              HA
-            </div>
-          </div>
-        </div>
-      </header>
+     <Header></Header>
 
       {/* Main content */}
       <main className="max-w-4xl mx-auto px-6 py-12">

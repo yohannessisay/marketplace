@@ -25,6 +25,7 @@ import MyOrdersPage from "./pages/marketplace/MyOrdersPage";
 import CoffeeListingPage from "./pages/marketplace/coffee-listing/coffee-page";
 import CoffeeListingSellerView from "./pages/marketplace/coffee-listing-seller/coffee-listing-seller";
 import AddCrop from "./pages/farms/add-crop";
+import { getFromLocalStorage } from "./lib/utils";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -56,9 +57,9 @@ const Loading = () => (
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
-const userProfile = localStorage.getItem("userProfile");
-const parsed = userProfile ? JSON.parse(userProfile) : null;
-const currentStep = parsed?.onboardingStage;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const userProfile:any = getFromLocalStorage("userProfile",{});
+const currentStep = userProfile?.onboardingStage;
 
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
