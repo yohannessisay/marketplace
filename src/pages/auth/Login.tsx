@@ -81,9 +81,9 @@ const Login = () => {
           redirectTo = "/agent/farmer-management";
         } else if (userProfile?.userType === "buyer") {
           switch (userProfile?.onboardingStage) {
-            case "onboarding":
+            case "company_verification":
               redirectTo = "/home";
-              saveToLocalStorage("current-step", "onboarding");
+              saveToLocalStorage("current-step", "company_verification");
               break;
             case "completed":
               redirectTo = "/market-place";
