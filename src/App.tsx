@@ -21,7 +21,7 @@ import FarmersTable from "./pages/agent/farmer-management";
 import AddFarm from "./pages/farms/add-farm";
 import CoffeeMarketplace from "./pages/marketplace/coffee-marketplace";
 import FarmerSignupViaAgentPage from "./pages/auth/farmer-signup-via-agent";
-import MyOrdersPage from "./pages/marketplace/MyOrdersPage";
+import MyOrdersPage from "./pages/marketplace/my-orders";
 import CoffeeListingPage from "./pages/marketplace/coffee-listing/coffee-page";
 import CoffeeListingSellerView from "./pages/marketplace/coffee-listing-seller/coffee-listing-seller";
 import AddCrop from "./pages/farms/add-crop";

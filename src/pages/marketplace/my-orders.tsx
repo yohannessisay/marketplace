@@ -18,6 +18,9 @@ import {
   Circle,
   AlertCircle, 
   Search,
+  Map,
+  Droplet,
+  Coffee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -93,46 +96,51 @@ interface PaginationData {
   totalPages: number;
 }
 
-// Mock data for favorites (since we don't have an API for this yet)
-const mockFavorites = [
-  {
-    id: "list-005",
-    coffee_variety: "Typica",
-    farm_name: "Jimma Research Center",
-    region: "Jimma, Ethiopia",
-    processing_method: "Washed",
-    bean_type: "Green beans",
-    price_per_kg: 8.25,
-    quantity_available: 2000,
-    cup_score: "85",
-    is_organic: false,
+interface Favorite {
+  id: string;
+  listing_id: string;
+  created_at: string;
+  updated_at: string;
+  listing: {
+    id: string;
+    coffee_variety: string;
+    bean_type: string;
+    crop_year: string;
+    is_organic: boolean;
+    processing_method: string;
+    price_per_kg: number;
+    quantity_kg: number;
+    grade: string;
+    farm: {
+      farm_name: string;
+      town_location: string;
+      region: string;
+      country: string;
+    } | null;
     seller: {
-      first_name: "Jimma",
-      last_name: "Research",
-    },
-  },
-  {
-    id: "list-006",
-    coffee_variety: "Gesha",
-    farm_name: "Bench Maji Estate",
-    region: "Bench Maji, Ethiopia",
-    processing_method: "Natural",
-    bean_type: "Green beans",
-    price_per_kg: 12.5,
-    quantity_available: 500,
-    cup_score: "91",
-    is_organic: true,
-    seller: {
-      first_name: "Tesfa",
-      last_name: "Negash",
-    },
-  },
-];
+      id: string;
+      first_name: string;
+      last_name: string;
+      email: string;
+      address: string;
+      rating: number;
+      total_reviews: number;
+      deals_completed: number;
+    } | null;
+    photos: {
+      id: string;
+      photo_url: string;
+      is_primary: boolean;
+      created_at: string;
+    }[];
+  } | null;
+}
 
 export default function MyOrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [activePagination, setActivePagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
@@ -145,14 +153,24 @@ export default function MyOrdersPage() {
     totalItems: 0,
     totalPages: 0,
   });
+  const [favoritesPagination, setFavoritesPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    totalItems: 0,
+    totalPages: 0,
+  });
   const [activeLoading, setActiveLoading] = useState<boolean>(true);
   const [historyLoading, setHistoryLoading] = useState<boolean>(true);
+  const [favoritesLoading, setFavoritesLoading] = useState<boolean>(true);
   const [activeError, setActiveError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [activeCurrentPage, setActiveCurrentPage] = useState<number>(1);
   const [historyCurrentPage, setHistoryCurrentPage] = useState<number>(1);
+  const [favoritesCurrentPage, setFavoritesCurrentPage] = useState<number>(1);
   const [activeSearchTerm, setActiveSearchTerm] = useState<string>("");
   const [historySearchTerm, setHistorySearchTerm] = useState<string>("");
+  const [favoritesSearchTerm, setFavoritesSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("current");
 
   // Fetch active orders from API
@@ -170,9 +188,8 @@ export default function MyOrdersPage() {
         } else {
           setActiveError("Failed to fetch active orders");
         }
-      } catch (err) {
-        setActiveError("An error occurred while fetching active orders");
-        console.error(err);
+      } catch (err:any) {
+        setHistoryError(err.data.error.message);
       } finally {
         setActiveLoading(false);
       }
@@ -198,9 +215,8 @@ export default function MyOrdersPage() {
         } else {
           setHistoryError("Failed to fetch order history");
         }
-      } catch (err) {
-        setHistoryError("An error occurred while fetching order history");
-        console.error(err);
+      } catch (err:any) {
+        setHistoryError(err.data.error.message);
       } finally {
         setHistoryLoading(false);
       }
@@ -210,6 +226,33 @@ export default function MyOrdersPage() {
       fetchHistoricalOrders();
     }
   }, [historyCurrentPage, historySearchTerm, activeTab]);
+
+  // Fetch favorite listings from API
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      setFavoritesLoading(true);
+      try {
+        const response: any = await apiService().get(
+          `/buyers/listings/favorites/get-favorite-listings?search=${favoritesSearchTerm}&page=${favoritesCurrentPage}&limit=10`
+        );
+
+        if (response.success) {
+          setFavorites(response.data.favorites);
+          setFavoritesPagination(response.data.pagination);
+        } else {
+          setFavoritesError("Failed to fetch favorite listings");
+        }
+      } catch (err: any) {
+        setFavoritesError(err.data.error.message || "An error occurred");
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+
+    if (activeTab === "favorites") {
+      fetchFavorites();
+    }
+  }, [favoritesCurrentPage, favoritesSearchTerm, activeTab]);
 
   // Toggle order expansion
   const toggleOrderExpansion = (orderId: string) => {
@@ -236,6 +279,18 @@ export default function MyOrdersPage() {
     e.preventDefault();
     setHistoryCurrentPage(1); // Reset to first page when searching
   };
+
+  // Handle search for favorites
+  const handleFavoritesSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFavoritesCurrentPage(1); // Reset to first page when searching
+  };
+
+  // Get primary photo URL for a favorite listing
+  // const getFavoritePrimaryPhotoUrl = (favorite: Favorite): string => {
+  //   const primaryPhoto = favorite.listing?.photos.find((photo) => photo.is_primary);
+  //   return primaryPhoto ? primaryPhoto.photo_url : "/placeholder.svg";
+  // };
 
   // Render order status progress
   const renderOrderProgress = (order: Order) => {
@@ -859,21 +914,138 @@ export default function MyOrdersPage() {
           </TabsContent>
 
           <TabsContent value="favorites" className="mt-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
-                {mockFavorites.length} Favorited Items
+                {favoritesLoading
+                  ? "Loading..."
+                  : `${favorites.length} Favorited Items`}
               </p>
-              <Button variant="outline" size="sm" className="h-9">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
+
+              <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                <form
+                  onSubmit={handleFavoritesSearch}
+                  className="flex gap-2 w-full md:w-auto"
+                >
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search favorites..."
+                      value={favoritesSearchTerm}
+                      onChange={(e) => setFavoritesSearchTerm(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    className="h-10"
+                  >
+                    Search
+                  </Button>
+                </form>
+              </div>
             </div>
 
             <div className="space-y-5">
-              {mockFavorites.length > 0 ? (
-                mockFavorites.map((item) => (
-                  <OrderItem key={item.id} item={item} tabType="favorites" />
-                ))
+              {favoritesLoading ? (
+                <LoadingState />
+              ) : favoritesError ? (
+                <Card className="p-6 text-center text-red-500">
+                  {favoritesError}
+                </Card>
+              ) : favorites.length > 0 ? (
+                <>
+                  {favorites.map((favorite) => (
+                    <Card key={favorite.id} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-lg font-semibold text-slate-800">
+                            {favorite.listing?.coffee_variety || "Unknown Variety"}
+                          </h3>
+                          <div className="text-emerald-700 font-bold">
+                            ${favorite.listing?.price_per_kg.toFixed(2)}/kg
+                          </div>
+                        </div>
+                        <p className="text-slate-600 text-sm mb-2">
+                          {favorite.listing?.farm?.farm_name || "Unknown Farm"}
+                        </p>
+                        <div className="flex items-center text-slate-500 text-sm mb-4">
+                          <Map className="h-4 w-4 mr-1" />
+                          <span>
+                            {favorite.listing?.farm?.region}, {favorite.listing?.farm?.country}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-slate-500 text-sm mb-2">
+                          <Droplet className="h-4 w-4 mr-1" />
+                          <span>{favorite.listing?.processing_method}</span>
+                        </div>
+                        <div className="flex items-center text-slate-500 text-sm mb-2">
+                          <Coffee className="h-4 w-4 mr-1" />
+                          <span>{favorite.listing?.bean_type}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {favoritesPagination.totalPages > 1 && (
+                    <Pagination className="mt-6">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (favoritesCurrentPage > 1)
+                                setFavoritesCurrentPage(favoritesCurrentPage - 1);
+                            }}
+                            className={
+                              favoritesCurrentPage <= 1
+                                ? "pointer-events-none opacity-50"
+                                : ""
+                            }
+                          />
+                        </PaginationItem>
+
+                        {Array.from(
+                          { length: favoritesPagination.totalPages },
+                          (_, i) => i + 1
+                        ).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setFavoritesCurrentPage(page);
+                              }}
+                              isActive={page === favoritesCurrentPage}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+
+                        <PaginationItem>
+                          <PaginationNext
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (
+                                favoritesCurrentPage < favoritesPagination.totalPages
+                              )
+                                setFavoritesCurrentPage(favoritesCurrentPage + 1);
+                            }}
+                            className={
+                              favoritesCurrentPage >= favoritesPagination.totalPages
+                                ? "pointer-events-none opacity-50"
+                                : ""
+                            }
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </>
               ) : (
                 <EmptyState tabType="favorites" />
               )}
