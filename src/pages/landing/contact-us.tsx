@@ -160,7 +160,7 @@ export default function ContactModal() {
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select currency" />
+                          <SelectValue placeholder="Select User Type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
