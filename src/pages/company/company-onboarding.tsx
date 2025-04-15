@@ -39,7 +39,7 @@ export default function CompanyVerification() {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userProfile: any = getFromLocalStorage("userProfile",{});
+  const userProfile: any = getFromLocalStorage("userProfile", {});
   const navigate = useNavigate();
   // Initialize form with default values
   const form = useForm<CompanyDetails>({
@@ -81,7 +81,6 @@ export default function CompanyVerification() {
       );
 
       if (response && response.success) {
-        navigate("/home");
         saveToLocalStorage("userProfile", {
           ...userProfile,
           onboardingStage: "complete",
@@ -89,6 +88,9 @@ export default function CompanyVerification() {
         successMessage(
           "Your company verification has been submitted successfully."
         );
+        setTimeout(() => {
+          navigate("/home");
+        }, 1000);
       }
     } catch (error) {
       console.error("Error submitting form:", error);

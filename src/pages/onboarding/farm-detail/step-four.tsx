@@ -127,14 +127,12 @@ export default function StepFour() {
           removeFromLocalStorage("bank-id");
           removeFromLocalStorage("farm-id");
           removeFromLocalStorage("crop-id");
+          removeFromLocalStorage("back-button-clicked")
           removeFromLocalStorage("current-step");
-          removeFromLocalStorage("profile-image");
-          saveToLocalStorage("is-back-button-clicked", "false");
-          // Save complete form data
+          removeFromLocalStorage("profile-image"); 
 
           successMessage("Registration completed successfully!");
-          navigation("/seller-dashboard");
-          localStorage.setItem("current-step", "completed");
+          navigation("/seller-dashboard"); 
         } else {
           errorMessage("Failed to save farm details");
         }
