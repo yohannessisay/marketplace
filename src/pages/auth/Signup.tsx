@@ -23,6 +23,7 @@ import { buyerSchema, sellerSchema } from "@/types/validation/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
+import { MoveLeft } from "lucide-react";
 
 // Buyer schema
 
@@ -143,6 +144,14 @@ export default function SignupPage() {
       <div className="flex w-full md:w-1/2 items-center justify-center bg-white p-8">
         <div className="max-w-md w-full border border-green-200 shadow-md rounded-md p-4">
           {/* Logo */}
+          <div className="flex justify-end">
+            <Link to={"/"}>
+              <MoveLeft
+                className="hover:bg-primary hover:text-white text-primary cursor-pointer border rounded-full p-1 shadow-md"
+                size={36}
+              />
+            </Link>
+          </div>
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold text-gray-800">
               <span className="text-green-600">Afro</span>valley

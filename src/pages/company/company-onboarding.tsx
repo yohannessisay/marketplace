@@ -19,8 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
+import { Input } from "@/components/ui/input"; 
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import Header from "@/components/layout/header";
@@ -39,8 +38,7 @@ export default function CompanyVerification() {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userProfile: any = getFromLocalStorage("userProfile", {});
-  const navigate = useNavigate();
+  const userProfile: any = getFromLocalStorage("userProfile", {}); 
   // Initialize form with default values
   const form = useForm<CompanyDetails>({
     resolver: zodResolver(buyerOnboardingSchema),
@@ -68,9 +66,9 @@ export default function CompanyVerification() {
       formData.append(key, value);
     });
 
-    files.forEach((file) => {
-      formData.append(`files`, file);
-    });
+    // files.forEach((file) => {
+    //   formData.append(`files`, file);
+    // });
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,7 +77,7 @@ export default function CompanyVerification() {
         formData,
         true
       );
-
+      saveToLocalStorage("current-step", "completed");
       if (response && response.success) {
         saveToLocalStorage("userProfile", {
           ...userProfile,
@@ -88,9 +86,7 @@ export default function CompanyVerification() {
         successMessage(
           "Your company verification has been submitted successfully."
         );
-        setTimeout(() => {
-          navigate("/home");
-        }, 1000);
+        location.reload();
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -123,7 +119,13 @@ export default function CompanyVerification() {
               <CardContent>
                 {/* File upload area */}
                 <FileUpload
-                  onFilesSelected={handleFilesSelected}
+                  onFilesSelected={(selectedFiles: File[]) => {
+                    handleFilesSelected(selectedFiles);
+                    if (selectedFiles.length > 0) {
+                      form.setValue("files", selectedFiles[0]); // Attach the first file to the form
+                      form.clearErrors("files"); // Clear file-related errors
+                    }
+                  }}
                   maxFiles={5}
                   maxSizeMB={5}
                 />
@@ -146,7 +148,18 @@ export default function CompanyVerification() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeFile(index)}
+                            onClick={() => {
+                              removeFile(index);
+                              if (index === 0) {
+                                form.setValue(
+                                  "files",
+                                  undefined as unknown as File
+                                ); // Clear the file from the form
+                                form.setError("files", {
+                                  message: "File is required",
+                                }); // Set error if no file is uploaded
+                              }
+                            }}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             Remove
@@ -156,6 +169,17 @@ export default function CompanyVerification() {
                     </ul>
                   </div>
                 )}
+
+                {/* File validation error */}
+                <FormField
+                  control={form.control}
+                  name="files"
+                  render={({ fieldState }) => (
+                    <FormItem>
+                      <FormMessage>{fieldState.error?.message}</FormMessage>
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 

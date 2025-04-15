@@ -210,7 +210,7 @@ function App() {
                   ) : (
                     <FarmManagement />
                   )
-                ) : currentStep === "completed" ? (
+                ) : currentStep === "complete" ? (
                   <CoffeeMarketplace />
                 ) : (
                   <CompanyOnboarding />
@@ -218,7 +218,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/company-verification"
+            element={
+              <ProtectedRoute>
+                <CompanyOnboarding />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/seller-dashboard"
             element={

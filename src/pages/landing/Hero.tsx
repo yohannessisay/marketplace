@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
+import ContactModal from "./contact-us"
 
 export default function Hero() {
   return (
@@ -42,13 +43,8 @@ export default function Hero() {
               practices, and reliable delivery.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button className="bg-primary text-white hover:bg-amber-100 hover:text-primary text-lg px-8 py-6">Our Products</Button>
-              <Button
-                variant="outline"
-                className=" border-amber-200/50 hover:bg-primary hover:text-white text-lg px-8 py-6"
-              >
-                Contact Us
-              </Button>
+              
+              <ContactModal></ContactModal>
             </div>
           </div>
         </div>

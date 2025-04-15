@@ -8,4 +8,7 @@ export const buyerOnboardingSchema = z.object({
   company_address: z.string().min(1, { message: "Position is required" }),
   telegram: z.string().optional(),
   about_me: z.string().optional(),
+  files: z
+    .instanceof(File, { message: "File is required" })
+    .refine((file) => file.size > 0, { message: "File cannot be empty" }),
 });

@@ -10,7 +10,7 @@ import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, MoveLeft } from "lucide-react";
 import { saveToLocalStorage } from "@/lib/utils";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
@@ -82,7 +82,7 @@ const Login = () => {
         } else if (userProfile?.userType === "buyer") {
           switch (userProfile?.onboardingStage) {
             case "company_verification":
-              redirectTo = "/home";
+              redirectTo = "/company-verification";
               saveToLocalStorage("current-step", "company_verification");
               break;
             case "completed":
@@ -90,7 +90,7 @@ const Login = () => {
               break;
             default:
               break;
-          } 
+          }
         }
 
         navigate(redirectTo);
@@ -124,6 +124,14 @@ const Login = () => {
       {/* Right Form Section */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center ">
         <div className="w-full max-w-md shadow-lg rounded-lg p-6 bg-white border border-green-200 ">
+          <div className="flex justify-end">
+            <Link to={"/"}>
+              <MoveLeft
+                className="hover:bg-primary hover:text-white text-primary cursor-pointer border rounded-full p-1 shadow-md"
+                size={36}
+              />
+            </Link>
+          </div>
           <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
             <span className="text-green-600">Afro</span>valley
           </h2>
