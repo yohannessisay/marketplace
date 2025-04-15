@@ -11,6 +11,7 @@ import Cookies from "js-cookie";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import { APIErrorResponse } from "@/types/api";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 const AgentLogin = () => {
@@ -24,47 +25,34 @@ const AgentLogin = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const { successMessage, errorMessage } = useNotification();
+
   const onSubmit = async (data: LoginFormInputs) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: any = await apiService().postWithoutAuth(
         "/agent/auth/login",
         {
           ...data,
-        }
+        },
       );
+      successMessage("Login successful!");
+      const { access_token, refresh_token, agent } = response;
+      Cookies.set("accessToken", access_token, { expires: 1 / 48 });
+      Cookies.set("refreshToken", refresh_token, { expires: 1 });
 
-      if (response.success) {
-        successMessage("Login successful!");
+      const userProfile = {
+        id: agent.id,
+        firstName: agent.first_name,
+        lastName: agent.last_name,
+        phone: agent.phone,
+        email: agent.email,
+        image: agent.image,
+        userType: "agent",
+      };
 
-        Cookies.set("accessToken", response.data.access_token, {
-          expires: 1 / 48,
-        });
-        Cookies.set("refreshToken", response.data.refresh_token, {
-          expires: 1,
-        });
-
-        const user = response.data.agent;
-        const userProfile = {
-          email: user.email,
-          firstName: user.first_name, 
-          id: user.id,
-          image: user.image,
-          phone: user.phone,
-          userType: "agent",
-          lastName: user.last_name, 
-        };
-
-        localStorage.setItem("userProfile", JSON.stringify(userProfile));
-
-        navigate("/agent/farmer-management");
-      } else {
-        errorMessage("Credential error");
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      localStorage.setItem("userProfile", JSON.stringify(userProfile));
+      navigate("/agent/farmer-management");
     } catch (error: any) {
-      errorMessage(error);
+      errorMessage(error as APIErrorResponse);
     }
   };
 

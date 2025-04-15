@@ -24,10 +24,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { MoveLeft } from "lucide-react";
+import { APIErrorResponse } from "@/types/api";
 
-// Buyer schema
-
-// Define types based on the schemas
 type BuyerFormValues = z.infer<typeof buyerSchema>;
 type SellerFormValues = z.infer<typeof sellerSchema>;
 
@@ -36,6 +34,7 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { successMessage, errorMessage } = useNotification();
+
   const buyerForm = useForm<BuyerFormValues>({
     resolver: zodResolver(buyerSchema),
     defaultValues: {
@@ -45,6 +44,7 @@ export default function SignupPage() {
       email: "",
       password: "",
       preferredCurrency: "",
+      companyName: "",
     },
     mode: "onChange",
   });
@@ -57,56 +57,44 @@ export default function SignupPage() {
       phone: "",
       email: "",
       password: "",
-      companyName: "",
       productCategory: "",
     },
     mode: "onChange",
   });
 
   const onBuyerSubmit = async (data: BuyerFormValues) => {
-    setIsSubmitting(true);
     try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response: any = await apiService().postWithoutAuth("/auth/signup", {
-      ...data,
-      userType: "buyer",
-    });
+      setIsSubmitting(true);
+      await apiService().postWithoutAuth("/auth/signup", {
+        ...data,
+        userType: "buyer",
+      });
 
-    if (response.success) {
       successMessage("Registration successful! Please verify your email.");
       localStorage.setItem("userProfile", JSON.stringify(data));
       navigate("/verification");
-    } else {
-      errorMessage("Something went wrong");
+    } catch (error: unknown) {
       setIsSubmitting(false);
+      const errorResponse = error as APIErrorResponse;
+      errorMessage(errorResponse);
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error:any) {
-      successMessage(error.data.error.message);
-      setIsSubmitting(false);
-    }
-
   };
 
   const onSellerSubmit = async (data: SellerFormValues) => {
     try {
       setIsSubmitting(true);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response: any = await apiService().postWithoutAuth("/auth/signup", {
+      await apiService().postWithoutAuth("/auth/signup", {
         ...data,
         userType: "seller",
       });
-      if (response.success) {
-        successMessage("Registration successful! Please verify your email.");
-        localStorage.setItem("userProfile", JSON.stringify(data));
-        navigate("/verification");
-      } else {
-        setIsSubmitting(false);
-        errorMessage("Something went wrong");
-      }
-    } catch {
+
+      successMessage("Registration successful! Please verify your email.");
+      localStorage.setItem("userProfile", JSON.stringify(data));
+      navigate("/verification");
+    } catch (error: unknown) {
       setIsSubmitting(false);
-      errorMessage("Something went wrong");
+      const errorResponse = error as APIErrorResponse;
+      errorMessage(errorResponse);
     }
   };
 
@@ -258,6 +246,19 @@ export default function SignupPage() {
 
                 <FormField
                   control={buyerForm.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem id="companyName">
+                      <FormControl>
+                        <Input placeholder="Company name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={buyerForm.control}
                   name="preferredCurrency"
                   render={({ field }) => (
                     <FormItem id="preferredCurrency">
@@ -368,19 +369,6 @@ export default function SignupPage() {
                           type="password"
                           {...field}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={sellerForm.control}
-                  name="companyName"
-                  render={({ field }) => (
-                    <FormItem id="companyName">
-                      <FormControl>
-                        <Input placeholder="Company name*" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

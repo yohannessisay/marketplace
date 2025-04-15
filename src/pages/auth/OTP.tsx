@@ -22,6 +22,7 @@ import { useNotification } from "@/hooks/useNotification";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { saveToLocalStorage } from "@/lib/utils";
+import { APIErrorResponse } from "@/types/api";
 
 type OTPValidationType = z.infer<typeof createOTPValidationSchema>;
 
@@ -36,36 +37,30 @@ export default function OTPInputPage() {
   const [value, setLocalValue] = useState("");
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
+
   const onSubmit = async (data: OTPValidationType) => {
     try {
       const userProfile = localStorage.getItem("userProfile");
       const email = userProfile ? JSON.parse(userProfile).email : "";
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response: any = await apiService().postWithoutAuth(
-        "/auth/verify-email",
-        {
-          ...data,
-          email: email
-        }
-      ); 
-      if (response.success) {
-        saveToLocalStorage("current-step","farm_profile")
-        successMessage("OTP verified successfully!");
-        navigate("/login");
-      } else {
-        errorMessage("Invalid OTP. Please try again.");
-      } 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+      await apiService().postWithoutAuth("/auth/verify-email", {
+        ...data,
+        email: email,
+      });
+
+      saveToLocalStorage("current-step", "farm_profile");
+      successMessage("OTP verified successfully!");
+      navigate("/login");
+    } catch (error: unknown) {
+      const errorResponse = error as APIErrorResponse;
       if (
-        error.data.error.details ==
+        errorResponse.error.details ===
         "This user's email has already been verified"
       ) {
         successMessage("Email already verified!");
         navigate("/login");
-        return;
+      } else {
+        errorMessage(errorResponse.error);
       }
-      errorMessage("An error occurred. Please try again.");
     }
   };
 
@@ -89,7 +84,7 @@ export default function OTPInputPage() {
             <span className="text-green-600">Afro</span>valley
           </h2>
           <p className="text-gray-600 mb-4 text-center">
-            Enter the one time password sent to you
+            Enter the one time password (OTP) sent to your email
           </p>
           <Form {...form}>
             <form

@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
+import { APIErrorResponse } from "@/types/api";
 
 // Define types based on the schemas
 type SellerFormValues = z.infer<typeof sellerSchemaForAgent>;
@@ -38,33 +39,26 @@ export default function FarmerSignupViaAgentPage() {
 
   const onSellerSubmit = async (data: SellerFormValues) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const agent: any = getFromLocalStorage("userProfile", {});
       setIsSubmitting(true);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: any = await apiService().postWithoutAuth(
         `/auth/signup?agentID=${agent.id}`,
         {
           ...data,
           userType: "seller",
-        }
+        },
       );
-      if (response.success) {
-        successMessage("Registered successfully");
-        saveToLocalStorage("current-step", "farm_profile");
-        saveToLocalStorage("farmer-profile", {
-          id: response.data.userId,
-          email: response.data.email,
-        });
-
-        navigate("/home");
-      } else {
-        setIsSubmitting(false);
-        errorMessage("Something went wrong");
-      }
-    } catch {
+      successMessage("Farmer Registered successfully");
+      saveToLocalStorage("current-step", "farm_profile");
+      saveToLocalStorage("farmer-profile", {
+        id: response.data.userId,
+        email: response.data.email,
+      });
+      navigate("/home");
+    } catch (error: unknown) {
       setIsSubmitting(false);
-      errorMessage("Something went wrong");
+      const errorResponse = error as APIErrorResponse;
+      errorMessage(errorResponse);
     }
   };
 

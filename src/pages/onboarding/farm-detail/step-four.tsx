@@ -1,5 +1,3 @@
-import type React from "react";
-
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -67,7 +65,7 @@ export default function StepFour() {
     setIsClient(true);
     const savedData = getFromLocalStorage<ProfileInfoFormData>(
       "step-four",
-      {} as ProfileInfoFormData
+      {} as ProfileInfoFormData,
     );
     if (savedData && Object.keys(savedData).length > 0) {
       form.reset(savedData);
@@ -82,10 +80,8 @@ export default function StepFour() {
   // Handle form submission
   const onSubmit = async (data: ProfileInfoFormData) => {
     try {
-   
-      
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const currentStep: any = getFromLocalStorage("current-step", ""); 
+      const currentStep: any = getFromLocalStorage("current-step", "");
       if (
         (userProfile.onboardingStage === "avatar_image" ||
           userProfile.userType === "agent") &&
@@ -101,7 +97,7 @@ export default function StepFour() {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
               key,
-              String(data[key as keyof ProfileInfoFormData])
+              String(data[key as keyof ProfileInfoFormData]),
             );
           }
         }
@@ -117,7 +113,7 @@ export default function StepFour() {
           "/onboarding/seller/profile",
           formData,
           true,
-          isAgent.userType === "agent" && farmer ? farmer.id : ""
+          isAgent.userType === "agent" && farmer ? farmer.id : "",
         );
         if (response && response.success) {
           removeFromLocalStorage("step-one");
@@ -127,12 +123,12 @@ export default function StepFour() {
           removeFromLocalStorage("bank-id");
           removeFromLocalStorage("farm-id");
           removeFromLocalStorage("crop-id");
-          removeFromLocalStorage("back-button-clicked")
+          removeFromLocalStorage("back-button-clicked");
           removeFromLocalStorage("current-step");
-          removeFromLocalStorage("profile-image"); 
+          removeFromLocalStorage("profile-image");
 
           successMessage("Registration completed successfully!");
-          navigation("/seller-dashboard"); 
+          navigation("/seller-dashboard");
         } else {
           errorMessage("Failed to save farm details");
         }
@@ -212,7 +208,7 @@ export default function StepFour() {
                           accept="image/*"
                           onChange={(e) => {
                             const selectedFiles = Array.from(
-                              e.target.files || []
+                              e.target.files || [],
                             );
                             handleFilesSelected(selectedFiles);
                           }}

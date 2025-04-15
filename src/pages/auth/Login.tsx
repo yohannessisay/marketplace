@@ -12,6 +12,7 @@ import Cookies from "js-cookie";
 import { useState } from "react";
 import { Eye, EyeOff, MoveLeft } from "lucide-react";
 import { saveToLocalStorage } from "@/lib/utils";
+import { APIErrorResponse } from "@/types/api";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 const Login = () => {
@@ -25,91 +26,68 @@ const Login = () => {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
   const [showPassword, setShowPassword] = useState(false);
+
   const onSubmit = async (data: LoginFormInputs) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: any = await apiService().postWithoutAuth("/auth/login", {
         ...data,
       });
+      successMessage("Login successful!");
 
-      if (response.success) {
-        successMessage("Login successful!");
+      const { access_token, refresh_token, user } = response;
+      Cookies.set("accessToken", access_token, { expires: 1 / 48 });
+      Cookies.set("refreshToken", refresh_token, { expires: 1 });
 
-        Cookies.set("accessToken", response.data.access_token, {
-          expires: 1 / 48,
-        });
-        Cookies.set("refreshToken", response.data.refresh_token, {
-          expires: 1,
-        });
-
-        const user = response.data.user;
-        const userProfile = {
-          email: user.email,
-          firstName: user.first_name,
-          gender: user.gender,
-          id: user.id,
-          image: user.image,
-          phone: user.phone,
-          userType: user.userType,
-          verificationStatus: user.verification_status,
-          onboardingStage: user.onboarding_stage,
-          lastName: user.last_name,
-          username: user.username,
-        };
-        let redirectTo = "/home";
-        if (userProfile?.userType === "seller") {
-          switch (userProfile?.onboardingStage) {
-            case "crops_to_sell":
-              redirectTo = "/onboarding/step-two";
-              break;
-            case "bank_information":
-              redirectTo = "/onboarding/step-three";
-              break;
-            case "avatar_image":
-              redirectTo = "/onboarding/step-four";
-              break;
-            case "completed":
-              redirectTo = "/seller-dashboard";
-              break;
-            case "farm_profile":
-              saveToLocalStorage("current-step", "farm_profile");
-              break;
-            default:
-              break;
-          }
-        } else if (userProfile?.userType === "agent") {
-          redirectTo = "/agent/farmer-management";
-        } else if (userProfile?.userType === "buyer") {
-          switch (userProfile?.onboardingStage) {
-            case "company_verification":
-              redirectTo = "/company-verification";
-              saveToLocalStorage("current-step", "company_verification");
-              break;
-            case "completed":
-              redirectTo = "/market-place";
-              break;
-            default:
-              break;
-          }
+      let redirectTo = "/home";
+      if (user?.userType === "seller") {
+        switch (user?.onboarding_stage) {
+          case "crops_to_sell":
+            redirectTo = "/onboarding/step-two";
+            break;
+          case "bank_information":
+            redirectTo = "/onboarding/step-three";
+            break;
+          case "avatar_image":
+            redirectTo = "/onboarding/step-four";
+            break;
+          case "completed":
+            redirectTo = "/seller-dashboard";
+            break;
+          case "farm_profile":
+            saveToLocalStorage("current-step", "farm_profile");
+            break;
+          default:
+            break;
         }
-
-        navigate(redirectTo);
-        saveToLocalStorage("userProfile", userProfile);
-      } else {
-        errorMessage("Credential error");
+      } else if (user?.userType === "agent") {
+        redirectTo = "/agent/farmer-management";
+      } else if (user?.userType === "buyer") {
+        switch (user?.onboarding_stage) {
+          case "company_verification":
+            redirectTo = "/company-verification";
+            saveToLocalStorage("current-step", "company_verification");
+            break;
+          case "completed":
+            redirectTo = "/market-place";
+            break;
+          default:
+            break;
+        }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+      navigate(redirectTo);
+      saveToLocalStorage("userProfile", JSON.stringify(user));
+    } catch (error: unknown) {
+      const errorResponse = error as APIErrorResponse;
       if (
-        error.data.error.details ==
+        errorResponse.error.details ===
         "Email verification is required for this account"
       ) {
         navigate("/otp");
         successMessage("Verify your email to continue");
-        return;
+      } else {
+        errorMessage(errorResponse);
       }
-      errorMessage("Credential Error");
     }
   };
 

@@ -1,21 +1,18 @@
-
-import { Button } from '@/components/ui/button';
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const VerifyEmail: React.FC = () => {
   const navigate = useNavigate();
 
-
-
   const handleOkayClick = () => {
-    navigate('/otp');
+    navigate("/otp");
   };
 
   return (
     <div className="flex h-screen w-full bg-white">
-       <div
-        className="hidden md:flex w-1/2 bg-cover bg-center border rounded-md border-green-200 m-2 shadow-2xl" 
+      <div
+        className="hidden md:flex w-1/2 bg-cover bg-center border rounded-md border-green-200 m-2 shadow-2xl"
         style={{
           backgroundImage: "url('images/email.svg')",
         }}
@@ -26,15 +23,15 @@ const VerifyEmail: React.FC = () => {
         <div className="max-w-md w-full flex flex-col items-center">
           {/* Email Icon */}
           <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-6">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="32" 
-              height="32" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="#10B981" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="2"
+              strokeLinecap="round"
               strokeLinejoin="round"
             >
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -47,16 +44,16 @@ const VerifyEmail: React.FC = () => {
             We have sent a verification email.
           </h2>
           <p className="text-center text-gray-600 mb-8">
-            Please follow the link to complete registration.
+            Please use the OTP to complete registration.
           </p>
 
           {/* Okay Button */}
           <Button
             onClick={handleOkayClick}
             className="w-ful"
-            variant={'default'}
+            variant={"default"}
           >
-            I have received my
+            I have received my OTP
           </Button>
         </div>
       </div>

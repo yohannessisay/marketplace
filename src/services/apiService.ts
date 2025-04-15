@@ -1,4 +1,4 @@
-import { ApiError, ApiResponse } from "@/types/api";
+import { APIErrorResponse, APISuccessResponse } from "@/types/api";
 import Cookies from "js-cookie";
 
 class ApiService {
@@ -6,42 +6,56 @@ class ApiService {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get("content-type");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let data: any;
+    let data: unknown;
 
     try {
       data = contentType?.includes("application/json")
         ? await response.json()
         : await response.text();
-      if (typeof data === "string") data = JSON.parse(data);
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          // Keep as text if parsing fails
+        }
+      }
     } catch {
-      if (!response.ok) data = await response.text();
+      if (!response.ok) {
+        data = await response.text();
+      }
     }
 
     if (!response.ok) {
-      const error: ApiError = {
-        message:
-          data?.Messages?.join(", ") || data?.message || response.statusText,
-        status: response.status,
-        data: data?.Data || data,
+      const errorData = typeof data === "object" && data ? data : {};
+      const errorResponse: APIErrorResponse = {
+        success: false,
+        error: {
+          message:
+            (errorData as any)?.error?.message ||
+            (errorData as any)?.message ||
+            response.statusText ||
+            "Unknown error",
+          details:
+            (errorData as any)?.error?.details ||
+            (errorData as any)?.details ||
+            `HTTP ${response.status}: ${response.statusText}`,
+          code: (errorData as any)?.error?.code || response.status,
+          hint:
+            (errorData as any)?.error?.hint ||
+            "Check the request data and try again",
+        },
       };
-      return Promise.reject(error);
+      console.log("Error response constructed:", errorResponse); // Debug log
+      return Promise.reject(errorResponse);
     }
 
-    const apiResponse = data as ApiResponse<T>;
-    if (apiResponse?.Status === "success" && apiResponse.Data !== undefined) {
-      return apiResponse.Data;
-    }
+    const successResponse: APISuccessResponse = {
+      success: true,
+      message: (data as any)?.message || "Request successful",
+      data: (data as any)?.data !== undefined ? (data as any).data : data,
+    };
 
-    if (response.status >= 200 && response.status < 400) {
-      return data as T;
-    }
-
-    return Promise.reject({
-      message: "Unexpected response format.",
-      status: response.status,
-      data,
-    });
+    return successResponse.data as T;
   }
 
   private async makeJsonRequest<T>(
@@ -49,7 +63,7 @@ class ApiService {
     method: string,
     body?: unknown,
     useAuth = false,
-    xFmrId?: string
+    xFmrId?: string,
   ): Promise<T> {
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (useAuth) {
@@ -57,7 +71,6 @@ class ApiService {
       if (!token) window.location.href = "/login";
       headers["Authorization"] = `Bearer ${token}`;
     }
-    // Add x-fmr-id header only if explicitly required
     if (xFmrId) {
       headers["x-fmr-id"] = xFmrId;
     }
@@ -69,13 +82,17 @@ class ApiService {
       });
 
       return this.handleResponse<T>(response);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return Promise.reject({
-        message: err?.message || "Network error.",
-        status: err?.status || 500,
-        data: err,
-      });
+    } catch (err) {
+      const errorResponse: APIErrorResponse = {
+        success: false,
+        error: {
+          message: (err as any)?.message || "Network error",
+          details: "Failed to connect to the server",
+          code: 500,
+          hint: "Check your network connection",
+        },
+      };
+      return Promise.reject(errorResponse);
     }
   }
 
@@ -84,19 +101,16 @@ class ApiService {
     method: string,
     body?: FormData,
     useAuth = false,
-    xFmrId?: string
+    xFmrId?: string,
   ): Promise<T> {
     const headers: HeadersInit = {};
 
-    // Browser handles Content-Type for FormData
     if (useAuth) {
       const token = Cookies.get("accessToken");
-
       if (!token) window.location.href = "/login";
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // Add x-fmr-id header only if explicitly required
     if (xFmrId) {
       headers["x-fmr-id"] = xFmrId;
     }
@@ -108,13 +122,17 @@ class ApiService {
         body,
       });
       return this.handleResponse<T>(response);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return Promise.reject({
-        message: err?.message || "Network error.",
-        status: err?.status || 500,
-        data: err,
-      });
+    } catch (err) {
+      const errorResponse: APIErrorResponse = {
+        success: false,
+        error: {
+          message: (err as any)?.message || "Network error",
+          details: "Failed to connect to the server",
+          code: 500,
+          hint: "Check your network connection",
+        },
+      };
+      return Promise.reject(errorResponse);
     }
   }
 
@@ -146,7 +164,7 @@ class ApiService {
     url: string,
     formData: FormData,
     useAuth = false,
-    xFmrId?: string
+    xFmrId?: string,
   ): Promise<T> {
     return this.makeFormDataRequest<T>(url, "POST", formData, useAuth, xFmrId);
   }
@@ -155,7 +173,7 @@ class ApiService {
     url: string,
     formData: FormData,
     useAuth = true,
-    xFmrId?: string
+    xFmrId?: string,
   ): Promise<T> {
     return this.makeFormDataRequest<T>(url, "PUT", formData, useAuth, xFmrId);
   }
@@ -164,7 +182,7 @@ class ApiService {
     url: string,
     formData: FormData,
     useAuth = true,
-    xFmrId?: string
+    xFmrId?: string,
   ): Promise<T> {
     return this.makeFormDataRequest<T>(url, "PATCH", formData, useAuth, xFmrId);
   }
