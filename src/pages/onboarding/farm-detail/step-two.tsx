@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -49,7 +50,6 @@ export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userProfile: any = getFromLocalStorage("userProfile", {});
   const { successMessage, errorMessage } = useNotification();
   const handleFilesSelected = (selectedFiles: File[]) => {
@@ -81,7 +81,7 @@ export default function StepTwo() {
       readiness_date: new Date().toISOString(),
       lot_length: "",
       delivery_type: "FOB (Free on Board) - Port of Djibouti",
-      shipping_port: "", 
+      shipping_port: "",
     },
   });
 
@@ -100,36 +100,37 @@ export default function StepTwo() {
   // Handle form submission
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
+    const isBackButtonClicked = getFromLocalStorage(
+      "back-button-clicked",
+      false
+    );
     try {
+      const formData = new FormData();
+
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          formData.append(key, String(data[key as keyof CoffeeCropsFormData]));
+        }
+      }
+
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+      const isAgent: any = getFromLocalStorage("userProfile", {});
+      const farmer: any = getFromLocalStorage("farmer-profile", {});
       if (
         (userProfile.onboardingStage === "crops_to_sell" ||
           userProfile.userType === "agent") &&
-        (getFromLocalStorage("current-step", "") as string) === "crops_to_sell"
+        (getFromLocalStorage("current-step", "") as string) ===
+          "crops_to_sell" &&
+        !isBackButtonClicked
       ) {
-        const formData = new FormData();
-
-        for (const key in data) {
-          if (Object.prototype.hasOwnProperty.call(data, key)) {
-            formData.append(
-              key,
-              String(data[key as keyof CoffeeCropsFormData])
-            );
-          }
-        }
-
-        files.forEach((file) => {
-          formData.append("files", file);
-        });
         const farmId = localStorage.getItem("farm-id");
         if (farmId) {
           formData.append("farm_id", farmId.replace(/"/g, ""));
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isAgent: any = getFromLocalStorage("userProfile", {});
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmer: any = getFromLocalStorage("farmer-profile", {});
 
-        const response: { success: boolean } = await apiService().postFormData(
+        const response: any = await apiService().postFormData(
           "/onboarding/seller/coffee-details",
           formData,
           true,
@@ -138,6 +139,7 @@ export default function StepTwo() {
 
         if (response && response.success) {
           userProfile.onboardingStage = "bank_information";
+          saveToLocalStorage("crop-id", response.data.coffee_listing.id);
           saveToLocalStorage("userProfile", userProfile);
           saveToLocalStorage("step-two", data);
           navigation("/onboarding/step-three");
@@ -146,11 +148,29 @@ export default function StepTwo() {
             JSON.stringify("bank_information")
           );
           successMessage("Crop information saved successfully");
+          saveToLocalStorage("is-back-button-clicked", false);
         } else {
-          errorMessage("Failed to save farm details");
+          errorMessage("Failed to save crop details");
         }
       } else {
-        navigation("/onboarding/step-three");
+        const existingFarmId = getFromLocalStorage("farm-id", "");
+        formData.append("farmId", existingFarmId);
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const response: any = await apiService().patchFormData(
+            "/sellers/listings/update-listing",
+            formData,
+            true,
+            isAgent.userType === "agent" && farmer ? farmer.id : ""
+          );
+          if (response.success) {
+            saveToLocalStorage("is-back-button-clicked", "false");
+            navigation("/onboarding/step-three");
+            successMessage("Crop data updated");
+          }
+        } catch {
+          errorMessage("Something went wrong, please try again");
+        }
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -519,7 +539,7 @@ export default function StepTwo() {
                       </FormItem>
                     )}
                   />
-          
+
                   <FormField
                     control={form.control}
                     name="processing_method"

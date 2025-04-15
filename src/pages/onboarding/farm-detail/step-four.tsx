@@ -124,7 +124,12 @@ export default function StepFour() {
           removeFromLocalStorage("step-two");
           removeFromLocalStorage("step-three");
           removeFromLocalStorage("step-four");
+          removeFromLocalStorage("bank-id");
+          removeFromLocalStorage("farm-id");
+          removeFromLocalStorage("crop-id");
+          removeFromLocalStorage("current-step");
           removeFromLocalStorage("profile-image");
+          saveToLocalStorage("is-back-button-clicked", "false");
           // Save complete form data
 
           successMessage("Registration completed successfully!");
@@ -143,6 +148,7 @@ export default function StepFour() {
 
   // Go back to previous step
   const goBack = () => {
+    localStorage.setItem("back-button-clicked", "true");
     navigation("/onboarding/step-three");
   };
 

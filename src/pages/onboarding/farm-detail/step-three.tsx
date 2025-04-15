@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -61,21 +62,22 @@ export default function StepThree() {
 
   // Handle form submission
   const onSubmit = async (data: BankInfoFormData) => {
-    try { 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const currentStep:any=getFromLocalStorage("current-step", ""); 
-      
+    try {
+      setIsSubmitting(true);
+      const isAgent: any = getFromLocalStorage("userProfile", {});
+      const farmer: any = getFromLocalStorage("farmer-profile", {});
+      const currentStep: any = getFromLocalStorage("current-step", "");
+      const isBackButtonClicked = getFromLocalStorage(
+        "back-button-clicked",
+        false
+      );
       if (
-        (userProfile.onboardingStage === "bank_information" ||
-          userProfile.userType === "agent") &&
-          currentStep === "bank_information"
-      ) {
-        setIsSubmitting(true);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isAgent: any = getFromLocalStorage("userProfile", {});
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmer: any = getFromLocalStorage("farmer-profile", {});
-        const response: { success: boolean } = await apiService().post(
+        (userProfile.userType === "agent" &&
+          currentStep === "bank_information") ||
+        (userProfile.onboardingStage === "bank_information" &&
+          !isBackButtonClicked)
+      ) { 
+        const response: any = await apiService().post(
           "/onboarding/seller/bank-information",
           data,
           isAgent.userType === "agent" && farmer ? farmer.id : ""
@@ -84,15 +86,33 @@ export default function StepThree() {
           userProfile.onboardingStage = "avatar_image";
           saveToLocalStorage("userProfile", userProfile);
           successMessage("Bank details saved successfully!");
-          saveToLocalStorage("step-three", data); 
-          saveToLocalStorage("current-step","avatar_image")
+          saveToLocalStorage("step-three", data);
+          saveToLocalStorage("bank-id", response.data.bank_account.id);
+          saveToLocalStorage("current-step", "avatar_image");
           navigation("/onboarding/step-four");
+          localStorage.setItem("back-button-clicked", "false");
         } else {
           errorMessage("Failed to save farm details");
         }
         setIsSubmitting(false);
       } else {
-        navigation("/onboarding/step-four");
+        const existingBankId = getFromLocalStorage("bank-id", "");
+
+        try { 
+          const response: any = await apiService().patch(
+            "/sellers/banks/update-bank-information",
+            { ...data, id: existingBankId },
+            isAgent.userType === "agent" && farmer ? farmer.id : ""
+          );
+          if (response.success) {
+            saveToLocalStorage("is-back-button-clicked", "false");
+            navigation("/onboarding/step-four");
+            successMessage("Crop data updated");
+          }
+        } catch {
+          setIsSubmitting(false);
+          errorMessage("Something went wrong, please try again");
+        }
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch {
@@ -103,6 +123,7 @@ export default function StepThree() {
 
   // Go back to previous step
   const goBack = () => {
+    localStorage.setItem("back-button-clicked", "true");
     navigation("/onboarding/step-two");
   };
 

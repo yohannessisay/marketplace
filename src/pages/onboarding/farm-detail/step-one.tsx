@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -93,6 +94,8 @@ export default function StepOne() {
   const onSubmit = async (data: FarmDetailsFormData) => {
     setIsSubmitting(true);
     try {
+      const isAgent = parsed.userType;
+      const farmer: any = getFromLocalStorage("farmer-profile", {});
       const formData = new FormData();
 
       for (const key in data) {
@@ -104,13 +107,16 @@ export default function StepOne() {
       files.forEach((file) => {
         formData.append("files", file);
       });
-      const isAgent = parsed.userType;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const farmer: any = getFromLocalStorage("farmer-profile", {}); 
 
+      const isBackButtonClicked = getFromLocalStorage(
+        "back-button-clicked",
+        false
+      );
       if (
         (currentUserStage === "farm_profile" || isAgent === "agent") &&
-        (getFromLocalStorage("current-step", "") as string) === "farm_profile"
+        (getFromLocalStorage("current-step", "") as string) ===
+          "farm_profile" &&
+        !isBackButtonClicked
       ) {
         let response: { success: boolean; data?: { farm: { id: string } } } = {
           success: false,
@@ -130,20 +136,33 @@ export default function StepOne() {
           }
           navigate("/onboarding/step-two");
           successMessage("Farm details saved successfully!");
+          saveToLocalStorage("is-back-button-clicked", "false");
           localStorage.setItem("current-step", JSON.stringify("crops_to_sell"));
         } else {
           errorMessage("Failed to save farm details");
         }
       } else {
-        // response = await apiService().putFormData(
-        //   "/onboarding/seller/farm-details",
-        //   formData,
-        //   true
-        // );
-        navigate("/onboarding/step-two");
+        const existingFarmId = getFromLocalStorage("farm-id", "");
+        formData.append("farmId", existingFarmId);
+        try { 
+          const response: any = await apiService().patchFormData(
+            "/sellers/farms/update-farm",
+            formData,
+            true,
+            isAgent === "agent" && farmer ? farmer.id : ""
+          );
+          if (response.success) {
+            saveToLocalStorage("is-back-button-clicked", "false");
+            navigate("/onboarding/step-two");
+            successMessage("Farm data updated");
+          }
+        } catch {
+          errorMessage("Something went wrong, please try again");
+        }
       }
 
       setIsSubmitting(false);
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       errorMessage(

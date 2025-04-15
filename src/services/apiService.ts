@@ -54,7 +54,7 @@ class ApiService {
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (useAuth) {
       const token = Cookies.get("accessToken");
-      if (!token)  window.location.href = "/login";
+      if (!token) window.location.href = "/login";
       headers["Authorization"] = `Bearer ${token}`;
     }
     // Add x-fmr-id header only if explicitly required
@@ -86,7 +86,7 @@ class ApiService {
     useAuth = false,
     xFmrId?: string
   ): Promise<T> {
-    const headers: HeadersInit = {}; 
+    const headers: HeadersInit = {};
 
     // Browser handles Content-Type for FormData
     if (useAuth) {
@@ -119,23 +119,23 @@ class ApiService {
   }
 
   // JSON Request Methods
-  get<T>(url: string,xFmrId?: string): Promise<T> {
-    return this.makeJsonRequest<T>(url, "GET", undefined, true,xFmrId);
+  get<T>(url: string, xFmrId?: string): Promise<T> {
+    return this.makeJsonRequest<T>(url, "GET", undefined, true, xFmrId);
   }
   getWithoutAuth<T>(url: string): Promise<T> {
     return this.makeJsonRequest<T>(url, "GET", undefined, false);
   }
   post<T>(url: string, body: unknown, xFmrId?: string): Promise<T> {
-    return this.makeJsonRequest<T>(url, "POST", body, true,xFmrId);
+    return this.makeJsonRequest<T>(url, "POST", body, true, xFmrId);
   }
   postWithoutAuth<T>(url: string, body: unknown): Promise<T> {
     return this.makeJsonRequest<T>(url, "POST", body, false);
   }
-  put<T>(url: string, body: unknown): Promise<T> {
-    return this.makeJsonRequest<T>(url, "PUT", body, true);
+  put<T>(url: string, body: unknown, xFmrId?: string): Promise<T> {
+    return this.makeJsonRequest<T>(url, "PUT", body, true, xFmrId);
   }
-  patch<T>(url: string, body: unknown): Promise<T> {
-    return this.makeJsonRequest<T>(url, "PATCH", body, true);
+  patch<T>(url: string, body: unknown, xFmrId?: string): Promise<T> {
+    return this.makeJsonRequest<T>(url, "PATCH", body, true, xFmrId);
   }
   delete<T>(url: string): Promise<T> {
     return this.makeJsonRequest<T>(url, "DELETE", undefined, true);
@@ -151,16 +151,22 @@ class ApiService {
     return this.makeFormDataRequest<T>(url, "POST", formData, useAuth, xFmrId);
   }
 
-  putFormData<T>(url: string, formData: FormData, useAuth = true): Promise<T> {
-    return this.makeFormDataRequest<T>(url, "PUT", formData, useAuth);
+  putFormData<T>(
+    url: string,
+    formData: FormData,
+    useAuth = true,
+    xFmrId?: string
+  ): Promise<T> {
+    return this.makeFormDataRequest<T>(url, "PUT", formData, useAuth, xFmrId);
   }
 
   patchFormData<T>(
     url: string,
     formData: FormData,
-    useAuth = true
+    useAuth = true,
+    xFmrId?: string
   ): Promise<T> {
-    return this.makeFormDataRequest<T>(url, "PATCH", formData, useAuth);
+    return this.makeFormDataRequest<T>(url, "PATCH", formData, useAuth, xFmrId);
   }
 }
 
