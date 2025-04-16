@@ -1,15 +1,13 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
-// Local storage helpers
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function saveToLocalStorage(key: string, data: any) {
   if (typeof window !== "undefined") {
-    localStorage.setItem(key, JSON.stringify(data))
+    localStorage.setItem(key, JSON.stringify(data));
   }
 }
 
@@ -34,3 +32,31 @@ export function removeFromLocalStorage(key: string) {
   }
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  userType: string;
+  identity_verified: boolean;
+  onboarding_stage: string;
+  last_login_at: string;
+  verifican_status: string;
+}
+
+export function getUserId() {
+  const userProfile = localStorage.getItem("userProfile");
+  if (!userProfile) {
+    console.warn("[CoffeeDetails] No userProfile in localStorage");
+    return null;
+  }
+
+  try {
+    const user: UserProfile = JSON.parse(userProfile);
+    return user.id;
+  } catch (error) {
+    console.error("[CoffeeDetails] Failed to parse userProfile:", error);
+    return null;
+  }
+}

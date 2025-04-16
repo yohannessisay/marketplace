@@ -79,7 +79,7 @@ export default function ListingDetailModal({
 
       try {
         const response = await apiService().get<ApiResponse>(
-          `/marketplace/listings/get-listing?listingId=${listingId}`
+          `/marketplace/listings/get-listing?listingId=${listingId}`,
         );
 
         if (
@@ -129,7 +129,7 @@ export default function ListingDetailModal({
     if (listing) {
       const photos = getPhotos(listing);
       setCurrentPhotoIndex(
-        (prevIndex) => (prevIndex - 1 + photos.length) % photos.length
+        (prevIndex) => (prevIndex - 1 + photos.length) % photos.length,
       );
     }
   };
@@ -196,11 +196,11 @@ export default function ListingDetailModal({
                 <CoffeeImage
                   src={getCurrentPhotoUrl()}
                   alt={listing.coffee_variety}
-                  className="w-full h-full"
+                  className="w-full h-full px-5"
                 />
 
                 {listing.is_organic && (
-                  <Badge className="absolute top-4 left-4 bg-emerald-500">
+                  <Badge className="absolute top-4 left-4 bg-emerald-500 ml-4">
                     Organic
                   </Badge>
                 )}
@@ -346,7 +346,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_acidity
+                            listing.cup_taste_acidity,
                           )}
                           className="h-2"
                         />
@@ -374,7 +374,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_sweetness
+                            listing.cup_taste_sweetness,
                           )}
                           className="h-2"
                         />
@@ -390,7 +390,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_aftertaste
+                            listing.cup_taste_aftertaste,
                           )}
                           className="h-2"
                         />
@@ -406,7 +406,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_balance
+                            listing.cup_taste_balance,
                           )}
                           className="h-2"
                         />
@@ -490,7 +490,7 @@ export default function ListingDetailModal({
                         <p className="text-sm text-slate-500">Readiness Date</p>
                         <p className="font-medium">
                           {new Date(
-                            listing.readiness_date
+                            listing.readiness_date,
                           ).toLocaleDateString()}
                         </p>
                       </div>
@@ -503,16 +503,21 @@ export default function ListingDetailModal({
                 </Card>
 
                 <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                  <Link className="flex-1" to={`/listing/${listingId}`}>
-                    <Button className="">Contact Seller</Button>
-                  </Link>
                   <Button
                     variant="outline"
-                    className="flex-1"
+                    className="w-full sm:flex-1 px-4 py-2"
                     onClick={() => setShowSampleRequestModal(true)}
                   >
                     Request Samples
                   </Button>
+                  <Link
+                    to={`/listing/${listingId}`}
+                    className="w-full sm:flex-1"
+                  >
+                    <Button className="w-full sm:flex-1 px-4 py-2">
+                      Place Order Now
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </>

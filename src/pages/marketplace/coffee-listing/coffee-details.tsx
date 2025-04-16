@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, Download, MessageCircle, Send } from "lucide-react";
 import { OrderStatus } from "@/types/order";
 import { CoffeeListing } from "@/types/coffee";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhotoGallery } from "./photo-gallery";
@@ -13,6 +13,11 @@ import { CupProfile } from "./cup-profile";
 import { CoffeeDetailsTab } from "./coffee-details-tab";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
 import { FarmInformation } from "./farm-information";
+import { apiService } from "@/services/apiService";
+import { chatService } from "@/services/chatService";
+import { useNotification } from "@/hooks/useNotification";
+import { APIErrorResponse, SocketChatMessage } from "@/types/api";
+import { getUserId } from "@/lib/utils";
 
 interface CoffeeDetailsProps {
   listing: CoffeeListing | null;
@@ -25,35 +30,121 @@ export function CoffeeDetails({
 }: CoffeeDetailsProps) {
   const [activeTab, setActiveTab] = useState("details");
   const [chatMessage, setChatMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState<
+    Array<{
+      id: string;
+      sender: string;
+      message: string;
+      timestamp: string;
+    }>
+  >([]);
   const orderStatus = useOrderStatus(demoOrderStatus);
+  const { errorMessage } = useNotification();
 
-  // Mock chat data
-  const chatMessages = [
-    {
-      id: 1,
-      sender: "seller",
-      message: "Thank you for your interest in our coffee!",
-      timestamp: "2 days ago",
-    },
-    {
-      id: 2,
-      sender: "buyer",
-      message: "Is this coffee available for immediate shipping?",
-      timestamp: "1 day ago",
-    },
-    {
-      id: 3,
-      sender: "seller",
-      message:
-        "Yes, we can arrange shipping within 7 days of order confirmation.",
-      timestamp: "1 day ago",
-    },
-  ];
+  const handleFetchMessages = async () => {
+    if (!listing || !listing.id) return;
 
-  const handleSendMessage = () => {
-    if (chatMessage.trim()) {
-      console.log("Sending message:", chatMessage);
+    try {
+      const senderId = getUserId();
+      if (!senderId) {
+        throw new Error("No authenticated user found");
+      }
+
+      const receiverId = listing.seller_id;
+      if (!receiverId) {
+        throw new Error("No receiver ID found in listing");
+      }
+
+      const response = await apiService().get<{
+        data: { messages: Array<any> };
+      }>(
+        `/chats/messages?senderId=${senderId}&receiverId=${receiverId}&listingId=${listing.id}`,
+      );
+
+      const messages = response.data.messages.map((msg: any) => ({
+        id: msg.id,
+        sender: msg.senderId === senderId ? "buyer" : "seller",
+        message: msg.message,
+        timestamp: new Date(msg.createdAt).toLocaleDateString(),
+      }));
+
+      setChatMessages(messages.reverse());
+    } catch (error: unknown) {
+      console.error("[CoffeeDetails] Fetch messages error:", error);
+      const errorResponse = error as APIErrorResponse;
+      errorMessage(errorResponse);
+    }
+  };
+
+  useEffect(() => {
+    if (!listing || !listing.id) return;
+    handleFetchMessages();
+
+    chatService().connect();
+
+    const unsubscribe = chatService().onMessage(
+      (message: SocketChatMessage) => {
+        setChatMessages((prev) => {
+          if (prev.some((msg) => msg.id === message.id)) {
+            return prev;
+          }
+          return [
+            ...prev,
+            {
+              id: message.id,
+              sender: message.senderId === getUserId() ? "buyer" : "seller",
+              message: message.message,
+              timestamp: new Date(message.created_at).toLocaleDateString(),
+            },
+          ];
+        });
+      },
+    );
+
+    return () => {
+      unsubscribe();
+      chatService().disconnect();
+    };
+  }, [listing?.id]);
+
+  const handleSendMessage = async () => {
+    if (!chatMessage.trim() || !listing) return;
+
+    try {
+      const senderId = getUserId();
+      if (!senderId) {
+        throw new Error("No authenticated user found");
+      }
+
+      const recipientId = listing.seller_id;
+      if (!recipientId) {
+        throw new Error("No receiver ID found in listing");
+      }
+
+      const tempId = Math.random().toString(36).substring(2);
+      const timestamp = new Date().toLocaleDateString();
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: tempId,
+          sender: "buyer",
+          message: chatMessage,
+          timestamp,
+        },
+      ]);
+
+      await chatService().sendMessage({
+        recipientId,
+        message: chatMessage,
+        listingId: listing.id,
+      });
+
       setChatMessage("");
+    } catch (error: unknown) {
+      console.error("[CoffeeDetails] Send message error:", error);
+      const errorResponse = error as APIErrorResponse;
+      errorMessage(errorResponse);
     }
   };
 
@@ -84,7 +175,6 @@ export function CoffeeDetails({
         </TabsContent>
       </Tabs>
 
-      {/* Order Documents Section - Visible only when an order exists */}
       {orderStatus &&
         orderStatus.documents &&
         orderStatus.documents.length > 0 && (
@@ -129,7 +219,6 @@ export function CoffeeDetails({
           </Card>
         )}
 
-      {/* Chat Section */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center">
@@ -139,9 +228,9 @@ export function CoffeeDetails({
         </CardHeader>
 
         <CardContent>
-          <div className="max-h-96 overflow-y-auto mb-4">
+          <div className="h-60 overflow-y-auto mb-4 flex flex-col-reverse">
             {chatMessages.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground">
+              <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
                 No messages yet. Start a conversation with the seller.
               </div>
             ) : (
@@ -186,7 +275,11 @@ export function CoffeeDetails({
               placeholder="Type your message..."
               className="flex-1"
             />
-            <Button onClick={handleSendMessage} className="ml-3">
+            <Button
+              onClick={handleSendMessage}
+              className="ml-3"
+              disabled={chatMessage == ""}
+            >
               <Send size={16} />
             </Button>
           </div>

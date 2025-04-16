@@ -55,7 +55,7 @@ class ApiService {
       data: (data as any)?.data !== undefined ? (data as any).data : data,
     };
 
-    return successResponse.data as T;
+    return successResponse as T;
   }
 
   private async makeJsonRequest<T>(

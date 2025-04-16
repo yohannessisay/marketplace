@@ -42,3 +42,14 @@ export type LoginResponseData = {
     verifican_status: string;
   };
 };
+
+export type SocketChatMessage = {
+  id: string;
+  senderType: string;
+  senderId: string;
+  recipientType: string;
+  recipientId: string;
+  message: string;
+  listingId: string | null;
+  created_at: string;
+};

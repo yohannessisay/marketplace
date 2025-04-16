@@ -19,12 +19,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"; 
+} from "@/components/ui/form";
 import {
   coffeeCropsSchema,
   type CoffeeCropsFormData,
 } from "@/types/validation/seller-onboarding";
-import {  getFromLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -44,18 +44,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { APIErrorResponse } from "@/types/api";
+
 export default function AddCrop() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any 
   const { successMessage, errorMessage } = useNotification();
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form with default values or values from local storage
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
@@ -79,78 +79,58 @@ export default function AddCrop() {
       readiness_date: new Date().toISOString(),
       lot_length: "",
       delivery_type: "",
-      shipping_port: "", 
+      shipping_port: "",
     },
   });
 
-  // Load saved data from local storage on component mount
   useEffect(() => {
     setIsClient(true);
     const savedData = getFromLocalStorage<CoffeeCropsFormData>(
       "step-two",
-      {} as CoffeeCropsFormData
+      {} as CoffeeCropsFormData,
     );
     if (savedData && Object.keys(savedData).length > 0) {
       form.reset(savedData);
     }
   }, [form]);
 
-  // Handle form submission
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
-  
-        const formData = new FormData();
+      const formData = new FormData();
 
-        for (const key in data) {
-          if (Object.prototype.hasOwnProperty.call(data, key)) {
-            formData.append(
-              key,
-              String(data[key as keyof CoffeeCropsFormData])
-            );
-          }
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          formData.append(key, String(data[key as keyof CoffeeCropsFormData]));
         }
+      }
 
-        files.forEach((file) => {
-          formData.append("files", file);
-        });
-        const farmId = localStorage.getItem("current-farm-id");
-        if (farmId) {
-          formData.append("farm_id", farmId.replace(/"/g, ""));
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isAgent: any = getFromLocalStorage("userProfile", {});
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmer: any = getFromLocalStorage("farmer-profile", {});
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+      const farmId = localStorage.getItem("current-farm-id");
+      if (farmId) {
+        formData.append("farm_id", farmId.replace(/"/g, ""));
+      }
+      const isAgent: any = getFromLocalStorage("userProfile", {});
+      const farmer: any = getFromLocalStorage("farmer-profile", {});
 
-        const response: { success: boolean } = await apiService().postFormData(
-          "/sellers/listings/create-listing",
-          formData,
-          true,
-          isAgent.userType === "agent" && farmer ? farmer.id : ""
-        );
-
-        if (response && response.success) { 
-          navigation("/seller-dashboard");
-          localStorage.setItem(
-            "current-step",
-            JSON.stringify("bank_information")
-          );
-          successMessage("Crop information saved successfully");
-        } else {
-          errorMessage("Failed to save farm details");
-        }
-    
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      errorMessage(
-        error?.message || "An error occurred while saving farm details"
+      await apiService().postFormData(
+        "/sellers/listings/create-listing",
+        formData,
+        true,
+        isAgent.userType === "agent" && farmer ? farmer.id : "",
       );
+
+      navigation("/seller-dashboard");
+      localStorage.setItem("current-step", JSON.stringify("bank_information"));
+      successMessage("Crop information saved successfully");
+    } catch (error: any) {
+      errorMessage(error as APIErrorResponse);
       setIsSubmitting(false);
     }
   };
 
-  // Go back to previous step
   const goBack = () => {
     navigation("/onboarding/step-one");
     localStorage.setItem("back-button-clicked", "true");
@@ -163,15 +143,15 @@ export default function AddCrop() {
   return (
     <div className="min-h-screen bg-primary/5">
       <Header></Header>
-      <main className="container mx-auto p-4 max-w-5xl"> 
-     
+      <main className="container mx-auto p-4 max-w-5xl">
         <Form {...form}>
-          
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-8 shadow-lg p-8  rounded-md py-4  bg-white"
           >
-                 <h2 className="text-center text-2xl">Add Crop To Your Existing Farm</h2>
+            <h2 className="text-center text-2xl">
+              Add Crop To Your Existing Farm
+            </h2>
             {/* Step 1: Upload Grading Report */}
             <div className="mb-8">
               <Card className="max-w-2xl mx-auto">
@@ -509,7 +489,7 @@ export default function AddCrop() {
                       </FormItem>
                     )}
                   />
-            
+
                   <FormField
                     control={form.control}
                     name="processing_method"

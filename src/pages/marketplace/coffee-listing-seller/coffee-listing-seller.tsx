@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import {
   Star,
   MessageCircle,
   DollarSign,
   BarChart2,
   Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,219 +32,300 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatCard } from "./stat-card";
+import { apiService } from "@/services/apiService";
 import { useMobile } from "@/hooks/useMobile";
 import { MessageThreadList } from "./message-thread-list";
 import { MessageThread } from "./message-thread";
-import { MockData } from "@/types/coffee-listing";
 import Header from "@/components/layout/header";
-const mockData: MockData = {
-  listing: {
-    id: "eb7f3456-c9d8-4a12-b456-789012345678",
-    title: "Ethiopian Heirloom",
-    score: 86.5,
-    price: 8.75,
-    isOrganic: true,
-    farmName: "Abadega Family Farm",
-    region: "Yirgacheffe",
-    country: "Ethiopia",
-    processing: "Washed",
-    beanType: "Green beans",
-    availableQuantity: 1250,
-    cropYear: "2024",
-    variety: "Ethiopian Heirloom",
-    altitude: 1900,
-    cupProfile: {
-      acidity: "Bright, citrusy",
-      body: "Medium",
-      sweetness: "High, honey-like",
-      aftertaste: "Long, clean",
-      aroma: "Floral, jasmine",
-      balance: "Well-balanced",
-    },
-    status: "active",
-    createdAt: "2024-03-15T10:30:00Z",
-    readinessDate: "2024-05-10",
-    photos: [
-      "/placeholder.svg?height=500&width=800",
-      "/placeholder.svg?height=500&width=800",
-      "/placeholder.svg?height=500&width=800",
-    ],
-    description:
-      "This exceptional Ethiopian Heirloom coffee is grown at high altitude in the renowned Yirgacheffe region. The careful washed processing brings out bright, citrusy notes with a delicate floral aroma. The Abadega family has been growing coffee for generations using traditional methods that respect the environment.",
-    discounts: [
-      { minimumQuantity: 500, percentage: 5 },
-      { minimumQuantity: 1000, percentage: 10 },
-    ],
-  },
+import { APIErrorResponse } from "@/types/api";
+import { getUserId } from "@/lib/utils";
+import { useNotification } from "@/hooks/useNotification";
 
-  bids: [
-    {
-      id: "ord-123456",
-      buyerName: "Global Coffee Imports",
-      quantity: 500,
-      totalAmount: 4375,
-      status: "pending",
-      date: "2024-04-06T14:22:00Z",
-    },
-    {
-      id: "ord-123457",
-      buyerName: "Specialty Roasters Co.",
-      quantity: 250,
-      totalAmount: 2187.5,
-      status: "confirmed",
-      date: "2024-04-04T09:15:00Z",
-    },
-    {
-      id: "ord-123458",
-      buyerName: "Bean Lovers Ltd",
-      quantity: 1000,
-      totalAmount: 7875,
-      status: "pending",
-      date: "2024-03-28T16:40:00Z",
-    },
-  ],
+interface Listing {
+  id: string;
+  coffee_variety: string;
+  bean_type: string;
+  crop_year: string;
+  is_organic: boolean;
+  processing_method: string;
+  moisture_percentage: number;
+  screen_size: string;
+  drying_method: string;
+  wet_mill: string;
+  cup_taste_acidity: string;
+  cup_taste_body: string;
+  cup_taste_sweetness: string;
+  cup_taste_aftertaste: string;
+  cup_taste_balance: string;
+  grade: string;
+  quantity_kg: number;
+  price_per_kg: number;
+  readiness_date: string;
+  lot_length: string;
+  delivery_type: string;
+  shipping_port: string;
+  listing_status: string;
+  created_at: string;
+  updated_at: string | null;
+  expires_at: string | null;
+  created_by_agent_id: string | null;
+  farm: {
+    farm_id: string;
+    farm_name: string;
+    town_location: string;
+    region: string;
+    country: string;
+  };
+  photos: Array<{
+    id: string;
+    photo_url: string;
+    is_primary: boolean;
+    created_at: string;
+  }>;
+  documents: Array<{
+    id: string;
+    doc_url: string;
+    doc_type: string;
+    note: string | null;
+    verified: boolean;
+    created_at: string;
+    updated_at: string | null;
+  }>;
+  discounts: Array<{
+    minimumQuantity: number;
+    percentage: number;
+  }>;
+}
 
-  messageThreads: [
-    {
-      id: 1,
-      buyerName: "Global Coffee Imports",
-      buyerCompany: "Global Coffee Imports Inc.",
-      buyerAvatar: null,
-      unread: 2,
-      lastMessageTime: "10 min ago",
-      messages: [
-        {
-          id: 101,
-          sender: "buyer",
-          message:
-            "Hi, I'm interested in your Ethiopian Heirloom coffee. Do you have any cupping notes you can share?",
-          timestamp: "2 days ago",
-        },
-        {
-          id: 102,
-          sender: "seller",
-          message:
-            "Hello! Thanks for your interest. Yes, our Ethiopian Heirloom scored 86.5 points with notes of jasmine, citrus, and honey sweetness.",
-          timestamp: "1 day ago",
-        },
-        {
-          id: 103,
-          sender: "buyer",
-          message:
-            "That sounds great. Is this coffee available for immediate shipping?",
-          timestamp: "1 day ago",
-        },
-        {
-          id: 104,
-          sender: "seller",
-          message:
-            "Yes, we can arrange shipping within 7 days of order confirmation.",
-          timestamp: "1 day ago",
-        },
-        {
-          id: 105,
-          sender: "buyer",
-          message:
-            "Perfect. I'm looking to order around 500kg. Is there any discount for this quantity?",
-          timestamp: "10 min ago",
-        },
-        {
-          id: 106,
-          sender: "buyer",
-          message:
-            "Also, could you provide a sample before we place the full order?",
-          timestamp: "10 min ago",
-        },
-      ],
-    },
-    {
-      id: 2,
-      buyerName: "Jane Rodriguez",
-      buyerCompany: "Specialty Roasters Co.",
-      buyerAvatar: null,
-      unread: 0,
-      lastMessageTime: "5 hours ago",
-      messages: [
-        {
-          id: 201,
-          sender: "buyer",
-          message:
-            "Hello, we're a small-batch specialty roaster interested in your coffee. What's the minimum order quantity?",
-          timestamp: "2 days ago",
-        },
-        {
-          id: 202,
-          sender: "seller",
-          message:
-            "Hello Jane, thanks for reaching out! Our minimum order is 100kg for international shipments.",
-          timestamp: "2 days ago",
-        },
-        {
-          id: 203,
-          sender: "buyer",
-          message:
-            "Great, that works for us. How does the coffee perform for espresso roasts?",
-          timestamp: "1 day ago",
-        },
-        {
-          id: 204,
-          sender: "seller",
-          message:
-            "This coffee works beautifully for espresso. The citrus notes become more caramelized, and you get a wonderful balance with the honey sweetness.",
-          timestamp: "1 day ago",
-        },
-        {
-          id: 205,
-          sender: "buyer",
-          message:
-            "Sounds perfect. We'll be placing an order for 250kg soon. Thanks for the information!",
-          timestamp: "5 hours ago",
-        },
-      ],
-    },
-    {
-      id: 3,
-      buyerName: "Michael Chen",
-      buyerCompany: "Artisan Coffee House",
-      buyerAvatar: null,
-      unread: 1,
-      lastMessageTime: "Yesterday",
-      messages: [
-        {
-          id: 301,
-          sender: "buyer",
-          message: "Hi there, do you have any certifications for this coffee?",
-          timestamp: "Yesterday",
-        },
-        {
-          id: 302,
-          sender: "buyer",
-          message:
-            "We're especially interested in knowing if it's Rainforest Alliance or Fair Trade certified.",
-          timestamp: "Yesterday",
-        },
-      ],
-    },
-  ],
+interface Bid {
+  id: string;
+  buyer_id: string;
+  seller_id: string;
+  listing_id: string;
+  quantity_kg: number;
+  unit_price: number;
+  total_amount: number;
+  status: string;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+}
 
-  listingStats: {
-    views: 324,
-    inquiries: 3,
-    totalBids: 3,
-    totalRevenue: 14437.5,
-  },
-};
+interface Message {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  recipientType: string;
+  message: string;
+  listingId: string;
+  createdAt: string;
+}
+
+interface MessageThread {
+  id: string;
+  otherPartyId: string;
+  otherPartyName?: string;
+  otherPartyCompany?: string;
+  unread: number;
+  lastMessageTime: string;
+  messages: Message[];
+}
+
+function PhotoGallery({
+  listingId,
+  photos,
+  isOrganic,
+}: {
+  photos: Listing["photos"] | null;
+  isOrganic: boolean;
+  listingId: string;
+}) {
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const { successMessage, errorMessage } = useNotification();
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (photos && photos.length <= 1) {
+      alert("At least one photo is required for the listing.");
+      return;
+    }
+    try {
+      await apiService().post(
+        `/sellers/listings/delete-listing-image?${photoId}`,
+        {
+          listingId,
+          photoId,
+        },
+      );
+      successMessage("photo deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete photo:", error);
+      errorMessage(error as APIErrorResponse);
+    }
+  };
+
+  return (
+    <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-6">
+      <div className="flex flex-col gap-4 p-4">
+        {photos && photos.length > 0 ? (
+          <div className="relative">
+            <img
+              src={photos[activePhotoIndex].photo_url || "/placeholder.svg"}
+              alt={`Coffee ${activePhotoIndex + 1}`}
+              className="w-full h-64 object-cover rounded-lg"
+            />
+            {isOrganic && (
+              <div className="absolute top-4 right-4">
+                <Badge
+                  variant="outline"
+                  className="bg-green-500 text-white border-0"
+                >
+                  Organic
+                </Badge>
+              </div>
+            )}
+          </div>
+        ) : (
+          <img
+            src="/placeholder.svg"
+            alt="No photo"
+            className="w-full h-64 object-cover rounded-lg"
+          />
+        )}
+      </div>
+      <div className="flex p-2 space-x-2 overflow-x-auto">
+        {photos &&
+          photos.map((photo, index) => (
+            <div key={photo.id} className="relative">
+              <button
+                className={`flex-shrink-0 bg-card w-20 h-20 rounded border-2 ${
+                  index === activePhotoIndex
+                    ? "border-primary"
+                    : "border-transparent"
+                }`}
+                onClick={() => setActivePhotoIndex(index)}
+              >
+                <img
+                  src={photo.photo_url || "/placeholder.svg"}
+                  alt=""
+                  className="w-full h-full object-cover rounded"
+                />
+              </button>
+              <button
+                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                onClick={() => handleDeletePhoto(photo.id)}
+                disabled={photos.length <= 1}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
 
 export default function CoffeeListingSellerView() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [activeMessageThread, setActiveMessageThread] = useState<number | null>(
-    null
+  const [activeMessageThread, setActiveMessageThread] = useState<string | null>(
+    null,
   );
   const [messageFilter, setMessageFilter] = useState("all");
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [bids, setBids] = useState<Bid[]>([]);
+  const [messageThreads, setMessageThreads] = useState<MessageThread[]>([]);
+  const [loading, setLoading] = useState(true);
   const isMobile = useMobile();
+  const { id } = useParams<{ id: string }>();
 
-  const { listing, bids, messageThreads, listingStats } = mockData;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const senderId = getUserId();
+        if (!senderId) {
+          setLoading(false);
+          throw new Error("No authenticated user found");
+        }
+
+        const listingResponse: any = await apiService().get(
+          `/sellers/listings/get-listing?listingId=${id}`,
+        );
+        setListing(listingResponse.data.listing);
+
+        const bidsResponse: any = await apiService().get(
+          `/sellers/listings/bids/get-bids?listingId=${id}`,
+        );
+        setBids(bidsResponse.data.bids || []);
+
+        const messagesResponse: any = await apiService().get(
+          `/chats/listing-messages?listingId=${id}`,
+        );
+
+        const groupedThreads: { [key: string]: MessageThread } = {};
+        messagesResponse.data.messages.forEach((msg: Message) => {
+          const otherPartyId =
+            msg.senderId === senderId ? msg.recipientId : msg.senderId;
+          const threadId = `${otherPartyId}-${msg.listingId}`;
+
+          if (!groupedThreads[threadId]) {
+            groupedThreads[threadId] = {
+              id: threadId,
+              otherPartyId,
+              otherPartyName: `User ${otherPartyId.slice(0, 8)}`,
+              otherPartyCompany:
+                msg.recipientType === "buyer" ? "Buyer" : "Unknown",
+              unread: 0,
+              lastMessageTime: msg.createdAt,
+              messages: [],
+            };
+          }
+
+          groupedThreads[threadId].messages.push({
+            ...msg,
+            id: msg.id,
+            senderId: msg.senderId,
+            recipientId: msg.recipientId,
+            recipientType: msg.recipientType,
+            message: msg.message,
+            listingId: msg.listingId,
+            createdAt: msg.createdAt,
+          });
+
+          if (
+            new Date(msg.createdAt) >
+            new Date(groupedThreads[threadId].lastMessageTime)
+          ) {
+            groupedThreads[threadId].lastMessageTime = msg.createdAt;
+          }
+        });
+
+        const threadsArray = Object.values(groupedThreads)
+          .map((thread) => ({
+            ...thread,
+            messages: thread.messages.sort(
+              (a, b) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime(),
+            ),
+          }))
+          .sort(
+            (a, b) =>
+              new Date(b.lastMessageTime).getTime() -
+              new Date(a.lastMessageTime).getTime(),
+          );
+
+        setMessageThreads(threadsArray);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchData();
+    }
+  }, [id]);
 
   const filteredThreads = messageThreads.filter((thread) => {
     if (messageFilter === "unread") {
@@ -253,23 +336,42 @@ export default function CoffeeListingSellerView() {
 
   const totalUnreadMessages = messageThreads.reduce(
     (sum, thread) => sum + thread.unread,
-    0
+    0,
   );
+
+  const listingStats = {
+    views: 150,
+    inquiries: messageThreads.length,
+    totalBids: bids.length,
+    totalRevenue: bids.reduce((sum, bid) => sum + bid.total_amount, 0),
+  };
+
+  if (loading) {
+    return <div className="text-center py-12">Loading...</div>;
+  }
+
+  if (!listing) {
+    return <div className="text-center py-12">Listing not found</div>;
+  }
 
   return (
     <div className="min-h-screen bg-primary/5 p-8">
-      {/* Header */}
-      <Header></Header>
+      <Header />
 
-      <main className="container px-24 py-8">
+      <main className="container px-4 md:px-24 py-8">
         <Tabs
           defaultValue="overview"
           value={activeTab}
           onValueChange={setActiveTab}
         >
           <TabsList className="mb-6">
-            <TabsTrigger value="overview" className="h-12">Overview</TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-2 h-12">
+            <TabsTrigger value="overview" className="h-12">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value="messages"
+              className="flex items-center gap-2 h-12"
+            >
               Messages
               {totalUnreadMessages > 0 && (
                 <Badge
@@ -280,33 +382,25 @@ export default function CoffeeListingSellerView() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="bids" className="h-12">Bids</TabsTrigger>
+            <TabsTrigger value="bids" className="h-12">
+              Bids
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Coffee details section */}
               <div className="lg:col-span-2 space-y-6">
                 <Card>
-                  {/* Listing photo */}
-                  <div className="relative">
-                    <img
-                      src={listing.photos[0] || "/placeholder.svg"}
-                      alt={listing.title}
-                      className="w-full h-64 object-cover rounded-t-lg"
-                    />
-                    {listing.isOrganic && (
-                      <Badge className="absolute top-4 right-4 bg-emerald-500">
-                        Organic
-                      </Badge>
-                    )}
-                  </div>
+                  <PhotoGallery
+                    listingId={id!}
+                    photos={listing.photos}
+                    isOrganic={listing.is_organic}
+                  />
 
-                  {/* Details */}
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <h2 className="text-xl font-bold text-gray-900">
-                        {listing.title}
+                        {listing.coffee_variety}
                       </h2>
                       <div className="flex items-center bg-amber-100 px-2 py-1 rounded">
                         <Star
@@ -314,52 +408,66 @@ export default function CoffeeListingSellerView() {
                           className="text-amber-500 fill-current"
                         />
                         <span className="ml-1 text-sm font-medium text-amber-800">
-                          {listing.score}
+                          {listing.grade}
                         </span>
                       </div>
                     </div>
 
                     <div className="flex items-baseline mb-6">
                       <span className="text-2xl font-bold text-emerald-600">
-                        ${listing.price}
+                        ${listing.price_per_kg.toFixed(2)}
                       </span>
                       <span className="ml-1 text-gray-500">/kg</span>
                     </div>
 
                     <div className="space-y-4 mb-6">
-                      <p className="text-gray-700">{listing.description}</p>
+                      <p className="text-gray-700">
+                        Premium {listing.coffee_variety} coffee from{" "}
+                        {listing.farm.farm_name} in {listing.farm.town_location}
+                        , {listing.farm.region}, {listing.farm.country}. This
+                        coffee features{" "}
+                        {listing.cup_taste_acidity.toLowerCase()} acidity,
+                        {listing.cup_taste_body.toLowerCase()} body, and{" "}
+                        {listing.cup_taste_sweetness.toLowerCase()} sweetness
+                        with a {listing.cup_taste_aftertaste.toLowerCase()}{" "}
+                        aftertaste.
+                      </p>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">
                             Variety
                           </h4>
-                          <p className="text-gray-900">{listing.variety}</p>
+                          <p className="text-gray-900">
+                            {listing.coffee_variety}
+                          </p>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">
                             Processing
                           </h4>
-                          <p className="text-gray-900">{listing.processing}</p>
+                          <p className="text-gray-900">
+                            {listing.processing_method}
+                          </p>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">
                             Bean Type
                           </h4>
-                          <p className="text-gray-900">{listing.beanType}</p>
+                          <p className="text-gray-900">{listing.bean_type}</p>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">
                             Crop Year
                           </h4>
-                          <p className="text-gray-900">{listing.cropYear}</p>
+                          <p className="text-gray-900">{listing.crop_year}</p>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">
                             Quantity Available
                           </h4>
                           <p className="text-gray-900">
-                            {listing.availableQuantity} kg
+                            {listing.quantity_kg} kg
                           </p>
                         </div>
                         <div>
@@ -367,38 +475,68 @@ export default function CoffeeListingSellerView() {
                             Ready By
                           </h4>
                           <p className="text-gray-900">
-                            {listing.readinessDate}
+                            {listing.readiness_date}
                           </p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-500">
+                            Moisture
+                          </h4>
+                          <p className="text-gray-900">
+                            {listing.moisture_percentage}%
+                          </p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-500">
+                            Screen Size
+                          </h4>
+                          <p className="text-gray-900">{listing.screen_size}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-500">
+                            Drying Method
+                          </h4>
+                          <p className="text-gray-900">
+                            {listing.drying_method}
+                          </p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-500">
+                            Wet Mill
+                          </h4>
+                          <p className="text-gray-900">{listing.wet_mill}</p>
                         </div>
                       </div>
                     </div>
 
-                    <Separator className="my-4" />
-
-                    <div>
-                      <h3 className="text-md font-medium text-gray-900 mb-2">
-                        Volume Discounts
-                      </h3>
-                      <div className="space-y-2">
-                        {listing.discounts.map((discount, idx) => (
-                          <div
-                            key={idx}
-                            className="flex justify-between items-center p-2 bg-emerald-50 rounded-md"
-                          >
-                            <span className="text-sm text-gray-700">
-                              Order {discount.minimumQuantity}+ kg
-                            </span>
-                            <span className="text-sm font-medium text-emerald-700">
-                              {discount.percentage}% off
-                            </span>
+                    {listing.discounts.length > 0 && (
+                      <>
+                        <Separator className="my-4" />
+                        <div>
+                          <h3 className="text-md font-medium text-gray-900 mb-2">
+                            Volume Discounts
+                          </h3>
+                          <div className="space-y-2">
+                            {listing.discounts.map((discount, idx) => (
+                              <div
+                                key={idx}
+                                className="flex justify-between items-center p-2 bg-emerald-50 rounded-md"
+                              >
+                                <span className="text-sm text-gray-700">
+                                  Order {discount.minimumQuantity}+ kg
+                                </span>
+                                <span className="text-sm font-medium text-emerald-700">
+                                  {discount.percentage}% off
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
 
-                {/* Recent bids */}
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-lg">Recent Bids</CardTitle>
@@ -412,36 +550,39 @@ export default function CoffeeListingSellerView() {
                   </CardHeader>
 
                   <CardContent>
+                    {bids.length == 0 && (
+                      <div className="text-center text-gray-600">
+                        No Bids found for this listing{" "}
+                      </div>
+                    )}
                     <div className="divide-y divide-gray-200">
-                      {bids.slice(0, 3).map((order) => (
-                        <div key={order.id} className="py-4">
+                      {bids.slice(0, 3).map((bid) => (
+                        <div key={bid.id} className="py-4">
                           <div className="flex justify-between items-start">
                             <div>
                               <div className="flex items-center">
                                 <h4 className="text-sm font-medium text-gray-900">
-                                  {order.buyerName}
+                                  Bid ID: {bid.id}
                                 </h4>
                                 <Badge
                                   variant={
-                                    order.status === "completed"
-                                      ? "default"
-                                      : order.status === "confirmed"
+                                    bid.status === "confirmed"
                                       ? "default"
                                       : "outline"
                                   }
                                   className="ml-2"
                                 >
-                                  {order.status}
+                                  {bid.status}
                                 </Badge>
                               </div>
                               <p className="text-sm text-gray-500">
-                                {new Date(order.date).toLocaleDateString()} •{" "}
-                                {order.quantity} kg
+                                {new Date(bid.created_at).toLocaleDateString()}{" "}
+                                • {bid.quantity_kg} kg
                               </p>
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-medium text-gray-900">
-                                ${order.totalAmount}
+                                ${bid.total_amount.toFixed(2)}
                               </p>
                               <Button
                                 variant="link"
@@ -457,7 +598,6 @@ export default function CoffeeListingSellerView() {
                   </CardContent>
                 </Card>
 
-                {/* Recent Messages */}
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-lg">Recent Messages</CardTitle>
@@ -471,6 +611,11 @@ export default function CoffeeListingSellerView() {
                   </CardHeader>
 
                   <CardContent>
+                    {messageThreads.length == 0 && (
+                      <div className="text-center text-gray-600">
+                        No message threads found for this listing{" "}
+                      </div>
+                    )}
                     <div className="divide-y divide-gray-200">
                       {messageThreads.slice(0, 3).map((thread) => (
                         <div key={thread.id} className="py-4">
@@ -478,13 +623,13 @@ export default function CoffeeListingSellerView() {
                             <div className="flex">
                               <Avatar className="h-10 w-10">
                                 <AvatarFallback className="bg-gray-200 text-gray-600">
-                                  {thread.buyerName.charAt(0)}
+                                  {thread.otherPartyName?.charAt(0) || "U"}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="ml-3">
                                 <div className="flex items-center">
                                   <h4 className="text-sm font-medium text-gray-900">
-                                    {thread.buyerName}
+                                    {thread.otherPartyName || "Unknown User"}
                                   </h4>
                                   {thread.unread > 0 && (
                                     <Badge variant="default" className="ml-2">
@@ -493,7 +638,7 @@ export default function CoffeeListingSellerView() {
                                   )}
                                 </div>
                                 <p className="text-sm text-gray-500">
-                                  {thread.buyerCompany}
+                                  {thread.otherPartyCompany}
                                 </p>
                                 <p className="mt-1 text-sm text-gray-600 truncate max-w-[300px]">
                                   {
@@ -505,7 +650,9 @@ export default function CoffeeListingSellerView() {
                             </div>
                             <div className="text-right">
                               <p className="text-xs text-gray-500">
-                                {thread.lastMessageTime}
+                                {new Date(
+                                  thread.lastMessageTime,
+                                ).toLocaleTimeString()}
                               </p>
                               <Button
                                 variant="link"
@@ -526,9 +673,7 @@ export default function CoffeeListingSellerView() {
                 </Card>
               </div>
 
-              {/* Right sidebar */}
               <div className="lg:col-span-1 space-y-6">
-                {/* Listing Info Card */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Listing Info</CardTitle>
@@ -541,10 +686,12 @@ export default function CoffeeListingSellerView() {
                       <div className="mt-1 flex items-center">
                         <Badge
                           variant={
-                            listing.status === "active" ? "default" : "outline"
+                            listing.listing_status === "pending"
+                              ? "outline"
+                              : "default"
                           }
                         >
-                          {listing.status === "active" ? "Active" : "Draft"}
+                          {listing.listing_status}
                         </Badge>
                       </div>
                     </div>
@@ -554,7 +701,7 @@ export default function CoffeeListingSellerView() {
                         Created On
                       </h4>
                       <p className="text-gray-900">
-                        {new Date(listing.createdAt).toLocaleDateString()}
+                        {new Date(listing.created_at).toLocaleDateString()}
                       </p>
                     </div>
 
@@ -562,16 +709,21 @@ export default function CoffeeListingSellerView() {
                       <h4 className="text-sm font-medium text-gray-500">
                         Ready By
                       </h4>
-                      <p className="text-gray-900">{listing.readinessDate}</p>
+                      <p className="text-gray-900">{listing.readiness_date}</p>
                     </div>
 
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">
                         Quantity Available
                       </h4>
-                      <p className="text-gray-900">
-                        {listing.availableQuantity} kg
-                      </p>
+                      <p className="text-gray-900">{listing.quantity_kg} kg</p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">
+                        Farm
+                      </h4>
+                      <p className="text-gray-900">{listing.farm.farm_name}</p>
                     </div>
 
                     <div>
@@ -581,39 +733,57 @@ export default function CoffeeListingSellerView() {
                       <p className="text-gray-900">{listingStats.views}</p>
                     </div>
 
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 hover:text-white">
                       Edit Listing
                     </Button>
                   </CardContent>
                 </Card>
 
-                {/* Stats */}
                 <div className="grid grid-cols-1 gap-4">
-                  <StatCard
-                    icon={<BarChart2 size={18} className="text-emerald-600" />}
-                    title="Total Views"
-                    value={listingStats.views}
-                    hasIncrease={true}
-                    increaseValue={12}
-                  />
+                  <div className="p-4 bg-white rounded-lg shadow-sm border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <BarChart2 size={18} className="text-emerald-600" />
+                        <div>
+                          <p className="text-sm text-gray-500">Total Views</p>
+                          <p className="text-lg font-medium text-gray-900">
+                            {listingStats.views}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-emerald-600">+12%</p>
+                    </div>
+                  </div>
 
-                  <StatCard
-                    icon={
-                      <MessageCircle size={18} className="text-emerald-600" />
-                    }
-                    title="Inquiries"
-                    value={listingStats.inquiries}
-                    hasIncrease={true}
-                    increaseValue={8}
-                  />
+                  <div className="p-4 bg-white rounded-lg shadow-sm border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <MessageCircle size={18} className="text-emerald-600" />
+                        <div>
+                          <p className="text-sm text-gray-500">Inquiries</p>
+                          <p className="text-lg font-medium text-gray-900">
+                            {listingStats.inquiries}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-emerald-600">+8%</p>
+                    </div>
+                  </div>
 
-                  <StatCard
-                    icon={<DollarSign size={18} className="text-emerald-600" />}
-                    title="Total Revenue"
-                    value={`$${listingStats.totalRevenue}`}
-                    hasIncrease={false}
-                    increaseValue={5}
-                  />
+                  <div className="p-4 bg-white rounded-lg shadow-sm border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <DollarSign size={18} className="text-emerald-600" />
+                        <div>
+                          <p className="text-sm text-gray-500">Total Revenue</p>
+                          <p className="text-lg font-medium text-gray-900">
+                            ${listingStats.totalRevenue.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-red-600">-5%</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -622,7 +792,6 @@ export default function CoffeeListingSellerView() {
           <TabsContent value="messages">
             <Card>
               <div className="flex h-[700px]">
-                {/* Message Thread List - Shown on larger screens, or when no thread is selected */}
                 <div
                   className={`${
                     activeMessageThread && isMobile ? "hidden" : ""
@@ -639,7 +808,6 @@ export default function CoffeeListingSellerView() {
                   </div>
                 </div>
 
-                {/* Message Thread Detail */}
                 <div
                   className={`${
                     !activeMessageThread && isMobile ? "hidden" : ""
@@ -711,7 +879,7 @@ export default function CoffeeListingSellerView() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Order ID</TableHead>
-                        <TableHead>Buyer</TableHead>
+                        <TableHead>Buyer ID</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Quantity</TableHead>
                         <TableHead>Total</TableHead>
@@ -720,28 +888,31 @@ export default function CoffeeListingSellerView() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {bids.map((order) => (
-                        <TableRow key={order.id}>
+                      {bids.length == 0 && (
+                        <div className="text-center flex items-center justify-center text-gray-600 py-5">
+                          No Bids found for this listing{" "}
+                        </div>
+                      )}
+                      {bids.map((bid) => (
+                        <TableRow key={bid.id}>
                           <TableCell className="font-medium">
-                            {order.id}
+                            {bid.id}
                           </TableCell>
-                          <TableCell>{order.buyerName}</TableCell>
+                          <TableCell>{bid.buyer_id}</TableCell>
                           <TableCell>
-                            {new Date(order.date).toLocaleDateString()}
+                            {new Date(bid.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell>{order.quantity} kg</TableCell>
-                          <TableCell>${order.totalAmount}</TableCell>
+                          <TableCell>{bid.quantity_kg} kg</TableCell>
+                          <TableCell>${bid.total_amount.toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge
                               variant={
-                                order.status === "completed"
-                                  ? "default"
-                                  : order.status === "confirmed"
+                                bid.status === "confirmed"
                                   ? "default"
                                   : "outline"
                               }
                             >
-                              {order.status}
+                              {bid.status}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -753,7 +924,7 @@ export default function CoffeeListingSellerView() {
                               >
                                 View
                               </Button>
-                              {order.status === "pending" && (
+                              {bid.status === "pending" && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -762,8 +933,8 @@ export default function CoffeeListingSellerView() {
                                   Accept
                                 </Button>
                               )}
-                              {(order.status === "pending" ||
-                                order.status === "confirmed") && (
+                              {(bid.status === "pending" ||
+                                bid.status === "confirmed") && (
                                 <Button
                                   variant="ghost"
                                   size="sm"

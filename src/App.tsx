@@ -1,5 +1,3 @@
-// App.tsx
-
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
@@ -26,6 +24,7 @@ import CoffeeListingPage from "./pages/marketplace/coffee-listing/coffee-page";
 import CoffeeListingSellerView from "./pages/marketplace/coffee-listing-seller/coffee-listing-seller";
 import AddCrop from "./pages/farms/add-crop";
 import { getFromLocalStorage } from "./lib/utils";
+import { initializeChatService } from "./services/chatService";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -33,19 +32,23 @@ const CreatePassword = lazy(() => import("./pages/auth/CreatePassword"));
 const VerifyEmail = lazy(() => import("./pages/auth/VerifyEmail"));
 const Welcome = lazy(() => import("./pages/onboarding/Welcome"));
 const FarmManagement = lazy(() => import("./pages/farms/FarmManagement"));
-const FarmDetails = lazy(() => import("./pages/farms/FarmDetails")); // Step One
+const FarmDetails = lazy(() => import("./pages/farms/FarmDetails"));
 const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const Dashboard = lazy(() => import("./pages/seller/Dashboard"));
 const CompanyOnboarding = lazy(
-  () => import("./pages/company/company-onboarding")
+  () => import("./pages/company/company-onboarding"),
 );
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
+const socketURL = import.meta.env.VITE_SOCKET_URL;
 
-if (!baseURL) {
-  console.error("Internal error has occurred. Please view logs.");
+if (!baseURL || !socketURL) {
+  console.error(
+    "VITE_API_BASE_URL or VITE_SOCKET_URL are missing from the environment",
+  );
 } else {
   initializeApiService(baseURL);
+  initializeChatService(socketURL);
 }
 
 const Loading = () => (
@@ -57,7 +60,7 @@ const Loading = () => (
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const userProfile: any = getFromLocalStorage("userProfile", {});
 const currentStep = userProfile?.onboardingStage;
 
@@ -65,13 +68,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(true);
   const location = useLocation();
 
-  // Uncomment this to enable real JWT auth check
-
   useEffect(() => {
     const accessToken = Cookies.get("accessToken");
     if (accessToken) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const decodedToken: any = jwtDecode(accessToken);
         if (decodedToken.exp * 1000 > Date.now()) {
           setIsAuthenticated(true);
@@ -90,7 +90,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
-// Determine route based on user profile stage
 const getStepFromStage = () => {
   switch (userProfile?.onboardingStage) {
     case "crops_to_sell":
@@ -293,7 +292,7 @@ function App() {
             }
           />
           <Route
-            path="/coffee-listing-seller"
+            path="/manage-listing/:id"
             element={
               <ProtectedRoute>
                 <CoffeeListingSellerView />

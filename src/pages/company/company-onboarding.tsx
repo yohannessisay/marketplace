@@ -19,7 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input"; 
+import { Input } from "@/components/ui/input";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import Header from "@/components/layout/header";
@@ -27,6 +27,7 @@ import { FileUpload } from "@/components/common/file-upload";
 import { buyerOnboardingSchema } from "@/types/validation/buyer";
 import { Textarea } from "@/components/ui/textarea";
 import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
+import { APIErrorResponse } from "@/types/api";
 
 type CompanyDetails = z.infer<typeof buyerOnboardingSchema>;
 
@@ -37,9 +38,7 @@ export default function CompanyVerification() {
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userProfile: any = getFromLocalStorage("userProfile", {}); 
-  // Initialize form with default values
+  const userProfile: any = getFromLocalStorage("userProfile", {});
   const form = useForm<CompanyDetails>({
     resolver: zodResolver(buyerOnboardingSchema),
     defaultValues: {
@@ -66,33 +65,28 @@ export default function CompanyVerification() {
       formData.append(key, value);
     });
 
-    // files.forEach((file) => {
-    //   formData.append(`files`, file);
-    // });
+    files.forEach((file) => {
+      formData.append(`files`, file);
+    });
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response: any = await apiService().postFormData(
+      await apiService().postFormData(
         "/onboarding/buyer/complete-onboarding",
         formData,
-        true
+        true,
       );
       saveToLocalStorage("current-step", "completed");
-      if (response && response.success) {
-        saveToLocalStorage("userProfile", {
-          ...userProfile,
-          onboardingStage: "complete",
-        });
-        successMessage(
-          "Your company verification has been submitted successfully."
-        );
-        location.reload();
-      }
+      saveToLocalStorage("userProfile", {
+        ...userProfile,
+        onboardingStage: "complete",
+      });
+      successMessage(
+        "Your company verification has been submitted successfully.",
+      );
+      location.reload();
     } catch (error) {
       console.error("Error submitting form:", error);
-      errorMessage(
-        "There was an error submitting your verification. Please try again."
-      );
+      errorMessage(error as APIErrorResponse);
     } finally {
       setIsSubmitting(false);
     }
@@ -153,7 +147,7 @@ export default function CompanyVerification() {
                               if (index === 0) {
                                 form.setValue(
                                   "files",
-                                  undefined as unknown as File
+                                  undefined as unknown as File,
                                 ); // Clear the file from the form
                                 form.setError("files", {
                                   message: "File is required",

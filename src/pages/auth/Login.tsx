@@ -34,7 +34,7 @@ const Login = () => {
       });
       successMessage("Login successful!");
 
-      const { access_token, refresh_token, user } = response;
+      const { access_token, refresh_token, user } = response.data;
       Cookies.set("accessToken", access_token, { expires: 1 / 48 });
       Cookies.set("refreshToken", refresh_token, { expires: 1 });
 
@@ -76,7 +76,7 @@ const Login = () => {
       }
 
       navigate(redirectTo);
-      saveToLocalStorage("userProfile", JSON.stringify(user));
+      saveToLocalStorage("userProfile", user);
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
       if (

@@ -23,9 +23,8 @@ export default function CoffeeListingPage() {
   useEffect(() => {
     const fetchListingDetails = async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response: any = await apiService().get(
-          `/marketplace/listings/get-listing?listingId=${id}`
+          `/marketplace/listings/get-listing?listingId=${id}`,
         );
 
         if (
@@ -48,7 +47,6 @@ export default function CoffeeListingPage() {
   }, [id]);
   const handleOrderSubmit = async () => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: any = await apiService().post("/orders/place-order", {
         listingId: listing?.id,
         unit_price: listing?.price_per_kg,
@@ -62,7 +60,6 @@ export default function CoffeeListingPage() {
         errorMessage(response.data.error.message);
       }
       setShowOrderModal(false);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setShowOrderModal(false);
       errorMessage(err.data.error.message);

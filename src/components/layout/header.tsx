@@ -1,13 +1,14 @@
 import { getFromLocalStorage } from "@/lib/utils";
 import {
-  BeanIcon,
   Home,
-  List, 
+  List,
   Receipt,
   ShoppingBagIcon,
   Settings,
   LogOut,
   User,
+  ListOrderedIcon,
+  LucideShoppingBag,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -23,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "../ui/separator";
 
 export default function Header() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const user: any = getFromLocalStorage("userProfile", {});
   const location = useLocation();
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ export default function Header() {
   const linkClasses = (to: string) =>
     clsx(
       "text-sm flex items-center cursor-pointer",
-      path.startsWith(to) ? "text-green-700 font-semibold" : "text-gray-600"
+      path.startsWith(to) ? "text-green-700 font-semibold" : "text-gray-600",
     );
 
   const handleLogout = () => {
@@ -67,7 +67,6 @@ export default function Header() {
               <Link to="/my-orders" className={linkClasses("/my-orders")}>
                 <Receipt className="mr-1" /> My Orders
               </Link>
-           
             </>
           ) : (
             <></>
@@ -81,12 +80,20 @@ export default function Header() {
               <List className="mr-1" /> Farmer Management
             </Link>
           )}
-          {user.userType === "seller" && (
+
+          <Link
+            to="/market-place"
+            className={linkClasses("/coffee-listing-seller")}
+          >
+            <LucideShoppingBag className="mr-1" /> Marketplace
+          </Link>
+
+          {user.userType === "buyer" && (
             <Link
-              to="/coffee-listing-seller"
+              to="/my-orders"
               className={linkClasses("/coffee-listing-seller")}
             >
-              <BeanIcon className="mr-1" /> Coffee Listing
+              <ListOrderedIcon className="mr-1" /> My Orders
             </Link>
           )}
 
@@ -106,11 +113,14 @@ export default function Header() {
                 {user.firstName} {user.lastName}
               </span>
               <Separator></Separator>
-              <DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer"
+              >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </DropdownMenuItem>

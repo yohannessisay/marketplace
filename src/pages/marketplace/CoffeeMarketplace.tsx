@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
@@ -28,7 +27,6 @@ import {
 import { apiService } from "@/services/apiService";
 import ListingDetailModal from "./view-listing-modal";
 
-// Define TypeScript interfaces for our data types
 interface Farm {
   id: string;
   seller_id: string;
@@ -234,7 +232,7 @@ export default function CoffeeMarketplace() {
       // In a real implementation, you would use the query params
       // For now, we'll use the mock data provided
       const response = await apiService().get<ApiResponse>(
-        "/marketplace/listings/get-all-listings"
+        "/marketplace/listings/get-all-listings",
       );
 
       if (response.success && response.data.listings) {

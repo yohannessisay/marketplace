@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -70,7 +69,7 @@ export default function ContactModal() {
     try {
       const result: any = await apiService().postWithoutAuth(
         "/general/contact-us",
-        data
+        data,
       );
       if (result && result.success) {
         successMessage("Message sent successfully");

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
@@ -28,7 +27,6 @@ import {
 import { apiService } from "@/services/apiService";
 import ListingDetailModal from "./view-listing-modal";
 
-// Define TypeScript interfaces for our data types
 interface Farm {
   id: string;
   seller_id: string;
@@ -227,14 +225,11 @@ export default function CoffeeMarketplace() {
     string | null
   >(null);
 
-  // Fetch listings from API
   const fetchListings = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, you would use the query params
-      // For now, we'll use the mock data provided
       const response = await apiService().get<ApiResponse>(
-        "/marketplace/listings/get-all-listings"
+        "/marketplace/listings/get-all-listings",
       );
 
       if (response.success && response.data.listings) {
@@ -252,12 +247,10 @@ export default function CoffeeMarketplace() {
     }
   };
 
-  // Fetch listings on component mount
   React.useEffect(() => {
     fetchListings();
   }, []);
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1); // Reset to first page on search
@@ -529,14 +522,14 @@ export default function CoffeeMarketplace() {
                 className="overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
                 onClick={() => setSelectedListingId(listing.id)}
               >
-                <div className="relative h-48 bg-slate-200">
+                <div className="relative h-50 bg-slate-200 px-3">
                   <CoffeeImage
                     src={getPrimaryPhotoUrl(listing)}
                     alt={listing.coffee_variety}
-                    className="w-full h-full"
+                    className="w-full h-full rounded-lg"
                   />
                   {listing.is_organic && (
-                    <Badge className="absolute top-2 right-2 bg-emerald-500">
+                    <Badge className="absolute top-2 right-2 bg-emerald-500 mr-5">
                       Organic
                     </Badge>
                   )}

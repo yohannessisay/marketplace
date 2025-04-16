@@ -11,6 +11,8 @@ import {
   Clock,
   ChevronRight,
   Leaf,
+  Coffee,
+  Search,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,55 +23,80 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import Header from "@/components/layout/header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiService } from "@/services/apiService";
-import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
+import { saveToLocalStorage } from "@/lib/utils";
 
-// Farm Type
 interface Farm {
   id: string;
   farm_name: string;
   town_location: string;
   total_size_hectares?: string;
   capacity_kg?: string;
-  status: "verification" | "active" | "inactive";
+  verification_status: "pending" | "approved" | "rejected";
   created_at?: string;
+}
+
+interface CoffeeListing {
+  id: string;
+  farm_id: string;
+  coffee_variety: string;
+  quantity_kg: number;
+  price_per_kg: number;
+  listing_status: string;
+  created_at: string;
+  is_organic: boolean;
+  grade?: string | null;
+  readiness_date?: string | null;
 }
 
 const FarmManagement: React.FC = () => {
   const [farms, setFarms] = useState<Farm[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState<CoffeeListing[]>([]);
+  const [loadingFarms, setLoadingFarms] = useState(true);
+  const [loadingListings, setLoadingListings] = useState(true);
+  const [farmSearch, setFarmSearch] = useState("");
+  const [listingSearch, setListingSearch] = useState("");
+  const [page] = useState(1);
+  const [limit] = useState(10);
 
   useEffect(() => {
     const fetchFarms = async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const user: any = getFromLocalStorage("userProfile", {});
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmer: any = getFromLocalStorage("farmer-profile", {});
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setLoadingFarms(true);
         const response: any = await apiService().get(
-          "/sellers/farms/get-farms",
-          user.userType == "agent" ? farmer.id : ""
+          `/sellers/farms/get-farms?search=${farmSearch}&page=${page}&limit=${limit}`,
         );
-        if (response && response.data.farms) {
-          setFarms(response.data.farms);
-        } else {
-          console.warn("Invalid response format:", response);
-        }
+        setFarms(response.data.farms);
       } catch (error) {
         console.error("Failed to fetch farms:", error);
       } finally {
-        setLoading(false);
+        setLoadingFarms(false);
+      }
+    };
+
+    const fetchListings = async () => {
+      try {
+        setLoadingListings(true);
+        const response: any = await apiService().get(
+          `/sellers/listings/get-listings?search=${listingSearch}&page=${page}&limit=${limit}`,
+        );
+        setListings(response.data.listings);
+      } catch (error) {
+        console.error("Failed to fetch listings:", error);
+      } finally {
+        setLoadingListings(false);
       }
     };
 
     fetchFarms();
-  }, []);
+    fetchListings();
+  }, [farmSearch, listingSearch, page, limit]);
 
   return (
     <div className="bg-primary/5 min-h-screen py-8 px-8">
@@ -80,10 +107,10 @@ const FarmManagement: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
             <h1 className="text-3xl font-semibold text-slate-800 mb-2">
-              Your Farms
+              Farm Management
             </h1>
             <p className="text-slate-500">
-              Manage your coffee farms and track their verification status
+              Manage your coffee farms and listings
             </p>
           </div>
           <div className="flex gap-4">
@@ -93,149 +120,340 @@ const FarmManagement: React.FC = () => {
                 Add New Farm
               </Link>
             </Button>
+            <Button className="mt-4 md:mt-0" asChild>
+              <Link to="/add-listing">
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Listing
+              </Link>
+            </Button>
           </div>
         </div>
 
         <Separator className="mb-8" />
 
-        {/* Loading State */}
-        {loading ? (
-          <p className="text-slate-500 text-center">Loading farms...</p>
-        ) : farms.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-slate-100 mx-auto flex items-center justify-center mb-4">
-              <Home className="h-8 w-8 text-slate-400" />
+        <Tabs defaultValue="farms" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8 ">
+            <TabsTrigger
+              value="farms"
+              className="border border-green-300 p-3 mr-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
+            >
+              Farms
+            </TabsTrigger>
+            <TabsTrigger
+              value="listings"
+              className="border border-green-300 p-3 ml-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
+            >
+              Listings
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Farms Tab */}
+          <TabsContent value="farms">
+            <div className="mb-6 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search farms by name or location..."
+                  value={farmSearch}
+                  onChange={(e) => setFarmSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-            <h3 className="text-lg font-medium text-slate-700 mb-2">
-              No farms yet
-            </h3>
-            <p className="text-slate-500 max-w-md mx-auto mb-6">
-              You haven't added any farms to your account. Start by adding your
-              first coffee farm.
-            </p>
-            <Button asChild>
-              <Link to="/add-farm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Farm
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Add New Farm Card */}
-            <Card className="border-2 border-dashed border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 group">
-              <Link to="/add-farm" className="block h-full">
-                <CardContent className="flex flex-col items-center justify-center p-8 h-full text-center">
-                  <div className="w-16 h-16 rounded-full bg-slate-100 group-hover:bg-slate-200 transition-colors flex items-center justify-center mb-4">
-                    <Plus className="h-8 w-8 text-slate-500 group-hover:text-slate-700 transition-colors" />
-                  </div>
-                  <h3 className="text-lg font-medium text-slate-700 mb-2">
-                    Add New Farm
-                  </h3>
-                  <p className="text-sm text-slate-500">
-                    Register a new coffee farm to your portfolio
-                  </p>
-                </CardContent>
-              </Link>
-            </Card>
 
-            {/* Farm Cards */}
-            {farms.map((farm, index) => (
-              <Card
-                key={index}
-                className="overflow-hidden border border-slate-200 hover:shadow-md transition-all duration-200"
-              >
-                <CardHeader className="bg-white pb-2">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mr-3">
-                        <Leaf className="h-5 w-5 text-emerald-600" />
+            {loadingFarms ? (
+              <p className="text-slate-500 text-center">Loading farms...</p>
+            ) : farms.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-slate-100 mx-auto flex items-center justify-center mb-4">
+                  <Home className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-medium text-slate-700 mb-2">
+                  No farms found
+                </h3>
+                <p className="text-slate-500 max-w-md mx-auto mb-6">
+                  {farmSearch
+                    ? "No farms match your search criteria."
+                    : "You haven't added any farms to your account. Start by adding your first coffee farm."}
+                </p>
+                <Button asChild>
+                  <Link to="/add-farm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Your First Farm
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Add New Farm Card */}
+                <Card className="border-2 border-dashed border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 group">
+                  <Link to="/add-farm" className="block h-full">
+                    <CardContent className="flex flex-col items-center justify-center p-8 h-full text-center">
+                      <div className="w-16 h-16 rounded-full bg-slate-100 group-hover:bg-slate-200 transition-colors flex items-center justify-center mb-4">
+                        <Plus className="h-8 w-8 text-slate-500 group-hover:text-slate-700 transition-colors" />
                       </div>
-                      <CardTitle className="text-lg font-semibold text-slate-800">
-                        {farm.farm_name}
-                      </CardTitle>
-                    </div>
-                    <StatusBadge status={farm.status} />
-                  </div>
-                </CardHeader>
+                      <h3 className="text-lg font-medium text-slate-700 mb-2">
+                        Add New Farm
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        Register a new coffee farm to your portfolio
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
 
-                <CardContent className="pt-4 pb-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center text-slate-600">
-                      <MapPin className="h-4 w-4 mr-2 text-slate-400" />
-                      <span>{farm.town_location}</span>
-                    </div>
-
-                    {farm.status !== "verification" && (
-                      <>
-                        <div className="flex items-center text-slate-600">
-                          <Home className="h-4 w-4 mr-2 text-slate-400" />
-                          <span>{farm.total_size_hectares} hectares</span>
+                {/* Farm Cards */}
+                {farms.map((farm, index) => (
+                  <Card
+                    key={index}
+                    className="overflow-hidden border border-slate-200 hover:shadow-md transition-all duration-200"
+                  >
+                    <CardHeader className="bg-white pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mr-3">
+                            <Leaf className="h-5 w-5 text-emerald-600" />
+                          </div>
+                          <CardTitle className="text-lg font-semibold text-slate-800">
+                            {farm.farm_name}
+                          </CardTitle>
                         </div>
+                        <StatusBadge status={farm.verification_status} />
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-4 pb-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center text-slate-600">
+                          <MapPin className="h-4 w-4 mr-2 text-slate-400" />
+                          <span>{farm.town_location}</span>
+                        </div>
+
+                        {farm.verification_status === "approved" && (
+                          <>
+                            <div className="flex items-center text-slate-600">
+                              <Home className="h-4 w-4 mr-2 text-slate-400" />
+                              <span>{farm.total_size_hectares} hectares</span>
+                            </div>
+                            <div className="flex items-center text-slate-600">
+                              <Scale className="h-4 w-4 mr-2 text-slate-400" />
+                              <span>
+                                {Number.parseInt(
+                                  farm.capacity_kg || "0",
+                                ).toLocaleString()}{" "}
+                                kg capacity
+                              </span>
+                            </div>
+                          </>
+                        )}
+
+                        {farm.created_at && (
+                          <div className="flex items-center text-slate-500 text-sm">
+                            <Clock className="h-3 w-3 mr-1" />
+                            <span>
+                              Added on{" "}
+                              {new Date(farm.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {farm.verification_status === "pending" && (
+                        <Alert
+                          variant="default"
+                          className="mt-4 bg-amber-50 border-amber-200 text-amber-800"
+                        >
+                          <AlertDescription className="flex items-center text-sm">
+                            <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                            Your farm is being verified. We'll update you when
+                            the process is complete.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {farm.verification_status === "rejected" && (
+                        <Alert
+                          variant="default"
+                          className="mt-4 bg-red-200 border-amber-200 text-black"
+                        >
+                          <AlertDescription className="flex items-center text-sm">
+                            <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                            Sorry, this farm is rejected. Contact support for
+                            further details.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+
+                    <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col">
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center justify-center group"
+                      >
+                        <span>Manage Farm</span>
+                        <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                      </Button>
+
+                      <Button
+                        className="w-full flex items-center justify-center group mt-2"
+                        onClick={() => {
+                          saveToLocalStorage("current-farm-id", farm.id);
+                        }}
+                        asChild
+                      >
+                        <Link to="/add-crop">
+                          <span>Add Crop</span>
+                          <Plus className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Listings Tab */}
+          <TabsContent value="listings">
+            <div className="mb-6 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search listings by coffee variety..."
+                  value={listingSearch}
+                  onChange={(e) => setListingSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {loadingListings ? (
+              <p className="text-slate-500 text-center">Loading listings...</p>
+            ) : listings.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-slate-100 mx-auto flex items-center justify-center mb-4">
+                  <Coffee className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-medium text-slate-700 mb-2">
+                  No listings found
+                </h3>
+                <p className="text-slate-500 max-w-md mx-auto mb-6">
+                  {listingSearch
+                    ? "No listings match your search criteria."
+                    : "You haven't added any coffee listings. Start by adding your first coffee listing."}
+                </p>
+                <Button asChild>
+                  <Link to="/add-listing">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Your First Listing
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Add New Listing Card */}
+                <Card className="border-2 border-dashed border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 group">
+                  <Link to="/add-listing" className="block h-full">
+                    <CardContent className="flex flex-col items-center justify-center p-8 h-full text-center">
+                      <div className="w-16 h-16 rounded-full bg-slate-100 group-hover:bg-slate-200 transition-colors flex items-center justify-center mb-4">
+                        <Plus className="h-8 w-8 text-slate-500 group-hover:text-slate-700 transition-colors" />
+                      </div>
+                      <h3 className="text-lg font-medium text-slate-700 mb-2">
+                        Add New Listing
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        Create a new coffee listing for your farm
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+
+                {/* Listing Cards */}
+                {listings.map((listing, index) => (
+                  <Card
+                    key={index}
+                    className="overflow-hidden border border-slate-200 hover:shadow-md transition-all duration-200"
+                  >
+                    <CardHeader className="bg-white pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mr-3">
+                            <Coffee className="h-5 w-5 text-emerald-600" />
+                          </div>
+                          <CardTitle className="text-lg font-semibold text-slate-800">
+                            {listing.coffee_variety}
+                          </CardTitle>
+                        </div>
+                        <StatusBadge status={listing.listing_status} />
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-4 pb-6">
+                      <div className="space-y-3">
                         <div className="flex items-center text-slate-600">
                           <Scale className="h-4 w-4 mr-2 text-slate-400" />
-                          <span>
-                            {Number.parseInt(
-                              farm.capacity_kg || "0"
-                            ).toLocaleString()}{" "}
-                            kg capacity
-                          </span>
+                          <span>{listing.quantity_kg.toLocaleString()} kg</span>
                         </div>
-                      </>
-                    )}
-
-                    {farm.created_at && (
-                      <div className="flex items-center text-slate-500 text-sm">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>
-                          Added on{" "}
-                          {new Date(farm.created_at).toLocaleDateString()}
-                        </span>
+                        <div className="flex items-center text-slate-600">
+                          <span className="mr-2 text-slate-400">$</span>
+                          <span>${listing.price_per_kg.toFixed(2)}/kg</span>
+                        </div>
+                        {listing.is_organic && (
+                          <div className="flex items-center text-slate-600">
+                            <Leaf className="h-4 w-4 mr-2 text-slate-400" />
+                            <span>Organic</span>
+                          </div>
+                        )}
+                        {listing.grade && (
+                          <div className="flex items-center text-slate-600">
+                            <span className="mr-2 text-slate-400">★</span>
+                            <span>Grade: {listing.grade}</span>
+                          </div>
+                        )}
+                        {listing.created_at && (
+                          <div className="flex items-center text-slate-500 text-sm">
+                            <Clock className="h-3 w-3 mr-1" />
+                            <span>
+                              Created on{" "}
+                              {new Date(
+                                listing.created_at,
+                              ).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  {farm.status === "verification" && (
-                    <Alert
-                      variant="default"
-                      className="mt-4 bg-amber-50 border-amber-200 text-amber-800"
-                    >
-                      <AlertDescription className="flex items-center text-sm">
-                        <Clock className="h-4 w-4 mr-2 text-amber-500" />
-                        Your farm is being verified. We'll update you when the
-                        process is complete.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </CardContent>
+                      {listing.listing_status === "pending" && (
+                        <Alert
+                          variant="default"
+                          className="mt-4 bg-amber-50 border-amber-200 text-amber-800"
+                        >
+                          <AlertDescription className="flex items-center text-sm">
+                            <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                            Your listing is pending approval.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
 
-                <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col">
-                  <Button
-                    variant="outline"
-                    className="w-full flex items-center justify-center group"
-                  >
-                    <span>Manage Farm</span>
-                    <ChevronRight className="ml-2 h-4 w-4  group-hover:translate-x-0.5 transition-transform" />
-                  </Button>
-
-                  <Button
-                    variant={"secondary"}
-                    className="w-full flex items-center justify-center group mt-2"
-                    onClick={() => {
-                      saveToLocalStorage("current-farm-id", farm.id);
-                    }}
-                    asChild
-                  >
-                    <Link to="/add-crop">
-                      <span>Add Crop</span>
-                      <Plus className="ml-2 h-4 w-4   group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+                    <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col">
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center justify-center group"
+                        asChild
+                      >
+                        <Link to={`/manage-listing/${listing.id}`}>
+                          <span>Manage Listing</span>
+                          <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
@@ -244,31 +462,31 @@ const FarmManagement: React.FC = () => {
 // Status Badge Component
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   switch (status) {
-    case "verification":
+    case "pending":
       return (
         <Badge
           variant="outline"
           className="bg-amber-50 text-amber-700 border-amber-200"
         >
-          Verification Pending
+          Approval Pending
         </Badge>
       );
-    case "active":
+    case "approved":
       return (
         <Badge
           variant="outline"
-          className="bg-emerald-50 text-emerald-700 border-emerald-200"
+          className="bg-green-300 text-gray-800 border-emerald-200"
         >
-          Active
+          Approved
         </Badge>
       );
-    case "inactive":
+    case "rejected":
       return (
         <Badge
           variant="outline"
-          className="bg-slate-100 text-slate-600 border-slate-200"
+          className="bg-red-200 text-slate-600 border-slate-200"
         >
-          Inactive
+          Rejected
         </Badge>
       );
     default:

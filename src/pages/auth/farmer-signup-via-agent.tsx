@@ -18,7 +18,6 @@ import { useNotification } from "@/hooks/useNotification";
 import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
 
-// Define types based on the schemas
 type SellerFormValues = z.infer<typeof sellerSchemaForAgent>;
 
 export default function FarmerSignupViaAgentPage() {

@@ -27,6 +27,7 @@ import { saveToLocalStorage } from "@/lib/utils";
 export default function FarmersTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSubmitting, setSubmitting] = useState(false);
   interface Farmer {
     about_me: string;
     address: string;
@@ -58,11 +59,8 @@ export default function FarmersTable() {
   useEffect(() => {
     const fetchFarmers = async () => {
       try {
-        const response = await apiService().get<{
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: { sellers: any[]; pagination: any };
-        }>(
-          `/agent/farmers/management`
+        const response: any = await apiService().get(
+          `/agent/farmers/management`,
         );
         setFarmers(response.data.sellers || []);
         setTotalPages(response.data.pagination.totalPages || 1);
@@ -75,11 +73,11 @@ export default function FarmersTable() {
   }, [searchTerm, currentPage]);
 
   const handleViewFarmer = async (data: Farmer) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setSubmitting(true);
     const response: any = await apiService().post(
       "/agent/farmers/agent-login-for-farmer",
       {},
-      data.id
+      data.id,
     );
 
     if (response && response.success) {
@@ -115,6 +113,7 @@ export default function FarmersTable() {
           break;
       }
     }
+    setSubmitting(false);
   };
 
   const handlePageChange = (page: number) => {
@@ -186,6 +185,7 @@ export default function FarmersTable() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleViewFarmer(farmer)}
+                      disabled={isSubmitting}
                       className="flex items-center gap-1"
                     >
                       <Eye className="h-4 w-4" />

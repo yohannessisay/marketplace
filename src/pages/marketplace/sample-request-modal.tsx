@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { getFromLocalStorage } from "@/lib/utils";
+import { APIErrorResponse } from "@/types/api";
 
 interface SampleRequestModalProps {
   open: boolean;
@@ -29,7 +30,6 @@ interface SampleRequestModalProps {
 interface UserProfile {
   address?: string;
   phone?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -66,7 +66,7 @@ export default function SampleRequestModal({
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -80,39 +80,29 @@ export default function SampleRequestModal({
     setIsSubmitting(true);
 
     try {
-      // Validate form
       if (!formData.deliveryAddress || !formData.phone || !formData.weight) {
         errorMessage("Please fill in all required fields.");
         return;
       }
 
-      // Convert weight to number for validation
       const weight = parseFloat(formData.weight);
       if (isNaN(weight) || weight <= 0) {
         errorMessage("Please enter a valid weight.");
         return;
       }
 
-      // Submit the sample request
-      const response = await apiService().post(
-        "/marketplace/listings/request-sample",
-        {
-          listingId: listingId,
-          delivery_address: formData.deliveryAddress,
-          phone: formData.phone,
-          weight: parseFloat(formData.weight),
-          note: formData.notes,
-        }
-      );
+      await apiService().post("/marketplace/listings/request-sample", {
+        listingId: listingId,
+        delivery_address: formData.deliveryAddress,
+        phone: formData.phone,
+        weight: parseFloat(formData.weight),
+        note: formData.notes,
+      });
 
       successMessage("Your sample request has been sent to the seller.");
-
       onClose();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error:any) { 
-      errorMessage(
-        error.data.error
-      );
+    } catch (error: any) {
+      errorMessage(error as APIErrorResponse);
     } finally {
       setIsSubmitting(false);
     }

@@ -37,6 +37,7 @@ import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Header from "@/components/layout/header";
 import { getFromLocalStorage } from "@/lib/utils";
+import { APIErrorResponse } from "@/types/api";
 
 export default function AddFarm() {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export default function AddFarm() {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Initialize form with default values or values from local storage
+
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
@@ -85,8 +86,6 @@ export default function AddFarm() {
       files.forEach((file) => {
         formData.append("files", file);
       });
-      let response: { success: boolean } = { success: false };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const userProfile: any = getFromLocalStorage("userProfile", {});
       let xfmrId = null;
       if (userProfile && userProfile.userType == "seller") {
@@ -94,38 +93,26 @@ export default function AddFarm() {
       }
 
       if (userProfile && userProfile.userType == "agent") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
         xfmrId = farmerProfile.id ?? "";
       }
-      // response =
-      response = await apiService().postFormData(
+      await apiService().postFormData(
         "/sellers/farms/create-farm",
         formData,
         true,
-        xfmrId ? xfmrId : ""
+        xfmrId ? xfmrId : "",
       );
-      if (response && response.success) {
-        successMessage("Farm details saved successfully!");
-        navigate("/seller-dashboard");
-      } else {
-        errorMessage("Something went wrong!");
-        setIsSubmitting(false);
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      successMessage("Farm added successfully!");
+      navigate("/seller-dashboard");
     } catch (error: any) {
       console.log(error);
-      
-      errorMessage(
-        error?.message || "An error occurred while saving farm details"
-      );
+      errorMessage(error as APIErrorResponse);
     } finally {
       saveToLocalStorage("step-one", data);
       setIsSubmitting(false);
     }
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const saveToLocalStorage = (key: string, value: any) => {
     const existingData = JSON.parse(localStorage.getItem(key) || "[]");
     const updatedData = [...existingData, value];

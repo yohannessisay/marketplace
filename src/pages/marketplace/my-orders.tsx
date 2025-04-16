@@ -1,14 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 
 import { useState, useEffect } from "react";
 import {
-  Calendar, 
-  Heart, 
+  Calendar,
+  Heart,
   ShoppingBag,
-  Clock, 
+  Clock,
   Info,
   ChevronDown,
   Filter,
@@ -16,7 +15,7 @@ import {
   ArrowRight,
   CheckCircle,
   Circle,
-  AlertCircle, 
+  AlertCircle,
   Search,
   Map,
   Droplet,
@@ -25,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge"; 
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import {
@@ -153,12 +152,13 @@ export default function MyOrdersPage() {
     totalItems: 0,
     totalPages: 0,
   });
-  const [favoritesPagination, setFavoritesPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 10,
-    totalItems: 0,
-    totalPages: 0,
-  });
+  const [favoritesPagination, setFavoritesPagination] =
+    useState<PaginationData>({
+      page: 1,
+      limit: 10,
+      totalItems: 0,
+      totalPages: 0,
+    });
   const [activeLoading, setActiveLoading] = useState<boolean>(true);
   const [historyLoading, setHistoryLoading] = useState<boolean>(true);
   const [favoritesLoading, setFavoritesLoading] = useState<boolean>(true);
@@ -178,9 +178,7 @@ export default function MyOrdersPage() {
     const fetchActiveOrders = async () => {
       setActiveLoading(true);
       try {
-        const response: any = await apiService().get(
-          `/orders/active-orders`
-        );
+        const response: any = await apiService().get(`/orders/active-orders`);
 
         if (response.success) {
           setActiveOrders(response.data.orders);
@@ -188,7 +186,7 @@ export default function MyOrdersPage() {
         } else {
           setActiveError("Failed to fetch active orders");
         }
-      } catch (err:any) {
+      } catch (err: any) {
         setHistoryError(err.data.error.message);
       } finally {
         setActiveLoading(false);
@@ -205,9 +203,7 @@ export default function MyOrdersPage() {
     const fetchHistoricalOrders = async () => {
       setHistoryLoading(true);
       try {
-        const response: any = await apiService().get(
-          `/orders/order-history`
-        );
+        const response: any = await apiService().get(`/orders/order-history`);
 
         if (response.success) {
           setHistoricalOrders(response.data.orders);
@@ -215,7 +211,7 @@ export default function MyOrdersPage() {
         } else {
           setHistoryError("Failed to fetch order history");
         }
-      } catch (err:any) {
+      } catch (err: any) {
         setHistoryError(err.data.error.message);
       } finally {
         setHistoryLoading(false);
@@ -233,7 +229,7 @@ export default function MyOrdersPage() {
       setFavoritesLoading(true);
       try {
         const response: any = await apiService().get(
-          `/buyers/listings/favorites/get-favorite-listings?search=${favoritesSearchTerm}&page=${favoritesCurrentPage}&limit=10`
+          `/buyers/listings/favorites/get-favorite-listings?search=${favoritesSearchTerm}&page=${favoritesCurrentPage}&limit=10`,
         );
 
         if (response.success) {
@@ -367,8 +363,8 @@ export default function MyOrdersPage() {
                       step.completed
                         ? "text-foreground"
                         : index === currentStepIndex
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground"
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {step.label}
@@ -405,8 +401,7 @@ export default function MyOrdersPage() {
             <div className="flex-1">
               <div className="flex items-center mb-2">
                 <h3 className="font-bold text-lg">
-                  {item.order_id||
-                    "Unknown Coffee"}
+                  {item.order_id || "Unknown Coffee"}
                 </h3>
                 {(item.listing?.is_organic || item.is_organic) && (
                   <Badge
@@ -417,8 +412,6 @@ export default function MyOrdersPage() {
                   </Badge>
                 )}
               </div>
-
-              
             </div>
 
             <div className="text-right">
@@ -440,8 +433,6 @@ export default function MyOrdersPage() {
           </div>
 
           <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
-             
-            
             {isOrderTab && (
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
@@ -478,10 +469,10 @@ export default function MyOrdersPage() {
                       item.status === "completed"
                         ? "secondary"
                         : item.status === "confirmed"
-                        ? "default"
-                        : item.status === "pending"
-                        ? "warning"
-                        : "outline"
+                          ? "default"
+                          : item.status === "pending"
+                            ? "warning"
+                            : "outline"
                     }
                   >
                     {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
@@ -621,8 +612,8 @@ export default function MyOrdersPage() {
             {tabType === "current"
               ? "active orders"
               : tabType === "historical"
-              ? "order history"
-              : "favorites"}{" "}
+                ? "order history"
+                : "favorites"}{" "}
             found
           </h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-md">
@@ -639,7 +630,6 @@ export default function MyOrdersPage() {
   };
 
   // Loading state component
-
 
   return (
     <div className="min-h-screen bg-primary/5 p-8">
@@ -754,7 +744,7 @@ export default function MyOrdersPage() {
 
                         {Array.from(
                           { length: activePagination.totalPages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -869,7 +859,7 @@ export default function MyOrdersPage() {
 
                         {Array.from(
                           { length: historyPagination.totalPages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -961,7 +951,8 @@ export default function MyOrdersPage() {
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="text-lg font-semibold text-slate-800">
-                            {favorite.listing?.coffee_variety || "Unknown Variety"}
+                            {favorite.listing?.coffee_variety ||
+                              "Unknown Variety"}
                           </h3>
                           <div className="text-emerald-700 font-bold">
                             ${favorite.listing?.price_per_kg.toFixed(2)}/kg
@@ -973,7 +964,8 @@ export default function MyOrdersPage() {
                         <div className="flex items-center text-slate-500 text-sm mb-4">
                           <Map className="h-4 w-4 mr-1" />
                           <span>
-                            {favorite.listing?.farm?.region}, {favorite.listing?.farm?.country}
+                            {favorite.listing?.farm?.region},{" "}
+                            {favorite.listing?.farm?.country}
                           </span>
                         </div>
                         <div className="flex items-center text-slate-500 text-sm mb-2">
@@ -997,7 +989,9 @@ export default function MyOrdersPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               if (favoritesCurrentPage > 1)
-                                setFavoritesCurrentPage(favoritesCurrentPage - 1);
+                                setFavoritesCurrentPage(
+                                  favoritesCurrentPage - 1,
+                                );
                             }}
                             className={
                               favoritesCurrentPage <= 1
@@ -1009,7 +1003,7 @@ export default function MyOrdersPage() {
 
                         {Array.from(
                           { length: favoritesPagination.totalPages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1031,12 +1025,16 @@ export default function MyOrdersPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               if (
-                                favoritesCurrentPage < favoritesPagination.totalPages
+                                favoritesCurrentPage <
+                                favoritesPagination.totalPages
                               )
-                                setFavoritesCurrentPage(favoritesCurrentPage + 1);
+                                setFavoritesCurrentPage(
+                                  favoritesCurrentPage + 1,
+                                );
                             }}
                             className={
-                              favoritesCurrentPage >= favoritesPagination.totalPages
+                              favoritesCurrentPage >=
+                              favoritesPagination.totalPages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }

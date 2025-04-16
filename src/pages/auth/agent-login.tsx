@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { APIErrorResponse } from "@/types/api";
+import { saveToLocalStorage } from "@/lib/utils";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 const AgentLogin = () => {
@@ -35,7 +36,7 @@ const AgentLogin = () => {
         },
       );
       successMessage("Login successful!");
-      const { access_token, refresh_token, agent } = response;
+      const { access_token, refresh_token, agent } = response.data;
       Cookies.set("accessToken", access_token, { expires: 1 / 48 });
       Cookies.set("refreshToken", refresh_token, { expires: 1 });
 
@@ -49,7 +50,7 @@ const AgentLogin = () => {
         userType: "agent",
       };
 
-      localStorage.setItem("userProfile", JSON.stringify(userProfile));
+      saveToLocalStorage("userProfile", userProfile);
       navigate("/agent/farmer-management");
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);

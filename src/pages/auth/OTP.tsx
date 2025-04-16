@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   InputOTP,
   InputOTPGroup,
@@ -35,13 +35,26 @@ export default function OTPInputPage() {
   });
 
   const [value, setLocalValue] = useState("");
+  const [timer, setTimer] = useState(60);
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
+
+  useEffect(() => {
+    if (timer > 0) {
+      const interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [timer]);
 
   const onSubmit = async (data: OTPValidationType) => {
     try {
       const userProfile = localStorage.getItem("userProfile");
       const email = userProfile ? JSON.parse(userProfile).email : "";
+      if (!email) {
+        throw new Error("No email found in user profile");
+      }
       await apiService().postWithoutAuth("/auth/verify-email", {
         ...data,
         email: email,
@@ -59,8 +72,27 @@ export default function OTPInputPage() {
         successMessage("Email already verified!");
         navigate("/login");
       } else {
-        errorMessage(errorResponse.error);
+        errorMessage(errorResponse);
       }
+    }
+  };
+
+  const requestNewOTP = async () => {
+    try {
+      const userProfile = localStorage.getItem("userProfile");
+      const email = userProfile ? JSON.parse(userProfile).email : "";
+      if (!email) {
+        throw new Error("No email found in user profile");
+      }
+      await apiService().postWithoutAuth("/auth/resend-verification-email", {
+        email,
+      });
+
+      successMessage("New OTP sent to your email!");
+      setTimer(60);
+    } catch (error: unknown) {
+      const errorResponse = error as APIErrorResponse;
+      errorMessage(errorResponse.error);
     }
   };
 
@@ -131,6 +163,19 @@ export default function OTPInputPage() {
               >
                 {form.formState.isSubmitting ? "Submitting..." : "Verify OTP"}
               </Button>
+
+              <div className="text-center mt-4">
+                <Button
+                  type="button"
+                  disabled={timer > 0}
+                  onClick={requestNewOTP}
+                  className="w-full hover:bg-primary bg-white text-black border border-green-400 hover:text-white"
+                >
+                  {timer > 0
+                    ? `Request New OTP in ${timer}s`
+                    : "Request New OTP"}
+                </Button>
+              </div>
             </form>
           </Form>
         </div>
