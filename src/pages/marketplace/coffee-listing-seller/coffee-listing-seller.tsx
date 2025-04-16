@@ -9,7 +9,6 @@ import {
   BarChart2,
   Search,
   X,
-  LucideClockFading,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +40,10 @@ import Header from "@/components/layout/header";
 import { APIErrorResponse } from "@/types/api";
 import { getFromLocalStorage, getUserId } from "@/lib/utils";
 import { useNotification } from "@/hooks/useNotification";
+import {
+  Message,
+  MessageThread as MessageThreadType,
+} from "@/types/coffee-listing";
 
 interface Listing {
   id: string;
@@ -110,26 +113,6 @@ interface Bid {
   expires_at: string;
   created_at: string;
   updated_at: string;
-}
-
-interface Message {
-  id: string;
-  senderId: string;
-  recipientId: string;
-  recipientType: string;
-  message: string;
-  listingId: string;
-  createdAt: string;
-}
-
-interface MessageThread {
-  id: string;
-  otherPartyId: string;
-  otherPartyName?: string;
-  otherPartyCompany?: string;
-  unread: number;
-  lastMessageTime: string;
-  messages: Message[];
 }
 
 function PhotoGallery({
@@ -257,56 +240,65 @@ export default function CoffeeListingSellerView() {
   const [messageFilter, setMessageFilter] = useState("all");
   const [listing, setListing] = useState<Listing | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
-  const [messageThreads, setMessageThreads] = useState<MessageThread[]>([]);
+  const [messageThreads, setMessageThreads] = useState<MessageThreadType[]>([]);
   const [loading, setLoading] = useState(true);
   const isMobile = useMobile();
-  const { id } = useParams<{ id: string }>();
-    const user: any = getFromLocalStorage("userProfile", {});
+  const params = useParams();
+  const id = params.id as string | undefined; // Optional listing ID
+  const user: any = getFromLocalStorage("userProfile", {});
+  const senderId = getUserId();
   let fmrId = null;
   if (user && user.userType === "agent") {
     const farmer: any = getFromLocalStorage("farmer-profile", {});
     fmrId = farmer ? farmer.id : null;
   }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const senderId = getUserId();
         if (!senderId) {
           setLoading(false);
           throw new Error("No authenticated user found");
         }
 
-        const listingResponse: any = await apiService().get(
-          `/sellers/listings/get-listing?listingId=${id}`,
-             fmrId ? fmrId : ""
-        );
-        setListing(listingResponse.data.listing);
+        if (id) {
+          const listingResponse: any = await apiService().get(
+            `/sellers/listings/get-listing?listingId=${id}`,
+            fmrId ? fmrId : "",
+          );
+          setListing(listingResponse.data.listing);
 
-        const bidsResponse: any = await apiService().get(
-          `/sellers/listings/bids/get-bids?listingId=${id}`,
-             fmrId ? fmrId : ""
-        );
-        setBids(bidsResponse.data.bids || []);
+          const bidsResponse: any = await apiService().get(
+            `/sellers/listings/bids/get-bids?listingId=${id}`,
+            fmrId ? fmrId : "",
+          );
+          setBids(bidsResponse.data.bids || []);
+        }
 
+        // Fetch messages (listingId is optional)
         const messagesResponse: any = await apiService().get(
-          `/chats/listing-messages?listingId=${id}`,
-             fmrId ? fmrId : ""
+          id
+            ? `/chats/listing-messages?listingId=${id}`
+            : `/chats/listing-messages`,
+          fmrId ? fmrId : "",
         );
-
-        const groupedThreads: { [key: string]: MessageThread } = {};
+        const groupedThreads: { [key: string]: MessageThreadType } = {};
         messagesResponse.data.messages.forEach((msg: Message) => {
           const otherPartyId =
-            msg.senderId === senderId ? msg.recipientId : msg.senderId;
-          const threadId = `${otherPartyId}-${msg.listingId}`;
+            msg.sender.id === senderId ? msg.recipient.id : msg.sender.id;
+          const threadId = `${otherPartyId}-${msg.listingId || "no-listing"}`;
 
           if (!groupedThreads[threadId]) {
+            const otherParty =
+              msg.sender.id === senderId ? msg.recipient : msg.sender;
+            const isOtherPartyBuyer = otherParty.userType === "buyer";
+
             groupedThreads[threadId] = {
               id: threadId,
-              otherPartyId,
-              otherPartyName: `User ${otherPartyId.slice(0, 8)}`,
-              otherPartyCompany:
-                msg.recipientType === "buyer" ? "Buyer" : "Unknown",
+              buyerName: otherParty.name,
+              buyerCompany: isOtherPartyBuyer ? otherParty.company_name : null,
+              buyerAvatar: otherParty.avatar_url_csv,
               unread: 0,
               lastMessageTime: msg.createdAt,
               messages: [],
@@ -314,10 +306,9 @@ export default function CoffeeListingSellerView() {
           }
 
           groupedThreads[threadId].messages.push({
-            ...msg,
             id: msg.id,
-            senderId: msg.senderId,
-            recipientId: msg.recipientId,
+            sender: msg.sender,
+            recipient: msg.recipient,
             recipientType: msg.recipientType,
             message: msg.message,
             listingId: msg.listingId,
@@ -355,9 +346,7 @@ export default function CoffeeListingSellerView() {
       }
     };
 
-    if (id) {
-      fetchData();
-    }
+    fetchData();
   }, [id]);
 
   const filteredThreads = messageThreads.filter((thread) => {
@@ -401,13 +390,16 @@ export default function CoffeeListingSellerView() {
           value={activeTab}
           onValueChange={setActiveTab}
         >
-          <TabsList className="mb-6">
-            <TabsTrigger value="overview" className="h-12">
+          <TabsList className="mb-6 flex gap-4">
+            <TabsTrigger
+              value="overview"
+              className="h-12 flex-1 min-w-[160px] border border-green-300 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white hover:bg-white hover:text-black"
+            >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="messages"
-              className="flex items-center gap-2 h-12"
+              className="h-12 flex-1 min-w-[160px] border border-green-300 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white hover:bg-white hover:text-black flex items-center justify-center gap-2"
             >
               Messages
               {totalUnreadMessages > 0 && (
@@ -419,7 +411,10 @@ export default function CoffeeListingSellerView() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="bids" className="h-12">
+            <TabsTrigger
+              value="bids"
+              className="h-12 flex-1 min-w-[160px] border border-green-300 rounded-md data-[state=active]:bg-primary data-[state=active]:text-white hover:bg-white hover:text-black"
+            >
               Bids
             </TabsTrigger>
           </TabsList>
@@ -660,13 +655,13 @@ export default function CoffeeListingSellerView() {
                             <div className="flex">
                               <Avatar className="h-10 w-10">
                                 <AvatarFallback className="bg-gray-200 text-gray-600">
-                                  {thread.otherPartyName?.charAt(0) || "U"}
+                                  {thread.buyerName?.charAt(0) || "U"}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="ml-3">
                                 <div className="flex items-center">
                                   <h4 className="text-sm font-medium text-gray-900">
-                                    {thread.otherPartyName || "Unknown User"}
+                                    {thread.buyerName || "Unknown User"}
                                   </h4>
                                   {thread.unread > 0 && (
                                     <Badge variant="default" className="ml-2">
@@ -675,7 +670,7 @@ export default function CoffeeListingSellerView() {
                                   )}
                                 </div>
                                 <p className="text-sm text-gray-500">
-                                  {thread.otherPartyCompany}
+                                  {thread.buyerCompany}
                                 </p>
                                 <p className="mt-1 text-sm text-gray-600 truncate max-w-[300px]">
                                   {
@@ -770,9 +765,9 @@ export default function CoffeeListingSellerView() {
                       <p className="text-gray-900">{listingStats.views}</p>
                     </div>
                     <Link to={`/edit-crop/${listing.id}`}>
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 hover:text-white">
-                      Edit Listing
-                    </Button>
+                      <Button className="w-full bg-emerald-600 hover:bg-emerald-700 hover:text-white">
+                        Edit Listing
+                      </Button>
                     </Link>
                   </CardContent>
                 </Card>
@@ -856,6 +851,8 @@ export default function CoffeeListingSellerView() {
                       messageThreads={messageThreads}
                       activeMessageThread={activeMessageThread}
                       setActiveMessageThread={setActiveMessageThread}
+                      senderId={senderId!}
+                      updateThreads={setMessageThreads}
                     />
                   </div>
                 </div>

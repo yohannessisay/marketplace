@@ -11,6 +11,7 @@ import { useParams } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { CoffeeListing } from "@/types/coffee";
 import { useNotification } from "@/hooks/useNotification";
+import { APIErrorResponse } from "@/types/api";
 
 export default function CoffeeListingPage() {
   const { id } = useParams();
@@ -24,7 +25,7 @@ export default function CoffeeListingPage() {
     const fetchListingDetails = async () => {
       try {
         const response: any = await apiService().get(
-          `/marketplace/listings/get-listing?listingId=${id}`
+          `/marketplace/listings/get-listing?listingId=${id}`,
         );
 
         if (
@@ -45,24 +46,21 @@ export default function CoffeeListingPage() {
       fetchListingDetails();
     }
   }, [id]);
+
   const handleOrderSubmit = async () => {
     try {
-      const response: any = await apiService().post("/orders/place-order", {
+      await apiService().post("/orders/place-order", {
         listingId: listing?.id,
         unit_price: listing?.price_per_kg,
         quantity_kg: listing?.quantity_kg,
       });
-      if (response.success) {
-        successMessage("Order placed successfully");
 
-        setDemoOrderStatus("pending");
-        setShowOrderModal(false);
-      } else {
-        errorMessage(response.data.error.message);
-      }
+      successMessage("Order placed successfully");
+
+      setDemoOrderStatus("pending");
     } catch (err: any) {
       setShowOrderModal(false);
-      errorMessage(err);
+      errorMessage(err as APIErrorResponse);
     }
   };
 

@@ -1,7 +1,9 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus } from "lucide-react";
+import { Plus, X, FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,13 +47,18 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { APIErrorResponse } from "@/types/api";
 
+interface FileWithId extends File {
+  id: string;
+  url?: string; // Store original URL for images
+}
+
 export default function AddCrop() {
   const navigation = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [files, setFiles] = useState<FileWithId[]>([]);
+  const [photos, setPhotos] = useState<FileWithId[]>([]);
   const { successMessage, errorMessage } = useNotification();
 
   const form = useForm<CoffeeCropsFormData>({
@@ -85,7 +92,7 @@ export default function AddCrop() {
   const populateForm = async (listingId: string) => {
     try {
       const response: any = await apiService().get(
-        `/sellers/listings/get-listing?listingId=${listingId}`
+        `/sellers/listings/get-listing?listingId=${listingId}`,
       );
       if (response.success) {
         const listing = response.data.listing;
@@ -96,7 +103,7 @@ export default function AddCrop() {
           bean_type: listing.bean_type ?? "",
           crop_year: listing.crop_year ?? "",
           processing_method: listing.processing_method ?? "",
-          moisture_percentage: listing.moisture_percentage ?? 0,
+          moisture_percentage: listing.moisture_percentage ?? "",
           screen_size: listing.screen_size ?? 0,
           drying_method: listing.drying_method ?? "",
           wet_mill: listing.wet_mill ?? "",
@@ -114,40 +121,58 @@ export default function AddCrop() {
           shipping_port: listing.shipping_port ?? "",
         });
 
-        // Handle files and photos
-        if (listing.documents) {
-          const filesTemp: File[] = [];
-          await Promise.all(
-            listing.documents.map(async (doc: any) => {
-              const response = await fetch(doc.doc_url);
-              const blob = await response.blob();
-              const file = new File([blob], doc.doc_url.split("/").pop() || "file", {
-                type: blob.type,
-              });
-              filesTemp.push(file);
-            })
+        // Handle documents (grading reports)
+        if (response.data.listing.documents?.length > 0) {
+          const filesTemp: FileWithId[] = await Promise.all(
+            response.data.listing.documents.map(async (doc: any) => {
+              try {
+                const res = await fetch(doc.doc_url);
+                if (!res.ok) throw new Error(`Failed to fetch ${doc.doc_url}`);
+                const blob = await res.blob();
+                const fileName =
+                  doc.doc_url.split("/").pop() || `grading_report_${doc.id}`;
+                return Object.assign(
+                  new File([blob], fileName, { type: blob.type }),
+                  { id: doc.id },
+                );
+              } catch (err) {
+                console.error(`Error fetching document ${doc.doc_url}:`, err);
+                return null;
+              }
+            }),
           );
-          setFiles(filesTemp);
+          setFiles(filesTemp.filter((f): f is FileWithId => f !== null));
         }
 
-        if (listing.photos) {
-          const photosTemp: File[] = [];
-          await Promise.all(
-            listing.photos.map(async (photo: any) => {
-              const response = await fetch(photo.photo_url);
-              const blob = await response.blob();
-              const file = new File([blob], photo.photo_url.split("/").pop() || "photo", {
-                type: blob.type,
-              });
-              photosTemp.push(file);
-            })
+        // Handle photos
+        if (response.data.listing.photos?.length > 0) {
+          const photosTemp: FileWithId[] = await Promise.all(
+            response.data.listing.photos.map(async (photo: any) => {
+              try {
+                const res = await fetch(photo.photo_url);
+                if (!res.ok)
+                  throw new Error(`Failed to fetch ${photo.photo_url}`);
+                const blob = await res.blob();
+                const fileName =
+                  photo.photo_url.split("/").pop() || `photo_${photo.id}`;
+                return Object.assign(
+                  new File([blob], fileName, { type: blob.type }),
+                  { id: photo.id, url: photo.photo_url },
+                );
+              } catch (err) {
+                console.error(`Error fetching photo ${photo.photo_url}:`, err);
+                return null;
+              }
+            }),
           );
-          setPhotos(photosTemp);
+          setPhotos(photosTemp.filter((p): p is FileWithId => p !== null));
         }
+      } else {
+        throw new Error(response.message || "Failed to fetch listing");
       }
     } catch (error) {
       console.error("Error fetching listing data:", error);
-      errorMessage("Failed to fetch listing data.");
+      errorMessage({ message: "Failed to fetch listing data." });
     }
   };
 
@@ -157,6 +182,14 @@ export default function AddCrop() {
       populateForm(id);
     }
   }, [id]);
+
+  const handleRemoveFile = (id: string, type: "files" | "photos") => {
+    if (type === "files") {
+      setFiles((prev) => prev.filter((file) => file.id !== id));
+    } else {
+      setPhotos((prev) => prev.filter((photo) => photo.id !== id));
+    }
+  };
 
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
@@ -182,14 +215,14 @@ export default function AddCrop() {
         await apiService().patchFormData(
           `/sellers/listings/update-listing`,
           formData,
-          true
+          true,
         );
         successMessage("Listing updated successfully!");
       } else {
         await apiService().postFormData(
           `/sellers/listings/create-listing`,
           formData,
-          true
+          true,
         );
         successMessage("Listing created successfully!");
       }
@@ -203,16 +236,14 @@ export default function AddCrop() {
     }
   };
 
- 
-
   return (
     <div className="min-h-screen bg-primary/5">
-      <Header></Header>
+      <Header />
       <main className="container mx-auto p-4 max-w-5xl">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 shadow-lg p-8  rounded-md py-4  bg-white"
+            className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white"
           >
             <h2 className="text-center text-2xl">
               {isEditMode ? "Edit Crop" : "Add Crop To Your Existing Farm"}
@@ -228,11 +259,49 @@ export default function AddCrop() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FileUpload
-                    onFilesSelected={setFiles}
-                    maxFiles={5}
-                    maxSizeMB={5}
-                  />
+                  {files.length > 0 && (
+                    <div className="mb-4 space-y-4">
+                      {files.map((file) => (
+                        <Card
+                          key={file.id}
+                          className="p-4 flex items-center justify-between"
+                        >
+                          <div className="flex items-center space-x-4">
+                            <FileText className="h-8 w-8 text-gray-500" />
+                            <div>
+                              <p className="text-sm font-medium">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Grading Report
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFile(file.id, "files")}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                  {files.length === 0 && (
+                    <FileUpload
+                      onFilesSelected={(newFiles) =>
+                        setFiles((prev) => [
+                          ...prev,
+                          ...newFiles.map((f) =>
+                            Object.assign(f, {
+                              id: Math.random().toString(36).substring(2),
+                            }),
+                          ),
+                        ])
+                      }
+                      maxFiles={5}
+                      maxSizeMB={5}
+                    />
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
@@ -242,7 +311,7 @@ export default function AddCrop() {
                   </div>
                 </CardFooter>
               </Card>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-5 mt-4 text-center">
                 Submit your Grading Report to provide a detailed quality
                 assessment of your coffee, including bean size, moisture
                 content, and cup profile.
@@ -487,8 +556,43 @@ export default function AddCrop() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
+                      {photos.length > 0 && (
+                        <div className="mb-4 flex flex-row flex-wrap gap-4">
+                          {photos.map((photo) => (
+                            <div
+                              key={photo.id}
+                              className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden"
+                            >
+                              <img
+                                src={photo.url || URL.createObjectURL(photo)}
+                                alt={photo.name}
+                                className="w-full h-full object-cover"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6"
+                                onClick={() =>
+                                  handleRemoveFile(photo.id, "photos")
+                                }
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <FileUpload
-                        onFilesSelected={setPhotos}
+                        onFilesSelected={(newPhotos) =>
+                          setPhotos((prev) => [
+                            ...prev,
+                            ...newPhotos.map((p) =>
+                              Object.assign(p, {
+                                id: Math.random().toString(36).substring(2),
+                              }),
+                            ),
+                          ])
+                        }
                         maxFiles={6}
                         maxSizeMB={5}
                       />
@@ -526,7 +630,9 @@ export default function AddCrop() {
                             type="number"
                             {...field}
                             value={field.value || ""}
-                            onChange={(e) => field.onChange(Number(e.target.value) || 0)} // Convert to number
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -544,7 +650,9 @@ export default function AddCrop() {
                             type="number"
                             {...field}
                             value={field.value || ""}
-                            onChange={(e) => field.onChange(Number(e.target.value) || 0)} // Convert to number
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -564,7 +672,6 @@ export default function AddCrop() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="processing_method"
@@ -606,7 +713,9 @@ export default function AddCrop() {
                             type="number"
                             {...field}
                             value={field.value || ""}
-                            onChange={(e) => field.onChange(Number(e.target.value) || 0)} // Convert to number
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -743,15 +852,14 @@ export default function AddCrop() {
 
             {/* Navigation Buttons */}
             <div className="flex justify-end mb-8">
-             
               <Button type="submit" disabled={isSubmitting} className="my-4">
                 {isSubmitting
                   ? isEditMode
                     ? "Updating..."
                     : "Adding..."
                   : isEditMode
-                  ? "Update Listing"
-                  : "Add Crop Listing"}
+                    ? "Update Listing"
+                    : "Add Crop Listing"}
               </Button>
             </div>
           </form>

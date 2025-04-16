@@ -1,18 +1,24 @@
-"use client"
+"use client";
 
-import { Search } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MessageThread } from "@/types/coffee-listing"
+import { Search } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MessageThread } from "@/types/coffee-listing";
 
 interface MessageThreadListProps {
-  messageThreads: MessageThread[]
-  activeMessageThread: number | null
-  setActiveMessageThread: (id: number) => void
-  messageFilter: string
-  setMessageFilter: (filter: string) => void
+  messageThreads: MessageThread[];
+  activeMessageThread: string | null;
+  setActiveMessageThread: (id: string | null) => void;
+  messageFilter: string;
+  setMessageFilter: (filter: string) => void;
 }
 
 export function MessageThreadList({
@@ -45,33 +51,68 @@ export function MessageThreadList({
 
       <div className="overflow-y-auto flex-grow">
         {messageThreads.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">No messages matching your filter.</div>
+          <div className="text-center py-10 text-gray-500">
+            No messages matching your filter.
+          </div>
         ) : (
           <ul className="divide-y divide-gray-200">
             {messageThreads.map((thread) => (
               <li key={thread.id}>
                 <button
                   onClick={() => setActiveMessageThread(thread.id)}
-                  className={`w-full flex py-4 px-2 hover:bg-gray-50 focus:outline-none ${activeMessageThread === thread.id ? "bg-emerald-50" : ""}`}
+                  className={`w-full flex py-4 px-2 hover:bg-gray-50 focus:outline-none ${
+                    activeMessageThread === thread.id ? "bg-emerald-50" : ""
+                  }`}
                 >
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-gray-200 text-gray-600">{thread.buyerName.charAt(0)}</AvatarFallback>
+                    {thread.buyerAvatar ? (
+                      <img
+                        src={thread.buyerAvatar.split(",")[0]}
+                        alt={thread.buyerName}
+                      />
+                    ) : (
+                      <AvatarFallback className="bg-gray-200 text-gray-600">
+                        {thread.buyerName.charAt(0)}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                   <div className="ml-3 flex-1 flex flex-col text-left">
                     <div className="flex items-baseline justify-between">
-                      <p className={`text-sm font-medium ${thread.unread > 0 ? "text-emerald-900" : "text-gray-900"}`}>
+                      <p
+                        className={`text-sm font-medium ${
+                          thread.unread > 0
+                            ? "text-emerald-900"
+                            : "text-gray-900"
+                        }`}
+                      >
                         {thread.buyerName}
                       </p>
-                      <p className="text-xs text-gray-500">{thread.lastMessageTime}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(thread.lastMessageTime).toLocaleString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                          },
+                        )}
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-500 truncate">{thread.buyerCompany}</p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {thread.buyerCompany || "Unknown"}
+                    </p>
                     <p className="mt-1 text-sm text-gray-600 truncate">
                       {thread.messages[thread.messages.length - 1]?.message}
                     </p>
                     {thread.unread > 0 && (
                       <div className="mt-1">
                         <Badge variant="default">
-                          {thread.unread} new {thread.unread === 1 ? "message" : "messages"}
+                          {thread.unread} new{" "}
+                          {thread.unread === 1 ? "message" : "messages"}
                         </Badge>
                       </div>
                     )}
@@ -83,5 +124,5 @@ export function MessageThreadList({
         )}
       </div>
     </div>
-  )
+  );
 }

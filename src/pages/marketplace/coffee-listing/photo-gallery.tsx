@@ -15,28 +15,41 @@ export function PhotoGallery({ photos, isOrganic }: PhotoGalleryProps) {
   return (
     <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-6">
       <div className="flex flex-col gap-4 p-4">
-        {photos &&
-          photos.map((photo, index) => (
-            <div key={index} className="relative">
+        {photos && (
+          <div className="relative">
+            {photos.find((photo) => photo.is_primary) ? (
+              <>
+                <img
+                  src={
+                    photos.find((photo) => photo.is_primary)!.photo_url ||
+                    "/placeholder.svg"
+                  }
+                  alt="Primary coffee photo"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              </>
+            ) : (
               <img
-                src={photo.photo_url ? photo.photo_url : "/placeholder.svg"}
-                alt={`Coffee ${index + 1}`}
+                src={photos[0]?.photo_url || "/placeholder.svg"}
+                alt="Coffee photo"
                 className="w-full h-full object-cover rounded-lg"
               />
-              {isOrganic && (
-                <div className="absolute top-4 right-4">
-                  <Badge
-                    variant="outline"
-                    className="bg-green-500 text-white border-0"
-                  >
-                    Organic
-                  </Badge>
-                </div>
-              )}
-            </div>
-          ))}
+            )}
+
+            {isOrganic && (
+              <div className="absolute top-4 right-4">
+                <Badge
+                  variant="outline"
+                  className="bg-green-500 text-white border-0"
+                >
+                  Organic
+                </Badge>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      <div className="flex p-2 space-x-2 overflow-x-auto">
+      <div className="flex p-2 space-x-2 overflow-x-auto ml-2">
         {photos &&
           photos.map((photo, index) => (
             <button

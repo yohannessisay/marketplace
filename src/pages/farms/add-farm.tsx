@@ -1,8 +1,9 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,6 +39,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FileText, X } from "lucide-react";
+
+interface FileWithId extends File {
+  id: string;
+}
 
 export default function AddFarm() {
   const navigate = useNavigate();
@@ -45,8 +51,8 @@ export default function AddFarm() {
   const { successMessage, errorMessage } = useNotification();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [govRegFiles, setGovRegFiles] = useState<File[]>([]);
-  const [landRightsFiles, setLandRightsFiles] = useState<File[]>([]);
+  const [govRegFiles, setGovRegFiles] = useState<FileWithId[]>([]);
+  const [landRightsFiles, setLandRightsFiles] = useState<FileWithId[]>([]);
 
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
@@ -76,7 +82,7 @@ export default function AddFarm() {
   const populateForm = async (farmId: string) => {
     try {
       const response: any = await apiService().get(
-        `/sellers/farms/get-farm?farmId=${farmId}`
+        `/sellers/farms/get-farm?farmId=${farmId}`,
       );
       if (response.success) {
         const farm = response.data.farm;
@@ -102,38 +108,43 @@ export default function AddFarm() {
           annual_rainfall_mm: farm.annual_rainfall_mm ?? 0,
         });
 
-        // Handle files (if any)
-        if (farm.kyc_documents) {
-          const govRegFilesTemp: File[] = [];
-          const landRightsFilesTemp: File[] = [];
+        if (farm.kyc_documents?.length > 0) {
+          const govRegFilesTemp: FileWithId[] = [];
+          const landRightsFilesTemp: FileWithId[] = [];
 
           await Promise.all(
             farm.kyc_documents.map(async (doc: any) => {
-              const response = await fetch(doc.doc_url);
-              const blob = await response.blob();
-              const file = new File(
-                [blob],
-                doc.doc_url.split("/").pop() || "file",
-                {
-                  type: blob.type,
-                }
-              );
+              try {
+                const res = await fetch(doc.doc_url);
+                if (!res.ok) throw new Error(`Failed to fetch ${doc.doc_url}`);
+                const blob = await res.blob();
+                const fileName =
+                  doc.doc_url.split("/").pop() || `document_${doc.id}`;
+                const file = Object.assign(
+                  new File([blob], fileName, { type: blob.type }),
+                  { id: doc.id || Math.random().toString(36).substring(2) },
+                );
 
-              if (doc.doc_type === "government_registration") {
-                govRegFilesTemp.push(file);
-              } else if (doc.doc_type === "land_rights") {
-                landRightsFilesTemp.push(file);
+                if (doc.doc_type === "government_registration") {
+                  govRegFilesTemp.push(file);
+                } else if (doc.doc_type === "land_rights") {
+                  landRightsFilesTemp.push(file);
+                }
+              } catch (err) {
+                console.error(`Error fetching document ${doc.doc_url}:`, err);
               }
-            })
+            }),
           );
 
           setGovRegFiles(govRegFilesTemp);
           setLandRightsFiles(landRightsFilesTemp);
         }
+      } else {
+        throw new Error(response.message || "Failed to fetch farm data");
       }
     } catch (error) {
       console.error("Error fetching farm data:", error);
-      errorMessage("Failed to fetch farm data.");
+      errorMessage({ message: "Failed to fetch farm data." });
     }
   };
 
@@ -143,6 +154,14 @@ export default function AddFarm() {
       populateForm(id);
     }
   }, [id]);
+
+  const handleRemoveFile = (id: string, type: "govReg" | "landRights") => {
+    if (type === "govReg") {
+      setGovRegFiles((prev) => prev.filter((file) => file.id !== id));
+    } else {
+      setLandRightsFiles((prev) => prev.filter((file) => file.id !== id));
+    }
+  };
 
   const onSubmit = async (data: FarmDetailsFormData) => {
     setIsSubmitting(true);
@@ -155,12 +174,10 @@ export default function AddFarm() {
         }
       }
 
-      // Append government registration files
       govRegFiles.forEach((file) => {
         formData.append("files", file);
       });
 
-      // Append land rights files
       landRightsFiles.forEach((file) => {
         formData.append("files", file);
       });
@@ -182,21 +199,19 @@ export default function AddFarm() {
       }
 
       if (isEditMode) {
-        // Update existing listing
         await apiService().patchFormData(
           `/sellers/farms/update-farm`,
           formData,
           true,
-          xfmrId ? xfmrId : ""
+          xfmrId ? xfmrId : "",
         );
         successMessage("Farm updated successfully!");
       } else {
-        // Create new listing
         await apiService().postFormData(
           `/sellers/farms/create-farm`,
           formData,
           true,
-          xfmrId ? xfmrId : ""
+          xfmrId ? xfmrId : "",
         );
         successMessage("Farm added successfully!");
       }
@@ -212,13 +227,12 @@ export default function AddFarm() {
 
   return (
     <div className="bg-primary/5 py-8 px-8">
-      <Header></Header>
-
-      <div className="bg-white mx-auto container ">
+      <Header />
+      <div className="bg-white mx-auto container">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 shadow-lg px-8  rounded-md py-4 mt-8"
+            className="space-y-8 shadow-lg px-8 rounded-md py-4 mt-8"
           >
             <div className="mb-10">
               <div className="mb-2">
@@ -238,6 +252,7 @@ export default function AddFarm() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* Government Registration Document */}
                 <Card className="max-w-2xl mx-auto">
                   <CardHeader>
                     <CardTitle>Government registration document</CardTitle>
@@ -247,25 +262,53 @@ export default function AddFarm() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <FileUpload
-                      onFilesSelected={(selectedFiles: File[]) => {
-                        setGovRegFiles((prev) => [...prev, ...selectedFiles]);
-                      }}
-                      maxFiles={5}
-                      maxSizeMB={5}
-                      className="w-full"
-                    />
                     {govRegFiles.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium">Uploaded Files:</h4>
-                        <ul className="list-disc pl-5">
-                          {govRegFiles.map((file, index) => (
-                            <li key={index} className="text-sm">
-                              {file.name}
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="mb-4 space-y-4">
+                        {govRegFiles.map((file) => (
+                          <Card
+                            key={file.id}
+                            className="p-4 flex items-center justify-between"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <FileText className="h-8 w-8 text-gray-500" />
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Government Registration
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleRemoveFile(file.id, "govReg")
+                              }
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </Card>
+                        ))}
                       </div>
+                    )}
+                    {govRegFiles.length === 0 && (
+                      <FileUpload
+                        onFilesSelected={(selectedFiles: File[]) => {
+                          setGovRegFiles((prev) => [
+                            ...prev,
+                            ...selectedFiles.map((f) =>
+                              Object.assign(f, {
+                                id: Math.random().toString(36).substring(2),
+                              }),
+                            ),
+                          ]);
+                        }}
+                        maxFiles={5}
+                        maxSizeMB={5}
+                        className="w-full"
+                      />
                     )}
                   </CardContent>
                   <CardFooter className="flex justify-between">
@@ -276,37 +319,64 @@ export default function AddFarm() {
                     </div>
                   </CardFooter>
                 </Card>
+
+                {/* Land Rights Document */}
                 <Card className="max-w-2xl mx-auto">
                   <CardHeader>
-                    <CardTitle>Land right documents</CardTitle>
+                    <CardTitle>Land rights document</CardTitle>
                     <CardDescription>
                       Upload PDF documents and images. Drag and drop or click to
                       select files.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <FileUpload
-                      onFilesSelected={(selectedFiles: File[]) => {
-                        setLandRightsFiles((prev) => [
-                          ...prev,
-                          ...selectedFiles,
-                        ]);
-                      }}
-                      maxFiles={5}
-                      maxSizeMB={5}
-                      className="w-full"
-                    />
                     {landRightsFiles.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium">Uploaded Files:</h4>
-                        <ul className="list-disc pl-5">
-                          {landRightsFiles.map((file, index) => (
-                            <li key={index} className="text-sm">
-                              {file.name}
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="mb-4 space-y-4">
+                        {landRightsFiles.map((file) => (
+                          <Card
+                            key={file.id}
+                            className="p-4 flex items-center justify-between"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <FileText className="h-8 w-8 text-gray-500" />
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Land Rights
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleRemoveFile(file.id, "landRights")
+                              }
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </Card>
+                        ))}
                       </div>
+                    )}
+                    {landRightsFiles.length === 0 && (
+                      <FileUpload
+                        onFilesSelected={(selectedFiles: File[]) => {
+                          setLandRightsFiles((prev) => [
+                            ...prev,
+                            ...selectedFiles.map((f) =>
+                              Object.assign(f, {
+                                id: Math.random().toString(36).substring(2),
+                              }),
+                            ),
+                          ]);
+                        }}
+                        maxFiles={5}
+                        maxSizeMB={5}
+                        className="w-full"
+                      />
                     )}
                   </CardContent>
                   <CardFooter className="flex justify-between">
@@ -436,7 +506,7 @@ export default function AddFarm() {
                             value={field.value || ""}
                             onChange={(e) =>
                               field.onChange(Number(e.target.value) || 0)
-                            } // Convert to number
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -456,7 +526,7 @@ export default function AddFarm() {
                             value={field.value || ""}
                             onChange={(e) =>
                               field.onChange(Number(e.target.value) || 0)
-                            } // Convert to number
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -476,7 +546,7 @@ export default function AddFarm() {
                             value={field.value || ""}
                             onChange={(e) =>
                               field.onChange(Number(e.target.value) || 0)
-                            } // Convert to number
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -550,14 +620,13 @@ export default function AddFarm() {
                             value={field.value || ""}
                             onChange={(e) =>
                               field.onChange(Number(e.target.value) || 0)
-                            } // Convert to number
+                            }
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="avg_annual_temp"
@@ -571,14 +640,13 @@ export default function AddFarm() {
                             value={field.value || ""}
                             onChange={(e) =>
                               field.onChange(Number(e.target.value) || 0)
-                            } // Convert to number
+                            }
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="annual_rainfall_mm"
@@ -592,7 +660,7 @@ export default function AddFarm() {
                             value={field.value || ""}
                             onChange={(e) =>
                               field.onChange(Number(e.target.value) || 0)
-                            } // Convert to number
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -616,7 +684,7 @@ export default function AddFarm() {
                         <FormLabel>Tree Type</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value || ""} // Ensure value is never null or undefined
+                          value={field.value || ""}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -647,7 +715,7 @@ export default function AddFarm() {
                         <FormLabel>Tree Variety</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value || ""} // Ensure value is never null or undefined
+                          value={field.value || ""}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -688,7 +756,7 @@ export default function AddFarm() {
                         <FormLabel>Soil type</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value || ""} // Ensure value is never null or undefined
+                          value={field.value || ""}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -718,14 +786,14 @@ export default function AddFarm() {
 
             {/* Navigation Buttons */}
             <div className="flex justify-end mb-8">
-              <Button type="submit" disabled={isSubmitting} className=" my-4">
+              <Button type="submit" disabled={isSubmitting} className="my-4">
                 {isSubmitting
                   ? isEditMode
                     ? "Updating..."
                     : "Adding..."
                   : isEditMode
-                  ? "Update Farm"
-                  : "Add Farm"}
+                    ? "Update Farm"
+                    : "Add Farm"}
               </Button>
             </div>
           </form>
