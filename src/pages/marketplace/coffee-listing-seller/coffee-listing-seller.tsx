@@ -9,6 +9,7 @@ import {
   BarChart2,
   Search,
   X,
+  LucideClockFading,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,7 +134,7 @@ interface MessageThread {
 
 function PhotoGallery({
   listingId,
-  photos,
+  photos: initialPhotos,
   isOrganic,
 }: {
   photos: Listing["photos"] | null;
@@ -141,14 +142,23 @@ function PhotoGallery({
   listingId: string;
 }) {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [photos, setPhotos] = useState(initialPhotos);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { successMessage, errorMessage } = useNotification();
+
+  useEffect(() => {
+    setPhotos(initialPhotos);
+  }, [initialPhotos]);
 
   const handleDeletePhoto = async (photoId: string) => {
     if (photos && photos.length <= 1) {
-      alert("At least one photo is required for the listing.");
+      errorMessage({
+        error: { message: "At least one photo is required for the listing." },
+      });
       return;
     }
     try {
+      setIsDeleting(true);
       await apiService().post(
         `/sellers/listings/delete-listing-image?${photoId}`,
         {
@@ -156,8 +166,23 @@ function PhotoGallery({
           photoId,
         },
       );
-      successMessage("photo deleted successfully");
+
+      setPhotos(
+        (prev: any) =>
+          prev?.filter((photo: any) => photo.id !== photoId) || null,
+      );
+
+      if (
+        activePhotoIndex > 0 &&
+        photos &&
+        activePhotoIndex >= photos.length - 1
+      ) {
+        setActivePhotoIndex(activePhotoIndex - 1);
+      }
+      setIsDeleting(false);
+      successMessage("Listing photo deleted successfully");
     } catch (error) {
+      setIsDeleting(false);
       console.error("Failed to delete photo:", error);
       errorMessage(error as APIErrorResponse);
     }
@@ -192,7 +217,7 @@ function PhotoGallery({
           />
         )}
       </div>
-      <div className="flex p-2 space-x-2 overflow-x-auto">
+      <div className="flex p-2 space-x-2 overflow-x-auto ml-3">
         {photos &&
           photos.map((photo, index) => (
             <div key={photo.id} className="relative">
@@ -211,11 +236,11 @@ function PhotoGallery({
                 />
               </button>
               <button
-                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 cursor-pointer"
                 onClick={() => handleDeletePhoto(photo.id)}
-                disabled={photos.length <= 1}
+                disabled={isDeleting}
               >
-                <X size={12} />
+                <X size={13} />
               </button>
             </div>
           ))}
@@ -355,7 +380,11 @@ export default function CoffeeListingSellerView() {
   };
 
   if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (!listing) {
