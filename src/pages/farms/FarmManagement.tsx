@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiService } from "@/services/apiService";
 import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
+import EditProfile from "../profile/edit-profile";
 
 interface Farm {
   id: string;
@@ -171,7 +172,7 @@ const FarmManagement: React.FC = () => {
         <Separator className="mb-8" />
 
         <Tabs defaultValue="farms" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-[600px] mb-8">
+          <TabsList className="grid w-full grid-cols-4  mb-8">
             <TabsTrigger
               value="farms"
               className="border border-green-300 p-3 mr-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
@@ -189,6 +190,12 @@ const FarmManagement: React.FC = () => {
               className="border border-green-300 p-3 ml-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
             >
               Banks
+            </TabsTrigger>
+            <TabsTrigger
+              value="profile"
+              className="border border-green-300 p-3 ml-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
+            >
+              Profile
             </TabsTrigger>
           </TabsList>
 
@@ -593,6 +600,10 @@ const FarmManagement: React.FC = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="profile">
+            <EditProfile></EditProfile>
           </TabsContent>
         </Tabs>
       </div>
