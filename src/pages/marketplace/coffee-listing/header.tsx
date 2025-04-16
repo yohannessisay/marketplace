@@ -25,7 +25,7 @@ export function Header({
   sellerReviews,
 }: HeaderProps) {
   return (
-    <header className="bg-card shadow">
+    <header className="bg-card shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center">
           <button
@@ -40,7 +40,7 @@ export function Header({
           </h1>
 
           {/* Demo Mode Selector - Remove in production */}
-          <div className="mr-4 w-64">
+          {/* <div className="mr-4 w-64">
             <Select
               value={demoOrderStatus}
               onValueChange={(value) =>
@@ -61,7 +61,7 @@ export function Header({
                 <SelectItem value="cancelled">Cancelled Order</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
 
           <div className="flex space-x-2">
             <span className="text-sm text-muted-foreground">Listed by</span>

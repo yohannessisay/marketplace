@@ -98,14 +98,14 @@ export default function EditProfile() {
       const isAgent: any = getFromLocalStorage("userProfile", {});
       const farmer: any = getFromLocalStorage("farmer-profile", {});
 
-      const response: { success: boolean } = await apiService().postFormData(
-        "/onboarding/seller/profile",
+      const response: { success: boolean } = await apiService().patchFormData(
+        "/sellers/profile/update-profile",
         formData,
         true,
         isAgent.userType === "agent" && farmer ? farmer.id : ""
       );
       if (response && response.success) {
-        successMessage("Registration completed successfully!");
+        successMessage("Profile updated successfully!");
         navigation("/seller-dashboard");
       } else {
         errorMessage("Failed to save farm details");

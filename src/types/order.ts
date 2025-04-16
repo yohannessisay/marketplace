@@ -20,6 +20,7 @@ export interface OrderDocument {
 }
 
 export interface OrderStatusData {
+  id:string;
   status: OrderStatus
   quantity: number
   totalPrice: number

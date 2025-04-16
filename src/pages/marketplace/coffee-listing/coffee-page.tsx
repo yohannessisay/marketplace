@@ -13,6 +13,7 @@ import { CoffeeListing } from "@/types/coffee";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import { BidModal } from "./Bid-modal";
+ 
 
 export default function CoffeeListingPage() {
   const { id } = useParams();
@@ -103,7 +104,7 @@ export default function CoffeeListingPage() {
         sellerReviews={listing?.seller.total_reviews ?? 0}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white my-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <CoffeeDetails

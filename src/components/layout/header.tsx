@@ -3,8 +3,7 @@ import {
   Home,
   List,
   Receipt,
-  ShoppingBagIcon,
-  Settings,
+  ShoppingBagIcon, 
   LogOut,
   User,
   ListOrderedIcon,
@@ -113,10 +112,7 @@ export default function Header() {
                 {user.firstName} {user.lastName}
               </span>
               <Separator></Separator>
-              <DropdownMenuItem className="cursor-pointer">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </DropdownMenuItem>
+        
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="cursor-pointer"

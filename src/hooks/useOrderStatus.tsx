@@ -93,6 +93,7 @@ export function useOrderStatus(demoOrderStatus: OrderStatus): OrderStatusData | 
     }
 
     return {
+      id: "order-123", // Add a unique identifier
       status: demoOrderStatus,
       ...baseOrder,
       steps: getSteps(),

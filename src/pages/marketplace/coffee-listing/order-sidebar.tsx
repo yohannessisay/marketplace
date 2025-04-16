@@ -27,7 +27,7 @@ export function OrderSidebar({
   return (
     <div className="space-y-6">
       {/* Purchase Card */}
-      <Card className="sticky top-6">
+      <Card className=" top-6">
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-xl font-bold">{listing?.farm.farm_name}</h2>
@@ -67,16 +67,17 @@ export function OrderSidebar({
             </div>
 
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Region</span>
+              <span className="text-sm text-muted-foreground">Regions</span>
               <span className="text-sm font-medium">
                 {listing?.farm.region}, {listing?.farm.country}
               </span>
             </div>
           </div>
           <div className="flex flex-col gap-3">
-            {orderStatus ? (
+            {listing?.listing_status === "active" && orderStatus ? (
               <OrderStatusCard
                 orderStatus={orderStatus}
+                
                 setShowReviewModal={setShowReviewModal}
               />
             ) : (

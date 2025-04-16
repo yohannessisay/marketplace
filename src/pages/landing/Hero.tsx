@@ -64,7 +64,7 @@ export default function Hero() {
               © {new Date().getFullYear()} AfroValley. All rights reserved.
             </p>
             <div className="flex space-x-6">
-              <Link to="#" className="text-white/70 hover:text-white">
+              {/* <Link to="#" className="text-white/70 hover:text-white">
                 Terms
               </Link>
               <Link to="#" className="text-white/70 hover:text-white">
@@ -72,7 +72,7 @@ export default function Hero() {
               </Link>
               <Link to="#" className="text-white/70 hover:text-white">
                 Contact
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
