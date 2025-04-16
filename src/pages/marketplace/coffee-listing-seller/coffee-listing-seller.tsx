@@ -242,16 +242,54 @@ export default function CoffeeListingSellerView() {
   const [bids, setBids] = useState<Bid[]>([]);
   const [messageThreads, setMessageThreads] = useState<MessageThreadType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generalLoading, setGeneralLoading] = useState(false);
+  const { errorMessage, successMessage } = useNotification();
+
   const isMobile = useMobile();
   const params = useParams();
-  const id = params.id as string | undefined; // Optional listing ID
+
+  const id = params.id as string | undefined;
+
   const user: any = getFromLocalStorage("userProfile", {});
   const senderId = getUserId();
+
   let fmrId = null;
   if (user && user.userType === "agent") {
     const farmer: any = getFromLocalStorage("farmer-profile", {});
     fmrId = farmer ? farmer.id : null;
   }
+
+  const acceptbid = async (bidId: string) => {
+    try {
+      setGeneralLoading(true);
+      await apiService().post(
+        `/sellers/listings/bids/accept-bid?bidId=${bidId}`,
+        fmrId ? fmrId : "",
+      );
+      successMessage("bid accepted successfully,and order is placed");
+      setGeneralLoading(false);
+    } catch (error: any) {
+      setGeneralLoading(false);
+      console.error("error acceptig bid: ", error);
+      errorMessage(error as APIErrorResponse);
+    }
+  };
+
+  const rejectbid = async (bidId: string) => {
+    try {
+      setGeneralLoading(true);
+      await apiService().post(
+        `/sellers/listings/bids/rejected-bid?bidId=${bidId}`,
+        fmrId ? fmrId : "",
+      );
+      successMessage("bid rejected successfully");
+      setGeneralLoading(false);
+    } catch (error: any) {
+      setGeneralLoading(false);
+      console.error("error acceptig bid: ", error);
+      errorMessage(error as APIErrorResponse);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -594,15 +632,19 @@ export default function CoffeeListingSellerView() {
                             <div>
                               <div className="flex items-center">
                                 <h4 className="text-sm font-medium text-gray-900">
-                                  Bid ID: {bid.id}
+                                  <span className="font-bold"> Bid ID:</span>{" "}
+                                  &nbsp; &nbsp;
+                                  {bid.id.slice(0, 15)}...
                                 </h4>
                                 <Badge
                                   variant={
-                                    bid.status === "confirmed"
+                                    bid.status === "accepted"
                                       ? "default"
-                                      : "outline"
+                                      : bid.status === "rejected"
+                                        ? "destructive"
+                                        : "default"
                                   }
-                                  className="ml-2"
+                                  className="ml-5"
                                 >
                                   {bid.status}
                                 </Badge>
@@ -913,7 +955,6 @@ export default function CoffeeListingSellerView() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Order ID</TableHead>
                         <TableHead>Buyer ID</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Quantity</TableHead>
@@ -930,9 +971,6 @@ export default function CoffeeListingSellerView() {
                       )}
                       {bids.map((bid) => (
                         <TableRow key={bid.id}>
-                          <TableCell className="font-medium">
-                            {bid.id}
-                          </TableCell>
                           <TableCell>{bid.buyer_id}</TableCell>
                           <TableCell>
                             {new Date(bid.created_at).toLocaleDateString()}
@@ -942,15 +980,17 @@ export default function CoffeeListingSellerView() {
                           <TableCell>
                             <Badge
                               variant={
-                                bid.status === "confirmed"
+                                bid.status === "accepted"
                                   ? "default"
-                                  : "outline"
+                                  : bid.status === "rejected"
+                                    ? "destructive"
+                                    : "default"
                               }
                             >
                               {bid.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="">
                             <div className="flex gap-2">
                               <Button
                                 variant="ghost"
@@ -963,7 +1003,9 @@ export default function CoffeeListingSellerView() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-emerald-600 h-8"
+                                  className="text-emerald-600 h-8 bg-green-200 hover:bg-green-100"
+                                  onClick={() => acceptbid(bid.id)}
+                                  disabled={generalLoading}
                                 >
                                   Accept
                                 </Button>
@@ -973,9 +1015,11 @@ export default function CoffeeListingSellerView() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-red-600 h-8"
+                                  className="text-red-600 h-8 bg-red-100"
+                                  onClick={() => rejectbid(bid.id)}
+                                  disabled={generalLoading}
                                 >
-                                  Cancel
+                                  Reject
                                 </Button>
                               )}
                             </div>

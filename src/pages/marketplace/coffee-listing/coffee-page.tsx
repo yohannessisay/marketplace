@@ -12,6 +12,7 @@ import { apiService } from "@/services/apiService";
 import { CoffeeListing } from "@/types/coffee";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
+import { BidModal } from "./Bid-modal";
 
 export default function CoffeeListingPage() {
   const { id } = useParams();
@@ -20,7 +21,10 @@ export default function CoffeeListingPage() {
   const { successMessage, errorMessage } = useNotification();
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showBidModal, setShowBidModal] = useState(false);
   const [quantity, setQuantity] = useState(100);
+  const [bidPrice, setBidPrice] = useState(0);
+
   useEffect(() => {
     const fetchListingDetails = async () => {
       try {
@@ -34,11 +38,14 @@ export default function CoffeeListingPage() {
           response.data.listings.length > 0
         ) {
           setListing(response.data.listings[0]);
+          setBidPrice(response.data.listings[0].price_per_kg || 0);
         } else {
-          errorMessage("Failed to fetch listing details");
+          errorMessage({ message: "Failed to fetch listing details" });
         }
       } catch {
-        errorMessage("An error occurred while fetching the listing");
+        errorMessage({
+          message: "An error occurred while fetching the listing",
+        });
       }
     };
 
@@ -52,14 +59,30 @@ export default function CoffeeListingPage() {
       await apiService().post("/orders/place-order", {
         listingId: listing?.id,
         unit_price: listing?.price_per_kg,
-        quantity_kg: listing?.quantity_kg,
+        quantity_kg: quantity,
       });
 
       successMessage("Order placed successfully");
-
       setDemoOrderStatus("pending");
     } catch (err: any) {
       setShowOrderModal(false);
+      errorMessage(err as APIErrorResponse);
+    }
+  };
+
+  const handlePlaceBid = async (price_per_kg: number, quantity_kg: number) => {
+    try {
+      await apiService().post("/buyers/bids/place-bid", {
+        listingId: listing?.id,
+        unit_price: price_per_kg,
+        quantity_kg: quantity_kg,
+      });
+
+      successMessage("Bid placed successfully");
+      setDemoOrderStatus("pending");
+      setShowBidModal(false);
+    } catch (err: any) {
+      setShowBidModal(false);
       errorMessage(err as APIErrorResponse);
     }
   };
@@ -95,6 +118,7 @@ export default function CoffeeListingPage() {
               demoOrderStatus={demoOrderStatus}
               setShowOrderModal={setShowOrderModal}
               setShowReviewModal={setShowReviewModal}
+              setShowBidModal={setShowBidModal}
             />
           </div>
         </div>
@@ -107,6 +131,18 @@ export default function CoffeeListingPage() {
           setQuantity={setQuantity}
           onClose={() => setShowOrderModal(false)}
           onSubmit={handleOrderSubmit}
+        />
+      )}
+
+      {showBidModal && (
+        <BidModal
+          listing={listing}
+          quantity={quantity}
+          setQuantity={setQuantity}
+          bidPrice={bidPrice}
+          setBidPrice={setBidPrice}
+          onClose={() => setShowBidModal(false)}
+          onSubmit={() => handlePlaceBid(bidPrice, quantity)}
         />
       )}
 

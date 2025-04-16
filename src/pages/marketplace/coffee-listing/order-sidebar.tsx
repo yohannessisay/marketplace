@@ -8,8 +8,9 @@ import { OrderStatusCard } from "./order-status-card";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
 
 interface OrderSidebarProps {
-  listing: CoffeeListing|null;
+  listing: CoffeeListing | null;
   demoOrderStatus: OrderStatus;
+  setShowBidModal: (show: boolean) => void;
   setShowOrderModal: (show: boolean) => void;
   setShowReviewModal: (show: boolean) => void;
 }
@@ -19,6 +20,7 @@ export function OrderSidebar({
   demoOrderStatus,
   setShowOrderModal,
   setShowReviewModal,
+  setShowBidModal,
 }: OrderSidebarProps) {
   const orderStatus = useOrderStatus(demoOrderStatus);
 
@@ -59,7 +61,9 @@ export function OrderSidebar({
               <span className="text-sm text-muted-foreground">
                 Processing Method
               </span>
-              <span className="text-sm font-medium">{listing?.processing_method}</span>
+              <span className="text-sm font-medium">
+                {listing?.processing_method}
+              </span>
             </div>
 
             <div className="flex justify-between">
@@ -69,17 +73,34 @@ export function OrderSidebar({
               </span>
             </div>
           </div>
-
-          {orderStatus ? (
-            <OrderStatusCard
-              orderStatus={orderStatus}
-              setShowReviewModal={setShowReviewModal}
-            />
-          ) : (
-            <Button onClick={() => setShowOrderModal(true)} className="w-full">
-              Place Order
-            </Button>
-          )}
+          <div className="flex flex-col gap-3">
+            {orderStatus ? (
+              <OrderStatusCard
+                orderStatus={orderStatus}
+                setShowReviewModal={setShowReviewModal}
+              />
+            ) : (
+              <Button
+                onClick={() => setShowOrderModal(true)}
+                className="w-full"
+              >
+                Place Order
+              </Button>
+            )}
+            {orderStatus ? (
+              <OrderStatusCard
+                orderStatus={orderStatus}
+                setShowReviewModal={setShowReviewModal}
+              />
+            ) : (
+              <Button
+                onClick={() => setShowBidModal(true)}
+                className="w-full bg-white text-green-700 border border-green-300 hover:bg-primary hover:text-white"
+              >
+                Place Bid
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -111,7 +132,7 @@ export function OrderSidebar({
       <Card>
         <CardContent className="p-6">
           <h3 className="text-lg font-medium mb-4">About the Seller</h3>
-           
+
           <Button variant="outline" className="w-full">
             View Seller Profile
           </Button>
