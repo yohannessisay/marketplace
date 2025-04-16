@@ -25,6 +25,7 @@ import CoffeeListingSellerView from "./pages/marketplace/coffee-listing-seller/c
 import AddCrop from "./pages/farms/add-crop";
 import { getFromLocalStorage } from "./lib/utils";
 import { initializeChatService } from "./services/chatService";
+import EditBank from "./pages/bank/edit-bank";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -160,11 +161,19 @@ function App() {
               </ProtectedRoute>
             }
           />
-                 <Route
+          <Route
             path="/edit-crop/:id"
             element={
               <ProtectedRoute>
                 <AddCrop />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-bank/:id"
+            element={
+              <ProtectedRoute>
+                <EditBank />
               </ProtectedRoute>
             }
           />

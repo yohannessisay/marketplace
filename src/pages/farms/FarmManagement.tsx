@@ -13,6 +13,7 @@ import {
   Leaf,
   Coffee,
   Search,
+  Banknote,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -55,13 +56,27 @@ interface CoffeeListing {
   readiness_date?: string | null;
 }
 
+interface Bank {
+  id: string;
+  account_holder_name: string;
+  bank_name: string;
+  account_number: string;
+  branch_name: string;
+  swift_code?: string;
+  is_primary: boolean;
+  created_at?: string;
+}
+
 const FarmManagement: React.FC = () => {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [listings, setListings] = useState<CoffeeListing[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
   const [loadingFarms, setLoadingFarms] = useState(true);
   const [loadingListings, setLoadingListings] = useState(true);
+  const [loadingBanks, setLoadingBanks] = useState(true);
   const [farmSearch, setFarmSearch] = useState("");
   const [listingSearch, setListingSearch] = useState("");
+  const [bankSearch, setBankSearch] = useState("");
   const [page] = useState(1);
   const [limit] = useState(10);
   const user: any = getFromLocalStorage("userProfile", {});
@@ -102,9 +117,25 @@ const FarmManagement: React.FC = () => {
       }
     };
 
+    const fetchBanks = async () => {
+      try {
+        setLoadingBanks(true);
+        const response: any = await apiService().get(
+          `/sellers/banks/get-banks?search=${bankSearch}&page=${page}&limit=${limit}`,
+          fmrId ? fmrId : ""
+        );
+        setBanks(response.data.bank_accounts);
+      } catch (error) {
+        console.error("Failed to fetch banks:", error);
+      } finally {
+        setLoadingBanks(false);
+      }
+    };
+
     fetchFarms();
     fetchListings();
-  }, [farmSearch, listingSearch, page, limit]);
+    fetchBanks();
+  }, [farmSearch, listingSearch, bankSearch, page, limit]);
 
   return (
     <div className="bg-primary/5 min-h-screen py-8 px-8">
@@ -118,7 +149,7 @@ const FarmManagement: React.FC = () => {
               Farm Management
             </h1>
             <p className="text-slate-500">
-              Manage your coffee farms and listings
+              Manage your coffee farms, listings, and banks
             </p>
           </div>
           <div className="flex gap-4">
@@ -140,7 +171,7 @@ const FarmManagement: React.FC = () => {
         <Separator className="mb-8" />
 
         <Tabs defaultValue="farms" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8 ">
+          <TabsList className="grid w-full grid-cols-3 max-w-[600px] mb-8">
             <TabsTrigger
               value="farms"
               className="border border-green-300 p-3 mr-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
@@ -152,6 +183,12 @@ const FarmManagement: React.FC = () => {
               className="border border-green-300 p-3 ml-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
             >
               Listings
+            </TabsTrigger>
+            <TabsTrigger
+              value="banks"
+              className="border border-green-300 p-3 ml-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
+            >
+              Banks
             </TabsTrigger>
           </TabsList>
 
@@ -456,6 +493,98 @@ const FarmManagement: React.FC = () => {
                       >
                         <Link to={`/manage-listing/${listing.id}`}>
                           <span>Manage Listing</span>
+                          <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Banks Tab */}
+          <TabsContent value="banks">
+            <div className="mb-6 max-w-md bg-white my-4 p-4 rounded-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search banks by account holder or bank name..."
+                  value={bankSearch}
+                  onChange={(e) => setBankSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {loadingBanks ? (
+              <p className="text-slate-500 text-center">Loading banks...</p>
+            ) : banks?.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-slate-100 mx-auto flex items-center justify-center mb-4">
+                  <Banknote className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-medium text-slate-700 mb-2">
+                  No banks found
+                </h3>
+                <p className="text-slate-500 max-w-md mx-auto mb-6">
+                  {bankSearch
+                    ? "No banks match your search criteria."
+                    : "You haven't added any banks to your account. Start by adding your first bank account."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {banks.map((bank, index) => (
+                  <Card
+                    key={index}
+                    className="overflow-hidden border border-slate-200 hover:shadow-md transition-all duration-200"
+                  >
+                    <CardHeader className="bg-white pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center">
+                          <h3 className="text-lg font-medium text-slate-700">
+                            {bank.account_holder_name}
+                          </h3>
+                        </div>
+                        {bank.is_primary && (
+                          <Badge className="bg-green-500 text-white">
+                            Primary
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-4 pb-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center text-slate-600">
+                          <span className="font-medium">Bank:</span>
+                          <span className="ml-2">{bank.bank_name}</span>
+                        </div>
+                        <div className="flex items-center text-slate-600">
+                          <span className="font-medium">Account Number:</span>
+                          <span className="ml-2">{bank.account_number}</span>
+                        </div>
+                        <div className="flex items-center text-slate-600">
+                          <span className="font-medium">Branch:</span>
+                          <span className="ml-2">{bank.branch_name}</span>
+                        </div>
+                        {bank.swift_code && (
+                          <div className="flex items-center text-slate-600">
+                            <span className="font-medium">SWIFT Code:</span>
+                            <span className="ml-2">{bank.swift_code}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col">
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center justify-center group"
+                        asChild
+                      >
+                        <Link to={`/edit-bank/${bank.id}`}>
+                          <span>Manage Bank Info</span>
                           <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                         </Link>
                       </Button>
