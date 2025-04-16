@@ -60,3 +60,19 @@ export function getUserId() {
     return null;
   }
 }
+
+export function getUserProfile() {
+  const userProfile = localStorage.getItem("userProfile");
+  if (!userProfile) {
+    console.warn("[CoffeeDetails] No userProfile in localStorage");
+    return null;
+  }
+
+  try {
+    const user: UserProfile = JSON.parse(userProfile);
+    return user;
+  } catch (error) {
+    console.error("[CoffeeDetails] Failed to parse userProfile:", error);
+    return null;
+  }
+}

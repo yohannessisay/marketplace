@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OrderStatusCard } from "./order-status-card";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
+import { getUserProfile } from "@/lib/utils";
+import { ActionTooltip } from "@/components/common/action-tooltip";
 
 interface OrderSidebarProps {
   listing: CoffeeListing | null;
@@ -24,10 +26,12 @@ export function OrderSidebar({
 }: OrderSidebarProps) {
   const orderStatus = useOrderStatus(demoOrderStatus);
 
+  const user = getUserProfile();
+
   return (
     <div className="space-y-6">
       {/* Purchase Card */}
-      <Card className="sticky top-6">
+      <Card className="top-6">
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-xl font-bold">{listing?.farm.farm_name}</h2>
@@ -80,25 +84,31 @@ export function OrderSidebar({
                 setShowReviewModal={setShowReviewModal}
               />
             ) : (
-              <Button
+              <ActionTooltip
                 onClick={() => setShowOrderModal(true)}
                 className="w-full"
+                disabled={user?.onboarding_stage !== "completed"}
+                disabledMessage="complete your onboarding to place order"
               >
                 Place Order
-              </Button>
+              </ActionTooltip>
             )}
+
             {orderStatus ? (
               <OrderStatusCard
                 orderStatus={orderStatus}
                 setShowReviewModal={setShowReviewModal}
               />
             ) : (
-              <Button
+              <ActionTooltip
                 onClick={() => setShowBidModal(true)}
-                className="w-full bg-white text-green-700 border border-green-300 hover:bg-primary hover:text-white"
+                variant="outline"
+                className="w-full bg-white text-green-700 "
+                disabled={user?.onboarding_stage !== "completed"}
+                disabledMessage="complete your onboarding to place bid"
               >
                 Place Bid
-              </Button>
+              </ActionTooltip>
             )}
           </div>
         </CardContent>

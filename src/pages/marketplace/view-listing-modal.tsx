@@ -18,6 +18,7 @@ import { apiService } from "@/services/apiService";
 import SampleRequestModal from "./sample-request-modal";
 import { Link } from "react-router-dom";
 import { ApiResponse, CoffeeListing, CoffeePhoto } from "@/types/coffee";
+import { getUserProfile } from "@/lib/utils";
 
 function CoffeeImage({
   src,
@@ -71,6 +72,7 @@ export default function ListingDetailModal({
   const [currentPhotoIndex, setCurrentPhotoIndex] = React.useState(0);
   const [showSampleRequestModal, setShowSampleRequestModal] =
     React.useState(false);
+  const user = getUserProfile();
 
   React.useEffect(() => {
     const fetchListingDetails = async () => {
@@ -507,6 +509,7 @@ export default function ListingDetailModal({
                     variant="outline"
                     className="w-full sm:flex-1 px-4 py-2"
                     onClick={() => setShowSampleRequestModal(true)}
+                    disabled={user?.onboarding_stage !== "completed"}
                   >
                     Request Samples
                   </Button>
@@ -514,7 +517,10 @@ export default function ListingDetailModal({
                     to={`/listing/${listingId}`}
                     className="w-full sm:flex-1"
                   >
-                    <Button className="w-full sm:flex-1 px-4 py-2">
+                    <Button
+                      disabled={user?.onboarding_stage !== "completed"}
+                      className="w-full sm:flex-1 px-4 py-2"
+                    >
                       Place Order Now
                     </Button>
                   </Link>
