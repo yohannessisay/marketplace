@@ -44,8 +44,7 @@ class ApiService {
             (errorData as any)?.error?.hint ||
             "Check the request data and try again",
         },
-      };
-      console.log("Error response constructed:", errorResponse); // Debug log
+      }; 
       return Promise.reject(errorResponse);
     }
 

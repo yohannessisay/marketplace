@@ -621,9 +621,10 @@ export default function MyOrdersPage() {
               ? "Browse the marketplace to find and save your favorite coffee offerings."
               : "Head to the marketplace to place your first order of premium Ethiopian coffee."}
           </p>
+          <Link to={"/market-place"}>
           <Button className="mt-6 bg-green-600 hover:bg-green-700">
             Browse Marketplace
-          </Button>
+          </Button></Link>
         </CardContent>
       </Card>
     );

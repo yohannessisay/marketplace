@@ -30,7 +30,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiService } from "@/services/apiService";
-import { saveToLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 
 interface Farm {
   id: string;
@@ -64,13 +64,20 @@ const FarmManagement: React.FC = () => {
   const [listingSearch, setListingSearch] = useState("");
   const [page] = useState(1);
   const [limit] = useState(10);
-
+  const user: any = getFromLocalStorage("userProfile", {});
+  let fmrId = null;
+  if (user && user.userType === "agent") {
+    const farmer: any = getFromLocalStorage("farmer-profile", {});
+    fmrId = farmer ? farmer.id : null;
+  }
   useEffect(() => {
     const fetchFarms = async () => {
       try {
         setLoadingFarms(true);
+
         const response: any = await apiService().get(
           `/sellers/farms/get-farms?search=${farmSearch}&page=${page}&limit=${limit}`,
+          fmrId ? fmrId : ""
         );
         setFarms(response.data.farms);
       } catch (error) {
@@ -85,6 +92,7 @@ const FarmManagement: React.FC = () => {
         setLoadingListings(true);
         const response: any = await apiService().get(
           `/sellers/listings/get-listings?search=${listingSearch}&page=${page}&limit=${limit}`,
+           fmrId ? fmrId : ""
         );
         setListings(response.data.listings);
       } catch (error) {
@@ -120,12 +128,12 @@ const FarmManagement: React.FC = () => {
                 Add New Farm
               </Link>
             </Button>
-            <Button className="mt-4 md:mt-0" asChild>
+            {/* <Button className="mt-4 md:mt-0" asChild>
               <Link to="/add-listing">
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Listing
               </Link>
-            </Button>
+            </Button> */}
           </div>
         </div>
 
@@ -149,7 +157,7 @@ const FarmManagement: React.FC = () => {
 
           {/* Farms Tab */}
           <TabsContent value="farms">
-            <div className="mb-6 max-w-md">
+            <div className="mb-6 max-w-md bg-white my-4 p-4 rounded-md">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
@@ -239,8 +247,8 @@ const FarmManagement: React.FC = () => {
                               <Scale className="h-4 w-4 mr-2 text-slate-400" />
                               <span>
                                 {Number.parseInt(
-                                  farm.capacity_kg || "0",
-                                ).toLocaleString()}{" "}
+                                  farm.capacity_kg || "0"
+                                )?.toLocaleString()}{" "}
                                 kg capacity
                               </span>
                             </div>
@@ -315,7 +323,7 @@ const FarmManagement: React.FC = () => {
 
           {/* Listings Tab */}
           <TabsContent value="listings">
-            <div className="mb-6 max-w-md">
+            <div className="mb-6 max-w-md bg-white my-4 p-4 rounded-md">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
@@ -392,11 +400,13 @@ const FarmManagement: React.FC = () => {
                       <div className="space-y-3">
                         <div className="flex items-center text-slate-600">
                           <Scale className="h-4 w-4 mr-2 text-slate-400" />
-                          <span>{listing.quantity_kg.toLocaleString()} kg</span>
+                          <span>
+                            {listing.quantity_kg?.toLocaleString()} kg
+                          </span>
                         </div>
                         <div className="flex items-center text-slate-600">
                           <span className="mr-2 text-slate-400">$</span>
-                          <span>${listing.price_per_kg.toFixed(2)}/kg</span>
+                          <span>${listing.price_per_kg?.toFixed(2)}/kg</span>
                         </div>
                         {listing.is_organic && (
                           <div className="flex items-center text-slate-600">
@@ -416,7 +426,7 @@ const FarmManagement: React.FC = () => {
                             <span>
                               Created on{" "}
                               {new Date(
-                                listing.created_at,
+                                listing.created_at
                               ).toLocaleDateString()}
                             </span>
                           </div>

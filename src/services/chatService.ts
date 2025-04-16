@@ -8,6 +8,7 @@ import {
 
 interface ChatServiceOptions {
   baseURL: string;
+  namespace?: string;
 }
 
 class ChatService {

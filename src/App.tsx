@@ -36,7 +36,7 @@ const FarmDetails = lazy(() => import("./pages/farms/FarmDetails"));
 const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const Dashboard = lazy(() => import("./pages/seller/Dashboard"));
 const CompanyOnboarding = lazy(
-  () => import("./pages/company/company-onboarding"),
+  () => import("./pages/company/company-onboarding")
 );
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -44,7 +44,7 @@ const socketURL = import.meta.env.VITE_SOCKET_URL;
 
 if (!baseURL || !socketURL) {
   console.error(
-    "VITE_API_BASE_URL or VITE_SOCKET_URL are missing from the environment",
+    "VITE_API_BASE_URL or VITE_SOCKET_URL are missing from the environment"
   );
 } else {
   initializeApiService(baseURL);
@@ -69,6 +69,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
+
+    
     const accessToken = Cookies.get("accessToken");
     if (accessToken) {
       try {
@@ -118,7 +120,7 @@ function App() {
           <Route path="/registration" element={<Signup />} />
           <Route path="/verification" element={<VerifyEmail />} />
           <Route path="/first-time-user" element={<CreatePassword />} />
-
+          <Route path="/market-place" element={<CoffeeMarketplace />} />
           {/* Onboarding smart redirect */}
           <Route
             path="/onboarding"
@@ -266,14 +268,7 @@ function App() {
             }
           />
 
-          <Route
-            path="/market-place"
-            element={
-              <ProtectedRoute>
-                <CoffeeMarketplace />
-              </ProtectedRoute>
-            }
-          />
+         
 
           <Route
             path="/listing/:id"

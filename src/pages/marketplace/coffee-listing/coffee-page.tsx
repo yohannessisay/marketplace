@@ -24,7 +24,7 @@ export default function CoffeeListingPage() {
     const fetchListingDetails = async () => {
       try {
         const response: any = await apiService().get(
-          `/marketplace/listings/get-listing?listingId=${id}`,
+          `/marketplace/listings/get-listing?listingId=${id}`
         );
 
         if (
@@ -56,13 +56,13 @@ export default function CoffeeListingPage() {
         successMessage("Order placed successfully");
 
         setDemoOrderStatus("pending");
+        setShowOrderModal(false);
       } else {
         errorMessage(response.data.error.message);
       }
-      setShowOrderModal(false);
     } catch (err: any) {
       setShowOrderModal(false);
-      errorMessage(err.data.error.message);
+      errorMessage(err);
     }
   };
 

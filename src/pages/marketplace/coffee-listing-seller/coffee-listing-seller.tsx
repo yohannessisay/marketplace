@@ -38,7 +38,7 @@ import { MessageThreadList } from "./message-thread-list";
 import { MessageThread } from "./message-thread";
 import Header from "@/components/layout/header";
 import { APIErrorResponse } from "@/types/api";
-import { getUserId } from "@/lib/utils";
+import { getFromLocalStorage, getUserId } from "@/lib/utils";
 import { useNotification } from "@/hooks/useNotification";
 
 interface Listing {
@@ -236,7 +236,12 @@ export default function CoffeeListingSellerView() {
   const [loading, setLoading] = useState(true);
   const isMobile = useMobile();
   const { id } = useParams<{ id: string }>();
-
+    const user: any = getFromLocalStorage("userProfile", {});
+  let fmrId = null;
+  if (user && user.userType === "agent") {
+    const farmer: any = getFromLocalStorage("farmer-profile", {});
+    fmrId = farmer ? farmer.id : null;
+  }
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -249,16 +254,19 @@ export default function CoffeeListingSellerView() {
 
         const listingResponse: any = await apiService().get(
           `/sellers/listings/get-listing?listingId=${id}`,
+             fmrId ? fmrId : ""
         );
         setListing(listingResponse.data.listing);
 
         const bidsResponse: any = await apiService().get(
           `/sellers/listings/bids/get-bids?listingId=${id}`,
+             fmrId ? fmrId : ""
         );
         setBids(bidsResponse.data.bids || []);
 
         const messagesResponse: any = await apiService().get(
           `/chats/listing-messages?listingId=${id}`,
+             fmrId ? fmrId : ""
         );
 
         const groupedThreads: { [key: string]: MessageThread } = {};
@@ -415,7 +423,7 @@ export default function CoffeeListingSellerView() {
 
                     <div className="flex items-baseline mb-6">
                       <span className="text-2xl font-bold text-emerald-600">
-                        ${listing.price_per_kg.toFixed(2)}
+                        ${listing.price_per_kg?.toFixed(2)}
                       </span>
                       <span className="ml-1 text-gray-500">/kg</span>
                     </div>
@@ -582,7 +590,7 @@ export default function CoffeeListingSellerView() {
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-medium text-gray-900">
-                                ${bid.total_amount.toFixed(2)}
+                                ${bid.total_amount?.toFixed(2)}
                               </p>
                               <Button
                                 variant="link"
@@ -777,7 +785,7 @@ export default function CoffeeListingSellerView() {
                         <div>
                           <p className="text-sm text-gray-500">Total Revenue</p>
                           <p className="text-lg font-medium text-gray-900">
-                            ${listingStats.totalRevenue.toFixed(2)}
+                            ${listingStats.totalRevenue?.toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -903,7 +911,7 @@ export default function CoffeeListingSellerView() {
                             {new Date(bid.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell>{bid.quantity_kg} kg</TableCell>
-                          <TableCell>${bid.total_amount.toFixed(2)}</TableCell>
+                          <TableCell>${bid.total_amount?.toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge
                               variant={
