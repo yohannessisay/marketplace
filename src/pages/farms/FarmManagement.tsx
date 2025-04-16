@@ -92,7 +92,7 @@ const FarmManagement: React.FC = () => {
         setLoadingListings(true);
         const response: any = await apiService().get(
           `/sellers/listings/get-listings?search=${listingSearch}&page=${page}&limit=${limit}`,
-           fmrId ? fmrId : ""
+          fmrId ? fmrId : ""
         );
         setListings(response.data.listings);
       } catch (error) {
@@ -294,13 +294,15 @@ const FarmManagement: React.FC = () => {
                     </CardContent>
 
                     <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col">
-                      <Button
-                        variant="outline"
-                        className="w-full flex items-center justify-center group"
-                      >
-                        <span>Manage Farm</span>
-                        <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                      </Button>
+                      <Link to={`/edit-farm/${farm.id}`} className="w-full">
+                        <Button
+                          variant="outline"
+                          className="w-full flex items-center justify-center group"
+                        >
+                          <span>Manage Farm</span>
+                          <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                        </Button>
+                      </Link>
 
                       <Button
                         className="w-full flex items-center justify-center group mt-2"

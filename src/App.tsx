@@ -69,8 +69,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
-
-    
     const accessToken = Cookies.get("accessToken");
     if (accessToken) {
       try {
@@ -147,7 +145,23 @@ function App() {
             }
           />
           <Route
+            path="/edit-farm/:id"
+            element={
+              <ProtectedRoute>
+                <AddFarm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/add-crop"
+            element={
+              <ProtectedRoute>
+                <AddCrop />
+              </ProtectedRoute>
+            }
+          />
+                 <Route
+            path="/edit-crop/:id"
             element={
               <ProtectedRoute>
                 <AddCrop />
@@ -267,8 +281,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-         
 
           <Route
             path="/listing/:id"

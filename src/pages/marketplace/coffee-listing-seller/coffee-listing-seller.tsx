@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   Star,
   MessageCircle,
@@ -740,10 +740,11 @@ export default function CoffeeListingSellerView() {
                       </h4>
                       <p className="text-gray-900">{listingStats.views}</p>
                     </div>
-
+                    <Link to={`/edit-crop/${listing.id}`}>
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-700 hover:text-white">
                       Edit Listing
                     </Button>
+                    </Link>
                   </CardContent>
                 </Card>
 

@@ -6,8 +6,8 @@ export const farmDetailsSchema = z.object({
   region: z.string().min(1, "Region is required"),
 
   // Coffee Land Details
-  longitude: z.string().min(1, "Longitude is required"),
-  latitude: z.string().min(1, "Latitude is required"),
+  longitude: z.number().min(1, "Longitude is required"),
+  latitude: z.number().min(1, "Latitude is required"),
 
   // Crop Environment
   crop_type: z.string().min(1, "Crop type is required"),
@@ -25,13 +25,13 @@ export const farmDetailsSchema = z.object({
   farm_name: z.string().min(1, "Farm name is required"),
 
   town_location: z.string().min(1, "Town location is required"),
-  country: z.string().min(1, "Farm name is required"),
-  total_size_hectares: z.string().min(1, "Farm name is required"),
-  coffee_area_hectares: z.string().min(1, "Farm name is required"),
-  altitude_meters: z.string().min(1, "Farm name is required"),
-  capacity_kg: z.string().min(1, "Farm name is required"),
-  avg_annual_temp: z.string().min(1, "Farm name is required"),
-  annual_rainfall_mm: z.string().min(1, "Farm name is required"),
+  country: z.string().min(1, "Country is required"),
+  total_size_hectares: z.number().min(1, "Total size is required"),
+  coffee_area_hectares: z.number().min(1, "Coffee area is required"),
+  altitude_meters: z.number().min(1, "Altitude is required"),
+  capacity_kg: z.number().min(1, "Capacity is required"),
+  avg_annual_temp: z.number().min(1, "Average annual temperature is required"),
+  annual_rainfall_mm: z.number().min(1, "Annual rainfall is required"),
 });
 
 export type FarmDetailsFormData = z.infer<typeof farmDetailsSchema>;
@@ -47,7 +47,7 @@ export const coffeeCropsSchema = z.object({
   // Crop Specification 
   processing_method: z.string().min(1, "Processing method is required"),
   moisture_percentage: z.string().min(1, "Moisture is required"),
-  screen_size: z.string().min(1, "Screen size is required"),
+  screen_size: z.number().min(1, "Screen size is required"),
   drying_method: z.string().min(1, "Drying method is required"),
   wet_mill: z.string().min(1, "Wet mill is required"),
   is_organic: z.string().min(1, "Organic property is required"),
@@ -60,8 +60,8 @@ export const coffeeCropsSchema = z.object({
   cup_taste_balance: z.string().min(1, "Balance is required"),
 
   // Price and Quantity
-  quantity_kg: z.string().min(1, "Quantity is required"),
-  price_per_kg: z.string().min(1, "Price is required"),
+  quantity_kg: z.number().min(1, "Quantity is required"),
+  price_per_kg: z.number().min(1, "Price is required"),
 
   // Readiness and Delivery
   readiness_date: z.string().min(1, "Readiness date is required"),

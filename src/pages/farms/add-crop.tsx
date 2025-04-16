@@ -24,8 +24,7 @@ import {
   coffeeCropsSchema,
   type CoffeeCropsFormData,
 } from "@/types/validation/seller-onboarding";
-import { getFromLocalStorage } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -48,13 +47,12 @@ import { APIErrorResponse } from "@/types/api";
 
 export default function AddCrop() {
   const navigation = useNavigate();
-  const [isClient, setIsClient] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const { successMessage, errorMessage } = useNotification();
-  const handleFilesSelected = (selectedFiles: File[]) => {
-    setFiles((prev) => [...prev, ...selectedFiles]);
-  };
+  const { id } = useParams<{ id: string }>();
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const { successMessage, errorMessage } = useNotification();
 
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
@@ -65,7 +63,7 @@ export default function AddCrop() {
       crop_year: "",
       processing_method: "",
       moisture_percentage: "",
-      screen_size: "",
+      screen_size: 0,
       drying_method: "",
       wet_mill: "",
       is_organic: "",
@@ -74,25 +72,91 @@ export default function AddCrop() {
       cup_taste_sweetness: "",
       cup_taste_aftertaste: "",
       cup_taste_balance: "",
-      quantity_kg: "",
-      price_per_kg: "",
-      readiness_date: new Date().toISOString(),
+      quantity_kg: 0,
+      price_per_kg: 0,
+      readiness_date: "",
       lot_length: "",
       delivery_type: "",
       shipping_port: "",
     },
   });
 
-  useEffect(() => {
-    setIsClient(true);
-    const savedData = getFromLocalStorage<CoffeeCropsFormData>(
-      "step-two",
-      {} as CoffeeCropsFormData,
-    );
-    if (savedData && Object.keys(savedData).length > 0) {
-      form.reset(savedData);
+  // Populate form data for editing
+  const populateForm = async (listingId: string) => {
+    try {
+      const response: any = await apiService().get(
+        `/sellers/listings/get-listing?listingId=${listingId}`
+      );
+      if (response.success) {
+        const listing = response.data.listing;
+
+        form.reset({
+          coffee_variety: listing.coffee_variety ?? "",
+          grade: listing.grade ?? "",
+          bean_type: listing.bean_type ?? "",
+          crop_year: listing.crop_year ?? "",
+          processing_method: listing.processing_method ?? "",
+          moisture_percentage: listing.moisture_percentage ?? 0,
+          screen_size: listing.screen_size ?? 0,
+          drying_method: listing.drying_method ?? "",
+          wet_mill: listing.wet_mill ?? "",
+          is_organic: listing.is_organic ? "true" : "false",
+          cup_taste_acidity: listing.cup_taste_acidity ?? "",
+          cup_taste_body: listing.cup_taste_body ?? "",
+          cup_taste_sweetness: listing.cup_taste_sweetness ?? "",
+          cup_taste_aftertaste: listing.cup_taste_aftertaste ?? "",
+          cup_taste_balance: listing.cup_taste_balance ?? "",
+          quantity_kg: listing.quantity_kg ?? 0,
+          price_per_kg: listing.price_per_kg ?? 0,
+          readiness_date: listing.readiness_date ?? "",
+          lot_length: listing.lot_length ?? "",
+          delivery_type: listing.delivery_type ?? "",
+          shipping_port: listing.shipping_port ?? "",
+        });
+
+        // Handle files and photos
+        if (listing.documents) {
+          const filesTemp: File[] = [];
+          await Promise.all(
+            listing.documents.map(async (doc: any) => {
+              const response = await fetch(doc.doc_url);
+              const blob = await response.blob();
+              const file = new File([blob], doc.doc_url.split("/").pop() || "file", {
+                type: blob.type,
+              });
+              filesTemp.push(file);
+            })
+          );
+          setFiles(filesTemp);
+        }
+
+        if (listing.photos) {
+          const photosTemp: File[] = [];
+          await Promise.all(
+            listing.photos.map(async (photo: any) => {
+              const response = await fetch(photo.photo_url);
+              const blob = await response.blob();
+              const file = new File([blob], photo.photo_url.split("/").pop() || "photo", {
+                type: blob.type,
+              });
+              photosTemp.push(file);
+            })
+          );
+          setPhotos(photosTemp);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching listing data:", error);
+      errorMessage("Failed to fetch listing data.");
     }
-  }, [form]);
+  };
+
+  useEffect(() => {
+    if (id) {
+      setIsEditMode(true);
+      populateForm(id);
+    }
+  }, [id]);
 
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
@@ -108,37 +172,38 @@ export default function AddCrop() {
       files.forEach((file) => {
         formData.append("files", file);
       });
-      const farmId = localStorage.getItem("current-farm-id");
-      if (farmId) {
-        formData.append("farm_id", farmId.replace(/"/g, ""));
-      }
-      const isAgent: any = getFromLocalStorage("userProfile", {});
-      const farmer: any = getFromLocalStorage("farmer-profile", {});
 
-      await apiService().postFormData(
-        "/sellers/listings/create-listing",
-        formData,
-        true,
-        isAgent.userType === "agent" && farmer ? farmer.id : "",
-      );
+      photos.forEach((photo) => {
+        formData.append("files", photo);
+      });
+
+      if (isEditMode && id) {
+        formData.append("listingId", id);
+        await apiService().patchFormData(
+          `/sellers/listings/update-listing`,
+          formData,
+          true
+        );
+        successMessage("Listing updated successfully!");
+      } else {
+        await apiService().postFormData(
+          `/sellers/listings/create-listing`,
+          formData,
+          true
+        );
+        successMessage("Listing created successfully!");
+      }
 
       navigation("/seller-dashboard");
-      localStorage.setItem("current-step", JSON.stringify("bank_information"));
-      successMessage("Crop information saved successfully");
     } catch (error: any) {
+      console.error("Error submitting form:", error);
       errorMessage(error as APIErrorResponse);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  const goBack = () => {
-    navigation("/onboarding/step-one");
-    localStorage.setItem("back-button-clicked", "true");
-  };
-
-  if (!isClient) {
-    return null; // Prevent hydration errors
-  }
+ 
 
   return (
     <div className="min-h-screen bg-primary/5">
@@ -150,7 +215,7 @@ export default function AddCrop() {
             className="space-y-8 shadow-lg p-8  rounded-md py-4  bg-white"
           >
             <h2 className="text-center text-2xl">
-              Add Crop To Your Existing Farm
+              {isEditMode ? "Edit Crop" : "Add Crop To Your Existing Farm"}
             </h2>
             {/* Step 1: Upload Grading Report */}
             <div className="mb-8">
@@ -164,7 +229,7 @@ export default function AddCrop() {
                 </CardHeader>
                 <CardContent>
                   <FileUpload
-                    onFilesSelected={handleFilesSelected}
+                    onFilesSelected={setFiles}
                     maxFiles={5}
                     maxSizeMB={5}
                   />
@@ -423,16 +488,16 @@ export default function AddCrop() {
                     </CardHeader>
                     <CardContent>
                       <FileUpload
-                        onFilesSelected={handleFilesSelected}
+                        onFilesSelected={setPhotos}
                         maxFiles={6}
                         maxSizeMB={5}
                       />
                     </CardContent>
                     <CardFooter className="flex justify-between">
                       <div className="text-sm text-muted-foreground">
-                        {files.length > 0
-                          ? `${files.length} file(s) selected`
-                          : "No files selected"}
+                        {photos.length > 0
+                          ? `${photos.length} photo(s) selected`
+                          : "No photos selected"}
                       </div>
                     </CardFooter>
                   </Card>
@@ -457,7 +522,12 @@ export default function AddCrop() {
                       <FormItem>
                         <FormLabel>Crop Quantity (kg)</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(Number(e.target.value) || 0)} // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -470,7 +540,12 @@ export default function AddCrop() {
                       <FormItem>
                         <FormLabel>Community Base Price per kg</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(Number(e.target.value) || 0)} // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -510,7 +585,11 @@ export default function AddCrop() {
                       <FormItem>
                         <FormLabel>Moisture Percentage</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -523,7 +602,12 @@ export default function AddCrop() {
                       <FormItem>
                         <FormLabel>Screen Size</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(Number(e.target.value) || 0)} // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -658,12 +742,16 @@ export default function AddCrop() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mb-8">
-              <Button type="button" variant="outline" onClick={goBack}>
-                Back
-              </Button>
-              <Button type="submit" disabled={isSubmitting} className=" my-4">
-                {isSubmitting ? "Adding..." : "Add crop listing"}
+            <div className="flex justify-end mb-8">
+             
+              <Button type="submit" disabled={isSubmitting} className="my-4">
+                {isSubmitting
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Adding..."
+                  : isEditMode
+                  ? "Update Listing"
+                  : "Add Crop Listing"}
               </Button>
             </div>
           </form>

@@ -1,13 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 
 import { useState, useEffect } from "react";
 import {
-  Calendar,
-  Heart,
+  Calendar, 
+  Heart, 
   ShoppingBag,
-  Clock,
+  Clock, 
   Info,
   ChevronDown,
   Filter,
@@ -15,16 +16,13 @@ import {
   ArrowRight,
   CheckCircle,
   Circle,
-  AlertCircle,
+  AlertCircle, 
   Search,
-  Map,
-  Droplet,
-  Coffee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"; 
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import {
@@ -95,51 +93,12 @@ interface PaginationData {
   totalPages: number;
 }
 
-interface Favorite {
-  id: string;
-  listing_id: string;
-  created_at: string;
-  updated_at: string;
-  listing: {
-    id: string;
-    coffee_variety: string;
-    bean_type: string;
-    crop_year: string;
-    is_organic: boolean;
-    processing_method: string;
-    price_per_kg: number;
-    quantity_kg: number;
-    grade: string;
-    farm: {
-      farm_name: string;
-      town_location: string;
-      region: string;
-      country: string;
-    } | null;
-    seller: {
-      id: string;
-      first_name: string;
-      last_name: string;
-      email: string;
-      address: string;
-      rating: number;
-      total_reviews: number;
-      deals_completed: number;
-    } | null;
-    photos: {
-      id: string;
-      photo_url: string;
-      is_primary: boolean;
-      created_at: string;
-    }[];
-  } | null;
-}
+ 
 
 export default function MyOrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [activePagination, setActivePagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
@@ -152,25 +111,14 @@ export default function MyOrdersPage() {
     totalItems: 0,
     totalPages: 0,
   });
-  const [favoritesPagination, setFavoritesPagination] =
-    useState<PaginationData>({
-      page: 1,
-      limit: 10,
-      totalItems: 0,
-      totalPages: 0,
-    });
   const [activeLoading, setActiveLoading] = useState<boolean>(true);
   const [historyLoading, setHistoryLoading] = useState<boolean>(true);
-  const [favoritesLoading, setFavoritesLoading] = useState<boolean>(true);
   const [activeError, setActiveError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [activeCurrentPage, setActiveCurrentPage] = useState<number>(1);
   const [historyCurrentPage, setHistoryCurrentPage] = useState<number>(1);
-  const [favoritesCurrentPage, setFavoritesCurrentPage] = useState<number>(1);
   const [activeSearchTerm, setActiveSearchTerm] = useState<string>("");
   const [historySearchTerm, setHistorySearchTerm] = useState<string>("");
-  const [favoritesSearchTerm, setFavoritesSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("current");
 
   // Fetch active orders from API
@@ -178,7 +126,9 @@ export default function MyOrdersPage() {
     const fetchActiveOrders = async () => {
       setActiveLoading(true);
       try {
-        const response: any = await apiService().get(`/orders/active-orders`);
+        const response: any = await apiService().get(
+          `/orders/active-orders`
+        );
 
         if (response.success) {
           setActiveOrders(response.data.orders);
@@ -186,7 +136,7 @@ export default function MyOrdersPage() {
         } else {
           setActiveError("Failed to fetch active orders");
         }
-      } catch (err: any) {
+      } catch (err:any) {
         setHistoryError(err.data.error.message);
       } finally {
         setActiveLoading(false);
@@ -203,7 +153,9 @@ export default function MyOrdersPage() {
     const fetchHistoricalOrders = async () => {
       setHistoryLoading(true);
       try {
-        const response: any = await apiService().get(`/orders/order-history`);
+        const response: any = await apiService().get(
+          `/orders/order-history`
+        );
 
         if (response.success) {
           setHistoricalOrders(response.data.orders);
@@ -211,7 +163,7 @@ export default function MyOrdersPage() {
         } else {
           setHistoryError("Failed to fetch order history");
         }
-      } catch (err: any) {
+      } catch (err:any) {
         setHistoryError(err.data.error.message);
       } finally {
         setHistoryLoading(false);
@@ -222,33 +174,6 @@ export default function MyOrdersPage() {
       fetchHistoricalOrders();
     }
   }, [historyCurrentPage, historySearchTerm, activeTab]);
-
-  // Fetch favorite listings from API
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      setFavoritesLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/buyers/listings/favorites/get-favorite-listings?search=${favoritesSearchTerm}&page=${favoritesCurrentPage}&limit=10`,
-        );
-
-        if (response.success) {
-          setFavorites(response.data.favorites);
-          setFavoritesPagination(response.data.pagination);
-        } else {
-          setFavoritesError("Failed to fetch favorite listings");
-        }
-      } catch (err: any) {
-        setFavoritesError(err.data.error.message || "An error occurred");
-      } finally {
-        setFavoritesLoading(false);
-      }
-    };
-
-    if (activeTab === "favorites") {
-      fetchFavorites();
-    }
-  }, [favoritesCurrentPage, favoritesSearchTerm, activeTab]);
 
   // Toggle order expansion
   const toggleOrderExpansion = (orderId: string) => {
@@ -275,18 +200,6 @@ export default function MyOrdersPage() {
     e.preventDefault();
     setHistoryCurrentPage(1); // Reset to first page when searching
   };
-
-  // Handle search for favorites
-  const handleFavoritesSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFavoritesCurrentPage(1); // Reset to first page when searching
-  };
-
-  // Get primary photo URL for a favorite listing
-  // const getFavoritePrimaryPhotoUrl = (favorite: Favorite): string => {
-  //   const primaryPhoto = favorite.listing?.photos.find((photo) => photo.is_primary);
-  //   return primaryPhoto ? primaryPhoto.photo_url : "/placeholder.svg";
-  // };
 
   // Render order status progress
   const renderOrderProgress = (order: Order) => {
@@ -363,8 +276,8 @@ export default function MyOrdersPage() {
                       step.completed
                         ? "text-foreground"
                         : index === currentStepIndex
-                          ? "text-foreground font-medium"
-                          : "text-muted-foreground"
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {step.label}
@@ -401,7 +314,8 @@ export default function MyOrdersPage() {
             <div className="flex-1">
               <div className="flex items-center mb-2">
                 <h3 className="font-bold text-lg">
-                  {item.order_id || "Unknown Coffee"}
+                  {item.order_id||
+                    "Unknown Coffee"}
                 </h3>
                 {(item.listing?.is_organic || item.is_organic) && (
                   <Badge
@@ -412,6 +326,8 @@ export default function MyOrdersPage() {
                   </Badge>
                 )}
               </div>
+
+              
             </div>
 
             <div className="text-right">
@@ -433,6 +349,8 @@ export default function MyOrdersPage() {
           </div>
 
           <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
+             
+            
             {isOrderTab && (
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
@@ -469,10 +387,10 @@ export default function MyOrdersPage() {
                       item.status === "completed"
                         ? "secondary"
                         : item.status === "confirmed"
-                          ? "default"
-                          : item.status === "pending"
-                            ? "warning"
-                            : "outline"
+                        ? "default"
+                        : item.status === "pending"
+                        ? "warning"
+                        : "outline"
                     }
                   >
                     {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
@@ -612,8 +530,8 @@ export default function MyOrdersPage() {
             {tabType === "current"
               ? "active orders"
               : tabType === "historical"
-                ? "order history"
-                : "favorites"}{" "}
+              ? "order history"
+              : "favorites"}{" "}
             found
           </h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-md">
@@ -621,16 +539,16 @@ export default function MyOrdersPage() {
               ? "Browse the marketplace to find and save your favorite coffee offerings."
               : "Head to the marketplace to place your first order of premium Ethiopian coffee."}
           </p>
-          <Link to={"/market-place"}>
           <Button className="mt-6 bg-green-600 hover:bg-green-700">
             Browse Marketplace
-          </Button></Link>
+          </Button>
         </CardContent>
       </Card>
     );
   };
 
   // Loading state component
+
 
   return (
     <div className="min-h-screen bg-primary/5 p-8">
@@ -745,7 +663,7 @@ export default function MyOrdersPage() {
 
                         {Array.from(
                           { length: activePagination.totalPages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -860,7 +778,7 @@ export default function MyOrdersPage() {
 
                         {Array.from(
                           { length: historyPagination.totalPages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -905,146 +823,21 @@ export default function MyOrdersPage() {
           </TabsContent>
 
           <TabsContent value="favorites" className="mt-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
+            <div className="flex justify-between items-center mb-4">
               <p className="text-sm text-muted-foreground font-medium">
-                {favoritesLoading
-                  ? "Loading..."
-                  : `${favorites.length} Favorited Items`}
+                {favorites.length} Favorited Items
               </p>
-
-              <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                <form
-                  onSubmit={handleFavoritesSearch}
-                  className="flex gap-2 w-full md:w-auto"
-                >
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search favorites..."
-                      value={favoritesSearchTerm}
-                      onChange={(e) => setFavoritesSearchTerm(e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    className="h-10"
-                  >
-                    Search
-                  </Button>
-                </form>
-              </div>
+              <Button variant="outline" size="sm" className="h-9">
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+              </Button>
             </div>
 
             <div className="space-y-5">
-              {favoritesLoading ? (
-                <LoadingState />
-              ) : favoritesError ? (
-                <Card className="p-6 text-center text-red-500">
-                  {favoritesError}
-                </Card>
-              ) : favorites.length > 0 ? (
-                <>
-                  {favorites.map((favorite) => (
-                    <Card key={favorite.id} className="overflow-hidden">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-lg font-semibold text-slate-800">
-                            {favorite.listing?.coffee_variety ||
-                              "Unknown Variety"}
-                          </h3>
-                          <div className="text-emerald-700 font-bold">
-                            ${favorite.listing?.price_per_kg.toFixed(2)}/kg
-                          </div>
-                        </div>
-                        <p className="text-slate-600 text-sm mb-2">
-                          {favorite.listing?.farm?.farm_name || "Unknown Farm"}
-                        </p>
-                        <div className="flex items-center text-slate-500 text-sm mb-4">
-                          <Map className="h-4 w-4 mr-1" />
-                          <span>
-                            {favorite.listing?.farm?.region},{" "}
-                            {favorite.listing?.farm?.country}
-                          </span>
-                        </div>
-                        <div className="flex items-center text-slate-500 text-sm mb-2">
-                          <Droplet className="h-4 w-4 mr-1" />
-                          <span>{favorite.listing?.processing_method}</span>
-                        </div>
-                        <div className="flex items-center text-slate-500 text-sm mb-2">
-                          <Coffee className="h-4 w-4 mr-1" />
-                          <span>{favorite.listing?.bean_type}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  {favoritesPagination.totalPages > 1 && (
-                    <Pagination className="mt-6">
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (favoritesCurrentPage > 1)
-                                setFavoritesCurrentPage(
-                                  favoritesCurrentPage - 1,
-                                );
-                            }}
-                            className={
-                              favoritesCurrentPage <= 1
-                                ? "pointer-events-none opacity-50"
-                                : ""
-                            }
-                          />
-                        </PaginationItem>
-
-                        {Array.from(
-                          { length: favoritesPagination.totalPages },
-                          (_, i) => i + 1,
-                        ).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setFavoritesCurrentPage(page);
-                              }}
-                              isActive={page === favoritesCurrentPage}
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-
-                        <PaginationItem>
-                          <PaginationNext
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (
-                                favoritesCurrentPage <
-                                favoritesPagination.totalPages
-                              )
-                                setFavoritesCurrentPage(
-                                  favoritesCurrentPage + 1,
-                                );
-                            }}
-                            className={
-                              favoritesCurrentPage >=
-                              favoritesPagination.totalPages
-                                ? "pointer-events-none opacity-50"
-                                : ""
-                            }
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  )}
-                </>
+              {favorites.length > 0 ? (
+                favorites.map((item) => (
+                  <OrderItem key={item.id} item={item} tabType="favorites" />
+                ))
               ) : (
                 <EmptyState tabType="favorites" />
               )}

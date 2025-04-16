@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,13 +14,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Form,
   FormControl,
   FormField,
@@ -31,29 +25,35 @@ import {
   farmDetailsSchema,
   type FarmDetailsFormData,
 } from "@/types/validation/seller-onboarding";
-import { useNavigate } from "react-router-dom";
 import { FileUpload } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Header from "@/components/layout/header";
 import { getFromLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AddFarm() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const { successMessage, errorMessage } = useNotification();
-  const [files, setFiles] = useState<File[]>([]);
-  const handleFilesSelected = (selectedFiles: File[]) => {
-    setFiles((prev) => [...prev, ...selectedFiles]);
-  };
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [govRegFiles, setGovRegFiles] = useState<File[]>([]);
+  const [landRightsFiles, setLandRightsFiles] = useState<File[]>([]);
 
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
       region: "",
-      longitude: "",
-      latitude: "",
+      longitude: 0,
+      latitude: 0,
       crop_type: "",
       crop_source: "",
       origin: "",
@@ -63,14 +63,86 @@ export default function AddFarm() {
       farm_name: "",
       town_location: "",
       country: "",
-      total_size_hectares: "",
-      coffee_area_hectares: "",
-      altitude_meters: "",
-      capacity_kg: "",
-      avg_annual_temp: "",
-      annual_rainfall_mm: "",
+      total_size_hectares: 0,
+      coffee_area_hectares: 0,
+      altitude_meters: 0,
+      capacity_kg: 0,
+      avg_annual_temp: 0,
+      annual_rainfall_mm: 0,
     },
   });
+
+  // Populate form data for editing
+  const populateForm = async (farmId: string) => {
+    try {
+      const response: any = await apiService().get(
+        `/sellers/farms/get-farm?farmId=${farmId}`
+      );
+      if (response.success) {
+        const farm = response.data.farm;
+
+        form.reset({
+          farm_name: farm.farm_name ?? "",
+          town_location: farm.town_location ?? "",
+          country: farm.country ?? "",
+          region: farm.region ?? "",
+          total_size_hectares: farm.total_size_hectares ?? 0,
+          coffee_area_hectares: farm.coffee_area_hectares ?? 0,
+          longitude: farm.longitude ?? 0,
+          latitude: farm.latitude ?? 0,
+          altitude_meters: farm.altitude_meters ?? 0,
+          crop_type: farm.crop_type ?? "",
+          crop_source: farm.crop_source ?? "",
+          origin: farm.origin ?? "",
+          tree_type: farm.tree_type ?? "",
+          tree_variety: farm.tree_variety ?? "",
+          soil_type: farm.soil_type ?? "",
+          capacity_kg: farm.capacity_kg ?? 0,
+          avg_annual_temp: farm.avg_annual_temp ?? 0,
+          annual_rainfall_mm: farm.annual_rainfall_mm ?? 0,
+        });
+
+        // Handle files (if any)
+        if (farm.kyc_documents) {
+          const govRegFilesTemp: File[] = [];
+          const landRightsFilesTemp: File[] = [];
+
+          await Promise.all(
+            farm.kyc_documents.map(async (doc: any) => {
+              const response = await fetch(doc.doc_url);
+              const blob = await response.blob();
+              const file = new File(
+                [blob],
+                doc.doc_url.split("/").pop() || "file",
+                {
+                  type: blob.type,
+                }
+              );
+
+              if (doc.doc_type === "government_registration") {
+                govRegFilesTemp.push(file);
+              } else if (doc.doc_type === "land_rights") {
+                landRightsFilesTemp.push(file);
+              }
+            })
+          );
+
+          setGovRegFiles(govRegFilesTemp);
+          setLandRightsFiles(landRightsFilesTemp);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching farm data:", error);
+      errorMessage("Failed to fetch farm data.");
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      setIsEditMode(true);
+      populateForm(id);
+    }
+  }, [id]);
 
   const onSubmit = async (data: FarmDetailsFormData) => {
     setIsSubmitting(true);
@@ -83,40 +155,59 @@ export default function AddFarm() {
         }
       }
 
-      files.forEach((file) => {
+      // Append government registration files
+      govRegFiles.forEach((file) => {
         formData.append("files", file);
       });
+
+      // Append land rights files
+      landRightsFiles.forEach((file) => {
+        formData.append("files", file);
+      });
+
       const userProfile: any = getFromLocalStorage("userProfile", {});
       let xfmrId = null;
-      if (userProfile && userProfile.userType == "seller") {
-        formData.append("sellerId", userProfile.id);
+      if (
+        userProfile &&
+        userProfile.userType === "seller" &&
+        isEditMode &&
+        id
+      ) {
+        formData.append("farmId", id);
       }
 
-      if (userProfile && userProfile.userType == "agent") {
+      if (userProfile && userProfile.userType === "agent") {
         const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
         xfmrId = farmerProfile.id ?? "";
       }
-      await apiService().postFormData(
-        "/sellers/farms/create-farm",
-        formData,
-        true,
-        xfmrId ? xfmrId : "",
-      );
-      successMessage("Farm added successfully!");
+
+      if (isEditMode) {
+        // Update existing listing
+        await apiService().patchFormData(
+          `/sellers/farms/update-farm`,
+          formData,
+          true,
+          xfmrId ? xfmrId : ""
+        );
+        successMessage("Farm updated successfully!");
+      } else {
+        // Create new listing
+        await apiService().postFormData(
+          `/sellers/farms/create-farm`,
+          formData,
+          true,
+          xfmrId ? xfmrId : ""
+        );
+        successMessage("Farm added successfully!");
+      }
+
       navigate("/seller-dashboard");
     } catch (error: any) {
-      console.log(error);
+      console.error("Error submitting form:", error);
       errorMessage(error as APIErrorResponse);
     } finally {
-      saveToLocalStorage("step-one", data);
       setIsSubmitting(false);
     }
-  };
-
-  const saveToLocalStorage = (key: string, value: any) => {
-    const existingData = JSON.parse(localStorage.getItem(key) || "[]");
-    const updatedData = [...existingData, value];
-    localStorage.setItem(key, JSON.stringify(updatedData));
   };
 
   return (
@@ -129,16 +220,20 @@ export default function AddFarm() {
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-8 shadow-lg px-8  rounded-md py-4 mt-8"
           >
-            {/* Document Upload Section */}
             <div className="mb-10">
               <div className="mb-2">
-                <h2 className="text-green-600 font-medium">Step 1</h2>
+                <h2 className="text-green-600 font-medium">
+                  {isEditMode ? "Edit Farm" : "Add Farm"}
+                </h2>
                 <h3 className="text-xl text-gray-900 font-semibold">
-                  Upload your farm documents
+                  {isEditMode
+                    ? "Update your farm details"
+                    : "Upload your farm documents"}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Upload a clear government registration and land rights
-                  document. Make sure text is readable and high-quality
+                  {isEditMode
+                    ? "Edit the details of your farm and save changes."
+                    : "Upload a clear government registration and land rights document. Make sure text is readable and high-quality."}
                 </p>
               </div>
 
@@ -153,20 +248,34 @@ export default function AddFarm() {
                   </CardHeader>
                   <CardContent>
                     <FileUpload
-                      onFilesSelected={handleFilesSelected}
+                      onFilesSelected={(selectedFiles: File[]) => {
+                        setGovRegFiles((prev) => [...prev, ...selectedFiles]);
+                      }}
                       maxFiles={5}
                       maxSizeMB={5}
+                      className="w-full"
                     />
+                    {govRegFiles.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium">Uploaded Files:</h4>
+                        <ul className="list-disc pl-5">
+                          {govRegFiles.map((file, index) => (
+                            <li key={index} className="text-sm">
+                              {file.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </CardContent>
                   <CardFooter className="flex justify-between">
                     <div className="text-sm text-muted-foreground">
-                      {files.length > 0
-                        ? `${files.length} file(s) selected`
+                      {govRegFiles.length > 0
+                        ? `${govRegFiles.length} file(s) selected`
                         : "No files selected"}
                     </div>
                   </CardFooter>
                 </Card>
-
                 <Card className="max-w-2xl mx-auto">
                   <CardHeader>
                     <CardTitle>Land right documents</CardTitle>
@@ -177,15 +286,33 @@ export default function AddFarm() {
                   </CardHeader>
                   <CardContent>
                     <FileUpload
-                      onFilesSelected={handleFilesSelected}
+                      onFilesSelected={(selectedFiles: File[]) => {
+                        setLandRightsFiles((prev) => [
+                          ...prev,
+                          ...selectedFiles,
+                        ]);
+                      }}
                       maxFiles={5}
                       maxSizeMB={5}
+                      className="w-full"
                     />
+                    {landRightsFiles.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium">Uploaded Files:</h4>
+                        <ul className="list-disc pl-5">
+                          {landRightsFiles.map((file, index) => (
+                            <li key={index} className="text-sm">
+                              {file.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </CardContent>
                   <CardFooter className="flex justify-between">
                     <div className="text-sm text-muted-foreground">
-                      {files.length > 0
-                        ? `${files.length} file(s) selected`
+                      {landRightsFiles.length > 0
+                        ? `${landRightsFiles.length} file(s) selected`
                         : "No files selected"}
                     </div>
                   </CardFooter>
@@ -196,11 +323,11 @@ export default function AddFarm() {
             {/* Farm Information Section */}
             <div className="mb-10">
               <h3 className="text-xl text-gray-900 font-semibold mb-2">
-                Check the farm information
+                Farm Information
               </h3>
               <p className="text-sm text-gray-600 mb-6">
-                Check and fill in details about your farm's location, size,
-                climate, and crops
+                Fill in details about your farm's location, size, climate, and
+                crops.
               </p>
 
               {/* Farm Location */}
@@ -303,7 +430,14 @@ export default function AddFarm() {
                       <FormItem>
                         <FormLabel>Longitude</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            } // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -316,7 +450,14 @@ export default function AddFarm() {
                       <FormItem>
                         <FormLabel>Latitude</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            } // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -329,7 +470,14 @@ export default function AddFarm() {
                       <FormItem>
                         <FormLabel>Altitude (meters)</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            } // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -396,7 +544,14 @@ export default function AddFarm() {
                       <FormItem>
                         <FormLabel>Crop Capacity (kg)</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            } // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -410,7 +565,14 @@ export default function AddFarm() {
                       <FormItem>
                         <FormLabel>Average Annual Temp</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            } // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -424,7 +586,14 @@ export default function AddFarm() {
                       <FormItem>
                         <FormLabel>Annual Rainfall (mm)</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            } // Convert to number
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -447,19 +616,23 @@ export default function AddFarm() {
                         <FormLabel>Tree Type</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value || ""} // Ensure value is never null or undefined
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select tree type" />
+                              <SelectValue
+                                placeholder={
+                                  field.value ? field.value : "Select tree type"
+                                }
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Shade-grown">
+                            <SelectItem value="shade_grown">
                               Shade-grown
                             </SelectItem>
-                            <SelectItem value="Sun-grown">Sun-grown</SelectItem>
-                            <SelectItem value="Mixed">Mixed</SelectItem>
+                            <SelectItem value="sun_grown">Sun-grown</SelectItem>
+                            <SelectItem value="mixed">Mixed</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -474,18 +647,24 @@ export default function AddFarm() {
                         <FormLabel>Tree Variety</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value || ""} // Ensure value is never null or undefined
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select tree variety" />
+                              <SelectValue
+                                placeholder={
+                                  field.value
+                                    ? field.value
+                                    : "Select tree variety"
+                                }
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Heirloom">Heirloom</SelectItem>
-                            <SelectItem value="Typica">Typica</SelectItem>
-                            <SelectItem value="Bourbon">Bourbon</SelectItem>
-                            <SelectItem value="Geisha">Geisha</SelectItem>
+                            <SelectItem value="heirloom">Heirloom</SelectItem>
+                            <SelectItem value="typica">Typica</SelectItem>
+                            <SelectItem value="bourbon">Bourbon</SelectItem>
+                            <SelectItem value="geisha">Geisha</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -509,20 +688,24 @@ export default function AddFarm() {
                         <FormLabel>Soil type</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value || ""} // Ensure value is never null or undefined
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select soil type" />
+                              <SelectValue
+                                placeholder={
+                                  field.value ? field.value : "Select soil type"
+                                }
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Volcanic loam">
+                            <SelectItem value="volcanic loam">
                               Volcanic loam
                             </SelectItem>
-                            <SelectItem value="Clay">Clay</SelectItem>
-                            <SelectItem value="Sandy">Sandy</SelectItem>
-                            <SelectItem value="Silty">Silty</SelectItem>
+                            <SelectItem value="clay">Clay</SelectItem>
+                            <SelectItem value="sandy">Sandy</SelectItem>
+                            <SelectItem value="silty">Silty</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -536,7 +719,13 @@ export default function AddFarm() {
             {/* Navigation Buttons */}
             <div className="flex justify-end mb-8">
               <Button type="submit" disabled={isSubmitting} className=" my-4">
-                {isSubmitting ? "Adding..." : "Add a new farm"}
+                {isSubmitting
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Adding..."
+                  : isEditMode
+                  ? "Update Farm"
+                  : "Add Farm"}
               </Button>
             </div>
           </form>
