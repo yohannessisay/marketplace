@@ -17,7 +17,7 @@ import { apiService } from "@/services/apiService";
 import { chatService } from "@/services/chatService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse, SocketChatMessage } from "@/types/api";
-import { getUserId } from "@/lib/utils";
+import { getUserId, getUserProfile } from "@/lib/utils";
 
 interface CoffeeDetailsProps {
   listing: CoffeeListing | null;
@@ -40,6 +40,7 @@ export function CoffeeDetails({
   >([]);
   const orderStatus = useOrderStatus(demoOrderStatus);
   const { errorMessage } = useNotification();
+  const user = getUserProfile();
 
   const handleFetchMessages = async () => {
     if (!listing || !listing.id) return;
@@ -274,11 +275,14 @@ export function CoffeeDetails({
               onChange={(e) => setChatMessage(e.target.value)}
               placeholder="Type your message..."
               className="flex-1"
+              disabled={user?.onboarding_stage !== "completed"}
             />
             <Button
               onClick={handleSendMessage}
               className="ml-3"
-              disabled={chatMessage == ""}
+              disabled={
+                chatMessage == "" || user?.onboarding_stage !== "completed"
+              }
             >
               <Send size={16} />
             </Button>
