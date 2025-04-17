@@ -1,8 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import ContactModal from "./contact-us";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Hero() {
+  const { isAuthenticated, user, loading } = useAuth();
+  const dashboardPath =
+    isAuthenticated && user
+      ? user.userType === "seller"
+        ? "/seller-dashboard"
+        : "/market-place"
+      : "/";
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-500 via-green-700 to-amber-800 flex flex-col">
       <div className="absolute inset-0 z-0">
@@ -24,14 +32,24 @@ export default function Hero() {
             </div>
           </Link>
           <div className="flex items-center space-x-4">
-            <Link to={"/login"}>
-              <Button className=" ">Login</Button>
-            </Link>
-            <Link to={"/registration"}>
-              <Button className="bg-white text-green-700 hover:bg-primary hover:text-white">
-                Sign Up
-              </Button>
-            </Link>
+            {loading ? (
+              <Button disabled>Loading...</Button>
+            ) : isAuthenticated ? (
+              <Link to={dashboardPath}>
+                <Button disabled={loading}>Dashboard</Button>
+              </Link>
+            ) : (
+              <>
+                <Link to={"/login"}>
+                  <Button>Login</Button>
+                </Link>
+                <Link to={"/registration"}>
+                  <Button className="bg-white text-green-700 hover:bg-primary hover:text-white">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -42,13 +60,13 @@ export default function Hero() {
             <h2 className="text-4xl md:text-6xl font-bold sm:text-amber-100 text-gray-900 mb-6">
               Premium coffee marketplace
             </h2>
-            <p className="text-xl text-amber-100 mb-8 backdrop-blur-md bg-white/10  rounded-md p-2">
+            <p className="text-xl text-amber-100 mb-8 backdrop-blur-md bg-white/10 rounded-md p-2">
               Connecting the world's finest coffee growers with global markets.
               Exceptional beans, sustainable practices, and reliable delivery.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <ContactModal></ContactModal>
-              <Link to={"/market-place"}>
+              <ContactModal />
+              <Link to="/market-place">
                 <Button className="bg-white text-green-700 hover:bg-primary hover:text-white">
                   Marketplace
                 </Button>
@@ -58,7 +76,6 @@ export default function Hero() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="backdrop-blur-md bg-black/20 border-t border-white/20 py-6">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
