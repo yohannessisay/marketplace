@@ -88,12 +88,6 @@ export default function CoffeeListingPage() {
     }
   };
 
-  const handleSubmitReview = () => {
-    console.log("Submitting review");
-    setDemoOrderStatus("completed");
-    setShowReviewModal(false);
-  };
-
   return (
     <div className="bg-primary/5 p-8 min-h-screen">
       <Header
@@ -150,7 +144,8 @@ export default function CoffeeListingPage() {
       {showReviewModal && (
         <ReviewModal
           onClose={() => setShowReviewModal(false)}
-          onSubmit={handleSubmitReview}
+          orderId=""
+          sellerId={listing?.seller_id}
         />
       )}
     </div>

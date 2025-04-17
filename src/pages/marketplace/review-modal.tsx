@@ -50,9 +50,9 @@ export function ReviewModal({ orderId, sellerId, onClose }: ReviewModalProps) {
 
     setIsSubmitting(true);
     try {
-      await apiService().post("/reviews", {
-        order_id: orderId,
-        seller_id: sellerId,
+      await apiService().post("/buyers/ratings/rate-farmer", {
+        orderId,
+        sellerId,
         rating,
         comment: reviewComment.trim(),
       });

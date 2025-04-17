@@ -375,33 +375,6 @@ export default function SignupPage() {
                   )}
                 />
 
-                <FormField
-                  control={sellerForm.control}
-                  name="productCategory"
-                  render={({ field }) => (
-                    <FormItem id="productCategory">
-                      <FormLabel>Product Category</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="coffee">Coffee</SelectItem>
-                          <SelectItem value="spices">Spices</SelectItem>
-                          <SelectItem value="textiles">Textiles</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 {/* Submit Button */}
                 <Button
                   type="submit"

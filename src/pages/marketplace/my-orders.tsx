@@ -1,5 +1,6 @@
-import type React from "react";
+"use client";
 
+import type React from "react";
 import { useState, useEffect } from "react";
 import {
   Calendar,
@@ -15,7 +16,7 @@ import {
   Circle,
   AlertCircle,
   Search,
-  Coffee, // <-- add this import
+  Coffee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,8 +38,8 @@ import Header from "@/components/layout/header";
 import { LoadingState } from "@/components/common/loading";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
+import { ReviewModal } from "./review-modal";
 
-// Types for API response
 interface Seller {
   first_name?: string;
   last_name?: string;
@@ -81,7 +82,6 @@ interface Order {
   created_at: string;
   updated_at: string | null;
   created_by_agent_id: string | null;
-  // Additional fields we might get from the API
   listing?: Listing;
   seller?: Seller;
 }
@@ -93,17 +93,26 @@ interface PaginationData {
   totalPages: number;
 }
 
+interface Favorite {
+  id: string;
+  listing_id: string;
+  created_at: string;
+  updated_at: string | null;
+  listing?: Listing;
+}
+
 export default function MyOrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
-  const [favorites, setFavorites] = useState<any[]>([]);
-  const [favoritesPagination, setFavoritesPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 10,
-    totalItems: 0,
-    totalPages: 0,
-  });
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [favoritesPagination, setFavoritesPagination] =
+    useState<PaginationData>({
+      page: 1,
+      limit: 10,
+      totalItems: 0,
+      totalPages: 0,
+    });
   const [favoritesCurrentPage, setFavoritesCurrentPage] = useState<number>(1);
   const [favoritesLoading, setFavoritesLoading] = useState<boolean>(true);
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
@@ -128,54 +137,39 @@ export default function MyOrdersPage() {
   const [activeSearchTerm, setActiveSearchTerm] = useState<string>("");
   const [historySearchTerm, setHistorySearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("current");
+  const [reviewModalData, setReviewModalData] = useState<{
+    orderId: string;
+    sellerId: string | undefined;
+  } | null>(null); // State for ReviewModal
 
-  // Track favorite loading state per listing
   const [favoriteLoading, setFavoriteLoading] = useState<{
     [listingId: string]: boolean;
   }>({});
-  // Track favorite state per listing (for demo, you may want to sync with backend/favorites)
+
   const [favoriteState, setFavoriteState] = useState<{
     [listingId: string]: boolean;
   }>({});
 
- 
-  // Remove favorite (for favorites tab, use favorite.id)
-  const removeFavorite = async (favoriteId: string, listingId?: string) => {
-    if (!favoriteId) return;
-    setFavoriteLoading((prev) => ({ ...prev, [listingId || favoriteId]: true }));
-    try {
-      const response: any = await apiService().post(
-        `/buyers/listings/favorites/remove-favorite-listing?listingId=${favoriteId}`,{}
-      );
-      if (response && response.data) {
-        setFavoriteState((prev) => ({ ...prev, [listingId || favoriteId]: false }));
-        successMessage("Removed from favorites");
-        // Optionally refetch favorites
-        fetchFavorites();
-      }
-    } catch (error: unknown) {
-      const errorResponse = error as APIErrorResponse;
-      errorMessage(errorResponse);
-    } finally {
-      setFavoriteLoading((prev) => ({ ...prev, [listingId || favoriteId]: false }));
-    }
-  };
+  const { successMessage, errorMessage } = useNotification();
 
-  // Fetch active orders from API
+  // Fetch active orders
   useEffect(() => {
     const fetchActiveOrders = async () => {
       setActiveLoading(true);
       try {
-        const response: any = await apiService().get(`/orders/active-orders`);
-
+        const response: any = await apiService().get(
+          `/orders/active-orders?page=${activeCurrentPage}&limit=${activePagination.limit}&search=${encodeURIComponent(activeSearchTerm)}`,
+        );
         if (response.success) {
           setActiveOrders(response.data.orders);
           setActivePagination(response.data.pagination);
         } else {
           setActiveError("Failed to fetch active orders");
         }
-      } catch (err: any) {
-        setHistoryError(err.data.error.message);
+      } catch (err: unknown) {
+        const errorResponse = err as APIErrorResponse;
+        setActiveError(errorResponse.error?.message || "An error occurred");
+        errorMessage(errorResponse);
       } finally {
         setActiveLoading(false);
       }
@@ -186,21 +180,24 @@ export default function MyOrdersPage() {
     }
   }, [activeCurrentPage, activeSearchTerm, activeTab]);
 
-  // Fetch historical orders from API
+  // Fetch historical orders
   useEffect(() => {
     const fetchHistoricalOrders = async () => {
       setHistoryLoading(true);
       try {
-        const response: any = await apiService().get(`/orders/order-history`);
-
+        const response: any = await apiService().get(
+          `/orders/order-history?page=${historyCurrentPage}&limit=${historyPagination.limit}&search=${encodeURIComponent(historySearchTerm)}`,
+        );
         if (response.success) {
           setHistoricalOrders(response.data.orders);
           setHistoryPagination(response.data.pagination);
         } else {
           setHistoryError("Failed to fetch order history");
         }
-      } catch (err: any) {
-        setHistoryError(err.data.error.message);
+      } catch (err: unknown) {
+        const errorResponse = err as APIErrorResponse;
+        setHistoryError(errorResponse.error?.message || "An error occurred");
+        errorMessage(errorResponse);
       } finally {
         setHistoryLoading(false);
       }
@@ -211,85 +208,206 @@ export default function MyOrdersPage() {
     }
   }, [historyCurrentPage, historySearchTerm, activeTab]);
 
-  // Fetch favorite items from API (with pagination)
-  const fetchFavorites = async () => {
-    setFavoritesLoading(true);
-    try {
-      const response: any = await apiService().get(
-        `/buyers/listings/favorites/get-favorite-listings?page=${favoritesCurrentPage}&limit=10`
-      );
-      if (response.success) {
-        setFavorites(response.data.favorites);
-        setFavoritesPagination(response.data.pagination || {
-          page: 1,
-          limit: 10,
-          totalItems: response.data.favorites?.length || 0,
-          totalPages: 1,
-        });
-      } else {
-        setFavoritesError("Failed to fetch favorites");
-      }
-    } catch (err: any) {
-      setFavoritesError(err.data?.error?.message || "An error occurred");
-    } finally {
-      setFavoritesLoading(false);
-    }
-  };
-
+  // Fetch favorite items and initialize favoriteLoading
   useEffect(() => {
+    const fetchFavorites = async () => {
+      setFavoritesLoading(true);
+      try {
+        const response: any = await apiService().get(
+          `/buyers/listings/favorites/get-favorite-listings?page=${favoritesCurrentPage}&limit=${favoritesPagination.limit}`,
+        );
+        if (response.success) {
+          const fetchedFavorites: Favorite[] = response.data.favorites;
+          setFavorites(fetchedFavorites);
+          setFavoritesPagination(
+            response.data.pagination || {
+              page: 1,
+              limit: 10,
+              totalItems: fetchedFavorites.length,
+              totalPages: Math.ceil(fetchedFavorites.length / 10),
+            },
+          );
+
+          // Initialize favoriteLoading with false for all favorites
+          const loadingState: { [listingId: string]: boolean } = {};
+          fetchedFavorites.forEach((favorite) => {
+            loadingState[favorite.listing_id] = false;
+          });
+          setFavoriteLoading(loadingState);
+
+          // Initialize favoriteState
+          const favoriteStateUpdate: { [listingId: string]: boolean } = {};
+          fetchedFavorites.forEach((favorite) => {
+            favoriteStateUpdate[favorite.listing_id] = true;
+          });
+          setFavoriteState(favoriteStateUpdate);
+        } else {
+          setFavoritesError("Failed to fetch favorites");
+        }
+      } catch (err: unknown) {
+        const errorResponse = err as APIErrorResponse;
+        setFavoritesError(errorResponse.error?.message || "An error occurred");
+        errorMessage(errorResponse);
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+
     if (activeTab === "favorites") {
       fetchFavorites();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, favoritesCurrentPage]);
+  }, [activeTab, favoritesCurrentPage, favoritesPagination.limit]);
 
-  // Toggle order expansion
   const toggleOrderExpansion = (orderId: string) => {
-    if (expandedOrderId === orderId) {
-      setExpandedOrderId(null);
-    } else {
-      setExpandedOrderId(orderId);
-    }
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
   // Handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    setExpandedOrderId(null); // Collapse any expanded order when switching tabs
   };
 
   // Handle search for active orders
   const handleActiveSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setActiveCurrentPage(1); // Reset to first page when searching
+    setActiveCurrentPage(1);
   };
 
   // Handle search for historical orders
   const handleHistorySearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setHistoryCurrentPage(1); // Reset to first page when searching
+    setHistoryCurrentPage(1);
   };
-  const { successMessage, errorMessage } = useNotification();
-  const deleteOrder = async (id: string) => {
-    if (!id) return;
+
+  const removeFavorite = async (favoriteId: string, listingId?: string) => {
+    if (!favoriteId) {
+      errorMessage({
+        success: false,
+        error: {
+          message: "Invalid favorite ID",
+          details: "No favorite ID provided",
+          code: 400,
+        },
+      });
+      return;
+    }
+
+    setFavoriteLoading((prev) => ({
+      ...prev,
+      [listingId || favoriteId]: true,
+    }));
 
     try {
-      const response = await apiService().delete<{
-        data: { messages: Array<any> };
-      }>(`/buyers/bids/delete-bid?bidId=${id}`);
+      await apiService().post(
+        `/buyers/listings/favorites/remove-favorite-listing?favoritesId=${favoriteId}`,
+        {},
+      );
 
-      if (response && response.data) {
-        successMessage("Order cancelled successfully");
+      // Immediately update the favorites list
+      setFavorites((prev) =>
+        prev.filter((favorite) => favorite.id !== favoriteId),
+      );
+
+      // Update pagination
+      setFavoritesPagination((prev) => {
+        const newTotalItems = Math.max(0, prev.totalItems - 1);
+        const newTotalPages = Math.ceil(newTotalItems / prev.limit);
+        return {
+          ...prev,
+          totalItems: newTotalItems,
+          totalPages: newTotalPages,
+          page:
+            favoritesCurrentPage > newTotalPages && newTotalPages > 0
+              ? newTotalPages
+              : prev.page,
+        };
+      });
+
+      // Update favorite state
+      if (listingId) {
+        setFavoriteState((prev) => ({
+          ...prev,
+          [listingId]: false,
+        }));
       }
+
+      // Clean up favoriteLoading
+      setFavoriteLoading((prev) => {
+        const newLoading = { ...prev };
+        if (listingId || favoriteId) {
+          delete newLoading[listingId || favoriteId];
+        }
+        return newLoading;
+      });
+
+      successMessage("Removed from favorites");
     } catch (error: unknown) {
-      console.error("[CoffeeDetails] Fetch messages error:", error);
+      const errorResponse = error as APIErrorResponse;
+      errorMessage(errorResponse);
+    } finally {
+      setFavoriteLoading((prev) => ({
+        ...prev,
+        [listingId || favoriteId]: false,
+      }));
+    }
+  };
+
+  const deleteOrder = async (orderId: string) => {
+    if (!orderId) {
+      errorMessage({
+        success: false,
+        error: {
+          message: "Invalid order ID",
+          details: "No order ID provided",
+          code: 400,
+        },
+      });
+      return;
+    }
+
+    try {
+      await apiService().post(`/orders/cancel-order?orderId=${orderId}`, {});
+
+      // Immediately update activeOrders to remove the cancelled order
+      setActiveOrders((prev) => prev.filter((order) => order.id !== orderId));
+
+      // Update pagination
+      setActivePagination((prev) => {
+        const newTotalItems = Math.max(0, prev.totalItems - 1);
+        const newTotalPages = Math.ceil(newTotalItems / prev.limit);
+        return {
+          ...prev,
+          totalItems: newTotalItems,
+          totalPages: newTotalPages,
+          page:
+            activeCurrentPage > newTotalPages && newTotalPages > 0
+              ? newTotalPages
+              : prev.page,
+        };
+      });
+
+      // Collapse the expanded order if it was the cancelled one
+      if (expandedOrderId === orderId) {
+        setExpandedOrderId(null);
+      }
+
+      successMessage("Order cancelled successfully");
+    } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
       errorMessage(errorResponse);
     }
   };
+
+  // Open review modal
+  const openReviewModal = (orderId: string, sellerId: string | undefined) => {
+    setReviewModalData({ orderId, sellerId });
+  };
+
   // Render order status progress
   const renderOrderProgress = (order: Order) => {
     const steps = [
-      { key: "order_placed", label: "Order Placed", completed: true }, // Order exists, so it's placed
+      { key: "order_placed", label: "Order Placed", completed: true },
       {
         key: "contract_signed",
         label: "Contract Signed",
@@ -327,7 +445,6 @@ export default function MyOrdersPage() {
       },
     ];
 
-    // Find the current step (first incomplete step)
     const currentStepIndex = steps.findIndex((step) => !step.completed);
 
     return (
@@ -336,7 +453,6 @@ export default function MyOrdersPage() {
           <h4 className="text-sm font-semibold mb-4">Order Progress</h4>
           <div className="space-y-4">
             {steps.map((step, index) => {
-              // Determine the step status
               let statusClass = "";
               let StatusIcon = Circle;
 
@@ -361,8 +477,8 @@ export default function MyOrdersPage() {
                       step.completed
                         ? "text-foreground"
                         : index === currentStepIndex
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground"
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {step.label}
@@ -386,17 +502,22 @@ export default function MyOrdersPage() {
     );
   };
 
-  // Order item component
-  const OrderItem = ({ item, tabType }: { item: any; tabType: string }) => {
+  const OrderItem = ({
+    item,
+    tabType,
+  }: {
+    item: Order | Favorite;
+    tabType: string;
+  }) => {
     const isOrderTab = tabType === "current" || tabType === "historical";
     const isFavorite = tabType === "favorites";
     const isExpanded = expandedOrderId === item.id;
 
-    // For favorites, the structure is { id, listing_id, ..., listing: { ... } }
-    const listing = isFavorite ? item.listing : item.listing || {};
+    const listing = isFavorite
+      ? (item as Favorite).listing
+      : (item as Order).listing || {};
     const listingId = listing?.id;
     const favoriteId = isFavorite ? item.id : undefined;
-    const isFavorited = favoriteState[listingId] ?? true; // In favorites tab, always true
 
     return (
       <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
@@ -407,9 +528,10 @@ export default function MyOrdersPage() {
                 <h3 className="font-bold text-lg">
                   {isFavorite
                     ? listing?.coffee_variety || "Unknown Coffee"
-                    : item.order_id || "Unknown Coffee"}
+                    : (item as Order).order_id || "Unknown Order"}
                 </h3>
-                {(listing?.is_organic || item.is_organic) && (
+                {(listing?.is_organic ||
+                  (item as Order).listing?.is_organic) && (
                   <Badge
                     variant="outline"
                     className="ml-2 bg-green-500 text-white border-0"
@@ -423,13 +545,13 @@ export default function MyOrdersPage() {
               <div className="font-bold text-lg text-green-600">
                 $
                 {isOrderTab
-                  ? item.unit_price?.toFixed(2)
-                  : listing?.price_per_kg?.toFixed(2)}
+                  ? (item as Order).unit_price?.toFixed(2)
+                  : listing?.price_per_kg?.toFixed(2) || "N/A"}
                 /kg
               </div>
               <div className="text-sm text-muted-foreground">
                 {isOrderTab
-                  ? `${item.quantity_kg.toLocaleString()} kg`
+                  ? `${(item as Order).quantity_kg.toLocaleString()} kg`
                   : `${listing?.quantity_kg?.toLocaleString() || "Unknown"} kg available`}
               </div>
             </div>
@@ -440,7 +562,8 @@ export default function MyOrdersPage() {
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
                 <span>
-                  Ordered: {new Date(item.created_at).toLocaleDateString()}
+                  Ordered:{" "}
+                  {new Date((item as Order).created_at).toLocaleDateString()}
                 </span>
               </div>
             )}
@@ -453,12 +576,12 @@ export default function MyOrdersPage() {
                 <div className="flex items-center">
                   <User className="h-4 w-4 mr-1 text-muted-foreground" />
                   <span className="text-sm font-medium">
-                    {item.seller?.first_name || "Unknown"}{" "}
-                    {item.seller?.last_name || ""}
+                    {(item as Order).seller?.first_name || "Unknown"}{" "}
+                    {(item as Order).seller?.last_name || ""}
                   </span>
-                  {item.seller && (
+                  {(item as Order).seller && (
                     <Link
-                      to={`/sellers/${item.seller.first_name?.toLowerCase()}-${item.seller.last_name?.toLowerCase()}`}
+                      to={`/sellers/${(item as Order).seller!.first_name?.toLowerCase()}-${(item as Order).seller!.last_name?.toLowerCase()}`}
                       className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
                     >
                       View Seller
@@ -469,16 +592,17 @@ export default function MyOrdersPage() {
                 <div className="flex items-center gap-2">
                   <Badge
                     variant={
-                      item.status === "completed"
+                      (item as Order).status === "completed"
                         ? "secondary"
-                        : item.status === "confirmed"
-                        ? "default"
-                        : item.status === "pending"
-                        ? "warning"
-                        : "outline"
+                        : (item as Order).status === "confirmed"
+                          ? "default"
+                          : (item as Order).status === "pending"
+                            ? "warning"
+                            : "outline"
                     }
                   >
-                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                    {(item as Order).status.charAt(0).toUpperCase() +
+                      (item as Order).status.slice(1)}
                   </Badge>
                   <Button
                     variant="ghost"
@@ -496,7 +620,6 @@ export default function MyOrdersPage() {
             </>
           )}
 
-          {/* Expandable section with order details */}
           {isOrderTab && isExpanded && (
             <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
               <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -506,19 +629,19 @@ export default function MyOrdersPage() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Order ID:</span>
                       <span className="font-medium">
-                        {item.order_id || item.id}
+                        {(item as Order).order_id || item.id}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Unit Price:</span>
                       <span className="font-medium">
-                        ${item.unit_price.toFixed(2)}/kg
+                        ${(item as Order).unit_price.toFixed(2)}/kg
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Quantity:</span>
                       <span className="font-medium">
-                        {item.quantity_kg.toLocaleString()} kg
+                        {(item as Order).quantity_kg.toLocaleString()} kg
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -526,7 +649,7 @@ export default function MyOrdersPage() {
                         Total Amount:
                       </span>
                       <span className="font-bold text-green-600">
-                        ${item.total_amount.toLocaleString()}
+                        ${(item as Order).total_amount.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -540,13 +663,13 @@ export default function MyOrdersPage() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Address:</span>
                       <span className="font-medium">
-                        {item.ship_adrs || "N/A"}
+                        {(item as Order).ship_adrs || "N/A"}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Zip Code:</span>
                       <span className="font-medium">
-                        {item.ship_zipcode || "N/A"}
+                        {(item as Order).ship_zipcode || "N/A"}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -554,24 +677,22 @@ export default function MyOrdersPage() {
                         Instructions:
                       </span>
                       <span className="font-medium">
-                        {item.ship_instructions || "None"}
+                        {(item as Order).ship_instructions || "None"}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Render order progress for current orders */}
-              {tabType === "current" && renderOrderProgress(item)}
+              {tabType === "current" && renderOrderProgress(item as Order)}
 
               <div className="mt-4 flex justify-end space-x-3">
                 {tabType === "current" && (
                   <>
                     <Button
-                      variant={"destructive"}
-                      onClick={() => {
-                        deleteOrder(expandedOrderId ?? "");
-                      }}
+                      variant="destructive"
+                      onClick={() => deleteOrder(item.id)}
+                      disabled={activeLoading}
                     >
                       Cancel Order
                     </Button>
@@ -584,7 +705,14 @@ export default function MyOrdersPage() {
                 )}
                 {tabType === "historical" && (
                   <>
-                    <Button variant="outline">Review Order</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        openReviewModal(item.id, (item as Order).seller_id)
+                      }
+                    >
+                      Review Order
+                    </Button>
                     <Button className="bg-green-600 hover:bg-green-700">
                       Order Again
                       <ArrowRight className="ml-1 h-4 w-4" />
@@ -595,20 +723,17 @@ export default function MyOrdersPage() {
             </div>
           )}
 
-          {/* Actions for favorites */}
-          {isFavorite ? (
+          {isFavorite && (
             <div className="mt-4 flex justify-end space-x-3">
               <Button
                 variant="outline"
-                disabled={favoriteLoading[favoriteId || listingId]}
-                onClick={() => removeFavorite(favoriteId, listingId)}
+                disabled={favoriteLoading[favoriteId || listingId || ""]}
+                onClick={() => removeFavorite(favoriteId!, listingId)}
               >
-                Remove from Favorites
+                {favoriteLoading[favoriteId || listingId || ""]
+                  ? "Removing..."
+                  : "Remove from Favorites"}
               </Button>
-            </div>
-          ) : (
-            <div className="mt-4 flex justify-end space-x-3">
-              <Button variant="outline">Remove</Button>
               <Button className="bg-green-600 hover:bg-green-700">
                 Place Order
                 <ArrowRight className="ml-1 h-4 w-4" />
@@ -617,11 +742,8 @@ export default function MyOrdersPage() {
           )}
           <div className="flex items-center text-slate-500 text-sm mb-2">
             <Coffee className="h-4 w-4 mr-1" />
-            <span>{listing?.bean_type}</span>
+            <span>{listing?.bean_type || "Unknown"}</span>
           </div>
-          {/* --- FAVORITE ICON ONLY --- */}
-       
-          {/* --- END FAVORITE ICON ONLY --- */}
         </CardContent>
       </Card>
     );
@@ -640,8 +762,8 @@ export default function MyOrdersPage() {
             {tabType === "current"
               ? "active orders"
               : tabType === "historical"
-              ? "order history"
-              : "favorites"}{" "}
+                ? "order history"
+                : "favorites"}{" "}
             found
           </h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-md">
@@ -649,8 +771,7 @@ export default function MyOrdersPage() {
               ? "Browse the marketplace to find and save your favorite coffee offerings."
               : "Head to the marketplace to place your first order of premium Ethiopian coffee."}
           </p>
-          <Link to={"/market-place"}>
-            {" "}
+          <Link to="/market-place">
             <Button className="mt-6 bg-green-600 hover:bg-green-700">
               Browse Marketplace
             </Button>
@@ -660,20 +781,14 @@ export default function MyOrdersPage() {
     );
   };
 
-  // Loading state component
-
   return (
     <div className="min-h-screen bg-primary/5 p-8">
-      {/* Header */}
-      <Header></Header>
-
-      {/* Main content */}
+      <Header />
       <main className="container mx-auto px-4 py-6 max-w-5xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Orders</h1>
         </div>
 
-        {/* Tabs */}
         <Tabs
           defaultValue="current"
           className="mb-6"
@@ -710,11 +825,10 @@ export default function MyOrdersPage() {
                   ? "Loading..."
                   : `${activeOrders.length} Active Orders`}
               </p>
-
-              <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto ">
+              <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleActiveSearch}
-                  className="flex gap-2 w-full md:w-auto "
+                  className="flex gap-2 w-full md:w-auto"
                 >
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -753,7 +867,6 @@ export default function MyOrdersPage() {
                   {activeOrders.map((item) => (
                     <OrderItem key={item.id} item={item} tabType="current" />
                   ))}
-
                   {activePagination.totalPages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
@@ -772,10 +885,9 @@ export default function MyOrdersPage() {
                             }
                           />
                         </PaginationItem>
-
                         {Array.from(
                           { length: activePagination.totalPages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -790,7 +902,6 @@ export default function MyOrdersPage() {
                             </PaginationLink>
                           </PaginationItem>
                         ))}
-
                         <PaginationItem>
                           <PaginationNext
                             href="#"
@@ -825,7 +936,6 @@ export default function MyOrdersPage() {
                   ? "Loading..."
                   : `${historicalOrders.length} Past Orders`}
               </p>
-
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleHistorySearch}
@@ -868,7 +978,6 @@ export default function MyOrdersPage() {
                   {historicalOrders.map((item) => (
                     <OrderItem key={item.id} item={item} tabType="historical" />
                   ))}
-
                   {historyPagination.totalPages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
@@ -887,10 +996,9 @@ export default function MyOrdersPage() {
                             }
                           />
                         </PaginationItem>
-
                         {Array.from(
                           { length: historyPagination.totalPages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -905,7 +1013,6 @@ export default function MyOrdersPage() {
                             </PaginationLink>
                           </PaginationItem>
                         ))}
-
                         <PaginationItem>
                           <PaginationNext
                             href="#"
@@ -965,10 +1072,12 @@ export default function MyOrdersPage() {
                         <PaginationItem>
                           <PaginationPrevious
                             href="#"
-                            onClick={e => {
+                            onClick={(e) => {
                               e.preventDefault();
                               if (favoritesCurrentPage > 1)
-                                setFavoritesCurrentPage(favoritesCurrentPage - 1);
+                                setFavoritesCurrentPage(
+                                  favoritesCurrentPage - 1,
+                                );
                             }}
                             className={
                               favoritesCurrentPage <= 1
@@ -979,12 +1088,12 @@ export default function MyOrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: favoritesPagination.totalPages },
-                          (_, i) => i + 1
-                        ).map(page => (
+                          (_, i) => i + 1,
+                        ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
                               href="#"
-                              onClick={e => {
+                              onClick={(e) => {
                                 e.preventDefault();
                                 setFavoritesCurrentPage(page);
                               }}
@@ -997,16 +1106,19 @@ export default function MyOrdersPage() {
                         <PaginationItem>
                           <PaginationNext
                             href="#"
-                            onClick={e => {
+                            onClick={(e) => {
                               e.preventDefault();
                               if (
                                 favoritesCurrentPage <
                                 favoritesPagination.totalPages
                               )
-                                setFavoritesCurrentPage(favoritesCurrentPage + 1);
+                                setFavoritesCurrentPage(
+                                  favoritesCurrentPage + 1,
+                                );
                             }}
                             className={
-                              favoritesCurrentPage >= favoritesPagination.totalPages
+                              favoritesCurrentPage >=
+                              favoritesPagination.totalPages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -1022,6 +1134,15 @@ export default function MyOrdersPage() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Render ReviewModal */}
+        {reviewModalData && (
+          <ReviewModal
+            orderId={reviewModalData.orderId}
+            sellerId={reviewModalData.sellerId}
+            onClose={() => setReviewModalData(null)}
+          />
+        )}
       </main>
     </div>
   );
