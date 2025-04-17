@@ -46,7 +46,7 @@ export const coffeeCropsSchema = z.object({
 
   // Crop Specification 
   processing_method: z.string().min(1, "Processing method is required"),
-  moisture_percentage: z.string().min(1, "Moisture is required"),
+  moisture_percentage: z.number().min(1, "Moisture is required"),
   screen_size: z.number().min(1, "Screen size is required"),
   drying_method: z.string().min(1, "Drying method is required"),
   wet_mill: z.string().min(1, "Wet mill is required"),

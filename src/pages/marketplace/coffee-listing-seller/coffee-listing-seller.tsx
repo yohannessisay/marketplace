@@ -992,13 +992,7 @@ export default function CoffeeListingSellerView() {
                           </TableCell>
                           <TableCell className="">
                             <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-emerald-600 h-8"
-                              >
-                                View
-                              </Button>
+                         
                               {bid.status === "pending" && (
                                 <Button
                                   variant="ghost"

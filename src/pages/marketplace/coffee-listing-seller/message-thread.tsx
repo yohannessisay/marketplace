@@ -88,16 +88,7 @@ export function MessageThread({
     updateThreads(updatedThreads);
     setChatMessage("");
 
-    try {
-      console.log(
-        "Sending message:",
-        chatMessage,
-        "to recipient:",
-        recipientId,
-        "for thread:",
-        activeMessageThread,
-      );
-
+    try { 
       // Send the message via chatService
       await chatService().sendMessage({
         recipientId,

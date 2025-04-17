@@ -18,7 +18,7 @@ import { apiService } from "@/services/apiService";
 import SampleRequestModal from "./sample-request-modal";
 import { Link } from "react-router-dom";
 import { ApiResponse, CoffeeListing, CoffeePhoto } from "@/types/coffee";
-import { getUserProfile } from "@/lib/utils";
+import { getFromLocalStorage, getUserProfile } from "@/lib/utils";
 
 function CoffeeImage({
   src,
@@ -70,6 +70,7 @@ export default function ListingDetailModal({
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = React.useState(0);
+  const loggedInUser: any = getFromLocalStorage("userProfile", {});
   const [showSampleRequestModal, setShowSampleRequestModal] =
     React.useState(false);
   const user = getUserProfile();
@@ -81,7 +82,7 @@ export default function ListingDetailModal({
 
       try {
         const response = await apiService().get<ApiResponse>(
-          `/marketplace/listings/get-listing?listingId=${listingId}`,
+          `/marketplace/listings/get-listing?listingId=${listingId}`
         );
 
         if (
@@ -131,7 +132,7 @@ export default function ListingDetailModal({
     if (listing) {
       const photos = getPhotos(listing);
       setCurrentPhotoIndex(
-        (prevIndex) => (prevIndex - 1 + photos.length) % photos.length,
+        (prevIndex) => (prevIndex - 1 + photos.length) % photos.length
       );
     }
   };
@@ -348,7 +349,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_acidity,
+                            listing.cup_taste_acidity
                           )}
                           className="h-2"
                         />
@@ -376,7 +377,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_sweetness,
+                            listing.cup_taste_sweetness
                           )}
                           className="h-2"
                         />
@@ -392,7 +393,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_aftertaste,
+                            listing.cup_taste_aftertaste
                           )}
                           className="h-2"
                         />
@@ -408,7 +409,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_balance,
+                            listing.cup_taste_balance
                           )}
                           className="h-2"
                         />
@@ -492,7 +493,7 @@ export default function ListingDetailModal({
                         <p className="text-sm text-slate-500">Readiness Date</p>
                         <p className="font-medium">
                           {new Date(
-                            listing.readiness_date,
+                            listing.readiness_date
                           ).toLocaleDateString()}
                         </p>
                       </div>
@@ -505,14 +506,18 @@ export default function ListingDetailModal({
                 </Card>
 
                 <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                  <Button
-                    variant="outline"
-                    className="w-full sm:flex-1 px-4 py-2"
-                    onClick={() => setShowSampleRequestModal(true)}
-                    disabled={user?.onboarding_stage !== "completed"}
-                  >
-                    Request Samples
-                  </Button>
+                  {loggedInUser.userType !== "seller" ? (
+                    <Button
+                      variant="outline"
+                      className="w-full sm:flex-1 px-4 py-2"
+                      onClick={() => setShowSampleRequestModal(true)}
+                      disabled={user?.onboarding_stage !== "completed"}
+                    >
+                      Request Samples
+                    </Button>
+                  ) : (
+                    <></>
+                  )}
                   <Link
                     to={`/listing/${listingId}`}
                     className="w-full sm:flex-1"
@@ -521,7 +526,9 @@ export default function ListingDetailModal({
                       disabled={user?.onboarding_stage !== "completed"}
                       className="w-full sm:flex-1 px-4 py-2"
                     >
-                      Place Order Now
+                      {loggedInUser.userType === "seller"
+                        ? "View Listing"
+                        : "Place Order Now"}
                     </Button>
                   </Link>
                 </div>

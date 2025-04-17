@@ -40,8 +40,7 @@ class ChatService {
       reconnectionDelay: 1000,
     });
 
-    this.socket.on("connect", () => {
-      console.log("Socket.IO connected:", this.socket?.id);
+    this.socket.on("connect", () => { 
     });
 
     this.socket.on("connect_error", (error) => {
@@ -64,8 +63,7 @@ class ChatService {
       });
     });
 
-    this.socket.on("disconnect", (reason) => {
-      console.log("Socket.IO disconnected:", reason);
+    this.socket.on("disconnect", () => { 
     });
   }
 
@@ -103,8 +101,7 @@ class ChatService {
   disconnect(): void {
     if (this.socket) {
       this.socket.disconnect();
-      this.socket = null;
-      console.log("Socket.IO manually disconnected");
+      this.socket = null; 
     }
   }
 

@@ -26,6 +26,7 @@ import AddCrop from "./pages/farms/add-crop";
 import { getFromLocalStorage } from "./lib/utils";
 import { initializeChatService } from "./services/chatService";
 import EditBank from "./pages/bank/edit-bank";
+import OrdersPage from "./pages/seller/orders";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -304,6 +305,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MyOrdersPage />
+              </ProtectedRoute>
+            }
+          />
+                  <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <OrdersPage />
               </ProtectedRoute>
             }
           />

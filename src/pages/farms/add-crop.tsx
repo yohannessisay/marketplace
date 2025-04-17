@@ -60,6 +60,9 @@ export default function AddCrop() {
   const [files, setFiles] = useState<FileWithId[]>([]);
   const [photos, setPhotos] = useState<FileWithId[]>([]);
   const { successMessage, errorMessage } = useNotification();
+  const [discounts, setDiscounts] = useState<
+    { minimum_quantity_kg: number; discount_percentage: number; id?: string }[]
+  >([]);
 
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
@@ -69,7 +72,7 @@ export default function AddCrop() {
       bean_type: "",
       crop_year: "",
       processing_method: "",
-      moisture_percentage: "",
+      moisture_percentage: 0,
       screen_size: 0,
       drying_method: "",
       wet_mill: "",
@@ -92,7 +95,7 @@ export default function AddCrop() {
   const populateForm = async (listingId: string) => {
     try {
       const response: any = await apiService().get(
-        `/sellers/listings/get-listing?listingId=${listingId}`,
+        `/sellers/listings/get-listing?listingId=${listingId}`
       );
       if (response.success) {
         const listing = response.data.listing;
@@ -103,7 +106,7 @@ export default function AddCrop() {
           bean_type: listing.bean_type ?? "",
           crop_year: listing.crop_year ?? "",
           processing_method: listing.processing_method ?? "",
-          moisture_percentage: listing.moisture_percentage ?? "",
+          moisture_percentage: listing.moisture_percentage ?? 0,
           screen_size: listing.screen_size ?? 0,
           drying_method: listing.drying_method ?? "",
           wet_mill: listing.wet_mill ?? "",
@@ -133,13 +136,13 @@ export default function AddCrop() {
                   doc.doc_url.split("/").pop() || `grading_report_${doc.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id },
+                  { id: doc.id }
                 );
               } catch (err) {
                 console.error(`Error fetching document ${doc.doc_url}:`, err);
                 return null;
               }
-            }),
+            })
           );
           setFiles(filesTemp.filter((f): f is FileWithId => f !== null));
         }
@@ -157,15 +160,26 @@ export default function AddCrop() {
                   photo.photo_url.split("/").pop() || `photo_${photo.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: photo.id, url: photo.photo_url },
+                  { id: photo.id, url: photo.photo_url }
                 );
               } catch (err) {
                 console.error(`Error fetching photo ${photo.photo_url}:`, err);
                 return null;
               }
-            }),
+            })
           );
           setPhotos(photosTemp.filter((p): p is FileWithId => p !== null));
+        }
+
+        // Populate discounts if present
+        if (Array.isArray(listing.discounts)) {
+          setDiscounts(
+            listing.discounts.map((d: any) => ({
+              minimum_quantity_kg: Number(d.minimum_quantity_kg) || 0,
+              discount_percentage: Number(d.discount_percentage) || 0,
+              id: d.id??null,
+            }))
+          );
         }
       } else {
         throw new Error(response.message || "Failed to fetch listing");
@@ -191,6 +205,33 @@ export default function AddCrop() {
     }
   };
 
+  const handleAddDiscount = () => {
+    setDiscounts((prev) => [
+      ...prev,
+      {
+        minimum_quantity_kg: 0,
+        discount_percentage: 0,
+        id: Math.random().toString(36).substring(2),
+      },
+    ]);
+  };
+
+  const handleRemoveDiscount = (id: string) => {
+    setDiscounts((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  const handleDiscountChange = (
+    id: string,
+    field: "minimum_quantity_kg" | "discount_percentage",
+    value: number
+  ) => {
+    setDiscounts((prev) =>
+      prev.map((d) =>
+        d.id === id ? { ...d, [field]: value } : d
+      )
+    );
+  };
+
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
@@ -210,19 +251,22 @@ export default function AddCrop() {
         formData.append("files", photo);
       });
 
+      // Add discounts array as JSON string
+      formData.append("discounts", JSON.stringify(discounts.map(({ ...rest }) => rest)));
+
       if (isEditMode && id) {
         formData.append("listingId", id);
         await apiService().patchFormData(
           `/sellers/listings/update-listing`,
           formData,
-          true,
+          true
         );
         successMessage("Listing updated successfully!");
       } else {
         await apiService().postFormData(
           `/sellers/listings/create-listing`,
           formData,
-          true,
+          true
         );
         successMessage("Listing created successfully!");
       }
@@ -294,7 +338,7 @@ export default function AddCrop() {
                           ...newFiles.map((f) =>
                             Object.assign(f, {
                               id: Math.random().toString(36).substring(2),
-                            }),
+                            })
                           ),
                         ])
                       }
@@ -589,7 +633,7 @@ export default function AddCrop() {
                             ...newPhotos.map((p) =>
                               Object.assign(p, {
                                 id: Math.random().toString(36).substring(2),
-                              }),
+                              })
                             ),
                           ])
                         }
@@ -695,7 +739,7 @@ export default function AddCrop() {
                           <Input
                             type="number"
                             {...field}
-                            value={field.value || ""}
+                            value={field.value || 1}
                           />
                         </FormControl>
                         <FormMessage />
@@ -712,9 +756,9 @@ export default function AddCrop() {
                           <Input
                             type="number"
                             {...field}
-                            value={field.value || ""}
+                            value={field.value || 1}
                             onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
+                              field.onChange(Number(e.target.value) || 1)
                             }
                           />
                         </FormControl>
@@ -750,14 +794,71 @@ export default function AddCrop() {
                   />
                 </div>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add discount</span>
-                </Button>
+                {/* Discounts section */}
+                <div className="mb-4">
+                  <h4 className="text-base font-medium mb-2">Discounts</h4>
+                  {discounts.length > 0 && (
+                    <div className="space-y-2">
+                      {discounts.map((discount) => (
+                        <div
+                          key={discount.id}
+                          className="flex items-center gap-2"
+                        >
+                          <Input
+                            type="number"
+                            min={0}
+                            className="w-40"
+                            placeholder="Min. quantity (kg)"
+                            value={discount.minimum_quantity_kg}
+                            onChange={(e) =>
+                              handleDiscountChange(
+                                discount.id!,
+                                "minimum_quantity_kg",
+                                Number(e.target.value) || 1
+                              )
+                            }
+                          />
+                          <span className="mx-2">kg</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            className="w-32"
+                            placeholder="Discount (%)"
+                            value={discount.discount_percentage}
+                            onChange={(e) =>
+                              handleDiscountChange(
+                                discount.id!,
+                                "discount_percentage",
+                                Number(e.target.value) || 1
+                              )
+                            }
+                          />
+                          <span className="mx-2">%</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveDiscount(discount.id!)}
+                            className="text-red-500"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                    onClick={handleAddDiscount}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add discount</span>
+                  </Button>
+                </div>
+                {/* End discounts section */}
               </div>
 
               {/* Readiness and Delivery Details */}
@@ -858,8 +959,8 @@ export default function AddCrop() {
                     ? "Updating..."
                     : "Adding..."
                   : isEditMode
-                    ? "Update Listing"
-                    : "Add Crop Listing"}
+                  ? "Update Listing"
+                  : "Add Crop Listing"}
               </Button>
             </div>
           </form>

@@ -3,7 +3,7 @@ import {
   Home,
   List,
   Receipt,
-  ShoppingBagIcon, 
+  ShoppingBagIcon,
   LogOut,
   User,
   ListOrderedIcon,
@@ -31,7 +31,7 @@ export default function Header() {
   const linkClasses = (to: string) =>
     clsx(
       "text-sm flex items-center cursor-pointer",
-      path.startsWith(to) ? "text-green-700 font-semibold" : "text-gray-600",
+      path.startsWith(to) ? "text-green-700 font-semibold" : "text-gray-600"
     );
 
   const handleLogout = () => {
@@ -50,12 +50,17 @@ export default function Header() {
 
         <div className="flex items-center space-x-4">
           {user.userType === "seller" && (
-            <Link
-              to="/seller-dashboard"
-              className={linkClasses("/seller-dashboard")}
-            >
-              <Home className="mr-1" /> My dashboard
-            </Link>
+            <>
+              <Link
+                to="/seller-dashboard"
+                className={linkClasses("/seller-dashboard")}
+              >
+                <Home className="mr-1" /> My dashboard
+              </Link>
+              <Link to="/orders" className={linkClasses("/orders")}>
+                <Receipt className="mr-1" />Orders
+              </Link>
+            </>
           )}
           {user.onboardingStage === "completed" ? (
             <>
@@ -112,7 +117,7 @@ export default function Header() {
                 {user.firstName} {user.lastName}
               </span>
               <Separator></Separator>
-        
+
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="cursor-pointer"
