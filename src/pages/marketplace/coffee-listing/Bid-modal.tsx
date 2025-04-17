@@ -58,6 +58,7 @@ export function BidModal({
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value) || 10)}
               className="mt-1"
+              disabled
             />
             <p className="mt-1 text-sm text-muted-foreground">
               Available: {listing?.quantity_kg} kg

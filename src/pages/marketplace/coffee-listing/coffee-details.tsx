@@ -219,76 +219,77 @@ export function CoffeeDetails({
             </CardContent>
           </Card>
         )}
+      {user?.userType != "seller" && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center">
+              <MessageCircle size={20} className="mr-2 text-primary" />
+              Messages with Seller
+            </CardTitle>
+          </CardHeader>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center">
-            <MessageCircle size={20} className="mr-2 text-primary" />
-            Messages with Seller
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <div className="h-60 overflow-y-auto mb-4 flex flex-col-reverse">
-            {chatMessages.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
-                No messages yet. Start a conversation with the seller.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {chatMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.sender === "buyer"
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
+          <CardContent>
+            <div className="h-60 overflow-y-auto mb-4 flex flex-col-reverse">
+              {chatMessages.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
+                  No messages yet. Start a conversation with the seller.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {chatMessages.map((message) => (
                     <div
-                      className={`max-w-xs lg:max-w-md rounded-lg px-4 py-2 ${
+                      key={message.id}
+                      className={`flex ${
                         message.sender === "buyer"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
+                          ? "justify-end"
+                          : "justify-start"
                       }`}
                     >
-                      <p className="text-sm">{message.message}</p>
-                      <p
-                        className={`text-xs mt-1 ${
+                      <div
+                        className={`max-w-xs lg:max-w-md rounded-lg px-4 py-2 ${
                           message.sender === "buyer"
-                            ? "text-primary-foreground/70"
-                            : "text-muted-foreground"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground"
                         }`}
                       >
-                        {message.timestamp}
-                      </p>
+                        <p className="text-sm">{message.message}</p>
+                        <p
+                          className={`text-xs mt-1 ${
+                            message.sender === "buyer"
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {message.timestamp}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="flex">
-            <Input
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1"
-              disabled={user?.onboarding_stage !== "completed"}
-            />
-            <Button
-              onClick={handleSendMessage}
-              className="ml-3"
-              disabled={
-                chatMessage == "" || user?.onboarding_stage !== "completed"
-              }
-            >
-              <Send size={16} />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex">
+              <Input
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1"
+                disabled={user?.onboarding_stage !== "completed"}
+              />
+              <Button
+                onClick={handleSendMessage}
+                className="ml-3"
+                disabled={
+                  chatMessage == "" || user?.onboarding_stage !== "completed"
+                }
+              >
+                <Send size={16} />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

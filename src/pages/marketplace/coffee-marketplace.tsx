@@ -9,6 +9,7 @@ import {
   Droplet,
   Star,
   Heart,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ import {
 } from "@/components/ui/pagination";
 import { apiService } from "@/services/apiService";
 import ListingDetailModal from "./view-listing-modal";
-import { getFromLocalStorage } from "@/lib/utils";
+import { getUserProfile } from "@/lib/utils";
 
 interface Farm {
   id: string;
@@ -155,7 +156,6 @@ interface FilterState {
   max_price: string;
 }
 
-// Filter options based on schema
 const regions = [
   "Yirgacheffe",
   "Sidamo",
@@ -175,7 +175,6 @@ const varieties = [
 ];
 const processingMethods = ["Washed", "Natural", "Honey", "Sun-dried"];
 
-// Simple Error Boundary Component
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; errorMessage: string }
@@ -276,18 +275,53 @@ export default function CoffeeMarketplace() {
     [listingId: string]: boolean;
   }>({});
   const [favoriteState, setFavoriteState] = React.useState<{
-    [listingId: string]: boolean;
+    [listingId: string]: { isFavorited: boolean; favoriteId?: string };
   }>({});
-// Define the type for the user profile
-interface UserProfile {
-  userType?: string;
-  [key: string]: any; // Allow other properties if needed
-}
 
-const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
+  const loggedInUser = getUserProfile();
+
+  const checkFavoriteStatus = async (listingIds: string[]) => {
+    if (!loggedInUser || loggedInUser.userType === "seller") return;
+    const favoriteStatus: {
+      [listingId: string]: { isFavorited: boolean; favoriteId?: string };
+    } = {};
+    try {
+      await Promise.all(
+        listingIds.map(async (listingId) => {
+          try {
+            const response: any = await apiService().get(
+              `/marketplace/listings/user-has-favorited?listingId=${listingId}`,
+            );
+            favoriteStatus[listingId] = {
+              isFavorited: response.success
+                ? response.data.userHasFavorited
+                : false,
+              favoriteId: response.success
+                ? response.data.favoriteId
+                : undefined,
+            };
+          } catch (error) {
+            console.error(
+              `Error checking favorite status for ${listingId}:`,
+              error,
+            );
+            favoriteStatus[listingId] = { isFavorited: false };
+          }
+        }),
+      );
+      setFavoriteState(favoriteStatus);
+    } catch (error) {
+      console.error("Error checking favorite statuses:", error);
+      listingIds.forEach((listingId) => {
+        favoriteStatus[listingId] = { isFavorited: false };
+      });
+      setFavoriteState(favoriteStatus);
+    }
+  };
+
   const fetchListings = async () => {
     setIsLoading(true);
-    setError(null); // Reset error state
+    setError(null);
     try {
       const queryParams = new URLSearchParams({
         page: currentPage.toString(),
@@ -317,12 +351,15 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
         setListings(response.data.listings);
         setTotalPages(response.data.pagination.totalPages);
         setCurrentPage(response.data.pagination.page);
+        const listingIds = response.data.listings.map((listing) => listing.id);
+        await checkFavoriteStatus(listingIds);
       } else {
         const errorMessage = response.message || "Failed to fetch listings";
         setError(errorMessage);
         console.error("Error fetching listings:", errorMessage);
         setListings([]);
         setTotalPages(1);
+        setFavoriteState({});
       }
     } catch (error: any) {
       const errorMessage = error.message || "An unexpected error occurred";
@@ -330,6 +367,7 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
       console.error("Error fetching listings:", error);
       setListings([]);
       setTotalPages(1);
+      setFavoriteState({});
     } finally {
       setIsLoading(false);
     }
@@ -382,36 +420,84 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
   };
 
   const addFavorite = async (listingId: string) => {
-    if (!listingId) return;
+    if (!listingId || !loggedInUser || loggedInUser.userType === "seller")
+      return;
+
+    // Optimistically update favorite state
+    setFavoriteState((prev) => ({
+      ...prev,
+      [listingId]: {
+        isFavorited: true,
+        favoriteId: prev[listingId]?.favoriteId,
+      },
+    }));
     setFavoriteLoading((prev) => ({ ...prev, [listingId]: true }));
+
     try {
       const response: any = await apiService().post(
         `/buyers/listings/favorites/add-favorite?listingId=${listingId}`,
         {},
       );
-      if (response && response.data) {
-        setFavoriteState((prev) => ({ ...prev, [listingId]: true }));
+      if (response && response.data && response.data.favoriteId) {
+        setFavoriteState((prev) => ({
+          ...prev,
+          [listingId]: {
+            isFavorited: true,
+            favoriteId: response.data.favoriteId,
+          },
+        }));
+      } else {
+        setFavoriteState((prev) => ({
+          ...prev,
+          [listingId]: {
+            isFavorited: false,
+            favoriteId: prev[listingId]?.favoriteId,
+          },
+        }));
       }
     } catch (error) {
       console.error("Error adding favorite:", error);
+      setFavoriteState((prev) => ({
+        ...prev,
+        [listingId]: {
+          isFavorited: false,
+          favoriteId: prev[listingId]?.favoriteId,
+        },
+      }));
     } finally {
       setFavoriteLoading((prev) => ({ ...prev, [listingId]: false }));
     }
   };
 
   const removeFavorite = async (listingId: string) => {
-    if (!listingId) return;
+    if (!listingId || !loggedInUser || loggedInUser.userType === "seller")
+      return;
+    const favoriteId = favoriteState[listingId]?.favoriteId;
+    if (!favoriteId) return;
+
+    setFavoriteState((prev) => ({
+      ...prev,
+      [listingId]: { isFavorited: false },
+    }));
     setFavoriteLoading((prev) => ({ ...prev, [listingId]: true }));
+
     try {
       const response: any = await apiService().post(
-        `/buyers/listings/favorites/remove-favorite-listing?listingId=${listingId}`,
+        `/buyers/listings/favorites/remove-favorite-listing?favoritesId=${favoriteId}`,
         {},
       );
-      if (response && response.data) {
-        setFavoriteState((prev) => ({ ...prev, [listingId]: false }));
+      if (!response || !response.data) {
+        setFavoriteState((prev) => ({
+          ...prev,
+          [listingId]: { isFavorited: true, favoriteId },
+        }));
       }
     } catch (error) {
       console.error("Error removing favorite:", error);
+      setFavoriteState((prev) => ({
+        ...prev,
+        [listingId]: { isFavorited: true, favoriteId },
+      }));
     } finally {
       setFavoriteLoading((prev) => ({ ...prev, [listingId]: false }));
     }
@@ -430,7 +516,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
               Discover premium coffee directly from African farmers
             </p>
           </div>
-
           <Card className="mb-6">
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-4">
@@ -470,7 +555,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
                   )}
                 </Button>
               </div>
-
               {showFilters && (
                 <div className="mt-4 pt-4 border-t">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -495,7 +579,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="variety">Coffee Variety</Label>
                       <Select
@@ -517,7 +600,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="processing">Processing Method</Label>
                       <Select
@@ -539,7 +621,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="organic">Organic</Label>
                       <Select
@@ -558,7 +639,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="min-price">Min Price ($/kg)</Label>
                       <Input
@@ -571,7 +651,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
                         }
                       />
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="max-price">Max Price ($/kg)</Label>
                       <Input
@@ -584,7 +663,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
                         }
                       />
                     </div>
-
                     <div className="flex items-end">
                       <Button
                         onClick={resetFilters}
@@ -599,7 +677,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
               )}
             </CardContent>
           </Card>
-
           {error && (
             <Card className="mb-6 bg-red-50 border-red-200">
               <CardContent className="pt-6">
@@ -609,14 +686,12 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
               </CardContent>
             </Card>
           )}
-
           <div className="mb-4">
             <p className="text-slate-600">
               {listings.length} {listings.length === 1 ? "listing" : "listings"}{" "}
               found
             </p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading ? (
               Array.from({ length: 6 }).map((_, index) => (
@@ -624,17 +699,18 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
               ))
             ) : listings.length > 0 ? (
               listings.map((listing) => {
-                const isFavorited = favoriteState[listing?.id] ?? false;
+                const isFavorited =
+                  favoriteState[listing.id]?.isFavorited ?? false;
                 return (
                   <Card
                     key={listing.id}
                     className="overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                    onClick={() => setSelectedListingId(listing?.id)}
+                    onClick={() => setSelectedListingId(listing.id)}
                   >
                     <div className="relative h-50 bg-slate-200 px-3">
                       <CoffeeImage
                         src={getPrimaryPhotoUrl(listing)}
-                        alt={listing?.coffee_variety}
+                        alt={listing.coffee_variety}
                         className="w-full h-full rounded-lg"
                       />
                       {listing.is_organic && (
@@ -646,81 +722,87 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-semibold text-slate-800">
-                          {listing?.coffee_variety}
+                          {listing.coffee_variety}
                         </h3>
                         <div className="flex items-center bg-amber-50 px-2 py-1 rounded">
                           <Star className="h-4 w-4 text-amber-500 mr-1" />
                           <span className="text-sm font-medium text-amber-700">
-                            {listing?.grade}
+                            {listing.grade}
                           </span>
                         </div>
                       </div>
                       <p className="text-slate-600 text-sm mb-2">
-                        {listing?.farm?.farm_name}
+                        {listing.farm.farm_name}
                       </p>
                       <div className="flex items-center text-slate-500 text-sm mb-4">
                         <Map className="h-4 w-4 mr-1" />
                         <span>
-                          {listing?.farm?.region}, {listing?.farm?.country}
+                          {listing.farm.region}, {listing.farm.country}
                         </span>
                       </div>
                       <div className="flex items-center text-slate-500 text-sm mb-2">
                         <Droplet className="h-4 w-4 mr-1" />
-                        <span>{listing?.processing_method}</span>
+                        <span>{listing.processing_method}</span>
                       </div>
                       <div className="flex items-center text-slate-500 text-sm mb-2">
                         <Coffee className="h-4 w-4 mr-1" />
                         <span>{listing.bean_type}</span>
                       </div>
-                      {loggedInUser?.userType!='seller'?
-                      <div className="flex justify-end items-end mb-2 mt-4">
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={isFavorited ? "Unfavorite" : "Favorite"}
-                          className="cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (favoriteLoading[listing.id]) return;
-                            if (isFavorited) {
-                              removeFavorite(listing.id);
-                            } else {
-                              addFavorite(listing.id);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
+                      {loggedInUser?.userType !== "seller" && (
+                        <div className="flex justify-end items-end mb-2 mt-4">
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            aria-label={isFavorited ? "Unfavorite" : "Favorite"}
+                            className="cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               if (favoriteLoading[listing.id]) return;
                               if (isFavorited) {
                                 removeFavorite(listing.id);
                               } else {
                                 addFavorite(listing.id);
                               }
-                            }
-                          }}
-                        >
-                          <Heart
-                            className={`h-5 w-5 transition-colors duration-150 ${
-                              isFavorited
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-slate-400"
-                            }`}
-                            fill={isFavorited ? "currentColor" : "none"}
-                          />
-                          {favoriteLoading[listing.id] && (
-                            <span className="ml-2 animate-spin h-4 w-4 border-2 border-t-transparent border-slate-400 rounded-full inline-block align-middle"></span>
-                          )}
-                        </span>
-                      </div>
-              :<></>}
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                if (favoriteLoading[listing.id]) return;
+                                if (isFavorited) {
+                                  removeFavorite(listing.id);
+                                } else {
+                                  addFavorite(listing.id);
+                                }
+                              }
+                            }}
+                          >
+                            <button
+                              disabled={favoriteLoading[listing.id]}
+                              className="cursor-pointer"
+                            >
+                              {favoriteLoading[listing.id] ? (
+                                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                              ) : (
+                                <Heart
+                                  className={`h-5 w-5 transition-colors duration-150 ${
+                                    isFavorited
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-slate-400"
+                                  }`}
+                                  fill={isFavorited ? "currentColor" : "none"}
+                                />
+                              )}
+                            </button>
+                          </span>
+                        </div>
+                      )}
                     </CardContent>
                     <CardFooter className="px-4 py-3 border-t bg-slate-50 flex items-center justify-between">
                       <div className="text-emerald-700 font-bold">
-                        ${listing?.price_per_kg.toFixed(2)}/kg
+                        ${listing.price_per_kg.toFixed(2)}/kg
                       </div>
                       <div className="text-slate-500 text-sm">
-                        {listing?.quantity_kg.toLocaleString()} kg available
+                        {listing.quantity_kg.toLocaleString()} kg available
                       </div>
                     </CardFooter>
                   </Card>
@@ -732,7 +814,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
               </p>
             )}
           </div>
-
           {listings.length > 0 && (
             <div className="mt-6">
               <Pagination>
@@ -775,7 +856,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
               </Pagination>
             </div>
           )}
-
           {listings.length === 0 && !isLoading && !error && (
             <Card className="p-8 text-center mt-8">
               <CardContent className="pt-6 flex flex-col items-center">
@@ -796,7 +876,6 @@ const loggedInUser: UserProfile = getFromLocalStorage("userProfile", {});
               </CardContent>
             </Card>
           )}
-
           {selectedListingId && (
             <ListingDetailModal
               listingId={selectedListingId}

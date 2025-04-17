@@ -68,6 +68,7 @@ export default function ListingDetailModal({
 }: ListingDetailModalProps) {
   const [listing, setListing] = React.useState<CoffeeListing | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isviewLoading, setIsviewLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = React.useState(0);
   const loggedInUser: any = getFromLocalStorage("userProfile", {});
@@ -82,7 +83,7 @@ export default function ListingDetailModal({
 
       try {
         const response = await apiService().get<ApiResponse>(
-          `/marketplace/listings/get-listing?listingId=${listingId}`
+          `/marketplace/listings/get-listing?listingId=${listingId}`,
         );
 
         if (
@@ -109,9 +110,7 @@ export default function ListingDetailModal({
     }
   }, [listingId]);
 
-  // Get all photos for the listing
   const getPhotos = (listing: CoffeeListing): CoffeePhoto[] => {
-    // Sort photos to ensure primary photo is first
     return [...listing.coffee_photo].sort((a, b) => {
       if (a.is_primary) return -1;
       if (b.is_primary) return 1;
@@ -119,7 +118,6 @@ export default function ListingDetailModal({
     });
   };
 
-  // Navigate to next photo
   const nextPhoto = () => {
     if (listing) {
       const photos = getPhotos(listing);
@@ -127,17 +125,15 @@ export default function ListingDetailModal({
     }
   };
 
-  // Navigate to previous photo
   const prevPhoto = () => {
     if (listing) {
       const photos = getPhotos(listing);
       setCurrentPhotoIndex(
-        (prevIndex) => (prevIndex - 1 + photos.length) % photos.length
+        (prevIndex) => (prevIndex - 1 + photos.length) % photos.length,
       );
     }
   };
 
-  // Get current photo URL
   const getCurrentPhotoUrl = (): string => {
     if (!listing || listing.coffee_photo.length === 0)
       return "/placeholder.svg";
@@ -145,7 +141,6 @@ export default function ListingDetailModal({
     return photos[currentPhotoIndex]?.photo_url || "/placeholder.svg";
   };
 
-  // Map cup taste values to percentages for progress bars
   const getCupTastePercentage = (value: string): number => {
     const map: Record<string, number> = {
       Low: 30,
@@ -349,7 +344,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_acidity
+                            listing.cup_taste_acidity,
                           )}
                           className="h-2"
                         />
@@ -377,7 +372,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_sweetness
+                            listing.cup_taste_sweetness,
                           )}
                           className="h-2"
                         />
@@ -393,7 +388,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_aftertaste
+                            listing.cup_taste_aftertaste,
                           )}
                           className="h-2"
                         />
@@ -409,7 +404,7 @@ export default function ListingDetailModal({
                         </div>
                         <Progress
                           value={getCupTastePercentage(
-                            listing.cup_taste_balance
+                            listing.cup_taste_balance,
                           )}
                           className="h-2"
                         />
@@ -493,7 +488,7 @@ export default function ListingDetailModal({
                         <p className="text-sm text-slate-500">Readiness Date</p>
                         <p className="font-medium">
                           {new Date(
-                            listing.readiness_date
+                            listing.readiness_date,
                           ).toLocaleDateString()}
                         </p>
                       </div>
@@ -523,12 +518,13 @@ export default function ListingDetailModal({
                     className="w-full sm:flex-1"
                   >
                     <Button
-                      disabled={user?.onboarding_stage !== "completed"}
+                      onClick={() => setIsviewLoading(true)}
+                      disabled={
+                        user?.onboarding_stage !== "completed" || isviewLoading
+                      }
                       className="w-full sm:flex-1 px-4 py-2"
                     >
-                      {loggedInUser.userType === "seller"
-                        ? "View Listing"
-                        : "Place Order Now"}
+                      {isviewLoading ? "Loading..." : "View Listing Details"}
                     </Button>
                   </Link>
                 </div>

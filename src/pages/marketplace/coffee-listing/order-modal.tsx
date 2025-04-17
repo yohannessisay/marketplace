@@ -85,7 +85,7 @@ export function OrderModal({
                   <span className="text-sm font-medium">
                     -$
                     {(listing?.price_per_kg ?? 1 * quantity * discount).toFixed(
-                      2
+                      2,
                     )}
                   </span>
                 </div>
@@ -123,7 +123,7 @@ export function OrderModal({
                 onSubmit();
               }}
             >
-               {isLoading ? "Placing Order..." : "Place order"}
+              {isLoading ? "Loading..." : "Veiew Details"}
             </Button>
           </div>
         </div>

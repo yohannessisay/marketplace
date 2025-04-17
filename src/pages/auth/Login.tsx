@@ -5,7 +5,7 @@ import { loginSchema } from "../../types/validation/auth";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
@@ -92,16 +92,16 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen   ">
-      {/* Left Image Section */}
+    <div className="flex min-h-screen">
+      {/* Left Image Section - Hidden on mobile & tablet, visible on desktop (lg+) */}
       <div
-        className="hidden md:flex w-1/2 bg-cover bg-center  rounded-r-2xl shadow-lg"
+        className="hidden lg:flex w-1/2 bg-cover bg-center rounded-r-2xl shadow-lg"
         style={{ backgroundImage: "url('/images/login.png')" }}
       ></div>
 
-      {/* Right Form Section */}
-      <div className="w-full md:w-1/2 flex flex-col justify-center items-center ">
-        <div className="w-full max-w-md shadow-lg rounded-lg p-6 bg-white border border-green-200 ">
+      {/* Right Form Section - Full width on mobile, half width on tablet+ */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-4">
+        <div className="w-full max-w-md shadow-lg rounded-lg p-6 bg-white border border-green-200">
           <div className="flex justify-end">
             <Link to={"/"}>
               <MoveLeft
@@ -173,10 +173,7 @@ const Login = () => {
 
             <p className="mt-4 text-center text-gray-600">
               {"Don't "}have an account?{" "}
-              <Link
-                to="/registration"
-                className="font-semibold text-green-500 "
-              >
+              <Link to="/registration" className="font-semibold text-green-500">
                 Sign Up
               </Link>
             </p>

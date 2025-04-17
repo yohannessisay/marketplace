@@ -13,7 +13,6 @@ import { CoffeeListing } from "@/types/coffee";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import { BidModal } from "./Bid-modal";
- 
 
 export default function CoffeeListingPage() {
   const { id } = useParams();
@@ -132,7 +131,7 @@ export default function CoffeeListingPage() {
       {showBidModal && (
         <BidModal
           listing={listing}
-          quantity={quantity}
+          quantity={listing?.quantity_kg as number}
           setQuantity={setQuantity}
           bidPrice={bidPrice}
           setBidPrice={setBidPrice}

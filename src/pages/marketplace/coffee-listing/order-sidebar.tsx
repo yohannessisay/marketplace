@@ -3,9 +3,10 @@ import { OrderStatus } from "@/types/order";
 import { CoffeeListing } from "@/types/coffee";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge"; 
+import { Badge } from "@/components/ui/badge";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
-import { getUserProfile } from "@/lib/utils"; 
+import { getUserProfile } from "@/lib/utils";
+import { ActionTooltip } from "@/components/common/action-tooltip";
 
 interface OrderSidebarProps {
   listing: CoffeeListing | null;
@@ -18,7 +19,7 @@ interface OrderSidebarProps {
 export function OrderSidebar({
   listing,
   demoOrderStatus,
-  setShowOrderModal, 
+  setShowBidModal,
 }: OrderSidebarProps) {
   const orderStatus = useOrderStatus(demoOrderStatus);
 
@@ -107,49 +108,56 @@ export function OrderSidebar({
           <div className="mb-2 text-sm text-muted-foreground">
             <b>Delivery:</b> {listing.delivery_type}
           </div>
-          {/* Place Order Button */}
-          {user?.userType !== "seller" && (
-            <Button
-              className="w-full mt-4"
-              onClick={() => setShowOrderModal && setShowOrderModal(true)}
-              disabled={listing.listing_status !== "active"}
-            >
-              Place Order
-            </Button>
-          )}
+          {user?.userType !== "seller" &&
+            listing?.listing_status === "active" && (
+              <>
+                <div className="flex flex-col gap-3 pt-4">
+                  <ActionTooltip
+                    onClick={() => setShowBidModal && setShowBidModal(true)}
+                    className="w-full"
+                    disabled={user?.onboarding_stage !== "completed"}
+                    disabledMessage="complete your onboarding to place bid"
+                  >
+                    Place Bid
+                  </ActionTooltip>
+                </div>
+              </>
+            )}
         </CardContent>
       </Card>
 
       {/* Discount info card - only shown when no order exists */}
-      {!orderStatus && listing.listing_discount && listing.listing_discount.length > 0 && (
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="text-md font-medium mb-3">Volume Discounts</h3>
-            <div className="space-y-2">
-              {listing.listing_discount.map((discount: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="flex justify-between items-center p-2 bg-primary/5 rounded-md"
-                >
-                  <span className="text-sm">
-                    Order {discount.min_quantity}+ kg
-                  </span>
-                  <span className="text-sm font-medium text-primary">
-                    {discount.discount_percent
-                      ? `${discount.discount_percent}% off`
-                      : discount.discount_amount
-                      ? `$${discount.discount_amount} off`
-                      : ""}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 text-xs text-muted-foreground">
-              Volume discounts are automatically applied at checkout.
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {!orderStatus &&
+        listing.listing_discount &&
+        listing.listing_discount.length > 0 && (
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-md font-medium mb-3">Volume Discounts</h3>
+              <div className="space-y-2">
+                {listing.listing_discount.map((discount: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center p-2 bg-primary/5 rounded-md"
+                  >
+                    <span className="text-sm">
+                      Order {discount.min_quantity}+ kg
+                    </span>
+                    <span className="text-sm font-medium text-primary">
+                      {discount.discount_percent
+                        ? `${discount.discount_percent}% off`
+                        : discount.discount_amount
+                          ? `$${discount.discount_amount} off`
+                          : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 text-xs text-muted-foreground">
+                Volume discounts are automatically applied at checkout.
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Seller Info */}
       <Card>
@@ -170,10 +178,14 @@ export function OrderSidebar({
               </div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground mb-2">
-            <b>Rating:</b> {listing.seller?.rating ?? 0} ({listing.seller?.total_reviews ?? 0} reviews)
+          <div className="text-sm text-muted-foreground mb-2 pt-2">
+            <b className="font-bold mr-1">Rating:</b>{" "}
+            {listing.seller?.rating ?? 0}
+            <span className="ml-1 mr-1">⭐</span>(
+            {listing.seller?.total_reviews ?? 0} review
+            {listing.seller?.total_reviews !== 1 ? "s" : ""})
           </div>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full mt-2">
             View Seller Profile
           </Button>
         </CardContent>

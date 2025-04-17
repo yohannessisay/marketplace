@@ -1,13 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { Star } from "lucide-react";
 import { OrderStatus } from "@/types/order";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface HeaderProps {
   demoOrderStatus: OrderStatus;
@@ -18,8 +11,6 @@ interface HeaderProps {
 }
 
 export function Header({
-  demoOrderStatus,
-  setDemoOrderStatus,
   sellerName,
   sellerRating,
   sellerReviews,

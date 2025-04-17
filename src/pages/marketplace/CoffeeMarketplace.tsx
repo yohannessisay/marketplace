@@ -147,7 +147,6 @@ interface FilterState {
   min_cup_score: string;
 }
 
-// Mock filter options based on the schema
 const regions = [
   "Yirgacheffe",
   "Sidamo",
@@ -156,6 +155,7 @@ const regions = [
   "Gedeo",
   "Kilimanjaro",
 ];
+
 const varieties = [
   "Arabica",
   "Robusta",
@@ -167,7 +167,6 @@ const varieties = [
 ];
 const processingMethods = ["Washed", "Natural", "Honey", "Sun-dried"];
 
-// Image component with loading state
 function CoffeeImage({
   src,
   alt,
@@ -225,12 +224,9 @@ export default function CoffeeMarketplace() {
     string | null
   >(null);
 
-  // Fetch listings from API
   const fetchListings = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, you would use the query params
-      // For now, we'll use the mock data provided
       const response = await apiService().get<ApiResponse>(
         "/marketplace/listings/get-all-listings",
       );
@@ -250,27 +246,23 @@ export default function CoffeeMarketplace() {
     }
   };
 
-  // Fetch listings on component mount
   React.useEffect(() => {
     fetchListings();
   }, []);
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset to first page on search
+    setCurrentPage(1);
   };
 
-  // Handle filter changes
   const handleFilterChange = (name: keyof FilterState, value: string) => {
     setFilters({
       ...filters,
       [name]: value,
     });
-    setCurrentPage(1); // Reset to first page on filter change
+    setCurrentPage(1);
   };
 
-  // Reset all filters
   const resetFilters = () => {
     setFilters({
       region: "",
@@ -285,15 +277,12 @@ export default function CoffeeMarketplace() {
     setCurrentPage(1); // Reset to first page
   };
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // Check if any filters are active
   const hasActiveFilters = Object.values(filters).some((value) => value !== "");
 
-  // Get primary photo URL for a listing
   const getPrimaryPhotoUrl = (listing: CoffeeListing): string => {
     const primaryPhoto = listing.coffee_photo.find((photo) => photo.is_primary);
     return primaryPhoto ? primaryPhoto.photo_url : "/placeholder.svg";
@@ -301,7 +290,6 @@ export default function CoffeeMarketplace() {
 
   return (
     <div className="flex flex-col min-h-screen bg-primary/5 p-8">
-      {/* Header */}
       <Header />
 
       {/* Main Content */}
@@ -315,7 +303,6 @@ export default function CoffeeMarketplace() {
           </p>
         </div>
 
-        {/* Search and Filter Bar */}
         <Card className="mb-6">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
