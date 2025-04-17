@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Separator } from "../ui/separator";
+import Logo from "./Logo";
 
 export default function Header() {
   const user: any = getFromLocalStorage("userProfile", {});
@@ -31,7 +32,7 @@ export default function Header() {
   const linkClasses = (to: string) =>
     clsx(
       "text-sm flex items-center cursor-pointer",
-      path.startsWith(to) ? "text-green-700 font-semibold" : "text-gray-600"
+      path.startsWith(to) ? "text-green-700 font-semibold" : "text-gray-600",
     );
 
   const handleLogout = () => {
@@ -44,9 +45,7 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-gray-200 p-4 rounded-md shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-green-800 text-xl font-bold">AfroValley</h1>
-        </div>
+        <Logo />
 
         <div className="flex items-center space-x-4">
           {user.userType === "seller" && (
@@ -58,7 +57,8 @@ export default function Header() {
                 <Home className="mr-1" /> My dashboard
               </Link>
               <Link to="/orders" className={linkClasses("/orders")}>
-                <Receipt className="mr-1" />Orders
+                <Receipt className="mr-1" />
+                Orders
               </Link>
             </>
           )}

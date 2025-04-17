@@ -18,9 +18,11 @@ export default function Hero() {
       </div>
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/10 border-b border-white/20">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-white">AfroValley</h1>
-          </div>
+          <Link to="/">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-white">AfroValley</h1>
+            </div>
+          </Link>
           <div className="flex items-center space-x-4">
             <Link to={"/login"}>
               <Button className=" ">Login</Button>
