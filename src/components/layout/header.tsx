@@ -10,7 +10,6 @@ import {
   Send,
   User2,
   Menu,
-  X,
   Settings,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -24,6 +23,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import Logo from "./Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { useMobile } from "@/hooks/useMobile";
@@ -57,10 +63,10 @@ export default function Header() {
     if (isMenuOpen && isMobile) {
       document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "";
     };
   }, [isMenuOpen, isMobile]);
 
@@ -70,6 +76,7 @@ export default function Header() {
       path.startsWith(to)
         ? "text-green-700 font-semibold bg-gray-100"
         : "text-gray-600",
+      isMobile && "text-base", // Larger text on mobile for readability
     );
 
   const handleLogout = () => {
@@ -80,14 +87,6 @@ export default function Header() {
     setIsMenuOpen(false);
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
-
   return (
     <header
       className={clsx(
@@ -95,7 +94,7 @@ export default function Header() {
         isVisible ? "translate-y-0" : "-translate-y-full",
       )}
     >
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center">
         <Logo />
 
         {!isMobile && (
@@ -202,132 +201,135 @@ export default function Header() {
         )}
 
         {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleMenu}
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isMenuOpen}
-            className="hover:bg-gray-100"
-          >
-            {isMenuOpen ? (
-              <X className="h-6 w-6 text-slate-700" />
-            ) : (
-              <Menu className="h-6 w-6 text-slate-700" />
-            )}
-          </Button>
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isMenuOpen}
+                className="hover:bg-gray-100"
+              >
+                <Menu className="h-6 w-6 text-slate-700" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="bg-white w-[300px] sm:w-[400px] p-6 flex flex-col"
+            >
+              <SheetHeader className="mb-6">
+                <SheetTitle className="flex items-center gap-2">
+                  <Logo />
+                </SheetTitle>
+              </SheetHeader>
+
+              <nav className="flex flex-col space-y-3 flex-grow">
+                {user?.userType === "seller" && (
+                  <>
+                    <Link
+                      to="/seller-dashboard"
+                      className={linkClasses("/seller-dashboard")}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Home className="h-4 w-4 text-green-400" />
+                      My Dashboard
+                    </Link>
+                    <Link
+                      to="/orders"
+                      className={linkClasses("/orders")}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Receipt className="h-4 w-4 text-green-400" />
+                      Orders
+                    </Link>
+                  </>
+                )}
+
+                {user?.userType === "agent" && (
+                  <Link
+                    to="/agent/farmer-management"
+                    className={linkClasses("/agent/farmer-management")}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <List className="h-4 w-4 text-green-400" />
+                    Farmer Management
+                  </Link>
+                )}
+
+                <Link
+                  to="/market-place"
+                  className={linkClasses("/market-place")}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <LucideShoppingBag className="h-4 w-4 text-green-400" />
+                  Marketplace
+                </Link>
+
+                {user?.userType === "buyer" && (
+                  <Link
+                    to="/my-orders"
+                    className={linkClasses("/my-orders")}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <ShoppingBagIcon className="h-4 w-4 text-green-400" />
+                    My Orders
+                  </Link>
+                )}
+
+                <Link
+                  to="/chats"
+                  className={linkClasses("/chats")}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Send className="h-4 w-4 text-green-400" />
+                  Chats
+                </Link>
+
+                {user?.userType === "buyer" && (
+                  <Link
+                    to="/settings"
+                    className={linkClasses("/settings")}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Settings className="h-4 w-4 text-green-400" />
+                    Settings
+                  </Link>
+                )}
+
+                <div className="flex flex-col gap-2 mt-4">
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    {user?.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt="User avatar"
+                        className="rounded-full h-5 w-5 object-cover"
+                      />
+                    ) : (
+                      <User2 className="text-green-400 h-5 w-5" />
+                    )}
+                    <span className="font-medium text-base">
+                      {user?.first_name} {user?.last_name}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500 px-3 pl-10">
+                    {user?.email}
+                  </span>
+                </div>
+
+                <Separator className="my-3" />
+
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors text-gray-600 text-base"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </nav>
+            </SheetContent>
+          </Sheet>
         )}
       </div>
-
-      {isMobile && isMenuOpen && (
-        <div className="fixed inset-0 bg-gray-300 z-50 flex flex-col pt-4 px-4 pb-8 transform transition-transform duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <Logo />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={closeMenu}
-              aria-label="Close menu"
-              className="hover:bg-gray-100"
-            >
-              <X className="h-6 w-6 text-slate-700" />
-            </Button>
-          </div>
-
-          <nav className="flex flex-col space-y-4">
-            {user?.userType === "seller" && (
-              <>
-                <Link
-                  to="/seller-dashboard"
-                  className={linkClasses("/seller-dashboard")}
-                  onClick={closeMenu}
-                >
-                  <Home className="h-4 w-4 text-green-400" />
-                  My Dashboard
-                </Link>
-                <Link
-                  to="/orders"
-                  className={linkClasses("/orders")}
-                  onClick={closeMenu}
-                >
-                  <Receipt className="h-4 w-4 text-green-400" />
-                  Orders
-                </Link>
-              </>
-            )}
-
-            {user?.userType === "agent" && (
-              <Link
-                to="/agent/farmer-management"
-                className={linkClasses("/agent/farmer-management")}
-                onClick={closeMenu}
-              >
-                <List className="h-4 w-4 text-green-400" />
-                Farmer Management
-              </Link>
-            )}
-
-            <Link
-              to="/market-place"
-              className={linkClasses("/market-place")}
-              onClick={closeMenu}
-            >
-              <LucideShoppingBag className="h-4 w-4 text-green-400" />
-              Marketplace
-            </Link>
-
-            {user?.userType === "buyer" && (
-              <Link
-                to="/my-orders"
-                className={linkClasses("/my-orders")}
-                onClick={closeMenu}
-              >
-                <ShoppingBagIcon className="h-4 w-4 text-green-400" />
-                My Orders
-              </Link>
-            )}
-
-            <Link
-              to="/chats"
-              className={linkClasses("/chats")}
-              onClick={closeMenu}
-            >
-              <Send className="h-4 w-4 text-green-400" />
-              Chats
-            </Link>
-
-            <div className="flex flex-col gap-2 mt-4">
-              <div className="flex items-center gap-2 px-3 py-2">
-                {user?.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt="User avatar"
-                    className="rounded-full h-5 w-5 object-cover"
-                  />
-                ) : (
-                  <User2 className="text-green-400 h-5 w-5" />
-                )}
-                <span className="font-medium">
-                  {user?.first_name} {user?.last_name}
-                </span>
-              </div>
-              <span className="text-xs text-gray-500 px-3 pl-10">
-                {user?.email}
-              </span>
-            </div>
-
-            <Separator className="my-2" />
-
-            <button
-              onClick={handleLogout}
-              className="text-sm flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </button>
-          </nav>
-        </div>
-      )}
     </header>
   );
 }
