@@ -296,26 +296,6 @@ export default function Header() {
                   </Link>
                 )}
 
-                <div className="flex flex-col gap-2 mt-4">
-                  <div className="flex items-center gap-2 px-3 py-2">
-                    {user?.avatar_url ? (
-                      <img
-                        src={user.avatar_url}
-                        alt="User avatar"
-                        className="rounded-full h-5 w-5 object-cover"
-                      />
-                    ) : (
-                      <User2 className="text-green-400 h-5 w-5" />
-                    )}
-                    <span className="font-medium text-base">
-                      {user?.first_name} {user?.last_name}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500 px-3 pl-10">
-                    {user?.email}
-                  </span>
-                </div>
-
                 <Separator className="my-3" />
 
                 <button
