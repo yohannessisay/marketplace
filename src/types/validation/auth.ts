@@ -58,7 +58,7 @@ export const buyerSchema = z.object({
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/\d/, "Password must contain at least one number")
     .regex(
-      /[!@#$%^&*]/,
+      /[!@#$%^&*=_"']/,
       "Password must contain at least one special character (!@#$%^&*)",
     ),
   preferredCurrency: z.string().min(1, "Please select a preferred currency"),

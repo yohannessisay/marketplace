@@ -4,20 +4,19 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import {
   Calendar,
-  Heart,
   ShoppingBag,
   Clock,
   Info,
   ChevronDown,
   Filter,
   User,
-  ArrowRight,
   CheckCircle,
   Circle,
   AlertCircle,
   Search,
   Coffee,
-  X,
+  File,
+  MapPin,
   Hand,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,37 +35,34 @@ import {
 } from "@/components/ui/pagination";
 import { apiService } from "@/services/apiService";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
 import { LoadingState } from "@/components/common/loading";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
-import { ReviewModal } from "./review-modal";
-import {
-  CancelFormData,
-  CancelModalData,
-  CancelOrderModal,
-} from "@/components/modals/CancelOrderModal";
 
 interface Seller {
   first_name?: string;
   last_name?: string;
 }
 
-interface Farm {
-  id: string;
-  farm_name: string;
-  region: string | null;
-}
-
 interface Listing {
   id: string;
-  coffee_variety: string;
-  bean_type: string | null;
-  is_organic: boolean;
-  processing_method: string | null;
-  quantity_kg: number;
-  price_per_kg: number;
-  farm: Farm | null;
+  coffee_variety?: string;
+  farm_name?: string;
+  region?: string;
+  processing_method?: string;
+  bean_type?: string;
+  price_per_kg?: number;
+  cup_score?: string;
+  is_organic?: boolean;
+  quantity_kg?: number;
+  farm?: {
+    farm_id: string;
+    farm_name: string;
+    region: string | null;
+    country: string;
+  };
 }
 
 interface Order {
@@ -98,18 +94,53 @@ interface Order {
   seller?: Seller;
 }
 
+interface SampleRequest {
+  id: string;
+  weight: number;
+  phone: string | null;
+  delivery_address: string;
+  delivery_status: string;
+  expires_at: string;
+  created_at: string;
+  updated_at: string | null;
+  coffee_listing: {
+    id: string;
+    coffee_variety: string;
+    bean_type: string;
+    is_organic: boolean;
+    quantity_kg: number;
+    price_per_kg: number;
+    readiness_date: string;
+    listing_status: string;
+  };
+  farm: {
+    id: string;
+    farm_name: string;
+    region: string;
+    country: string;
+    altitude_meters: number;
+  };
+  seller: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    telegram: string | null;
+  };
+}
+
 interface Bid {
   id: string;
-  buyer_id: string;
-  seller_id: string;
   listing_id: string;
+  seller_id: string;
+  buyer_id: string;
   quantity_kg: number;
   unit_price: number;
   total_amount: number;
   status: string;
-  expires_at: string;
   created_at: string;
-  updated_at: string;
+  expires_at: string;
+  updated_at: string | null;
   listing?: Listing;
   seller?: Seller;
 }
@@ -117,206 +148,90 @@ interface Bid {
 interface PaginationData {
   page: number;
   limit: number;
-  totalItems: number;
-  totalPages: number;
+  total: number;
+  total_pages: number;
 }
 
-interface Favorite {
-  id: string;
-  listing_id: string;
-  created_at: string;
-  updated_at: string | null;
-  listing?: Listing;
-}
-
-export default function MyOrdersPage() {
+export default function OrdersPage() {
+  const { user } = useAuth();
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [sampleRequests, setSampleRequests] = useState<SampleRequest[] | null>(
+    null,
+  );
   const [bids, setBids] = useState<Bid[]>([]);
-  const [favoritesPagination, setFavoritesPagination] =
-    useState<PaginationData>({
-      page: 1,
-      limit: 10,
-      totalItems: 0,
-      totalPages: 0,
-    });
-  const [bidsPagination, setBidsPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 10,
-    totalItems: 0,
-    totalPages: 0,
-  });
-  const [favoritesCurrentPage, setFavoritesCurrentPage] = useState<number>(1);
-  const [bidsCurrentPage, setBidsCurrentPage] = useState<number>(1);
-  const [favoritesLoading, setFavoritesLoading] = useState<boolean>(true);
-  const [bidsLoading, setBidsLoading] = useState<boolean>(true);
-  const [favoritesError, setFavoritesError] = useState<string | null>(null);
-  const [bidsError, setBidsError] = useState<string | null>(null);
   const [activePagination, setActivePagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
-    totalItems: 0,
-    totalPages: 0,
+    total: 0,
+    total_pages: 0,
   });
   const [historyPagination, setHistoryPagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
-    totalItems: 0,
-    totalPages: 0,
+    total: 0,
+    total_pages: 0,
+  });
+  const [samplePagination, setSamplePagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 0,
+  });
+  const [bidPagination, setBidPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 0,
   });
   const [activeLoading, setActiveLoading] = useState<boolean>(true);
   const [historyLoading, setHistoryLoading] = useState<boolean>(true);
+  const [sampleLoading, setSampleLoading] = useState<boolean>(true);
+  const [bidLoading, setBidLoading] = useState<boolean>(true);
   const [activeError, setActiveError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [sampleError, setSampleError] = useState<string | null>(null);
+  const [bidError, setBidError] = useState<string | null>(null);
   const [activeCurrentPage, setActiveCurrentPage] = useState<number>(1);
   const [historyCurrentPage, setHistoryCurrentPage] = useState<number>(1);
+  const [sampleCurrentPage, setSampleCurrentPage] = useState<number>(1);
+  const [bidCurrentPage, setBidCurrentPage] = useState<number>(1);
   const [activeSearchTerm, setActiveSearchTerm] = useState<string>("");
   const [historySearchTerm, setHistorySearchTerm] = useState<string>("");
-  const [favoritesSearchTerm, setFavoritesSearchTerm] = useState<string>("");
-  const [bidsSearchTerm, setBidsSearchTerm] = useState<string>("");
+  const [sampleSearchTerm, setSampleSearchTerm] = useState<string>("");
+  const [bidSearchTerm, setBidSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("current");
-  const [reviewModalData, setReviewModalData] = useState<{
-    orderId: string;
-    sellerId: string | undefined;
-  } | null>(null);
-  const [cancelModalData, setCancelModalData] =
-    useState<CancelModalData | null>(null);
-  const [favoriteLoading, setFavoriteLoading] = useState<{
-    [listingId: string]: boolean;
-  }>({});
-  const [favoriteState, setFavoriteState] = useState<{
-    [listingId: string]: boolean;
-  }>({});
-  const [hasFetched, setHasFetched] = useState<{
-    active: boolean;
+  const [fetchedTabs, setFetchedTabs] = useState<{
+    current: boolean;
     historical: boolean;
-    favorites: boolean;
+    sample: boolean;
     bids: boolean;
-  }>({ active: false, historical: false, favorites: false, bids: false });
+  }>({ current: false, historical: false, sample: false, bids: false });
 
   const { successMessage, errorMessage } = useNotification();
 
-  // Initial data fetch
+  // Fetch active orders
   useEffect(() => {
-    const fetchInitialData = async () => {
-      // Fetch active orders
-      setActiveLoading(true);
-      try {
-        const activeResponse: any = await apiService().get(
-          `/orders/active-orders?page=1&limit=${activePagination.limit}`,
-        );
-        if (activeResponse.success) {
-          setActiveOrders(activeResponse.data.orders);
-          setActivePagination(activeResponse.data.pagination);
-          setHasFetched((prev) => ({ ...prev, active: true }));
-        } else {
-          setActiveError("Failed to fetch active orders");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setActiveError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setActiveLoading(false);
-      }
-
-      // Fetch historical orders
-      setHistoryLoading(true);
-      try {
-        const historyResponse: any = await apiService().get(
-          `/orders/order-history?page=1&limit=${historyPagination.limit}`,
-        );
-        if (historyResponse.success) {
-          setHistoricalOrders(historyResponse.data.orders);
-          setHistoryPagination(historyResponse.data.pagination);
-          setHasFetched((prev) => ({ ...prev, historical: true }));
-        } else {
-          setHistoryError("Failed to fetch order history");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setHistoryError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setHistoryLoading(false);
-      }
-
-      // Fetch favorites
-      setFavoritesLoading(true);
-      try {
-        const favoritesResponse: any = await apiService().get(
-          `/buyers/listings/favorites/get-favorite-listings?page=1&limit=${favoritesPagination.limit}`,
-        );
-        if (favoritesResponse.success) {
-          const fetchedFavorites: Favorite[] = favoritesResponse.data.favorites;
-          setFavorites(fetchedFavorites);
-          setFavoritesPagination(
-            favoritesResponse.data.pagination || {
-              page: 1,
-              limit: 10,
-              totalItems: fetchedFavorites.length,
-              totalPages: Math.ceil(fetchedFavorites.length / 10),
-            },
-          );
-          const loadingState: { [listingId: string]: boolean } = {};
-          const favoriteStateUpdate: { [listingId: string]: boolean } = {};
-          fetchedFavorites.forEach((favorite) => {
-            loadingState[favorite.listing_id] = false;
-            favoriteStateUpdate[favorite.listing_id] = true;
-          });
-          setFavoriteLoading(loadingState);
-          setFavoriteState(favoriteStateUpdate);
-          setHasFetched((prev) => ({ ...prev, favorites: true }));
-        } else {
-          setFavoritesError("Failed to fetch favorites");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setFavoritesError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setFavoritesLoading(false);
-      }
-
-      // Fetch bids
-      setBidsLoading(true);
-      try {
-        const bidsResponse: any = await apiService().get(
-          `/buyers/bids/get-all-bids?page=1&limit=${bidsPagination.limit}`,
-        );
-        if (bidsResponse.success) {
-          setBids(bidsResponse.data.bids);
-          setBidsPagination(bidsResponse.data.pagination);
-          setHasFetched((prev) => ({ ...prev, bids: true }));
-        } else {
-          setBidsError("Failed to fetch bids");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setBidsError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setBidsLoading(false);
-      }
-    };
-
-    fetchInitialData();
-  }, []);
-
-  // Fetch active orders on search or pagination change
-  useEffect(() => {
-    if (!hasFetched.active) return;
     const fetchActiveOrders = async () => {
       setActiveLoading(true);
       try {
         const response: any = await apiService().get(
-          `/orders/active-orders?page=${activeCurrentPage}&limit=${activePagination.limit}&search=${encodeURIComponent(activeSearchTerm)}`,
+          `/orders/active-orders?page=${activeCurrentPage}&limit=${
+            activePagination.limit
+          }&search=${encodeURIComponent(activeSearchTerm)}`,
         );
         if (response.success) {
-          setActiveOrders(response.data.orders);
-          setActivePagination(response.data.pagination);
+          setActiveOrders(response.data.orders || []);
+          setActivePagination(
+            response.data.pagination || {
+              page: 1,
+              limit: 10,
+              total: 0,
+              total_pages: 0,
+            },
+          );
+          setFetchedTabs((prev) => ({ ...prev, current: true }));
         } else {
           setActiveError("Failed to fetch active orders");
         }
@@ -329,21 +244,32 @@ export default function MyOrdersPage() {
       }
     };
 
-    fetchActiveOrders();
-  }, [activeCurrentPage, activeSearchTerm]);
+    if (activeTab === "current" && !fetchedTabs.current) {
+      fetchActiveOrders();
+    }
+  }, [activeCurrentPage, activeSearchTerm, activeTab, fetchedTabs.current]);
 
-  // Fetch historical orders on search or pagination change
+  // Fetch historical orders
   useEffect(() => {
-    if (!hasFetched.historical) return;
     const fetchHistoricalOrders = async () => {
       setHistoryLoading(true);
       try {
         const response: any = await apiService().get(
-          `/orders/order-history?page=${historyCurrentPage}&limit=${historyPagination.limit}&search=${encodeURIComponent(historySearchTerm)}`,
+          `/orders/order-history?page=${historyCurrentPage}&limit=${
+            historyPagination.limit
+          }&search=${encodeURIComponent(historySearchTerm)}`,
         );
         if (response.success) {
-          setHistoricalOrders(response.data.orders);
-          setHistoryPagination(response.data.pagination);
+          setHistoricalOrders(response.data.orders || []);
+          setHistoryPagination(
+            response.data.pagination || {
+              page: 1,
+              limit: 10,
+              total: 0,
+              total_pages: 0,
+            },
+          );
+          setFetchedTabs((prev) => ({ ...prev, historical: true }));
         } else {
           setHistoryError("Failed to fetch order history");
         }
@@ -356,78 +282,97 @@ export default function MyOrdersPage() {
       }
     };
 
-    fetchHistoricalOrders();
-  }, [historyCurrentPage, historySearchTerm]);
+    if (activeTab === "historical" && !fetchedTabs.historical) {
+      fetchHistoricalOrders();
+    }
+  }, [
+    historyCurrentPage,
+    historySearchTerm,
+    activeTab,
+    fetchedTabs.historical,
+  ]);
 
-  // Fetch favorites on search or pagination change
+  // Fetch sample requests
   useEffect(() => {
-    if (!hasFetched.favorites) return;
-    const fetchFavorites = async () => {
-      setFavoritesLoading(true);
+    const fetchSampleRequests = async () => {
+      setSampleLoading(true);
       try {
         const response: any = await apiService().get(
-          `/buyers/listings/favorites/get-favorite-listings?page=${favoritesCurrentPage}&limit=${favoritesPagination.limit}&search=${encodeURIComponent(favoritesSearchTerm)}`,
+          `/buyers/samples/get-sample-requests?page=${sampleCurrentPage}&limit=${
+            samplePagination.limit
+          }&search=${encodeURIComponent(sampleSearchTerm)}`,
+        );
+        if (response.success && response.data) {
+          setSampleRequests(response.data.sample_requests || null);
+          setSamplePagination({
+            page: response.data.pagination.page,
+            limit: response.data.pagination.limit,
+            total: response.data.pagination.total,
+            total_pages: response.data.pagination.total_pages,
+          });
+          setFetchedTabs((prev) => ({ ...prev, sample: true }));
+        } else {
+          setSampleError("Failed to fetch sample requests");
+          setSampleRequests(null);
+        }
+      } catch (err: unknown) {
+        const errorResponse = err as APIErrorResponse;
+        setSampleError(errorResponse.error?.message || "An error occurred");
+        setSampleRequests(null);
+        errorMessage(errorResponse);
+      } finally {
+        setSampleLoading(false);
+      }
+    };
+
+    if (activeTab === "sample" && !fetchedTabs.sample) {
+      fetchSampleRequests();
+    }
+  }, [sampleCurrentPage, sampleSearchTerm, activeTab, fetchedTabs.sample]);
+
+  // Fetch bids
+  useEffect(() => {
+    const fetchBids = async () => {
+      if (!user?.id) {
+        setBidError("User not authenticated");
+        setBidLoading(false);
+        return;
+      }
+
+      setBidLoading(true);
+      try {
+        const response: any = await apiService().get(
+          `/buyers/bids/get-all-bids?page=${bidCurrentPage}&limit=${
+            bidPagination.limit
+          }&search=${encodeURIComponent(bidSearchTerm)}`,
         );
         if (response.success) {
-          const fetchedFavorites: Favorite[] = response.data.favorites;
-          setFavorites(fetchedFavorites);
-          setFavoritesPagination(
+          setBids(response.data.bids || []);
+          setBidPagination(
             response.data.pagination || {
               page: 1,
               limit: 10,
-              totalItems: fetchedFavorites.length,
-              totalPages: Math.ceil(fetchedFavorites.length / 10),
+              total: 0,
+              total_pages: 0,
             },
           );
-          const loadingState: { [listingId: string]: boolean } = {};
-          const favoriteStateUpdate: { [listingId: string]: boolean } = {};
-          fetchedFavorites.forEach((favorite) => {
-            loadingState[favorite.listing_id] = false;
-            favoriteStateUpdate[favorite.listing_id] = true;
-          });
-          setFavoriteLoading(loadingState);
-          setFavoriteState(favoriteStateUpdate);
+          setFetchedTabs((prev) => ({ ...prev, bids: true }));
         } else {
-          setFavoritesError("Failed to fetch favorites");
+          setBidError("Failed to fetch bids");
         }
       } catch (err: unknown) {
         const errorResponse = err as APIErrorResponse;
-        setFavoritesError(errorResponse.error?.message || "An error occurred");
+        setBidError(errorResponse.error?.message || "An error occurred");
         errorMessage(errorResponse);
       } finally {
-        setFavoritesLoading(false);
+        setBidLoading(false);
       }
     };
 
-    fetchFavorites();
-  }, [favoritesCurrentPage, favoritesSearchTerm]);
-
-  // Fetch bids on search or pagination change
-  useEffect(() => {
-    if (!hasFetched.bids) return;
-    const fetchBids = async () => {
-      setBidsLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/buyers/bids/get-all-bids?page=${bidsCurrentPage}&limit=${bidsPagination.limit}&search=${encodeURIComponent(bidsSearchTerm)}`,
-        );
-        if (response.success) {
-          setBids(response.data.bids);
-          setBidsPagination(response.data.pagination);
-        } else {
-          setBidsError("Failed to fetch bids");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setBidsError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setBidsLoading(false);
-      }
-    };
-
-    fetchBids();
-  }, [bidsCurrentPage, bidsSearchTerm]);
+    if (activeTab === "bids" && !fetchedTabs.bids) {
+      fetchBids();
+    }
+  }, [bidCurrentPage, bidSearchTerm, activeTab, fetchedTabs.bids, user?.id]);
 
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
@@ -441,116 +386,64 @@ export default function MyOrdersPage() {
   const handleActiveSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setActiveCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, current: false }));
   };
 
   const handleHistorySearch = (e: React.FormEvent) => {
     e.preventDefault();
     setHistoryCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, historical: false }));
   };
 
-  const handleFavoritesSearch = (e: React.FormEvent) => {
+  const handleSampleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setFavoritesCurrentPage(1);
+    setSampleCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, sample: false }));
   };
 
-  const handleBidsSearch = (e: React.FormEvent) => {
+  const handleBidSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setBidsCurrentPage(1);
+    setBidCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, bids: false }));
   };
 
-  const removeFavorite = async (favoriteId: string, listingId?: string) => {
-    if (!favoriteId) {
+  const deleteOrder = async (orderId: string) => {
+    if (!orderId) {
       errorMessage({
         success: false,
         error: {
-          message: "Invalid favorite ID",
-          details: "No favorite ID provided",
+          message: "Invalid order ID",
+          details: "No order ID provided",
           code: 400,
         },
       });
       return;
     }
 
-    setFavoriteLoading((prev) => ({
-      ...prev,
-      [listingId || favoriteId]: true,
-    }));
-
     try {
-      await apiService().post(
-        `/buyers/listings/favorites/remove-favorite-listing?favoritesId=${favoriteId}`,
-        {},
-      );
-
-      setFavorites((prev) =>
-        prev.filter((favorite) => favorite.id !== favoriteId),
-      );
-
-      setFavoritesPagination((prev) => {
-        const newTotalItems = Math.max(0, prev.totalItems - 1);
+      await apiService().post(`/orders/cancel-order?orderId=${orderId}`, {});
+      setActiveOrders((prev) => prev.filter((order) => order.id !== orderId));
+      setActivePagination((prev) => {
+        const newTotalItems = Math.max(0, prev.total - 1);
         const newTotalPages = Math.ceil(newTotalItems / prev.limit);
         return {
           ...prev,
-          totalItems: newTotalItems,
-          totalPages: newTotalPages,
+          total: newTotalItems,
+          total_pages: newTotalPages,
           page:
-            favoritesCurrentPage > newTotalPages && newTotalPages > 0
+            activeCurrentPage > newTotalPages && newTotalPages > 0
               ? newTotalPages
               : prev.page,
         };
       });
-
-      if (listingId) {
-        setFavoriteState((prev) => ({
-          ...prev,
-          [listingId]: false,
-        }));
+      if (expandedOrderId === orderId) {
+        setExpandedOrderId(null);
       }
-
-      setFavoriteLoading((prev) => {
-        const newLoading = { ...prev };
-        if (listingId || favoriteId) {
-          delete newLoading[listingId || favoriteId];
-        }
-        return newLoading;
-      });
-
-      successMessage("Removed from favorites");
-    } catch (error: unknown) {
-      const errorResponse = error as APIErrorResponse;
-      errorMessage(errorResponse);
-    } finally {
-      setFavoriteLoading((prev) => ({
-        ...prev,
-        [listingId || favoriteId]: false,
-      }));
-    }
-  };
-
-  const openCancelModal = (orderId: string) => {
-    setCancelModalData({ orderId });
-  };
-
-  const submitCancelRequest = async (
-    orderId: string,
-    formData: CancelFormData,
-  ) => {
-    try {
-      await apiService().post(`/general/cancel-order-request`, {
-        orderId,
-        reason: formData.reason,
-        contactEmail: formData.contactEmail,
-      });
-
-      successMessage("Order cancel request submitted successfully");
+      successMessage("Order cancelled successfully");
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
       errorMessage(errorResponse);
     }
-  };
-
-  const openReviewModal = (orderId: string, sellerId: string | undefined) => {
-    setReviewModalData({ orderId, sellerId });
   };
 
   const renderOrderProgress = (order: Order) => {
@@ -650,25 +543,8 @@ export default function MyOrdersPage() {
     );
   };
 
-  const OrderItem = ({
-    item,
-    tabType,
-  }: {
-    item: Order | Favorite | Bid;
-    tabType: string;
-  }) => {
-    const isOrderTab = tabType === "current" || tabType === "historical";
-    const isFavorite = tabType === "favorites";
-    const isBid = tabType === "bids";
+  const SampleRequestItem = ({ item }: { item: SampleRequest }) => {
     const isExpanded = expandedOrderId === item.id;
-
-    const listing: Listing | undefined = isFavorite
-      ? (item as Favorite).listing
-      : isBid
-        ? (item as Bid).listing
-        : (item as Order).listing;
-    const listingId = listing?.id;
-    const favoriteId = isFavorite ? item.id : undefined;
 
     return (
       <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
@@ -677,13 +553,194 @@ export default function MyOrdersPage() {
             <div className="flex-1">
               <div className="flex items-center mb-2">
                 <h3 className="font-bold text-lg">
-                  {isFavorite || isBid
+                  {item.coffee_listing?.coffee_variety || "Unknown Coffee"}
+                </h3>
+                {item.coffee_listing?.listing_status === "active" && (
+                  <Badge
+                    variant="outline"
+                    className="ml-2 bg-green-500 text-white border-0"
+                  >
+                    Active Listing
+                  </Badge>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {item.farm?.farm_name || "Unknown Farm"}
+                {item.farm?.region ? `, ${item.farm.region}` : ""}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="font-bold text-lg">
+                {item.weight.toFixed(2)} kg
+              </div>
+              <div className="text-sm text-muted-foreground">Sample Weight</div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              <span>
+                Requested: {new Date(item.created_at).toLocaleDateString()}
+              </span>
+            </div>
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-1" />
+              <span>{item.delivery_address || "Unknown Address"}</span>
+            </div>
+          </div>
+
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-1 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {item.seller?.first_name || "Unknown"}{" "}
+                {item.seller?.last_name || ""}
+              </span>
+              {item.seller && (
+                <Link
+                  to={`/sellers/${item.seller.id}`}
+                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
+                >
+                  View Seller
+                </Link>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={
+                  item.delivery_status === "delivered"
+                    ? "secondary"
+                    : item.delivery_status === "inprogress"
+                      ? "default"
+                      : item.delivery_status === "pending"
+                        ? "warning"
+                        : "destructive"
+                }
+              >
+                {item.delivery_status.charAt(0).toUpperCase() +
+                  item.delivery_status.slice(1)}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => toggleOrderExpansion(item.id)}
+              >
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+            </div>
+          </div>
+
+          {isExpanded && (
+            <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">
+                    Sample Request Details
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Request ID:</span>
+                      <span className="font-medium">{item.id}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Coffee Variety:
+                      </span>
+                      <span className="font-medium">
+                        {item.coffee_listing?.coffee_variety || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Weight:</span>
+                      <span className="font-medium">
+                        {item.weight.toFixed(2)} kg
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Expires At:</span>
+                      <span className="font-medium">
+                        {new Date(item.expires_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">
+                    Seller & Delivery
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Seller:</span>
+                      <span className="font-medium">
+                        {item.seller?.first_name || "N/A"}{" "}
+                        {item.seller?.last_name || ""}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Email:</span>
+                      <span className="font-medium">
+                        {item.seller?.email || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Phone:</span>
+                      <span className="font-medium">{item.phone || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Address:</span>
+                      <span className="font-medium">
+                        {item.delivery_address || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end space-x-3">
+                <Link to={`/listing/${item.coffee_listing.id}`}>
+                  <Button variant="outline">View Listing</Button>
+                </Link>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const OrderItem = ({
+    item,
+    tabType,
+  }: {
+    item: Order | Bid;
+    tabType: string;
+  }) => {
+    const isOrderTab = tabType === "current" || tabType === "historical";
+    const isBid = tabType === "bids";
+    const isExpanded = expandedOrderId === item.id;
+
+    const listing: Listing | undefined = isBid
+      ? (item as Bid).listing
+      : (item as Order).listing;
+
+    return (
+      <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
+        <CardContent className="p-5">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="flex items-center mb-2">
+                <h3 className="font-bold text-lg">
+                  {isBid
                     ? listing?.coffee_variety || "Unknown Coffee"
                     : (item as Order).order_id || "Unknown Order"}
                 </h3>
                 {(listing?.is_organic ||
-                  (item as Order).listing?.is_organic ||
-                  (item as Bid).listing?.is_organic) && (
+                  (item as Order).listing?.is_organic) && (
                   <Badge
                     variant="outline"
                     className="ml-2 bg-green-500 text-white border-0"
@@ -692,7 +749,7 @@ export default function MyOrdersPage() {
                   </Badge>
                 )}
               </div>
-              {(isFavorite || isBid) && (
+              {isBid && (
                 <div className="text-sm text-muted-foreground">
                   {listing?.farm?.farm_name || "Unknown Farm"}
                   {listing?.farm?.region ? `, ${listing.farm.region}` : ""}
@@ -704,35 +761,27 @@ export default function MyOrdersPage() {
                 $
                 {isOrderTab
                   ? (item as Order).unit_price?.toFixed(2)
-                  : isBid
-                    ? (item as Bid).unit_price?.toFixed(2)
-                    : listing?.price_per_kg?.toFixed(2) || "N/A"}
+                  : (item as Bid).unit_price?.toFixed(2)}
                 /kg
               </div>
               <div className="text-sm text-muted-foreground">
                 {isOrderTab
                   ? `${(item as Order).quantity_kg.toLocaleString()} kg`
-                  : isBid
-                    ? `${(item as Bid).quantity_kg.toLocaleString()} kg`
-                    : `${listing?.quantity_kg?.toLocaleString() || "Unknown"} kg available`}
+                  : `${(item as Bid).quantity_kg.toLocaleString()} kg`}
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
-            {(isOrderTab || isBid) && (
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-1" />
-                <span>
-                  {isBid ? "Bid" : "Ordered"}:{" "}
-                  {new Date(
-                    isBid
-                      ? (item as Bid).created_at
-                      : (item as Order).created_at,
-                  ).toLocaleDateString()}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              <span>
+                {isBid ? "Bid" : "Ordered"}:{" "}
+                {new Date(
+                  isBid ? (item as Bid).created_at : (item as Order).created_at,
+                ).toLocaleDateString()}
+              </span>
+            </div>
             {isBid && (
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
@@ -744,79 +793,73 @@ export default function MyOrdersPage() {
             )}
           </div>
 
-          {(isOrderTab || isBid) && (
-            <>
-              <Separator className="my-3" />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <User className="h-4 w-4 mr-1 text-muted-foreground" />
-                  <span className="text-sm font-medium">
-                    {(isBid
-                      ? (item as Bid).seller?.first_name
-                      : (item as Order).seller?.first_name) || "Unknown"}{" "}
-                    {(isBid
-                      ? (item as Bid).seller?.last_name
-                      : (item as Order).seller?.last_name) || ""}
-                  </span>
-                  {(isBid ? (item as Bid).seller : (item as Order).seller) && (
-                    <Link
-                      to={`/sellers/${(isBid
-                        ? (item as Bid).seller!.first_name
-                        : (item as Order).seller!.first_name
-                      )?.toLowerCase()}-${(isBid
-                        ? (item as Bid).seller!.last_name
-                        : (item as Order).seller!.last_name
-                      )?.toLowerCase()}`}
-                      className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
-                    >
-                      View Seller
-                    </Link>
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-1 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {(isBid
+                  ? (item as Bid).seller?.first_name
+                  : (item as Order).seller?.first_name) || "Unknown"}{" "}
+                {(isBid
+                  ? (item as Bid).seller?.last_name
+                  : (item as Order).seller?.last_name) || ""}
+              </span>
+              {(isBid ? (item as Bid).seller : (item as Order).seller) && (
+                <Link
+                  to={`/sellers/${(isBid
+                    ? (item as Bid).seller!.first_name
+                    : (item as Order).seller!.first_name
+                  )?.toLowerCase()}-${(isBid
+                    ? (item as Bid).seller!.last_name
+                    : (item as Order).seller!.last_name
+                  )?.toLowerCase()}`}
+                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
+                >
+                  View Seller
+                </Link>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={
+                  (isBid ? (item as Bid).status : (item as Order).status) ===
+                  "completed"
+                    ? "secondary"
+                    : (isBid
+                          ? (item as Bid).status
+                          : (item as Order).status) === "confirmed"
+                      ? "default"
+                      : (isBid
+                            ? (item as Bid).status
+                            : (item as Order).status) === "pending"
+                        ? "warning"
+                        : "outline"
+                }
+              >
+                {(isBid ? (item as Bid).status : (item as Order).status)
+                  .charAt(0)
+                  .toUpperCase() +
+                  (isBid ? (item as Bid).status : (item as Order).status).slice(
+                    1,
                   )}
-                </div>
+              </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => toggleOrderExpansion(item.id)}
+              >
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+            </div>
+          </div>
 
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      (isBid
-                        ? (item as Bid).status
-                        : (item as Order).status) === "completed"
-                        ? "secondary"
-                        : (isBid
-                              ? (item as Bid).status
-                              : (item as Order).status) === "confirmed"
-                          ? "default"
-                          : (isBid
-                                ? (item as Bid).status
-                                : (item as Order).status) === "pending"
-                            ? "warning"
-                            : "outline"
-                    }
-                  >
-                    {(isBid ? (item as Bid).status : (item as Order).status)
-                      .charAt(0)
-                      .toUpperCase() +
-                      (isBid
-                        ? (item as Bid).status
-                        : (item as Order).status
-                      ).slice(1)}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => toggleOrderExpansion(item.id)}
-                  >
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                    />
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {(isOrderTab || isBid) && isExpanded && (
+          {isExpanded && (
             <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -904,31 +947,13 @@ export default function MyOrdersPage() {
                   <>
                     <Button
                       variant="destructive"
-                      onClick={() => openCancelModal((item as Order).order_id)}
+                      onClick={() => deleteOrder(item.id)}
                       disabled={activeLoading}
                     >
                       Cancel Order
                     </Button>
                     <Link to={`/listing/${item.listing_id}`}>
-                      <Button variant="outline">Contact Seller</Button>
-                    </Link>
-                  </>
-                )}
-                {tabType === "historical" && (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        openReviewModal(item.id, (item as Order).seller_id)
-                      }
-                    >
-                      Review Seller
-                    </Button>
-                    <Link to="/market-place">
-                      <Button>
-                        Order Again
-                        <ArrowRight className="ml-1 h-4 w-4" />
-                      </Button>
+                      <Button variant="outline">View Detail</Button>
                     </Link>
                   </>
                 )}
@@ -938,26 +963,6 @@ export default function MyOrdersPage() {
                   </Link>
                 )}
               </div>
-            </div>
-          )}
-
-          {isFavorite && (
-            <div className="mt-4 flex justify-end space-x-3">
-              <Button
-                variant="outline"
-                disabled={favoriteLoading[favoriteId || listingId || ""]}
-                onClick={() => removeFavorite(favoriteId!, listingId)}
-              >
-                {favoriteLoading[favoriteId || listingId || ""]
-                  ? "Removing..."
-                  : "Remove from Favorites"}
-              </Button>
-              <Link to={`/listing/${listingId}`}>
-                <Button>
-                  View Listing Details
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                </Button>
-              </Link>
             </div>
           )}
           <div className="flex items-center text-slate-500 text-sm mb-2">
@@ -970,6 +975,13 @@ export default function MyOrdersPage() {
   };
 
   const EmptyState = ({ tabType }: { tabType: string }) => {
+    const message =
+      tabType === "sample"
+        ? "No sample requests found. Check back later or browse the marketplace."
+        : tabType === "bids"
+          ? "No bids found. Check back later or browse the marketplace."
+          : "Head to the marketplace to place your first order of premium Ethiopian coffee.";
+
     return (
       <Card className="w-full">
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
@@ -982,17 +994,13 @@ export default function MyOrdersPage() {
               ? "active orders"
               : tabType === "historical"
                 ? "order history"
-                : tabType === "favorites"
-                  ? "favorites"
+                : tabType === "sample"
+                  ? "sample requests"
                   : "bids"}{" "}
             found
           </h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-md">
-            {tabType === "favorites"
-              ? "Browse the marketplace to find and save your favorite coffee offerings."
-              : tabType === "bids"
-                ? "Browse the marketplace to place bids on coffee listings."
-                : "Head to the marketplace to place your first order of premium Ethiopian coffee."}
+            {message}
           </p>
           <Link to="/market-place">
             <Button className="mt-6 bg-green-600 hover:bg-green-700">
@@ -1004,8 +1012,42 @@ export default function MyOrdersPage() {
     );
   };
 
+  // Skeleton Loader for Sample Requests
+  const SampleSkeleton = () => (
+    <div className="space-y-5 animate-pulse">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Card key={i} className="mb-4">
+          <CardContent className="p-5">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="h-6 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </div>
+              <div className="text-right">
+                <div className="h-6 bg-gray-200 rounded w-16"></div>
+                <div className="h-4 bg-gray-200 rounded w-24 mt-1"></div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center mt-2 gap-3">
+              <div className="h-4 bg-gray-200 rounded w-32"></div>
+              <div className="h-4 bg-gray-200 rounded w-32"></div>
+            </div>
+            <Separator className="my-3" />
+            <div className="flex items-center justify-between">
+              <div className="h-4 bg-gray-200 rounded w-40"></div>
+              <div className="flex items-center gap-2">
+                <div className="h-6 bg-gray-200 rounded w-16"></div>
+                <div className="h-6 bg-gray-200 rounded w-6"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-primary/5 p-8">
+    <div className="min-h-screen pt-20 bg-primary/5 p-8">
       <Header />
       <main className="container mx-auto px-4 py-6 max-w-5xl">
         <div className="flex justify-between items-center mb-6">
@@ -1033,18 +1075,18 @@ export default function MyOrdersPage() {
               Order History
             </TabsTrigger>
             <TabsTrigger
-              value="favorites"
+              value="sample"
               className="flex items-center justify-center h-12"
             >
-              <Heart className="h-4 w-4 mr-2" />
-              Favorites
+              <File className="h-4 w-4 mr-2" />
+              Sample Requests
             </TabsTrigger>
             <TabsTrigger
               value="bids"
               className="flex items-center justify-center h-12"
             >
               <Hand className="h-4 w-4 mr-2" />
-              Bids you made
+              All Bids
             </TabsTrigger>
           </TabsList>
 
@@ -1087,7 +1129,7 @@ export default function MyOrdersPage() {
 
             <div className="space-y-5">
               {activeLoading ? (
-                <LoadingState />
+                <SampleSkeleton />
               ) : activeError ? (
                 <Card className="p-6 text-center text-red-500">
                   {activeError}
@@ -1097,7 +1139,7 @@ export default function MyOrdersPage() {
                   {activeOrders.map((item) => (
                     <OrderItem key={item.id} item={item} tabType="current" />
                   ))}
-                  {activePagination.totalPages > 1 && (
+                  {activePagination.total_pages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -1116,7 +1158,7 @@ export default function MyOrdersPage() {
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: activePagination.totalPages },
+                          { length: activePagination.total_pages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -1138,12 +1180,12 @@ export default function MyOrdersPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               if (
-                                activeCurrentPage < activePagination.totalPages
+                                activeCurrentPage < activePagination.total_pages
                               )
                                 setActiveCurrentPage(activeCurrentPage + 1);
                             }}
                             className={
-                              activeCurrentPage >= activePagination.totalPages
+                              activeCurrentPage >= activePagination.total_pages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -1198,7 +1240,7 @@ export default function MyOrdersPage() {
 
             <div className="space-y-5">
               {historyLoading ? (
-                <LoadingState />
+                <SampleSkeleton />
               ) : historyError ? (
                 <Card className="p-6 text-center text-red-500">
                   {historyError}
@@ -1208,7 +1250,7 @@ export default function MyOrdersPage() {
                   {historicalOrders.map((item) => (
                     <OrderItem key={item.id} item={item} tabType="historical" />
                   ))}
-                  {historyPagination.totalPages > 1 && (
+                  {historyPagination.total_pages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -1227,7 +1269,7 @@ export default function MyOrdersPage() {
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: historyPagination.totalPages },
+                          { length: historyPagination.total_pages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -1250,12 +1292,13 @@ export default function MyOrdersPage() {
                               e.preventDefault();
                               if (
                                 historyCurrentPage <
-                                historyPagination.totalPages
+                                historyPagination.total_pages
                               )
                                 setHistoryCurrentPage(historyCurrentPage + 1);
                             }}
                             className={
-                              historyCurrentPage >= historyPagination.totalPages
+                              historyCurrentPage >=
+                              historyPagination.total_pages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -1271,24 +1314,26 @@ export default function MyOrdersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="favorites" className="mt-6">
+          <TabsContent value="sample" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
-                {favoritesLoading
+                {sampleLoading
                   ? "Loading..."
-                  : `${favorites.length} Favorited Items`}
+                  : sampleRequests && sampleRequests.length > 0
+                    ? `${sampleRequests.length} Sample Requests`
+                    : "No Sample Requests"}
               </p>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
-                  onSubmit={handleFavoritesSearch}
+                  onSubmit={handleSampleSearch}
                   className="flex gap-2 w-full md:w-auto"
                 >
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search favorites..."
-                      value={favoritesSearchTerm}
-                      onChange={(e) => setFavoritesSearchTerm(e.target.value)}
+                      placeholder="Search sample requests..."
+                      value={sampleSearchTerm}
+                      onChange={(e) => setSampleSearchTerm(e.target.value)}
                       className="pl-8"
                     />
                   </div>
@@ -1309,18 +1354,18 @@ export default function MyOrdersPage() {
             </div>
 
             <div className="space-y-5">
-              {favoritesLoading ? (
-                <LoadingState />
-              ) : favoritesError ? (
+              {sampleLoading ? (
+                <SampleSkeleton />
+              ) : sampleError ? (
                 <Card className="p-6 text-center text-red-500">
-                  {favoritesError}
+                  {sampleError}
                 </Card>
-              ) : favorites.length > 0 ? (
+              ) : sampleRequests && sampleRequests.length > 0 ? (
                 <>
-                  {favorites.map((item) => (
-                    <OrderItem key={item.id} item={item} tabType="favorites" />
+                  {sampleRequests.map((item) => (
+                    <SampleRequestItem key={item.id} item={item} />
                   ))}
-                  {favoritesPagination.totalPages > 1 && (
+                  {samplePagination.total_pages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -1328,20 +1373,18 @@ export default function MyOrdersPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              if (favoritesCurrentPage > 1)
-                                setFavoritesCurrentPage(
-                                  favoritesCurrentPage - 1,
-                                );
+                              if (sampleCurrentPage > 1)
+                                setSampleCurrentPage(sampleCurrentPage - 1);
                             }}
                             className={
-                              favoritesCurrentPage <= 1
+                              sampleCurrentPage <= 1
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: favoritesPagination.totalPages },
+                          { length: samplePagination.total_pages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -1349,9 +1392,9 @@ export default function MyOrdersPage() {
                               href="#"
                               onClick={(e) => {
                                 e.preventDefault();
-                                setFavoritesCurrentPage(page);
+                                setSampleCurrentPage(page);
                               }}
-                              isActive={page === favoritesCurrentPage}
+                              isActive={page === sampleCurrentPage}
                             >
                               {page}
                             </PaginationLink>
@@ -1363,16 +1406,12 @@ export default function MyOrdersPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               if (
-                                favoritesCurrentPage <
-                                favoritesPagination.totalPages
+                                sampleCurrentPage < samplePagination.total_pages
                               )
-                                setFavoritesCurrentPage(
-                                  favoritesCurrentPage + 1,
-                                );
+                                setSampleCurrentPage(sampleCurrentPage + 1);
                             }}
                             className={
-                              favoritesCurrentPage >=
-                              favoritesPagination.totalPages
+                              sampleCurrentPage >= samplePagination.total_pages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -1383,7 +1422,7 @@ export default function MyOrdersPage() {
                   )}
                 </>
               ) : (
-                <EmptyState tabType="favorites" />
+                <EmptyState tabType="sample" />
               )}
             </div>
           </TabsContent>
@@ -1391,19 +1430,19 @@ export default function MyOrdersPage() {
           <TabsContent value="bids" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
-                {bidsLoading ? "Loading..." : `${bids.length} Bids`}
+                {bidLoading ? "Loading..." : `${bids.length} Bids`}
               </p>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
-                  onSubmit={handleBidsSearch}
+                  onSubmit={handleBidSearch}
                   className="flex gap-2 w-full md:w-auto"
                 >
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       placeholder="Search bids..."
-                      value={bidsSearchTerm}
-                      onChange={(e) => setBidsSearchTerm(e.target.value)}
+                      value={bidSearchTerm}
+                      onChange={(e) => setBidSearchTerm(e.target.value)}
                       className="pl-8"
                     />
                   </div>
@@ -1424,18 +1463,16 @@ export default function MyOrdersPage() {
             </div>
 
             <div className="space-y-5">
-              {bidsLoading ? (
-                <LoadingState />
-              ) : bidsError ? (
-                <Card className="p-6 text-center text-red-500">
-                  {bidsError}
-                </Card>
+              {bidLoading ? (
+                <SampleSkeleton />
+              ) : bidError ? (
+                <Card className="p-6 text-center text-red-500">{bidError}</Card>
               ) : bids.length > 0 ? (
                 <>
                   {bids.map((item) => (
                     <OrderItem key={item.id} item={item} tabType="bids" />
                   ))}
-                  {bidsPagination.totalPages > 1 && (
+                  {bidPagination.total_pages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -1443,18 +1480,18 @@ export default function MyOrdersPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              if (bidsCurrentPage > 1)
-                                setBidsCurrentPage(bidsCurrentPage - 1);
+                              if (bidCurrentPage > 1)
+                                setBidCurrentPage(bidCurrentPage - 1);
                             }}
                             className={
-                              bidsCurrentPage <= 1
+                              bidCurrentPage <= 1
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: bidsPagination.totalPages },
+                          { length: bidPagination.total_pages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -1462,9 +1499,9 @@ export default function MyOrdersPage() {
                               href="#"
                               onClick={(e) => {
                                 e.preventDefault();
-                                setBidsCurrentPage(page);
+                                setBidCurrentPage(page);
                               }}
-                              isActive={page === bidsCurrentPage}
+                              isActive={page === bidCurrentPage}
                             >
                               {page}
                             </PaginationLink>
@@ -1475,11 +1512,11 @@ export default function MyOrdersPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              if (bidsCurrentPage < bidsPagination.totalPages)
-                                setBidsCurrentPage(bidsCurrentPage + 1);
+                              if (bidCurrentPage < bidPagination.total_pages)
+                                setBidCurrentPage(bidCurrentPage + 1);
                             }}
                             className={
-                              bidsCurrentPage >= bidsPagination.totalPages
+                              bidCurrentPage >= bidPagination.total_pages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -1495,22 +1532,6 @@ export default function MyOrdersPage() {
             </div>
           </TabsContent>
         </Tabs>
-
-        {reviewModalData && (
-          <ReviewModal
-            orderId={reviewModalData.orderId}
-            sellerId={reviewModalData.sellerId}
-            onClose={() => setReviewModalData(null)}
-          />
-        )}
-
-        {cancelModalData && (
-          <CancelOrderModal
-            orderId={cancelModalData.orderId}
-            onClose={() => setCancelModalData(null)}
-            onSubmit={submitCancelRequest}
-          />
-        )}
       </main>
     </div>
   );

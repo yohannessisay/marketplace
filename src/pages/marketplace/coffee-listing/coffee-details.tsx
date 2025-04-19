@@ -149,6 +149,16 @@ export function CoffeeDetails({
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      e.key === "Enter" &&
+      chatMessage.trim() &&
+      user?.onboarding_stage === "completed"
+    ) {
+      handleSendMessage();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PhotoGallery
@@ -273,6 +283,7 @@ export function CoffeeDetails({
               <Input
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
                 className="flex-1"
                 disabled={user?.onboarding_stage !== "completed"}

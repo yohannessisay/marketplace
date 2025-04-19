@@ -1,3 +1,5 @@
+"use client";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { saveToLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
+import { OTP_TIMER_KEY, SIGNUP_PROFILE_KEY } from "@/types/constants";
 
 type OTPValidationType = z.infer<typeof createOTPValidationSchema>;
 
@@ -40,20 +43,57 @@ export default function OTPInputPage() {
   const { successMessage, errorMessage } = useNotification();
 
   useEffect(() => {
-    if (timer > 0) {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
+    const savedExpiration = localStorage.getItem(OTP_TIMER_KEY);
+    let interval: NodeJS.Timeout;
+
+    if (savedExpiration) {
+      const expirationTime = parseInt(savedExpiration, 10);
+      const currentTime = Date.now();
+      const remainingTimeMs = expirationTime - currentTime;
+
+      if (remainingTimeMs > 0) {
+        setTimer(Math.ceil(remainingTimeMs / 1000));
+        interval = setInterval(() => {
+          const newRemainingTimeMs = expirationTime - Date.now();
+          if (newRemainingTimeMs <= 0) {
+            setTimer(0);
+            localStorage.removeItem(OTP_TIMER_KEY);
+            clearInterval(interval);
+          } else {
+            setTimer(Math.ceil(newRemainingTimeMs / 1000));
+          }
+        }, 1000);
+      } else {
+        setTimer(0);
+        localStorage.removeItem(OTP_TIMER_KEY);
+      }
+    } else {
+      const expirationTime = Date.now() + 60 * 1000;
+      localStorage.setItem(OTP_TIMER_KEY, expirationTime.toString());
+      interval = setInterval(() => {
+        const remainingTimeMs = expirationTime - Date.now();
+        if (remainingTimeMs <= 0) {
+          setTimer(0);
+          localStorage.removeItem(OTP_TIMER_KEY);
+          clearInterval(interval);
+        } else {
+          setTimer(Math.ceil(remainingTimeMs / 1000));
+        }
       }, 1000);
-      return () => clearInterval(interval);
     }
-  }, [timer]);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const onSubmit = async (data: OTPValidationType) => {
     try {
-      const userProfile = localStorage.getItem("userProfile");
-      const email = userProfile ? JSON.parse(userProfile).email : "";
+      const email = localStorage.getItem(SIGNUP_PROFILE_KEY);
       if (!email) {
-        throw new Error("No email found in user profile");
+        throw {
+          error: {
+            message: "No email found in user profile",
+          },
+        };
       }
       await apiService().postWithoutAuth("/auth/verify-email", {
         ...data,
@@ -61,14 +101,18 @@ export default function OTPInputPage() {
       });
 
       saveToLocalStorage("current-step", "farm_profile");
+      localStorage.removeItem(OTP_TIMER_KEY);
+      localStorage.removeItem(SIGNUP_PROFILE_KEY);
       successMessage("OTP verified successfully!");
       navigate("/login");
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
+      console.log(error);
       if (
         errorResponse.error.details ===
         "This user's email has already been verified"
       ) {
+        localStorage.removeItem(OTP_TIMER_KEY);
         successMessage("Email already verified!");
         navigate("/login");
       } else {
@@ -82,17 +126,24 @@ export default function OTPInputPage() {
       const userProfile = localStorage.getItem("userProfile");
       const email = userProfile ? JSON.parse(userProfile).email : "";
       if (!email) {
-        throw new Error("No email found in user profile");
+        throw {
+          error: {
+            message: "No email found in user profile",
+          },
+        };
       }
       await apiService().postWithoutAuth("/auth/resend-verification-email", {
         email,
       });
 
       successMessage("New OTP sent to your email!");
+      // Reset timer
+      const expirationTime = Date.now() + 60 * 1000; // 60 seconds from now
+      localStorage.setItem(OTP_TIMER_KEY, expirationTime.toString());
       setTimer(60);
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
-      errorMessage(errorResponse.error);
+      errorMessage(errorResponse);
     }
   };
 
@@ -116,7 +167,7 @@ export default function OTPInputPage() {
             <span className="text-green-600">Afro</span>valley
           </h2>
           <p className="text-gray-600 mb-4 text-center">
-            Enter the one time password (OTP) sent to your email
+            Enter the one-time password (OTP) sent to your email
           </p>
           <Form {...form}>
             <form
@@ -128,7 +179,7 @@ export default function OTPInputPage() {
                 name="otp"
                 render={({ field }) => (
                   <FormItem className="w-full flex flex-col items-center">
-                    <FormLabel className="flex justify-center ">
+                    <FormLabel className="flex justify-center">
                       One-Time Password
                     </FormLabel>
                     <FormControl>

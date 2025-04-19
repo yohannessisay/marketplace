@@ -13,6 +13,7 @@ import { useState } from "react";
 import { Eye, EyeOff, MoveLeft } from "lucide-react";
 import { saveToLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
+import { USER_PROFILE_KEY } from "@/types/constants";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 const Login = () => {
@@ -76,7 +77,7 @@ const Login = () => {
       }
 
       navigate(redirectTo);
-      saveToLocalStorage("userProfile", user);
+      saveToLocalStorage(USER_PROFILE_KEY, user);
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
       if (

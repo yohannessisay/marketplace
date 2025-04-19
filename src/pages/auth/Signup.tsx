@@ -25,6 +25,7 @@ import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { MoveLeft } from "lucide-react";
 import { APIErrorResponse } from "@/types/api";
+import { SIGNUP_PROFILE_KEY } from "@/types/constants";
 
 type BuyerFormValues = z.infer<typeof buyerSchema>;
 type SellerFormValues = z.infer<typeof sellerSchema>;
@@ -70,8 +71,10 @@ export default function SignupPage() {
         userType: "buyer",
       });
 
-      successMessage("Registration successful! Please verify your email.");
-      localStorage.setItem("userProfile", JSON.stringify(data));
+      successMessage(
+        "Buyer Registration successful! Please verify your email.",
+      );
+      localStorage.setItem(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
     } catch (error: unknown) {
       setIsSubmitting(false);
@@ -88,8 +91,10 @@ export default function SignupPage() {
         userType: "seller",
       });
 
-      successMessage("Registration successful! Please verify your email.");
-      localStorage.setItem("userProfile", JSON.stringify(data));
+      successMessage(
+        "Seller registration successful! Please verify your email.",
+      );
+      localStorage.setItem(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
     } catch (error: unknown) {
       setIsSubmitting(false);

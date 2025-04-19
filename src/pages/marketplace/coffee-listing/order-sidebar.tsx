@@ -1,3 +1,5 @@
+"use client";
+
 import { Star, Award, Download, MapPin, Coffee, Droplet } from "lucide-react";
 import { OrderStatus } from "@/types/order";
 import { CoffeeListing } from "@/types/coffee";
@@ -5,56 +7,92 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOrderStatus } from "@/hooks/useOrderStatus";
-import { getUserProfile } from "@/lib/utils";
 import { ActionTooltip } from "@/components/common/action-tooltip";
+import { useAuth } from "@/hooks/useAuth";
+import { useBuyerOrderData } from "@/hooks/useListingBid";
+import { useEffect, useCallback, useState } from "react";
+import { BidModal } from "./Bid-modal";
+import { apiService } from "@/services/apiService";
+import { Link } from "react-router-dom";
 
 interface OrderSidebarProps {
   listing: CoffeeListing | null;
   demoOrderStatus?: OrderStatus;
-  setShowBidModal?: (show: boolean) => void;
   setShowOrderModal?: (show: boolean) => void;
   setShowReviewModal?: (show: boolean) => void;
 }
 
-export function OrderSidebar({
-  listing,
-  demoOrderStatus,
-  setShowBidModal,
-}: OrderSidebarProps) {
+export function OrderSidebar({ listing, demoOrderStatus }: OrderSidebarProps) {
   const orderStatus = useOrderStatus(demoOrderStatus);
+  const { user } = useAuth();
+  const { hasBid, loading, error, checkBid } = useBuyerOrderData();
+  const [showBidModal, setShowBidModal] = useState(false);
+  const [quantity, setQuantity] = useState<number>();
+  const [bidPrice, setBidPrice] = useState(0);
 
-  const user = getUserProfile();
+  useEffect(() => {
+    if (listing?.id) {
+      checkBid(listing.id);
+    }
+  }, [listing?.id, checkBid]);
 
-  if (!listing) {
-    return null;
-  }
+  const handleBidSubmitted = useCallback(() => {
+    if (listing?.id) {
+      console.log("[OrderSidebar] Checking bid status after submission");
+      checkBid(listing.id);
+    }
+  }, [listing?.id, checkBid]);
 
-  // Get primary photo if needed
+  const handleModalClose = useCallback(() => {
+    setShowBidModal(false);
+    if (listing?.id) {
+      console.log("[OrderSidebar] Fallback bid status check on modal close");
+      checkBid(listing.id);
+    }
+  }, [listing?.id, checkBid]);
+
+  const handleSubmitBid = async () => {
+    if (!listing?.id) return;
+    try {
+      await apiService().post("/bids/place-bid", {
+        listingId: listing.id,
+        quantity,
+        pricePerKg: bidPrice,
+      });
+    } catch (error) {
+      console.error("[OrderSidebar] Error submitting bid:", error);
+      throw error;
+    }
+  };
+
+  const openBidModal = () => {
+    setShowBidModal(true);
+    setQuantity(listing?.quantity_kg as number);
+    setBidPrice(listing?.price_per_kg || 0);
+  };
+
   const primaryPhoto =
-    listing.coffee_photo?.find((p: any) => p.is_primary)?.photo_url ||
-    listing.coffee_photo?.[0]?.photo_url ||
+    listing?.coffee_photo?.find((p: any) => p.is_primary)?.photo_url ||
+    listing?.coffee_photo?.[0]?.photo_url ||
     "/placeholder.svg";
 
   return (
     <div className="space-y-6">
-      {/* Coffee Listing Card */}
       <Card className="top-6">
         <CardContent className="p-6">
-          {/* Coffee Image */}
           <div className="mb-4">
             <img
               src={primaryPhoto}
-              alt={listing.coffee_variety}
+              alt={listing?.coffee_variety}
               className="w-full h-40 object-cover rounded-lg"
             />
           </div>
-          {/* Coffee Variety and Grade */}
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h2 className="text-xl font-bold">{listing.coffee_variety}</h2>
+              <h2 className="text-xl font-bold">{listing?.coffee_variety}</h2>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Coffee className="h-4 w-4 mr-1" />
-                {listing.bean_type}
+                {listing?.bean_type}
               </div>
             </div>
             <Badge
@@ -62,92 +100,90 @@ export function OrderSidebar({
               className="bg-yellow-100 text-yellow-800 border-0"
             >
               <Star size={16} className="mr-1 text-yellow-500 fill-current" />
-              {listing.grade}
+              {listing?.grade}
             </Badge>
           </div>
-          {/* Price */}
           <div className="flex items-baseline mb-4">
             <span className="text-2xl font-bold text-primary">
-              ${listing.price_per_kg}
+              ${listing?.price_per_kg}
             </span>
             <span className="ml-1 text-muted-foreground">/kg</span>
-            {listing.is_organic && (
+            {listing?.is_organic && (
               <Badge className="ml-2 bg-green-500 text-white border-0">
                 Organic
               </Badge>
             )}
           </div>
-          {/* Farm and Region */}
           <div className="mb-2 flex items-center text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 mr-1" />
-            {listing.farm?.farm_name} &mdash; {listing.farm?.region},{" "}
-            {listing.farm?.country}
+            {listing?.farm?.farm_name} — {listing?.farm?.region},{" "}
+            {listing?.farm?.country}
           </div>
-          {/* Processing Method */}
           <div className="mb-2 flex items-center text-sm text-muted-foreground">
             <Droplet className="h-4 w-4 mr-1" />
-            {listing.processing_method}
+            {listing?.processing_method}
           </div>
-          {/* Crop Year, Moisture, Screen Size */}
           <div className="mb-2 text-sm text-muted-foreground">
             <span className="mr-2">
-              <b>Crop Year:</b> {listing.crop_year}
+              <b>Crop Year:</b> {listing?.crop_year}
             </span>
             <span className="mr-2">
-              <b>Moisture:</b> {listing.moisture_percentage}%
+              <b>Moisture:</b> {listing?.moisture_percentage}%
             </span>
             <span>
-              <b>Screen Size:</b> {listing.screen_size}
+              <b>Screen Size:</b> {listing?.screen_size}
             </span>
           </div>
-          {/* Quantity */}
           <div className="mb-2 text-sm text-muted-foreground">
-            <b>Available:</b> {listing.quantity_kg} kg
+            <b>Available:</b> {listing?.quantity_kg} kg
           </div>
-          {/* Delivery Type */}
           <div className="mb-2 text-sm text-muted-foreground">
-            <b>Delivery:</b> {listing.delivery_type}
+            <b>Delivery:</b> {listing?.delivery_type}
           </div>
           {user?.userType !== "seller" &&
             listing?.listing_status === "active" && (
-              <>
-                <div className="flex flex-col gap-3 pt-4">
-                  <ActionTooltip
-                    onClick={() => setShowBidModal && setShowBidModal(true)}
-                    className="w-full"
-                    disabled={user?.onboarding_stage !== "completed"}
-                    disabledMessage="complete your onboarding to place bid"
-                  >
-                    Place Bid
-                  </ActionTooltip>
-                </div>
-              </>
+              <div className="flex flex-col gap-3 pt-4">
+                <ActionTooltip
+                  onClick={openBidModal}
+                  className="w-full"
+                  disabled={
+                    user?.onboarding_stage !== "completed" ||
+                    hasBid === true ||
+                    loading
+                  }
+                  disabledMessage={
+                    hasBid
+                      ? "You have already placed a bid on this order, wait for the seller's response"
+                      : loading
+                        ? "Checking bid status..."
+                        : "Complete your onboarding to place a bid"
+                  }
+                >
+                  {hasBid ? "Bid Placed" : "Place Bid"}
+                </ActionTooltip>
+              </div>
             )}
+          {error && <p className="text-sm text-red-500 mt-2">Error: {error}</p>}
         </CardContent>
       </Card>
 
-      {/* Discount info card - only shown when no order exists */}
       {!orderStatus &&
-        listing.listing_discount &&
-        listing.listing_discount.length > 0 && (
+        listing?.listing_discount &&
+        listing?.listing_discount.length > 0 && (
           <Card>
             <CardContent className="p-6">
               <h3 className="text-md font-medium mb-3">Volume Discounts</h3>
               <div className="space-y-2">
-                {listing.listing_discount.map((discount: any, idx: number) => (
+                {listing?.listing_discount.map((discount: any, idx: number) => (
                   <div
                     key={idx}
                     className="flex justify-between items-center p-2 bg-primary/5 rounded-md"
                   >
                     <span className="text-sm">
-                      Order {discount.min_quantity}+ kg
+                      Order {discount.minimum_quantity_kg}+ kg
                     </span>
                     <span className="text-sm font-medium text-primary">
-                      {discount.discount_percent
-                        ? `${discount.discount_percent}% off`
-                        : discount.discount_amount
-                          ? `$${discount.discount_amount} off`
-                          : ""}
+                      {discount.discount_percentage}% off
                     </span>
                   </div>
                 ))}
@@ -158,40 +194,51 @@ export function OrderSidebar({
             </CardContent>
           </Card>
         )}
-
-      {/* Seller Info */}
-      <Card>
-        <CardContent className="p-6">
-          <h3 className="text-lg font-medium mb-4">About the Seller</h3>
-          <div className="flex items-center mb-2">
-            <img
-              src={listing.seller?.avatar_url_csv || "/placeholder.svg"}
-              alt="Seller Avatar"
-              className="w-10 h-10 rounded-full mr-3"
-            />
-            <div>
-              <div className="font-semibold">
-                {listing.seller?.first_name} {listing.seller?.last_name}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {listing.seller?.email}
+      {user?.userType !== "seller" && (
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-lg font-medium mb-4">About the Seller</h3>
+            <div className="flex items-center mb-2">
+              <img
+                src={listing?.seller?.avatar_url_csv || "/placeholder.svg"}
+                alt="Seller Avatar"
+                className="w-10 h-10 rounded-full mr-3"
+              />
+              <div>
+                <div className="font-semibold">
+                  {listing?.seller?.first_name} {listing?.seller?.last_name}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {listing?.seller?.email}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="text-sm text-muted-foreground mb-2 pt-2">
-            <b className="font-bold mr-1">Rating:</b>{" "}
-            {listing.seller?.rating ?? 0}
-            <span className="ml-1 mr-1">⭐</span>(
-            {listing.seller?.total_reviews ?? 0} review
-            {listing.seller?.total_reviews !== 1 ? "s" : ""})
-          </div>
-          <Button variant="outline" className="w-full mt-2">
-            View Seller Profile
-          </Button>
-        </CardContent>
-      </Card>
+            <div className="text-sm text-muted-foreground mb-2 pt-2">
+              <b className="font-bold mr-1">Rating:</b>{" "}
+              {listing?.seller?.rating ?? 0}
+              <span className="ml-1 mr-1">⭐</span>(
+              {listing?.seller?.total_reviews ?? 0} review
+              {listing?.seller?.total_reviews !== 1 ? "s" : ""})
+            </div>
+            <Button variant="outline" className="w-full mt-2">
+              View Seller Profile
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Coffee Certificate Card - Optional for completed orders */}
+      {user?.userType === "seller" && listing?.seller.id === user?.id && (
+        <Card>
+          <CardContent className="p-6">
+            <Link to={`/manage-listing/${listing.id}`}>
+              <Button variant="outline" className="w-full mt-2">
+                Manage Listing
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       {orderStatus &&
         (orderStatus.status === "completed" ||
           orderStatus.status === "delivered") && (
@@ -212,6 +259,19 @@ export function OrderSidebar({
             </CardContent>
           </Card>
         )}
+
+      {showBidModal && (
+        <BidModal
+          listing={listing}
+          quantity={listing?.quantity_kg as number}
+          setQuantity={setQuantity}
+          bidPrice={bidPrice}
+          setBidPrice={setBidPrice}
+          onClose={handleModalClose}
+          onSubmit={handleSubmitBid}
+          onBidSubmitted={handleBidSubmitted}
+        />
+      )}
     </div>
   );
 }

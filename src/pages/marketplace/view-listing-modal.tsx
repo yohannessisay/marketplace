@@ -4,7 +4,7 @@ import * as React from "react";
 import { Map, Coffee, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import SampleRequestModal from "./sample-request-modal";
 import { Link } from "react-router-dom";
 import { ApiResponse, CoffeeListing, CoffeePhoto } from "@/types/coffee";
 import { getFromLocalStorage, getUserProfile } from "@/lib/utils";
+import { useSampleRequest } from "@/hooks/useSampleRequest";
 
 function CoffeeImage({
   src,
@@ -75,6 +76,12 @@ export default function ListingDetailModal({
   const [showSampleRequestModal, setShowSampleRequestModal] =
     React.useState(false);
   const user = getUserProfile();
+  const {
+    hasSampleRequest,
+    loading: sampleLoading,
+    error: sampleError,
+    checkSampleRequest,
+  } = useSampleRequest();
 
   React.useEffect(() => {
     const fetchListingDetails = async () => {
@@ -92,8 +99,7 @@ export default function ListingDetailModal({
           response.data.listings.length > 0
         ) {
           setListing(response.data.listings[0]);
-          // Reset photo index when loading a new listing
-          setCurrentPhotoIndex(0);
+          setCurrentPhotoIndex(0); // Reset photo index
         } else {
           setError("Failed to fetch listing details");
         }
@@ -107,8 +113,9 @@ export default function ListingDetailModal({
 
     if (listingId) {
       fetchListingDetails();
+      checkSampleRequest(listingId);
     }
-  }, [listingId]);
+  }, [listingId, checkSampleRequest]);
 
   const getPhotos = (listing: CoffeeListing): CoffeePhoto[] => {
     return [...listing.coffee_photo].sort((a, b) => {
@@ -153,7 +160,6 @@ export default function ListingDetailModal({
       Short: 40,
       Ful: 90, // Handling typo in the data
     };
-
     return map[value] || 50;
   };
 
@@ -162,11 +168,11 @@ export default function ListingDetailModal({
       <Dialog open={!!listingId} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="min-w-4xl p-0 overflow-scroll max-h-[90vh] my-4">
           <DialogHeader className="shadow-md">
-            <DialogTitle className="flex justify-center  mt-4 items-center gap-2">
+            <DialogTitle className="flex justify-center mt-4 items-center gap-2">
               <Coffee className="h-5 w-5 text-emerald-600" />
               View Detail
             </DialogTitle>
-            <DialogDescription className="flex justify-center ">
+            <DialogDescription className="flex justify-center">
               Request a sample
             </DialogDescription>
           </DialogHeader>
@@ -196,14 +202,11 @@ export default function ListingDetailModal({
                   alt={listing.coffee_variety}
                   className="w-full h-full px-5"
                 />
-
                 {listing.is_organic && (
                   <Badge className="absolute top-4 left-4 bg-emerald-500 ml-4">
                     Organic
                   </Badge>
                 )}
-
-                {/* Carousel Navigation */}
                 {listing.coffee_photo.length > 1 && (
                   <>
                     <Button
@@ -222,8 +225,6 @@ export default function ListingDetailModal({
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
-
-                    {/* Photo Indicators */}
                     <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
                       {getPhotos(listing).map((_, index) => (
                         <button
@@ -242,6 +243,11 @@ export default function ListingDetailModal({
               </div>
 
               <div className="p-6">
+                {sampleError && (
+                  <p className="text-sm text-red-600 bg-red-100 p-2 rounded-md mb-4">
+                    Error: {sampleError}
+                  </p>
+                )}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-800">
@@ -255,7 +261,6 @@ export default function ListingDetailModal({
                       </span>
                     </div>
                   </div>
-
                   <div className="flex flex-col items-start">
                     <div className="bg-amber-50 px-3 py-2 rounded-lg flex items-center mb-2">
                       <Star className="h-5 w-5 text-amber-500 mr-2" />
@@ -506,9 +511,17 @@ export default function ListingDetailModal({
                       variant="outline"
                       className="w-full sm:flex-1 px-4 py-2"
                       onClick={() => setShowSampleRequestModal(true)}
-                      disabled={user?.onboarding_stage !== "completed"}
+                      disabled={
+                        user?.onboarding_stage !== "completed" ||
+                        sampleLoading ||
+                        hasSampleRequest!
+                      }
                     >
-                      Request Samples
+                      {sampleLoading
+                        ? "Checking..."
+                        : hasSampleRequest
+                          ? "Sample Requested"
+                          : "Request Samples"}
                     </Button>
                   ) : (
                     <></>
@@ -541,7 +554,6 @@ export default function ListingDetailModal({
         </DialogContent>
       </Dialog>
 
-      {/* Sample Request Modal */}
       {listing && (
         <SampleRequestModal
           open={showSampleRequestModal}

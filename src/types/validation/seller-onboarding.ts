@@ -1,50 +1,58 @@
 import { z } from "zod";
 
 // Step 1: Farm Details Schema
-export const farmDetailsSchema = z.object({
-  // Farm Location
-  region: z.string().min(1, "Region is required"),
+export const farmDetailsSchema = z
+  .object({
+    // Farm Location
+    region: z.string().min(1, "Region is required"),
 
-  // Coffee Land Details
-  longitude: z.number().min(1, "Longitude is required"),
-  latitude: z.number().min(1, "Latitude is required"),
+    // Coffee Land Details
+    longitude: z.number().min(1, "Longitude is required"),
+    latitude: z.number().min(1, "Latitude is required"),
 
-  // Crop Environment
-  crop_type: z.string().min(1, "Crop type is required"),
-  crop_source: z.string().min(1, "Crop source is required"),
-  origin: z.string().min(1, "Origin is required"),
+    // Crop Environment
+    crop_type: z.string().min(1, "Crop type is required"),
+    crop_source: z.string().min(1, "Crop source is required"),
+    origin: z.string().min(1, "Origin is required"),
 
-  // Tree Information
-  tree_type: z.string().min(1, "Tree type is required"),
-  tree_variety: z.string().min(1, "Tree variety is required"),
+    // Tree Information
+    tree_type: z.string().min(1, "Tree type is required"),
+    tree_variety: z.string().min(1, "Tree variety is required"),
 
-  // Growing Conditions
-  soil_type: z.string().min(1, "Soil type is required"),
+    // Growing Conditions
+    soil_type: z.string().min(1, "Soil type is required"),
 
-  // Farm Name
-  farm_name: z.string().min(1, "Farm name is required"),
+    // Farm Name
+    farm_name: z.string().min(1, "Farm name is required"),
 
-  town_location: z.string().min(1, "Town location is required"),
-  country: z.string().min(1, "Country is required"),
-  total_size_hectares: z.number().min(1, "Total size is required"),
-  coffee_area_hectares: z.number().min(1, "Coffee area is required"),
-  altitude_meters: z.number().min(1, "Altitude is required"),
-  capacity_kg: z.number().min(1, "Capacity is required"),
-  avg_annual_temp: z.number().min(1, "Average annual temperature is required"),
-  annual_rainfall_mm: z.number().min(1, "Annual rainfall is required"),
-});
+    town_location: z.string().min(1, "Town location is required"),
+    country: z.string().min(1, "Country is required"),
+    total_size_hectares: z.number().min(1, "Total size is required"),
+    coffee_area_hectares: z.number().min(1, "Coffee area is required"),
+    altitude_meters: z.number().min(1, "Altitude is required"),
+    capacity_kg: z.number().min(1, "Capacity is required"),
+    avg_annual_temp: z
+      .number()
+      .min(1, "Average annual temperature is required"),
+    annual_rainfall_mm: z.number().min(1, "Annual rainfall is required"),
+  })
+  .refine((data) => data.coffee_area_hectares <= data.total_size_hectares, {
+    message: "Coffee area cannot be greater than total farm size",
+    path: ["coffee_area_hectares"],
+  });
 
 export type FarmDetailsFormData = z.infer<typeof farmDetailsSchema>;
 
 // Step 2: Coffee Crops Schema - Updated to match the provided component
 export const coffeeCropsSchema = z.object({
   // Basic Info
-  coffee_variety: z.string().min(1, "Coffee variety is required"), 
+  farmId: z.string(),
+  coffee_variety: z.string().min(1, "Coffee variety is required"),
   grade: z.string().min(1, "Initial grading is required"),
   bean_type: z.string().min(1, "Bean type is required"),
   crop_year: z.string().min(1, "Crop year is required"),
 
-  // Crop Specification 
+  // Crop Specification
   processing_method: z.string().min(1, "Processing method is required"),
   moisture_percentage: z.number().min(1, "Moisture is required"),
   screen_size: z.number().min(1, "Screen size is required"),
@@ -67,7 +75,7 @@ export const coffeeCropsSchema = z.object({
   readiness_date: z.string().min(1, "Readiness date is required"),
   lot_length: z.string().optional(),
   delivery_type: z.string().min(1, "Delivery type is required"),
-  shipping_port: z.string().min(1, "Shipping port is required"), 
+  shipping_port: z.string().min(1, "Shipping port is required"),
 });
 
 export type CoffeeCropsFormData = z.infer<typeof coffeeCropsSchema>;
@@ -79,7 +87,7 @@ export const bankInfoSchema = z.object({
   account_number: z.string().min(1, "Account number is required"),
   branch_name: z.string().min(1, "Branch name is required"),
   is_primary: z.string().min(1, "Account type is required"),
-  swift_code:z.string().min(1,"Swift code is required")
+  swift_code: z.string().min(1, "Swift code is required"),
 });
 
 export type BankInfoFormData = z.infer<typeof bankInfoSchema>;
@@ -87,8 +95,9 @@ export type BankInfoFormData = z.infer<typeof bankInfoSchema>;
 // Step 4: Profile Information Schema
 export const profileInfoSchema = z.object({
   telegram: z.string().min(1, "Telegram is required"),
-  address: z.string().min(1,"Invalid  address"),
+  address: z.string().min(1, "Invalid  address"),
   about_me: z.string().optional(),
+  avatar_url: z.string().optional(),
 });
 
 export type ProfileInfoFormData = z.infer<typeof profileInfoSchema>;

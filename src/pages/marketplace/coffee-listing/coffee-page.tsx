@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { OrderStatus } from "@/types/order";
 import { Header } from "./header";
 import { CoffeeDetails } from "./coffee-details";
@@ -12,24 +12,24 @@ import { apiService } from "@/services/apiService";
 import { CoffeeListing } from "@/types/coffee";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
-import { BidModal } from "./Bid-modal";
 
 export default function CoffeeListingPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [demoOrderStatus, setDemoOrderStatus] = useState<OrderStatus>("none");
   const [listing, setListing] = useState<CoffeeListing | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const { successMessage, errorMessage } = useNotification();
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [showBidModal, setShowBidModal] = useState(false);
   const [quantity, setQuantity] = useState(100);
-  const [bidPrice, setBidPrice] = useState(0);
 
-  useEffect(() => {
-    const fetchListingDetails = async () => {
+  const fetchListingDetails = useCallback(
+    async (listingId: string) => {
+      if (!listingId) return;
+      setLoading(true);
       try {
         const response: any = await apiService().get(
-          `/marketplace/listings/get-listing?listingId=${id}`,
+          `/marketplace/listings/get-listing?listingId=${listingId}`,
         );
 
         if (
@@ -38,114 +38,120 @@ export default function CoffeeListingPage() {
           response.data.listings.length > 0
         ) {
           setListing(response.data.listings[0]);
-          setBidPrice(response.data.listings[0].price_per_kg || 0);
         } else {
+          setListing(null);
           errorMessage({ message: "Failed to fetch listing details" });
         }
-      } catch {
-        errorMessage({
-          message: "An error occurred while fetching the listing",
-        });
+      } catch (error: any) {
+        setListing(null);
+        errorMessage(error as APIErrorResponse);
+      } finally {
+        setLoading(false);
       }
-    };
+    },
+    [errorMessage],
+  );
 
+  useEffect(() => {
     if (id) {
-      fetchListingDetails();
+      fetchListingDetails(id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleOrderSubmit = async () => {
+  const handleOrderSubmit = useCallback(async () => {
+    if (!listing) return;
     try {
       await apiService().post("/orders/place-order", {
-        listingId: listing?.id,
-        unit_price: listing?.price_per_kg,
+        listingId: listing.id,
+        unit_price: listing.price_per_kg,
         quantity_kg: quantity,
       });
 
       successMessage("Order placed successfully");
       setDemoOrderStatus("pending");
+      setShowOrderModal(false);
     } catch (err: any) {
       setShowOrderModal(false);
       errorMessage(err as APIErrorResponse);
     }
-  };
+  }, [listing, quantity, successMessage, errorMessage]);
 
-  const handlePlaceBid = async (price_per_kg: number, quantity_kg: number) => {
-    try {
-      await apiService().post("/buyers/bids/place-bid", {
-        listingId: listing?.id,
-        unit_price: price_per_kg,
-        quantity_kg: quantity_kg,
-      });
+  const SkeletonLoader = () => (
+    <div className="bg-primary/5 p-8 min-h-screen animate-pulse">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white my-12">
+        <div className="h-12 bg-gray-200 rounded w-3/4 mb-8"></div>{" "}
+        {/* Header */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="h-64 bg-gray-200 rounded mb-4"></div> {/* Image */}
+            <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>{" "}
+            {/* Title */}
+            <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>{" "}
+            {/* Text */}
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div> {/* Text */}
+          </div>
+          <div className="lg:col-span-1">
+            <div className="h-96 bg-gray-200 rounded"></div> {/* Sidebar */}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-      successMessage("Bid placed successfully");
-      setDemoOrderStatus("pending");
-      setShowBidModal(false);
-    } catch (err: any) {
-      setShowBidModal(false);
-      errorMessage(err as APIErrorResponse);
-    }
-  };
+  if (loading) return <SkeletonLoader />;
+  if (!listing && !loading) return <div>No listing found.</div>;
 
   return (
     <div className="bg-primary/5 p-8 min-h-screen">
-      <Header
-        demoOrderStatus={demoOrderStatus}
-        setDemoOrderStatus={setDemoOrderStatus}
-        sellerName={listing?.seller.first_name ?? ""}
-        sellerRating={listing?.seller.rating ?? 0}
-        sellerReviews={listing?.seller.total_reviews ?? 0}
-      />
+      {listing && (
+        <>
+          <Header
+            demoOrderStatus={demoOrderStatus}
+            setDemoOrderStatus={setDemoOrderStatus}
+            sellerName={listing.seller.first_name ?? ""}
+            sellerRating={listing.seller.rating ?? 0}
+            sellerReviews={listing.seller.total_reviews ?? 0}
+          />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white my-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <CoffeeDetails
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white my-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <CoffeeDetails
+                  listing={listing}
+                  demoOrderStatus={demoOrderStatus}
+                />
+              </div>
+
+              <div className="lg:col-span-1">
+                <OrderSidebar
+                  listing={listing}
+                  demoOrderStatus={demoOrderStatus}
+                  setShowOrderModal={setShowOrderModal}
+                  setShowReviewModal={setShowReviewModal}
+                />
+              </div>
+            </div>
+          </main>
+
+          {showOrderModal && (
+            <OrderModal
               listing={listing}
-              demoOrderStatus={demoOrderStatus}
+              quantity={quantity}
+              setQuantity={setQuantity}
+              onClose={() => setShowOrderModal(false)}
+              onSubmit={handleOrderSubmit}
             />
-          </div>
+          )}
 
-          <div className="lg:col-span-1">
-            <OrderSidebar
-              listing={listing}
-              demoOrderStatus={demoOrderStatus}
-              setShowOrderModal={setShowOrderModal}
-              setShowReviewModal={setShowReviewModal}
-              setShowBidModal={setShowBidModal}
+          {showReviewModal && (
+            <ReviewModal
+              onClose={() => setShowReviewModal(false)}
+              orderId=""
+              sellerId={listing.seller_id}
             />
-          </div>
-        </div>
-      </main>
-
-      {showOrderModal && (
-        <OrderModal
-          listing={listing}
-          quantity={quantity}
-          setQuantity={setQuantity}
-          onClose={() => setShowOrderModal(false)}
-          onSubmit={handleOrderSubmit}
-        />
-      )}
-
-      {showBidModal && (
-        <BidModal
-          listing={listing}
-          quantity={listing?.quantity_kg as number}
-          setQuantity={setQuantity}
-          bidPrice={bidPrice}
-          setBidPrice={setBidPrice}
-          onClose={() => setShowBidModal(false)}
-          onSubmit={() => handlePlaceBid(bidPrice, quantity)}
-        />
-      )}
-
-      {showReviewModal && (
-        <ReviewModal
-          onClose={() => setShowReviewModal(false)}
-          orderId=""
-          sellerId={listing?.seller_id}
-        />
+          )}
+        </>
       )}
     </div>
   );

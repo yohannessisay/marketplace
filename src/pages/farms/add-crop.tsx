@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Plus, X, FileText } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,7 +25,7 @@ import {
   coffeeCropsSchema,
   type CoffeeCropsFormData,
 } from "@/types/validation/seller-onboarding";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -49,24 +48,38 @@ import { APIErrorResponse } from "@/types/api";
 
 interface FileWithId extends File {
   id: string;
-  url?: string; // Store original URL for images
+  url?: string;
+}
+
+interface Farm {
+  id: string;
+  farm_name: string;
+  region: string | null;
+  country: string;
 }
 
 export default function AddCrop() {
   const navigation = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const farmIdFromQuery: string | null = queryParams.get("farmId");
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<FileWithId[]>([]);
   const [photos, setPhotos] = useState<FileWithId[]>([]);
   const { successMessage, errorMessage } = useNotification();
   const [discounts, setDiscounts] = useState<
-    { minimum_quantity_kg: number; discount_percentage: number; id?: string }[]
+    { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
   >([]);
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [isLoadingFarms, setIsLoadingFarms] = useState(true);
+  const [farmError, setFarmError] = useState<string | null>(null);
 
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
+      farmId: "",
       coffee_variety: "",
       grade: "",
       bean_type: "",
@@ -91,40 +104,84 @@ export default function AddCrop() {
     },
   });
 
-  // Populate form data for editing
+  useEffect(() => {
+    const fetchFarms = async () => {
+      setIsLoadingFarms(true);
+      try {
+        const response: any = await apiService().get(
+          "/sellers/farms/get-farms",
+        );
+        if (response.success) {
+          const fetchedFarms: Farm[] = response.data.farms || [];
+          setFarms(fetchedFarms);
+          if (fetchedFarms.length === 0) {
+            setFarmError(
+              "No farms found. Please add a farm first to create a crop listing.",
+            );
+          } else if (farmIdFromQuery && !id) {
+            const selectedFarm = fetchedFarms.find(
+              (farm: Farm) => farm.id === farmIdFromQuery,
+            );
+            if (selectedFarm) {
+              form.setValue("farmId", farmIdFromQuery, {
+                shouldValidate: true,
+              });
+              form.reset({ ...form.getValues(), farmId: farmIdFromQuery });
+            } else {
+              console.error("[AddCrop] No farm found for ID:", farmIdFromQuery); // Debug log
+              setFarmError(
+                "The farm ID provided in the URL is invalid. Please select a valid farm.",
+              );
+            }
+          }
+        } else {
+          throw new Error(response.message || "Failed to fetch farms");
+        }
+      } catch (error) {
+        console.error("[AddCrop] Error fetching farms:", error);
+        setFarmError("Failed to load farms. Please try again later.");
+      } finally {
+        setIsLoadingFarms(false);
+      }
+    };
+
+    fetchFarms();
+  }, [farmIdFromQuery, id, form]);
+
   const populateForm = async (listingId: string) => {
     try {
       const response: any = await apiService().get(
-        `/sellers/listings/get-listing?listingId=${listingId}`
+        `/sellers/listings/get-listing?listingId=${listingId}`,
       );
+
       if (response.success) {
         const listing = response.data.listing;
 
         form.reset({
-          coffee_variety: listing.coffee_variety ?? "",
-          grade: listing.grade ?? "",
-          bean_type: listing.bean_type ?? "",
-          crop_year: listing.crop_year ?? "",
-          processing_method: listing.processing_method ?? "",
-          moisture_percentage: listing.moisture_percentage ?? 0,
-          screen_size: listing.screen_size ?? 0,
-          drying_method: listing.drying_method ?? "",
-          wet_mill: listing.wet_mill ?? "",
+          farmId: listing.farm?.farm_id || "",
+          coffee_variety: listing.coffee_variety || "",
+          grade: listing.grade || "",
+          bean_type: listing.bean_type || "",
+          crop_year: listing.crop_year || "",
+          processing_method: listing.processing_method || "",
+          moisture_percentage: listing.moisture_percentage || 0,
+          screen_size: Number(listing.screen_size) || 0,
+          drying_method: listing.drying_method || "",
+          wet_mill: listing.wet_mill || "",
           is_organic: listing.is_organic ? "true" : "false",
-          cup_taste_acidity: listing.cup_taste_acidity ?? "",
-          cup_taste_body: listing.cup_taste_body ?? "",
-          cup_taste_sweetness: listing.cup_taste_sweetness ?? "",
-          cup_taste_aftertaste: listing.cup_taste_aftertaste ?? "",
-          cup_taste_balance: listing.cup_taste_balance ?? "",
-          quantity_kg: listing.quantity_kg ?? 0,
-          price_per_kg: listing.price_per_kg ?? 0,
-          readiness_date: listing.readiness_date ?? "",
-          lot_length: listing.lot_length ?? "",
-          delivery_type: listing.delivery_type ?? "",
-          shipping_port: listing.shipping_port ?? "",
+          cup_taste_acidity: listing.cup_taste_acidity || "",
+          cup_taste_body: listing.cup_taste_body || "",
+          cup_taste_sweetness: listing.cup_taste_sweetness || "",
+          cup_taste_aftertaste: listing.cup_taste_aftertaste || "",
+          cup_taste_balance: listing.cup_taste_balance || "",
+          quantity_kg: listing.quantity_kg || 0,
+          price_per_kg: listing.price_per_kg || 0,
+          readiness_date: listing.readiness_date || "",
+          lot_length: listing.lot_length || "",
+          delivery_type: listing.delivery_type || "",
+          shipping_port: listing.shipping_port || "",
         });
 
-        // Handle documents (grading reports)
         if (response.data.listing.documents?.length > 0) {
           const filesTemp: FileWithId[] = await Promise.all(
             response.data.listing.documents.map(async (doc: any) => {
@@ -136,18 +193,17 @@ export default function AddCrop() {
                   doc.doc_url.split("/").pop() || `grading_report_${doc.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id }
+                  { id: doc.id },
                 );
               } catch (err) {
                 console.error(`Error fetching document ${doc.doc_url}:`, err);
                 return null;
               }
-            })
+            }),
           );
           setFiles(filesTemp.filter((f): f is FileWithId => f !== null));
         }
 
-        // Handle photos
         if (response.data.listing.photos?.length > 0) {
           const photosTemp: FileWithId[] = await Promise.all(
             response.data.listing.photos.map(async (photo: any) => {
@@ -160,32 +216,31 @@ export default function AddCrop() {
                   photo.photo_url.split("/").pop() || `photo_${photo.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: photo.id, url: photo.photo_url }
+                  { id: photo.id, url: photo.photo_url },
                 );
               } catch (err) {
                 console.error(`Error fetching photo ${photo.photo_url}:`, err);
                 return null;
               }
-            })
+            }),
           );
           setPhotos(photosTemp.filter((p): p is FileWithId => p !== null));
         }
 
-        // Populate discounts if present
         if (Array.isArray(listing.discounts)) {
           setDiscounts(
             listing.discounts.map((d: any) => ({
               minimum_quantity_kg: Number(d.minimum_quantity_kg) || 0,
               discount_percentage: Number(d.discount_percentage) || 0,
-              id: d.id??null,
-            }))
+              id: d.id || Math.random().toString(36).substring(2),
+            })),
           );
         }
       } else {
         throw new Error(response.message || "Failed to fetch listing");
       }
     } catch (error) {
-      console.error("Error fetching listing data:", error);
+      console.error("[AddCrop] Error fetching listing data:", error);
       errorMessage({ message: "Failed to fetch listing data." });
     }
   };
@@ -223,12 +278,10 @@ export default function AddCrop() {
   const handleDiscountChange = (
     id: string,
     field: "minimum_quantity_kg" | "discount_percentage",
-    value: number
+    value: number,
   ) => {
     setDiscounts((prev) =>
-      prev.map((d) =>
-        d.id === id ? { ...d, [field]: value } : d
-      )
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
     );
   };
 
@@ -251,22 +304,26 @@ export default function AddCrop() {
         formData.append("files", photo);
       });
 
-      // Add discounts array as JSON string
-      formData.append("discounts", JSON.stringify(discounts.map(({ ...rest }) => rest)));
+      formData.append(
+        "discounts",
+        JSON.stringify(discounts.map(({ id, ...rest }) => rest)),
+      );
+
+      formData.append("farm_id", data.farmId);
 
       if (isEditMode && id) {
         formData.append("listingId", id);
         await apiService().patchFormData(
-          `/sellers/listings/update-listing`,
+          "/sellers/listings/update-listing",
           formData,
-          true
+          true,
         );
         successMessage("Listing updated successfully!");
       } else {
         await apiService().postFormData(
-          `/sellers/listings/create-listing`,
+          "/sellers/listings/create-listing",
           formData,
-          true
+          true,
         );
         successMessage("Listing created successfully!");
       }
@@ -281,7 +338,7 @@ export default function AddCrop() {
   };
 
   return (
-    <div className="min-h-screen bg-primary/5">
+    <div className="min-h-screen bg-primary/5 pt-20">
       <Header />
       <main className="container mx-auto p-4 max-w-5xl">
         <Form {...form}>
@@ -290,8 +347,73 @@ export default function AddCrop() {
             className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white"
           >
             <h2 className="text-center text-2xl">
-              {isEditMode ? "Edit Crop" : "Add Crop To Your Existing Farm"}
+              {isEditMode
+                ? "Edit Your Crop Details"
+                : "Add Crop To Your Existing Farm"}
             </h2>
+
+            {/* Farm Selection */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-2">Select Farm</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Choose the farm where this crop is produced.
+              </p>
+              <FormField
+                control={form.control}
+                name="farmId"
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel>Farm</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                        }}
+                        value={field.value || ""}
+                        disabled={isLoadingFarms || farms.length === 0}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue
+                              placeholder={
+                                isLoadingFarms
+                                  ? "Loading farms..."
+                                  : farms.length === 0
+                                    ? "No farms available"
+                                    : "Select a farm"
+                              }
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {farms.map((farm) => (
+                            <SelectItem key={farm.id} value={farm.id}>
+                              {farm.farm_name} ({farm.region || "N/A"},{" "}
+                              {farm.country})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {farmError && (
+                        <p className="text-sm text-red-600">
+                          {farmError}{" "}
+                          {farmError.includes("No farms found") && (
+                            <a
+                              href="/add-farm"
+                              className="text-blue-600 underline"
+                            >
+                              Add a farm
+                            </a>
+                          )}
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+
             {/* Step 1: Upload Grading Report */}
             <div className="mb-8">
               <Card className="max-w-2xl mx-auto">
@@ -338,7 +460,7 @@ export default function AddCrop() {
                           ...newFiles.map((f) =>
                             Object.assign(f, {
                               id: Math.random().toString(36).substring(2),
-                            })
+                            }),
                           ),
                         ])
                       }
@@ -387,7 +509,6 @@ export default function AddCrop() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="grade"
@@ -404,27 +525,32 @@ export default function AddCrop() {
                 <FormField
                   control={form.control}
                   name="bean_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bean type</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select bean type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Green beans">
-                            Green beans
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Bean type</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          value={field.value || ""}
+                          disabled={isLoadingFarms}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select bean type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Green beans">
+                              Green beans
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
@@ -443,138 +569,271 @@ export default function AddCrop() {
 
               {/* Crop specification */}
               <h3 className="text-lg font-medium mb-4">Crop specification</h3>
-              <FormField
-                control={form.control}
-                name="is_organic"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Is Organic?</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <FormField
+                  control={form.control}
+                  name="is_organic"
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Is Organic?</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          value={field.value || ""}
+                          disabled={isLoadingFarms}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select organic status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="true">Yes</SelectItem>
+                            <SelectItem value="false">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="processing_method"
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Processing Method</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="moisture_percentage"
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Moisture Percentage</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            value={field.value}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="screen_size"
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Screen Size</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            value={field.value ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const parsedValue =
+                                value === "" ? 0 : Number(value);
+                              field.onChange(parsedValue);
+                            }}
+                            onBlur={field.onBlur}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="drying_method"
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Drying Method</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name="wet_mill"
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Wet Mill</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </div>
+
               {/* Cup taste */}
               <h3 className="text-lg font-medium mb-4">Cup taste</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <FormField
                   control={form.control}
                   name="cup_taste_acidity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Acidity</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select acidity" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Delicate">Delicate</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Acidity</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select acidity" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Delicate">Delicate</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
                   name="cup_taste_body"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Body</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select body" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Heavy">Heavy</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Body</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select body" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Heavy">Heavy</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
                   name="cup_taste_sweetness"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sweetness</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select sweetness" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Honey-like">Honey-like</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Sweetness</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select sweetness" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Honey-like">
+                              Honey-like
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
                   name="cup_taste_aftertaste"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Aftertaste</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select aftertaste" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Long-lasting">
-                            Long-lasting
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Aftertaste</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select aftertaste" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Long-lasting">
+                              Long-lasting
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
                   name="cup_taste_balance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Balance</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select balance" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Complex">Complex</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormLabel>Balance</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select balance" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Complex">Complex</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
               </div>
 
@@ -585,262 +844,31 @@ export default function AddCrop() {
                 representation. Start with a primary photo that best showcases
                 your crop, then add additional images if needed.
               </p>
-
-              <div className="mb-8">
-                <h4 className="text-base font-medium mb-2">
-                  Coffee Crop photos
-                </h4>
-                <div className="flex flex-wrap gap-4">
-                  <Card className="max-w-2xl mx-auto">
-                    <CardHeader>
-                      <CardTitle>Coffee crop photos</CardTitle>
-                      <CardDescription>
-                        Upload PDF documents and images. Drag and drop or click
-                        to select files.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {photos.length > 0 && (
-                        <div className="mb-4 flex flex-row flex-wrap gap-4">
-                          {photos.map((photo) => (
-                            <div
-                              key={photo.id}
-                              className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden"
-                            >
-                              <img
-                                src={photo.url || URL.createObjectURL(photo)}
-                                alt={photo.name}
-                                className="w-full h-full object-cover"
-                              />
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-1 right-1 h-6 w-6"
-                                onClick={() =>
-                                  handleRemoveFile(photo.id, "photos")
-                                }
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <FileUpload
-                        onFilesSelected={(newPhotos) =>
-                          setPhotos((prev) => [
-                            ...prev,
-                            ...newPhotos.map((p) =>
-                              Object.assign(p, {
-                                id: Math.random().toString(36).substring(2),
-                              })
-                            ),
-                          ])
-                        }
-                        maxFiles={6}
-                        maxSizeMB={5}
-                      />
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <div className="text-sm text-muted-foreground">
-                        {photos.length > 0
-                          ? `${photos.length} photo(s) selected`
-                          : "No photos selected"}
-                      </div>
-                    </CardFooter>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Set the price and discounts */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium mb-2">
-                  Set the price and discounts
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Provide details on crop variety, quality, quantity, and base
-                  price to help buyers assess availability and cost
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                  <FormField
-                    control={form.control}
-                    name="quantity_kg"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Crop Quantity (kg)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            value={field.value || ""}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="price_per_kg"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Community Base Price per kg</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            value={field.value || ""}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="shipping_port"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Shipping Port</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="processing_method"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Processing Method</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="moisture_percentage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Moisture Percentage</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            value={field.value || 1}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="screen_size"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Screen Size</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            value={field.value || 1}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 1)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="drying_method"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Drying Method</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="wet_mill"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Wet Mill</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Discounts section */}
-                <div className="mb-4">
-                  <h4 className="text-base font-medium mb-2">Discounts</h4>
-                  {discounts.length > 0 && (
-                    <div className="space-y-2">
-                      {discounts.map((discount) => (
+              <Card className="max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle>Coffee crop photos</CardTitle>
+                  <CardDescription>
+                    Upload images. Drag and drop or click to select files.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {photos.length > 0 && (
+                    <div className="mb-4 flex flex-row flex-wrap gap-4">
+                      {photos.map((photo) => (
                         <div
-                          key={discount.id}
-                          className="flex items-center gap-2"
+                          key={photo.id}
+                          className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden"
                         >
-                          <Input
-                            type="number"
-                            min={0}
-                            className="w-40"
-                            placeholder="Min. quantity (kg)"
-                            value={discount.minimum_quantity_kg}
-                            onChange={(e) =>
-                              handleDiscountChange(
-                                discount.id!,
-                                "minimum_quantity_kg",
-                                Number(e.target.value) || 1
-                              )
-                            }
+                          <img
+                            src={photo.url || URL.createObjectURL(photo)}
+                            alt={photo.name}
+                            className="w-full h-full object-cover"
                           />
-                          <span className="mx-2">kg</span>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            className="w-32"
-                            placeholder="Discount (%)"
-                            value={discount.discount_percentage}
-                            onChange={(e) =>
-                              handleDiscountChange(
-                                discount.id!,
-                                "discount_percentage",
-                                Number(e.target.value) || 1
-                              )
-                            }
-                          />
-                          <span className="mx-2">%</span>
                           <Button
-                            type="button"
-                            variant="ghost"
+                            variant="destructive"
                             size="icon"
-                            onClick={() => handleRemoveDiscount(discount.id!)}
-                            className="text-red-500"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => handleRemoveFile(photo.id, "photos")}
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -848,89 +876,235 @@ export default function AddCrop() {
                       ))}
                     </div>
                   )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                    onClick={handleAddDiscount}
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add discount</span>
-                  </Button>
-                </div>
-                {/* End discounts section */}
+                  <FileUpload
+                    onFilesSelected={(newPhotos) =>
+                      setPhotos((prev) => [
+                        ...prev,
+                        ...newPhotos.map((p) =>
+                          Object.assign(p, {
+                            id: Math.random().toString(36).substring(2),
+                          }),
+                        ),
+                      ])
+                    }
+                    maxFiles={6}
+                    maxSizeMB={5}
+                  />
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    {photos.length > 0
+                      ? `${photos.length} photo(s) selected`
+                      : "No photos selected"}
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+
+            {/* Set the price and discounts */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-2">
+                Set the price and discounts
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Provide details on crop variety, quality, quantity, and base
+                price to help buyers assess availability and cost
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <FormField
+                  control={form.control}
+                  name="quantity_kg"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Crop Quantity (kg)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="price_per_kg"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Community Base Price per kg</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="shipping_port"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shipping Port</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              {/* Readiness and Delivery Details */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium mb-2">
-                  Readiness and Delivery Details
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Specify the harvest readiness date, bagging period, and
-                  delivery type to inform buyers
-                </p>
+              {/* Discounts section */}
+              <div className="mb-4">
+                <h4 className="text-base font-medium mb-2">Discounts</h4>
+                {discounts.length > 0 && (
+                  <div className="space-y-2">
+                    {discounts.map((discount) => (
+                      <div
+                        key={discount.id}
+                        className="flex items-center gap-2"
+                      >
+                        <Input
+                          type="number"
+                          min={0}
+                          className="w-40"
+                          placeholder="Min. quantity (kg)"
+                          value={discount.minimum_quantity_kg}
+                          onChange={(e) =>
+                            handleDiscountChange(
+                              discount.id,
+                              "minimum_quantity_kg",
+                              Number(e.target.value) || 0,
+                            )
+                          }
+                        />
+                        <span className="mx-2">kg</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="w-32"
+                          placeholder="Discount (%)"
+                          value={discount.discount_percentage}
+                          onChange={(e) =>
+                            handleDiscountChange(
+                              discount.id,
+                              "discount_percentage",
+                              Number(e.target.value) || 0,
+                            )
+                          }
+                        />
+                        <span className="mx-2">%</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveDiscount(discount.id)}
+                          className="text-red-500"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                  onClick={handleAddDiscount}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add discount</span>
+                </Button>
+              </div>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="readiness_date"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Readiness date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button variant="outline" className="w-full">
-                                {field.value
-                                  ? new Date(field.value).toDateString()
-                                  : "Pick a date"}
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={
-                                field.value ? new Date(field.value) : undefined
+            {/* Readiness and Delivery Details */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-2">
+                Readiness and Delivery Details
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Specify the harvest readiness date, bagging period, and delivery
+                type to inform buyers
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="readiness_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Readiness date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button variant="outline" className="w-full">
+                              {field.value
+                                ? new Date(field.value).toDateString()
+                                : "Pick a date"}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={
+                              field.value ? new Date(field.value) : undefined
+                            }
+                            onSelect={(date) => {
+                              if (date) {
+                                const formatted = date
+                                  .toISOString()
+                                  .slice(0, 10);
+                                field.onChange(formatted);
                               }
-                              onSelect={(date) => {
-                                if (date) {
-                                  const formatted = date
-                                    .toISOString()
-                                    .slice(0, 10);
-                                  field.onChange(formatted);
-                                }
-                              }}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lot_length"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lot number</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Optional" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="delivery_type"
-                    render={({ field }) => (
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lot_length"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lot number</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Optional" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="delivery_type"
+                  render={({ field }) => {
+                    return (
                       <FormItem>
                         <FormLabel>Delivery type</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          value={field.value || ""}
+                          disabled={isLoadingFarms}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -945,9 +1119,9 @@ export default function AddCrop() {
                         </Select>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                </div>
+                    );
+                  }}
+                />
               </div>
             </div>
 
@@ -959,8 +1133,8 @@ export default function AddCrop() {
                     ? "Updating..."
                     : "Adding..."
                   : isEditMode
-                  ? "Update Listing"
-                  : "Add Crop Listing"}
+                    ? "Update Listing"
+                    : "Add Crop Listing"}
               </Button>
             </div>
           </form>

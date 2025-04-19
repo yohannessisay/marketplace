@@ -44,7 +44,7 @@ class ApiService {
             (errorData as any)?.error?.hint ||
             "Check the request data and try again",
         },
-      }; 
+      };
       return Promise.reject(errorResponse);
     }
 
@@ -115,6 +115,7 @@ class ApiService {
     }
 
     try {
+      console.log(body);
       const response = await fetch(`${this.baseURL}${url}`, {
         method,
         headers,

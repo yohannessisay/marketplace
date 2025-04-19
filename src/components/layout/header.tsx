@@ -1,4 +1,4 @@
-import { getFromLocalStorage } from "@/lib/utils";
+import { useState, useEffect } from "react";
 import {
   Home,
   List,
@@ -6,13 +6,16 @@ import {
   ShoppingBagIcon,
   LogOut,
   User,
-  ListOrderedIcon,
   LucideShoppingBag,
+  Send,
+  User2,
+  Menu,
+  X,
+  Settings,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import Cookies from "js-cookie";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,19 +23,53 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Separator } from "../ui/separator";
+import { Separator } from "@/components/ui/separator";
 import Logo from "./Logo";
+import { useAuth } from "@/hooks/useAuth";
+import { useMobile } from "@/hooks/useMobile";
 
 export default function Header() {
-  const user: any = getFromLocalStorage("userProfile", {});
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
+  const isMobile = useMobile();
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
+  useEffect(() => {
+    if (isMenuOpen && isMobile) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isMenuOpen, isMobile]);
 
   const linkClasses = (to: string) =>
     clsx(
-      "text-sm flex items-center cursor-pointer",
-      path.startsWith(to) ? "text-green-700 font-semibold" : "text-gray-600",
+      "text-sm flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors",
+      path.startsWith(to)
+        ? "text-green-700 font-semibold bg-gray-100"
+        : "text-gray-600",
     );
 
   const handleLogout = () => {
@@ -40,95 +77,257 @@ export default function Header() {
     Cookies.remove("accessToken");
     Cookies.remove("refreshToken");
     navigate("/login");
+    setIsMenuOpen(false);
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 p-4 rounded-md shadow-md">
-      <div className="container mx-auto flex justify-between items-center">
+    <header
+      className={clsx(
+        "bg-white border-b border-gray-200 shadow-md fixed top-0 left-0 right-0 z-50 transition-transform duration-300",
+        isVisible ? "translate-y-0" : "-translate-y-full",
+      )}
+    >
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Logo />
 
-        <div className="flex items-center space-x-4">
-          {user.userType === "seller" && (
-            <>
+        {!isMobile && (
+          <nav className="flex items-center space-x-2">
+            {user?.userType === "seller" && (
+              <>
+                <Link
+                  to="/seller-dashboard"
+                  className={linkClasses("/seller-dashboard")}
+                >
+                  <Home className="h-4 w-4 text-green-400" />
+                  My Dashboard
+                </Link>
+                <Link to="/orders" className={linkClasses("/orders")}>
+                  <Receipt className="h-4 w-4 text-green-400" />
+                  Orders
+                </Link>
+              </>
+            )}
+
+            {user?.userType === "agent" && (
               <Link
-                to="/seller-dashboard"
-                className={linkClasses("/seller-dashboard")}
+                to="/agent/farmer-management"
+                className={linkClasses("/agent/farmer-management")}
               >
-                <Home className="mr-1" /> My dashboard
+                <List className="h-4 w-4 text-green-400" />
+                Farmer Management
               </Link>
-              <Link to="/orders" className={linkClasses("/orders")}>
-                <Receipt className="mr-1" />
-                Orders
-              </Link>
-            </>
-          )}
-          {user.onboardingStage === "completed" ? (
-            <>
-              {" "}
-              <Link to="/market-place" className={linkClasses("/market-place")}>
-                <ShoppingBagIcon className="mr-1" /> Marketplace
-              </Link>
+            )}
+
+            <Link to="/market-place" className={linkClasses("/market-place")}>
+              <LucideShoppingBag className="h-4 w-4 text-green-400" />
+              Marketplace
+            </Link>
+
+            {user?.userType === "buyer" && (
               <Link to="/my-orders" className={linkClasses("/my-orders")}>
-                <Receipt className="mr-1" /> My Orders
+                <ShoppingBagIcon className="h-4 w-4 text-green-400" />
+                My Orders
               </Link>
-            </>
-          ) : (
-            <></>
-          )}
+            )}
 
-          {user.userType === "agent" && (
-            <Link
-              to="/agent/farmer-management"
-              className={linkClasses("/agent/farmer-management")}
-            >
-              <List className="mr-1" /> Farmer Management
+            <Link to="/chats" className={linkClasses("/chats")}>
+              <Send className="h-4 w-4 text-green-400" />
+              Chats
             </Link>
-          )}
 
-          <Link
-            to="/market-place"
-            className={linkClasses("/coffee-listing-seller")}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full ml-2 border-2 border-primary/40 hover:bg-gray-100"
+                >
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt="User avatar"
+                      className="rounded-full h-8 w-8 object-cover"
+                    />
+                  ) : (
+                    <User className="h-5 w-5 text-slate-700" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="p-4 w-64">
+                <div className="flex flex-col gap-1 mb-3">
+                  <div className="flex items-center gap-2">
+                    {user?.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt="User avatar"
+                        className="rounded-full h-5 w-5 object-cover"
+                      />
+                    ) : (
+                      <User2 className="text-green-400 h-5 w-5" />
+                    )}
+                    <span className="font-medium">
+                      {user?.first_name} {user?.last_name}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500 pl-7">
+                    {user?.email}
+                  </span>
+                </div>
+                <Separator className="my-2" />
+                {user?.userType === "buyer" && (
+                  <Link to="/settings" className={linkClasses("/settings")}>
+                    <Settings className="h-4 w-4 text-green-400" />
+                    Settings
+                  </Link>
+                )}
+                <Separator className="my-2" />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="cursor-pointer flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </nav>
+        )}
+
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMenu}
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMenuOpen}
+            className="hover:bg-gray-100"
           >
-            <LucideShoppingBag className="mr-1" /> Marketplace
-          </Link>
-
-          {user.userType === "buyer" && (
-            <Link
-              to="/my-orders"
-              className={linkClasses("/coffee-listing-seller")}
-            >
-              <ListOrderedIcon className="mr-1" /> My Orders
-            </Link>
-          )}
-
-          {/* User Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full border-2 border-primary/40"
-              >
-                <User className="h-5 w-5 text-slate-700 border rounded-full" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="p-4">
-              <span className="flex gap-4">
-                {user.firstName} {user.lastName}
-              </span>
-              <Separator></Separator>
-
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="cursor-pointer"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+            {isMenuOpen ? (
+              <X className="h-6 w-6 text-slate-700" />
+            ) : (
+              <Menu className="h-6 w-6 text-slate-700" />
+            )}
+          </Button>
+        )}
       </div>
+
+      {isMobile && isMenuOpen && (
+        <div className="fixed inset-0 bg-gray-300 z-50 flex flex-col pt-4 px-4 pb-8 transform transition-transform duration-300">
+          <div className="flex justify-between items-center mb-6">
+            <Logo />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={closeMenu}
+              aria-label="Close menu"
+              className="hover:bg-gray-100"
+            >
+              <X className="h-6 w-6 text-slate-700" />
+            </Button>
+          </div>
+
+          <nav className="flex flex-col space-y-4">
+            {user?.userType === "seller" && (
+              <>
+                <Link
+                  to="/seller-dashboard"
+                  className={linkClasses("/seller-dashboard")}
+                  onClick={closeMenu}
+                >
+                  <Home className="h-4 w-4 text-green-400" />
+                  My Dashboard
+                </Link>
+                <Link
+                  to="/orders"
+                  className={linkClasses("/orders")}
+                  onClick={closeMenu}
+                >
+                  <Receipt className="h-4 w-4 text-green-400" />
+                  Orders
+                </Link>
+              </>
+            )}
+
+            {user?.userType === "agent" && (
+              <Link
+                to="/agent/farmer-management"
+                className={linkClasses("/agent/farmer-management")}
+                onClick={closeMenu}
+              >
+                <List className="h-4 w-4 text-green-400" />
+                Farmer Management
+              </Link>
+            )}
+
+            <Link
+              to="/market-place"
+              className={linkClasses("/market-place")}
+              onClick={closeMenu}
+            >
+              <LucideShoppingBag className="h-4 w-4 text-green-400" />
+              Marketplace
+            </Link>
+
+            {user?.userType === "buyer" && (
+              <Link
+                to="/my-orders"
+                className={linkClasses("/my-orders")}
+                onClick={closeMenu}
+              >
+                <ShoppingBagIcon className="h-4 w-4 text-green-400" />
+                My Orders
+              </Link>
+            )}
+
+            <Link
+              to="/chats"
+              className={linkClasses("/chats")}
+              onClick={closeMenu}
+            >
+              <Send className="h-4 w-4 text-green-400" />
+              Chats
+            </Link>
+
+            <div className="flex flex-col gap-2 mt-4">
+              <div className="flex items-center gap-2 px-3 py-2">
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt="User avatar"
+                    className="rounded-full h-5 w-5 object-cover"
+                  />
+                ) : (
+                  <User2 className="text-green-400 h-5 w-5" />
+                )}
+                <span className="font-medium">
+                  {user?.first_name} {user?.last_name}
+                </span>
+              </div>
+              <span className="text-xs text-gray-500 px-3 pl-10">
+                {user?.email}
+              </span>
+            </div>
+
+            <Separator className="my-2" />
+
+            <button
+              onClick={handleLogout}
+              className="text-sm flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

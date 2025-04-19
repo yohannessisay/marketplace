@@ -19,26 +19,35 @@ interface BidModalProps {
   bidPrice: number;
   setBidPrice: (price: number) => void;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void>;
+  onBidSubmitted?: () => void;
 }
 
 export function BidModal({
   listing,
   quantity,
-  setQuantity,
   bidPrice,
   setBidPrice,
   onClose,
   onSubmit,
+  onBidSubmitted,
 }: BidModalProps) {
-  const getDiscount = () => {
-    if (quantity >= 1000) return 0.1;
-    if (quantity >= 500) return 0.05;
-    return 0;
-  };
   const [isLoading, setIsLoading] = useState(false);
-  const discount = getDiscount();
-  const totalPrice = bidPrice * quantity * (1 - discount);
+  const discount = 0;
+  const totalPrice = bidPrice * quantity;
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    try {
+      await onSubmit();
+      onBidSubmitted?.();
+      onClose();
+    } catch (error) {
+      console.error("[BidModal] Error submitting bid:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -56,12 +65,11 @@ export function BidModal({
               min="10"
               max={listing?.quantity_kg}
               value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value) || 10)}
               className="mt-1"
               disabled
             />
             <p className="mt-1 text-sm text-muted-foreground">
-              Available: {listing?.quantity_kg} kg
+              Available: {quantity} kg
             </p>
           </div>
 
@@ -125,10 +133,7 @@ export function BidModal({
             </Button>
             <Button
               disabled={isLoading || bidPrice <= 0 || quantity < 10}
-              onClick={() => {
-                setIsLoading(true);
-                onSubmit();
-              }}
+              onClick={handleSubmit}
             >
               {isLoading ? "Placing Bid..." : "Place Bid"}
             </Button>

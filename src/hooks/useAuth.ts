@@ -5,14 +5,17 @@ import { apiService } from "@/services/apiService";
 import { APIErrorResponse } from "@/types/api";
 import { UserProfile } from "@/types/user";
 
-export const USER_PROFILE_LOCAL_STORAGE_KEY = "userProfile";
-export const ACCESS_TOKEN_KEY = "accessToken";
-export const REFRESH_TOKEN_KEY = "refreshToken";
+import {
+  ACCESS_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  USER_PROFILE_KEY,
+} from "@/types/constants";
 
 interface AuthState {
   isAuthenticated: boolean;
   user: UserProfile | null;
   loading: boolean;
+  setUser: (user: UserProfile) => void;
 }
 
 export const useAuth = (): AuthState => {
@@ -20,6 +23,14 @@ export const useAuth = (): AuthState => {
     isAuthenticated: false,
     user: null,
     loading: true,
+    setUser: (user: UserProfile) => {
+      setAuthState((prev) => ({
+        ...prev,
+        isAuthenticated: true,
+        user,
+      }));
+      localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(user));
+    },
   });
   const location = useLocation();
 
@@ -29,9 +40,7 @@ export const useAuth = (): AuthState => {
 
       const accessToken = Cookies.get(ACCESS_TOKEN_KEY);
       const refreshToken = Cookies.get(REFRESH_TOKEN_KEY);
-      const storedProfile = localStorage.getItem(
-        USER_PROFILE_LOCAL_STORAGE_KEY,
-      );
+      const storedProfile = localStorage.getItem(USER_PROFILE_KEY);
       let userProfile: UserProfile | null = null;
 
       if (storedProfile) {
@@ -41,6 +50,9 @@ export const useAuth = (): AuthState => {
             userProfile &&
             userProfile.id &&
             userProfile.email &&
+            userProfile.first_name &&
+            userProfile.last_name &&
+            userProfile.phone &&
             userProfile.userType
           ) {
             if (accessToken) {
@@ -48,35 +60,35 @@ export const useAuth = (): AuthState => {
                 isAuthenticated: true,
                 user: userProfile,
                 loading: false,
+                setUser: authState.setUser,
               });
               return;
             }
           } else {
             console.warn("Invalid userProfile in localStorage, clearing...");
-            localStorage.removeItem(USER_PROFILE_LOCAL_STORAGE_KEY);
+            localStorage.removeItem(USER_PROFILE_KEY);
           }
         } catch (error) {
           console.error(
             "Failed to parse userProfile from localStorage:",
             error,
           );
-          localStorage.removeItem(USER_PROFILE_LOCAL_STORAGE_KEY);
+          localStorage.removeItem(USER_PROFILE_KEY);
         }
       }
 
       if (accessToken) {
         try {
-          const response: any = await apiService().get("/auth/user");
+          const response: any = await apiService().get("/users/profile");
 
-          if (response.success) {
-            localStorage.setItem(
-              USER_PROFILE_LOCAL_STORAGE_KEY,
-              JSON.stringify(response.data.user),
-            );
+          if (response.success && response.data) {
+            const user: UserProfile = response.data;
+            localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(user));
             setAuthState({
               isAuthenticated: true,
-              user: response.data.user,
+              user,
               loading: false,
+              setUser: authState.setUser,
             });
             return;
           } else {
@@ -93,7 +105,9 @@ export const useAuth = (): AuthState => {
             try {
               const refreshResponse: any = await apiService().post(
                 "/auth/refresh",
-                { refresh_token: refreshToken },
+                {
+                  refresh_token: refreshToken,
+                },
               );
 
               if (refreshResponse.success) {
@@ -112,14 +126,12 @@ export const useAuth = (): AuthState => {
                   sameSite: "strict",
                 });
 
-                localStorage.setItem(
-                  USER_PROFILE_LOCAL_STORAGE_KEY,
-                  JSON.stringify(user),
-                );
+                localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(user));
                 setAuthState({
                   isAuthenticated: true,
                   user,
                   loading: false,
+                  setUser: authState.setUser,
                 });
                 return;
               } else {
@@ -139,11 +151,14 @@ export const useAuth = (): AuthState => {
         }
       }
 
-      localStorage.removeItem(USER_PROFILE_LOCAL_STORAGE_KEY);
+      localStorage.removeItem(USER_PROFILE_KEY);
+      Cookies.remove(ACCESS_TOKEN_KEY);
+      Cookies.remove(REFRESH_TOKEN_KEY);
       setAuthState({
         isAuthenticated: false,
         user: null,
         loading: false,
+        setUser: authState.setUser,
       });
     };
 

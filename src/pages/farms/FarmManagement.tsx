@@ -31,8 +31,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiService } from "@/services/apiService";
-import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage } from "@/lib/utils";
 import EditProfile from "../profile/edit-profile";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Farm {
   id: string;
@@ -68,6 +69,45 @@ interface Bank {
   created_at?: string;
 }
 
+const SkeletonCard: React.FC = () => {
+  return (
+    <Card className="overflow-hidden border border-slate-200">
+      <CardHeader className="bg-white pb-2">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center">
+            <Skeleton className="w-10 h-10 rounded-full mr-3" />
+            <Skeleton className="h-6 w-32" />
+          </div>
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+      </CardHeader>
+      <CardContent className="pt-4 pb-6">
+        <div className="space-y-3">
+          <div className="flex items-center">
+            <Skeleton className="h-4 w-4 mr-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="flex items-center">
+            <Skeleton className="h-4 w-4 mr-2" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div className="flex items-center">
+            <Skeleton className="h-4 w-4 mr-2" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+          <div className="flex items-center">
+            <Skeleton className="h-3 w-3 mr-1" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col gap-2">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </CardFooter>
+    </Card>
+  );
+};
 const FarmManagement: React.FC = () => {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [listings, setListings] = useState<CoffeeListing[]>([]);
@@ -86,14 +126,14 @@ const FarmManagement: React.FC = () => {
     const farmer: any = getFromLocalStorage("farmer-profile", {});
     fmrId = farmer ? farmer.id : null;
   }
+
   useEffect(() => {
     const fetchFarms = async () => {
       try {
         setLoadingFarms(true);
-
         const response: any = await apiService().get(
           `/sellers/farms/get-farms?search=${farmSearch}&page=${page}&limit=${limit}`,
-          fmrId ? fmrId : ""
+          fmrId ? fmrId : "",
         );
         setFarms(response.data.farms);
       } catch (error) {
@@ -108,7 +148,7 @@ const FarmManagement: React.FC = () => {
         setLoadingListings(true);
         const response: any = await apiService().get(
           `/sellers/listings/get-listings?search=${listingSearch}&page=${page}&limit=${limit}`,
-          fmrId ? fmrId : ""
+          fmrId ? fmrId : "",
         );
         setListings(response.data.listings);
       } catch (error) {
@@ -123,7 +163,7 @@ const FarmManagement: React.FC = () => {
         setLoadingBanks(true);
         const response: any = await apiService().get(
           `/sellers/banks/get-banks?search=${bankSearch}&page=${page}&limit=${limit}`,
-          fmrId ? fmrId : ""
+          fmrId ? fmrId : "",
         );
         setBanks(response.data.bank_accounts);
       } catch (error) {
@@ -141,8 +181,7 @@ const FarmManagement: React.FC = () => {
   return (
     <div className="bg-primary/5 min-h-screen py-8 px-8">
       <Header />
-
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8 pt-20">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
@@ -160,19 +199,13 @@ const FarmManagement: React.FC = () => {
                 Add New Farm
               </Link>
             </Button>
-            {/* <Button className="mt-4 md:mt-0" asChild>
-              <Link to="/add-listing">
-                <Plus className="mr-2 h-4 w-4" />
-                Add New Listing
-              </Link>
-            </Button> */}
           </div>
         </div>
 
         <Separator className="mb-8" />
 
         <Tabs defaultValue="farms" className="w-full">
-          <TabsList className="grid w-full grid-cols-4  mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger
               value="farms"
               className="border border-green-300 p-3 mr-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:border-green-500"
@@ -214,7 +247,12 @@ const FarmManagement: React.FC = () => {
             </div>
 
             {loadingFarms ? (
-              <p className="text-slate-500 text-center">Loading farms...</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Display 4 skeleton cards to mimic loading state */}
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <SkeletonCard key={index} />
+                ))}
+              </div>
             ) : farms.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 rounded-full bg-slate-100 mx-auto flex items-center justify-center mb-4">
@@ -291,7 +329,7 @@ const FarmManagement: React.FC = () => {
                               <Scale className="h-4 w-4 mr-2 text-slate-400" />
                               <span>
                                 {Number.parseInt(
-                                  farm.capacity_kg || "0"
+                                  farm.capacity_kg || "0",
                                 )?.toLocaleString()}{" "}
                                 kg capacity
                               </span>
@@ -342,24 +380,25 @@ const FarmManagement: React.FC = () => {
                         <Button
                           variant="outline"
                           className="w-full flex items-center justify-center group"
+                          disabled={farm.verification_status === "rejected"}
                         >
                           <span>Manage Farm</span>
                           <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                         </Button>
                       </Link>
 
-                      <Button
-                        className="w-full flex items-center justify-center group mt-2"
-                        onClick={() => {
-                          saveToLocalStorage("current-farm-id", farm.id);
-                        }}
-                        asChild
+                      <Link
+                        to={`/add-crop?farmId=${farm.id}`}
+                        className="w-full mt-2"
                       >
-                        <Link to="/add-crop">
+                        <Button
+                          className="w-full flex items-center justify-center group"
+                          disabled={farm.verification_status === "rejected"}
+                        >
                           <span>Add Crop</span>
                           <Plus className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                        </Link>
-                      </Button>
+                        </Button>
+                      </Link>
                     </CardFooter>
                   </Card>
                 ))}
@@ -407,7 +446,7 @@ const FarmManagement: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Add New Listing Card */}
                 <Card className="border-2 border-dashed border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 group">
-                  <Link to="/add-listing" className="block h-full">
+                  <Link to="/add-crop" className="block h-full">
                     <CardContent className="flex flex-col items-center justify-center p-8 h-full text-center">
                       <div className="w-16 h-16 rounded-full bg-slate-100 group-hover:bg-slate-200 transition-colors flex items-center justify-center mb-4">
                         <Plus className="h-8 w-8 text-slate-500 group-hover:text-slate-700 transition-colors" />
@@ -472,7 +511,7 @@ const FarmManagement: React.FC = () => {
                             <span>
                               Created on{" "}
                               {new Date(
-                                listing.created_at
+                                listing.created_at,
                               ).toLocaleDateString()}
                             </span>
                           </div>

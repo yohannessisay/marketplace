@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/pagination";
 import { apiService } from "@/services/apiService";
 import ListingDetailModal from "./view-listing-modal";
-import { getUserProfile } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Farm {
   id: string;
@@ -188,6 +188,10 @@ class ErrorBoundary extends React.Component<
     return { hasError: true, errorMessage: error.message };
   }
 
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught:", error, errorInfo);
+  }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -252,6 +256,45 @@ function CoffeeImage({
   );
 }
 
+function LoadingCard() {
+  return (
+    <Card className="overflow-hidden animate-pulse">
+      <div className="relative h-40 bg-gray-200">
+        <Skeleton className="w-full h-full" />
+        <div className="absolute top-2 right-2">
+          <Skeleton className="h-6 w-16 rounded-full" />
+        </div>
+      </div>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <Skeleton className="h-6 w-2/3" />
+          <Skeleton className="h-5 w-12 rounded" />
+        </div>
+        <Skeleton className="h-4 w-1/2 mb-2" />
+        <div className="flex items-center mb-4">
+          <Skeleton className="h-4 w-4 mr-1" />
+          <Skeleton className="h-4 w-1/3" />
+        </div>
+        <div className="flex items-center mb-2">
+          <Skeleton className="h-4 w-4 mr-1" />
+          <Skeleton className="h-4 w-1/4" />
+        </div>
+        <div className="flex items-center mb-2">
+          <Skeleton className="h-4 w-4 mr-1" />
+          <Skeleton className="h-4 w-1/4" />
+        </div>
+        <div className="flex justify-end mt-4">
+          <Skeleton className="h-5 w-5" />
+        </div>
+      </CardContent>
+      <CardFooter className="px-4 py-3 border-t bg-slate-50 flex items-center justify-between">
+        <Skeleton className="h-5 w-20" />
+        <Skeleton className="h-4 w-24" />
+      </CardFooter>
+    </Card>
+  );
+}
+
 export default function CoffeeMarketplace() {
   const [listings, setListings] = React.useState<CoffeeListing[]>([]);
   const [totalPages, setTotalPages] = React.useState(1);
@@ -265,7 +308,7 @@ export default function CoffeeMarketplace() {
     min_price: "",
     max_price: "",
   });
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [showFilters, setShowFilters] = React.useState(false);
   const [selectedListingId, setSelectedListingId] = React.useState<
@@ -278,7 +321,11 @@ export default function CoffeeMarketplace() {
     [listingId: string]: { isFavorited: boolean; favoriteId?: string };
   }>({});
 
-  const loggedInUser = getUserProfile();
+  const { user: loggedInUser, loading: authLoading } = useAuth();
+
+  React.useEffect(() => {
+    console.log("CoffeeMarketplace mounted", { loggedInUser, authLoading });
+  }, []);
 
   const checkFavoriteStatus = async (listingIds: string[]) => {
     if (!loggedInUser || loggedInUser.userType === "seller") return;
@@ -289,7 +336,10 @@ export default function CoffeeMarketplace() {
       await Promise.all(
         listingIds.map(async (listingId) => {
           try {
-            const response: any = await apiService().get(
+            const response = await apiService().get<{
+              success: boolean;
+              data: { userHasFavorited: boolean; favoriteId?: string };
+            }>(
               `/marketplace/listings/user-has-favorited?listingId=${listingId}`,
             );
             favoriteStatus[listingId] = {
@@ -347,18 +397,28 @@ export default function CoffeeMarketplace() {
         `/marketplace/listings/get-all-listings?${queryParams.toString()}`,
       );
 
-      if (response.success && response.data.listings) {
-        setListings(response.data.listings);
-        setTotalPages(response.data.pagination.totalPages);
-        setCurrentPage(response.data.pagination.page);
-        const listingIds = response.data.listings.map((listing) => listing.id);
-        await checkFavoriteStatus(listingIds);
+      console.log("API Response:", response);
+
+      if (response.success) {
+        const listings = response.data.listings || [];
+        setListings(listings);
+        setTotalPages(response.data.pagination.totalPages || 1);
+        setCurrentPage(response.data.pagination.page || 1);
+        if (listings.length === 0) {
+          setTotalPages(1);
+          setCurrentPage(1);
+          setFavoriteState({});
+        } else {
+          const listingIds = listings.map((listing) => listing.id);
+          await checkFavoriteStatus(listingIds);
+        }
       } else {
         const errorMessage = response.message || "Failed to fetch listings";
         setError(errorMessage);
         console.error("Error fetching listings:", errorMessage);
         setListings([]);
         setTotalPages(1);
+        setCurrentPage(1);
         setFavoriteState({});
       }
     } catch (error: any) {
@@ -367,6 +427,7 @@ export default function CoffeeMarketplace() {
       console.error("Error fetching listings:", error);
       setListings([]);
       setTotalPages(1);
+      setCurrentPage(1);
       setFavoriteState({});
     } finally {
       setIsLoading(false);
@@ -374,8 +435,10 @@ export default function CoffeeMarketplace() {
   };
 
   React.useEffect(() => {
-    fetchListings();
-  }, [currentPage, searchQuery, filters]);
+    if (!authLoading) {
+      fetchListings();
+    }
+  }, [currentPage, searchQuery, filters, authLoading]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -413,6 +476,7 @@ export default function CoffeeMarketplace() {
   };
 
   const hasActiveFilters = Object.values(filters).some((value) => value !== "");
+  const hasSearchOrFilters = searchQuery || hasActiveFilters;
 
   const getPrimaryPhotoUrl = (listing: CoffeeListing): string => {
     const primaryPhoto = listing.coffee_photo.find((photo) => photo.is_primary);
@@ -423,7 +487,6 @@ export default function CoffeeMarketplace() {
     if (!listingId || !loggedInUser || loggedInUser.userType === "seller")
       return;
 
-    // Optimistically update favorite state
     setFavoriteState((prev) => ({
       ...prev,
       [listingId]: {
@@ -434,11 +497,11 @@ export default function CoffeeMarketplace() {
     setFavoriteLoading((prev) => ({ ...prev, [listingId]: true }));
 
     try {
-      const response: any = await apiService().post(
-        `/buyers/listings/favorites/add-favorite?listingId=${listingId}`,
-        {},
-      );
-      if (response && response.data && response.data.favoriteId) {
+      const response = await apiService().post<{
+        success: boolean;
+        data: { favoriteId?: string };
+      }>(`/buyers/listings/favorites/add-favorite?listingId=${listingId}`, {});
+      if (response.success && response.data.favoriteId) {
         setFavoriteState((prev) => ({
           ...prev,
           [listingId]: {
@@ -447,13 +510,7 @@ export default function CoffeeMarketplace() {
           },
         }));
       } else {
-        setFavoriteState((prev) => ({
-          ...prev,
-          [listingId]: {
-            isFavorited: false,
-            favoriteId: prev[listingId]?.favoriteId,
-          },
-        }));
+        throw new Error("Failed to add favorite");
       }
     } catch (error) {
       console.error("Error adding favorite:", error);
@@ -477,20 +534,20 @@ export default function CoffeeMarketplace() {
 
     setFavoriteState((prev) => ({
       ...prev,
-      [listingId]: { isFavorited: false },
+      [listingId]: { isFavorited: false, favoriteId },
     }));
     setFavoriteLoading((prev) => ({ ...prev, [listingId]: true }));
 
     try {
-      const response: any = await apiService().post(
+      const response = await apiService().post<{
+        success: boolean;
+        data: any;
+      }>(
         `/buyers/listings/favorites/remove-favorite-listing?favoritesId=${favoriteId}`,
         {},
       );
-      if (!response || !response.data) {
-        setFavoriteState((prev) => ({
-          ...prev,
-          [listingId]: { isFavorited: true, favoriteId },
-        }));
+      if (!response.success) {
+        throw new Error("Failed to remove favorite");
       }
     } catch (error) {
       console.error("Error removing favorite:", error);
@@ -503,9 +560,24 @@ export default function CoffeeMarketplace() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-primary/5 p-8">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <LoadingCard key={index} />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <ErrorBoundary>
-      <div className="flex flex-col min-h-screen bg-primary/5 p-8">
+      <div className="flex flex-col min-h-screen bg-primary/5 p-8 pt-20">
         <Header />
         <main className="flex-grow container mx-auto px-4 py-6">
           <div className="mb-6">
@@ -693,128 +765,129 @@ export default function CoffeeMarketplace() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ? (
-              Array.from({ length: 6 }).map((_, index) => (
-                <Skeleton key={index} className="h-64 w-full" />
-              ))
-            ) : listings.length > 0 ? (
-              listings.map((listing) => {
-                const isFavorited =
-                  favoriteState[listing.id]?.isFavorited ?? false;
-                return (
-                  <Card
-                    key={listing.id}
-                    className="overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                    onClick={() => setSelectedListingId(listing.id)}
-                  >
-                    <div className="relative h-50 bg-slate-200 px-3">
-                      <CoffeeImage
-                        src={getPrimaryPhotoUrl(listing)}
-                        alt={listing.coffee_variety}
-                        className="w-full h-full rounded-lg"
-                      />
-                      {listing.is_organic && (
-                        <Badge className="absolute top-2 right-2 bg-emerald-500 mr-5">
-                          Organic
-                        </Badge>
-                      )}
-                    </div>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-lg font-semibold text-slate-800">
-                          {listing.coffee_variety}
-                        </h3>
-                        <div className="flex items-center bg-amber-50 px-2 py-1 rounded">
-                          <Star className="h-4 w-4 text-amber-500 mr-1" />
-                          <span className="text-sm font-medium text-amber-700">
-                            {listing.grade}
-                          </span>
+            {isLoading
+              ? Array.from({ length: 6 }).map((_, index) => (
+                  <LoadingCard key={index} />
+                ))
+              : listings.length > 0
+                ? listings.map((listing) => {
+                    const isFavorited =
+                      favoriteState[listing.id]?.isFavorited ?? false;
+                    return (
+                      <Card
+                        key={listing.id}
+                        className="overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+                        onClick={() => setSelectedListingId(listing.id)}
+                      >
+                        <div className="relative h-40 bg-slate-200">
+                          <CoffeeImage
+                            src={getPrimaryPhotoUrl(listing)}
+                            alt={listing.coffee_variety}
+                            className="w-full h-full"
+                          />
+                          {listing.is_organic && (
+                            <Badge className="absolute top-2 right-2 bg-emerald-500">
+                              Organic
+                            </Badge>
+                          )}
                         </div>
-                      </div>
-                      <p className="text-slate-600 text-sm mb-2">
-                        {listing.farm.farm_name}
-                      </p>
-                      <div className="flex items-center text-slate-500 text-sm mb-4">
-                        <Map className="h-4 w-4 mr-1" />
-                        <span>
-                          {listing.farm.region}, {listing.farm.country}
-                        </span>
-                      </div>
-                      <div className="flex items-center text-slate-500 text-sm mb-2">
-                        <Droplet className="h-4 w-4 mr-1" />
-                        <span>{listing.processing_method}</span>
-                      </div>
-                      <div className="flex items-center text-slate-500 text-sm mb-2">
-                        <Coffee className="h-4 w-4 mr-1" />
-                        <span>{listing.bean_type}</span>
-                      </div>
-                      {loggedInUser?.userType !== "seller" && (
-                        <div className="flex justify-end items-end mb-2 mt-4">
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            aria-label={isFavorited ? "Unfavorite" : "Favorite"}
-                            className="cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (favoriteLoading[listing.id]) return;
-                              if (isFavorited) {
-                                removeFavorite(listing.id);
-                              } else {
-                                addFavorite(listing.id);
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                if (favoriteLoading[listing.id]) return;
-                                if (isFavorited) {
-                                  removeFavorite(listing.id);
-                                } else {
-                                  addFavorite(listing.id);
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="text-lg font-semibold text-slate-800">
+                              {listing.coffee_variety}
+                            </h3>
+                            <div className="flex items-center bg-amber-50 px-2 py-1 rounded">
+                              <Star className="h-4 w-4 text-amber-500 mr-1" />
+                              <span className="text-sm font-medium text-amber-700">
+                                {listing.grade}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-slate-600 text-sm mb-2">
+                            {listing.farm?.farm_name}
+                          </p>
+                          <div className="flex items-center text-slate-500 text-sm mb-4">
+                            <Map className="h-4 w-4 mr-1" />
+                            <span>
+                              {listing.farm?.region}, {listing.farm.country}
+                            </span>
+                          </div>
+                          <div className="flex items-center text-slate-500 text-sm mb-2">
+                            <Droplet className="h-4 w-4 mr-1" />
+                            <span>{listing.processing_method}</span>
+                          </div>
+                          <div className="flex items-center text-slate-500 text-sm mb-2">
+                            <Coffee className="h-4 w-4 mr-1" />
+                            <span>{listing.bean_type}</span>
+                          </div>
+                          {loggedInUser?.userType !== "seller" && (
+                            <div className="flex justify-end items-end mb-2 mt-4">
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                aria-label={
+                                  isFavorited ? "Unfavorite" : "Favorite"
                                 }
-                              }
-                            }}
-                          >
-                            <button
-                              disabled={favoriteLoading[listing.id]}
-                              className="cursor-pointer"
-                            >
-                              {favoriteLoading[listing.id] ? (
-                                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-                              ) : (
-                                <Heart
-                                  className={`h-5 w-5 transition-colors duration-150 ${
-                                    isFavorited
-                                      ? "fill-yellow-400 text-yellow-400"
-                                      : "text-slate-400"
-                                  }`}
-                                  fill={isFavorited ? "currentColor" : "none"}
-                                />
-                              )}
-                            </button>
-                          </span>
-                        </div>
-                      )}
-                    </CardContent>
-                    <CardFooter className="px-4 py-3 border-t bg-slate-50 flex items-center justify-between">
-                      <div className="text-emerald-700 font-bold">
-                        ${listing.price_per_kg.toFixed(2)}/kg
-                      </div>
-                      <div className="text-slate-500 text-sm">
-                        {listing.quantity_kg.toLocaleString()} kg available
-                      </div>
-                    </CardFooter>
-                  </Card>
-                );
-              })
-            ) : (
-              <p className="text-center text-slate-500 col-span-3">
-                No listings found.
-              </p>
-            )}
+                                className="cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (favoriteLoading[listing.id]) return;
+                                  if (isFavorited) {
+                                    removeFavorite(listing.id);
+                                  } else {
+                                    addFavorite(listing.id);
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    if (favoriteLoading[listing.id]) return;
+                                    if (isFavorited) {
+                                      removeFavorite(listing.id);
+                                    } else {
+                                      addFavorite(listing.id);
+                                    }
+                                  }
+                                }}
+                              >
+                                <button
+                                  disabled={favoriteLoading[listing.id]}
+                                  className="cursor-pointer focus:outline-none"
+                                >
+                                  {favoriteLoading[listing.id] ? (
+                                    <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                                  ) : (
+                                    <Heart
+                                      className={`h-5 w-5 transition-colors duration-200 ${
+                                        isFavorited
+                                          ? "text-yellow-400 fill-yellow-400"
+                                          : "text-slate-400 stroke-slate-400"
+                                      }`}
+                                      strokeWidth={2}
+                                      fill={
+                                        isFavorited ? "currentColor" : "none"
+                                      }
+                                    />
+                                  )}
+                                </button>
+                              </span>
+                            </div>
+                          )}
+                        </CardContent>
+                        <CardFooter className="px-4 py-3 border-t bg-slate-50 flex items-center justify-between">
+                          <div className="text-emerald-700 font-bold">
+                            ${listing.price_per_kg.toFixed(2)}/kg
+                          </div>
+                          <div className="text-slate-500 text-sm">
+                            {listing.quantity_kg.toLocaleString()} kg available
+                          </div>
+                        </CardFooter>
+                      </Card>
+                    );
+                  })
+                : null}
           </div>
-          {listings.length > 0 && (
+          {listings.length > 0 && totalPages > 1 && (
             <div className="mt-6">
               <Pagination>
                 <PaginationContent>
@@ -861,18 +934,32 @@ export default function CoffeeMarketplace() {
               <CardContent className="pt-6 flex flex-col items-center">
                 <Coffee className="h-12 w-12 text-slate-400 mb-4" />
                 <h3 className="text-xl font-semibold text-slate-700 mb-2">
-                  No coffee listings found
+                  {hasSearchOrFilters
+                    ? "No listings match your criteria"
+                    : "No coffee listings available"}
                 </h3>
                 <p className="text-slate-500 mb-4">
-                  Try adjusting your filters or search criteria
+                  {hasSearchOrFilters
+                    ? "Try adjusting your search or filters to find more listings."
+                    : "Check back later for new coffee listings."}
                 </p>
-                <Button
-                  onClick={resetFilters}
-                  variant="default"
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  Clear All Filters
-                </Button>
+                {hasSearchOrFilters ? (
+                  <Button
+                    onClick={resetFilters}
+                    variant="default"
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    Clear All Filters
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => fetchListings()}
+                    variant="default"
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    Refresh
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}

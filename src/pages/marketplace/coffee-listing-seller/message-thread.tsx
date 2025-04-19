@@ -38,7 +38,6 @@ export function MessageThread({
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || !thread || !activeMessageThread) return;
 
-    // Extract recipientId and listingId from the thread
     const latestMessage = thread.messages[0];
     const recipientId =
       latestMessage.sender.id === senderId
@@ -46,7 +45,6 @@ export function MessageThread({
         : latestMessage.sender.id;
     const listingId = latestMessage.listingId;
 
-    // Create optimistic message
     const tempId = `temp-${Math.random().toString(36).substring(2)}`;
     const optimisticMessage: Message = {
       id: tempId,
@@ -70,7 +68,6 @@ export function MessageThread({
       createdAt: new Date().toISOString(),
     };
 
-    // Optimistically update the thread
     const updatedThreads = messageThreads.map((t) =>
       t.id === activeMessageThread
         ? {
@@ -88,21 +85,17 @@ export function MessageThread({
     updateThreads(updatedThreads);
     setChatMessage("");
 
-    try { 
-      // Send the message via chatService
+    try {
       await chatService().sendMessage({
         recipientId,
         message: chatMessage,
         listingId: listingId || undefined,
       });
-
-      // Socket will replace the optimistic message
     } catch (error: unknown) {
       console.error("[MessageThread] Send message error:", error);
       const errorResponse = error as APIErrorResponse;
       errorMessage(errorResponse);
 
-      // Rollback optimistic update
       const rollbackThreads = messageThreads.map((t) =>
         t.id === activeMessageThread
           ? {
@@ -112,6 +105,12 @@ export function MessageThread({
           : t,
       );
       updateThreads(rollbackThreads);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && chatMessage.trim()) {
+      handleSendMessage();
     }
   };
 
@@ -188,7 +187,7 @@ export function MessageThread({
               />
             ) : (
               <AvatarFallback className="bg-gray-200 text-gray-600">
-                {thread.buyerName.charAt(0)}
+                {thread.buyerName.charAt(0).toUpperCase()}
               </AvatarFallback>
             )}
           </Avatar>
@@ -197,11 +196,10 @@ export function MessageThread({
               {thread.buyerName}
             </h4>
             <p className="text-xs text-gray-500">
-              {thread.buyerCompany || "Unknown"}
+              {thread.buyerCompany || "Farmer"}
             </p>
           </div>
         </div>
-
         <div className="flex space-x-2">
           <Button variant="ghost" size="icon">
             <User size={18} />
@@ -219,7 +217,6 @@ export function MessageThread({
           )}
         </div>
       </div>
-
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {thread.messages.map((message) => (
           <div
@@ -257,13 +254,13 @@ export function MessageThread({
           </div>
         ))}
       </div>
-
       <div className="p-4 border-t">
         <div className="flex">
           <Input
             type="text"
             value={chatMessage}
             onChange={(e) => setChatMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
             placeholder="Type your message..."
             className="flex-1"
           />

@@ -161,8 +161,9 @@ export default function SampleRequestModal({
               name="weight"
               type="number"
               min="0.1"
+              max="2"
               step="0.1"
-              placeholder="Enter desired sample weight"
+              placeholder="Enter desired sample weight, max is 2 kgs"
               value={formData.weight}
               onChange={handleChange}
               required

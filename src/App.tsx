@@ -1,3 +1,5 @@
+"use client";
+
 import React, { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
@@ -34,7 +36,8 @@ const Welcome = lazy(() => import("./pages/onboarding/Welcome"));
 const FarmManagement = lazy(() => import("./pages/farms/FarmManagement"));
 const FarmDetails = lazy(() => import("./pages/farms/FarmDetails"));
 const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
-const Dashboard = lazy(() => import("./pages/seller/Dashboard"));
+const ChatsPage = lazy(() => import("./pages/chats/ChatsPage"));
+const SettingsPage = lazy(() => import("./pages/buyers/settings/SettingsPage"));
 const CompanyOnboarding = lazy(
   () => import("./pages/company/company-onboarding"),
 );
@@ -76,7 +79,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   );
 };
 
-const getStepFromStage = (onboardingStage?: string) => {
+const getStepFromStage = (onboardingStage?: string, userType?: string) => {
+  if (userType === "buyer") {
+    return onboardingStage === "completed"
+      ? "/market-place"
+      : "/company-verification";
+  }
+
   switch (onboardingStage) {
     case "crops_to_sell":
       return "/onboarding/step-two";
@@ -94,10 +103,11 @@ const getStepFromStage = (onboardingStage?: string) => {
 const RouterContent: React.FC = () => {
   const { user } = useAuth();
   const currentStep = user?.onboarding_stage;
+  const userType = user?.userType;
 
   return (
     <Routes>
-      {/* Auth Routes (Public) */}
+      {/* Public Routes */}
       <Route path="/" element={<Hero />} />
       <Route path="/login" element={<Login />} />
       <Route path="/agent/login" element={<AgentLogin />} />
@@ -106,12 +116,31 @@ const RouterContent: React.FC = () => {
       <Route path="/verification" element={<VerifyEmail />} />
       <Route path="/first-time-user" element={<CreatePassword />} />
       <Route path="/market-place" element={<CoffeeMarketplace />} />
-      {/* Onboarding smart redirect */}
+
+      {/* Protected Routes */}
+      <Route
+        path="/home"
+        element={
+          <ProtectedRoute>
+            {userType === "buyer" ? (
+              currentStep === "completed" ? (
+                <CoffeeMarketplace />
+              ) : (
+                <CompanyOnboarding />
+              )
+            ) : currentStep !== "completed" ? (
+              <Welcome />
+            ) : (
+              <CoffeeMarketplace />
+            )}
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/onboarding"
         element={
           <ProtectedRoute>
-            <Navigate to={getStepFromStage(currentStep)} replace />
+            <Navigate to={getStepFromStage(currentStep, userType)} replace />
           </ProtectedRoute>
         }
       />
@@ -163,7 +192,6 @@ const RouterContent: React.FC = () => {
           </ProtectedRoute>
         }
       />
-      {/* Onboarding Step Routes */}
       <Route
         path="/onboarding/step-one"
         element={
@@ -196,26 +224,6 @@ const RouterContent: React.FC = () => {
           </ProtectedRoute>
         }
       />
-
-      {/* Other Protected Routes */}
-      <Route
-        path="/home"
-        element={
-          <ProtectedRoute>
-            {user?.userType !== "buyer" ? (
-              currentStep !== "completed" ? (
-                <Welcome />
-              ) : (
-                <FarmManagement />
-              )
-            ) : currentStep === "completed" ? (
-              <CoffeeMarketplace />
-            ) : (
-              <CompanyOnboarding />
-            )}
-          </ProtectedRoute>
-        }
-      />
       <Route
         path="/company-verification"
         element={
@@ -233,18 +241,18 @@ const RouterContent: React.FC = () => {
         }
       />
       <Route
-        path="/10"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/profile"
         element={
           <ProtectedRoute>
             <UserProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
           </ProtectedRoute>
         }
       />
@@ -264,7 +272,6 @@ const RouterContent: React.FC = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/listing/:id"
         element={
@@ -297,6 +304,16 @@ const RouterContent: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/chats"
+        element={
+          <ProtectedRoute>
+            <ChatsPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* Catch-All Route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

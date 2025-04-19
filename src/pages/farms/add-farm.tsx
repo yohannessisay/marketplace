@@ -228,7 +228,7 @@ export default function AddFarm() {
   return (
     <div className="bg-primary/5 py-8 px-8">
       <Header />
-      <div className="bg-white mx-auto container">
+      <div className="bg-white mx-auto container pt-5  mt-20 rounded-lg">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -237,21 +237,21 @@ export default function AddFarm() {
             <div className="mb-10">
               <div className="mb-2">
                 <h2 className="text-green-600 font-medium">
-                  {isEditMode ? "Edit Farm" : "Add Farm"}
+                  {isEditMode ? "Edit Your Farm" : "Add New Farm"}
                 </h2>
-                <h3 className="text-xl text-gray-900 font-semibold">
+                <h3 className="text-xl text-gray-900 font-semibold mt-4">
                   {isEditMode
                     ? "Update your farm details"
                     : "Upload your farm documents"}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 mt-2">
                   {isEditMode
                     ? "Edit the details of your farm and save changes."
                     : "Upload a clear government registration and land rights document. Make sure text is readable and high-quality."}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
                 {/* Government Registration Document */}
                 <Card className="max-w-2xl mx-auto">
                   <CardHeader>
@@ -448,41 +448,75 @@ export default function AddFarm() {
                   <FormField
                     control={form.control}
                     name="region"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Region</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel>Region</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="text"
+                              value={field.value ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                field.onChange(value);
+                              }}
+                              onBlur={field.onBlur}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                   <FormField
                     control={form.control}
                     name="total_size_hectares"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Total farm size (hectar)</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel>Total farm size (hectar)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              value={field.value ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                const parsedValue =
+                                  value === "" ? 0 : Number(value);
+                                field.onChange(parsedValue);
+                              }}
+                              onBlur={field.onBlur}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                   <FormField
                     control={form.control}
                     name="coffee_area_hectares"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Total coffee size (hectar)</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel>Total coffee size (hectar)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              value={field.value ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                const parsedValue =
+                                  value === "" ? 0 : Number(value);
+                                field.onChange(parsedValue);
+                              }}
+                              onBlur={field.onBlur}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                 </div>
               </div>

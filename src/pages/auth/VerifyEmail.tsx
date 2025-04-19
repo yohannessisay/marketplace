@@ -11,15 +11,19 @@ const VerifyEmail: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full bg-white">
+      {/* Left Section - Image (Hidden on mobile) */}
       <div
-        className="hidden md:flex w-1/2 bg-cover bg-center border rounded-md border-green-200 m-2 shadow-2xl"
+        className="hidden md:flex w-1/2 bg-no-repeat bg-center border rounded-md border-green-200 m-2 shadow-2xl"
         style={{
-          backgroundImage: "url('images/email.svg')",
+          backgroundImage: "url('images/3811384.jpg')",
+          backgroundSize: "auto 500px", // Ensures full image is visible
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
         }}
       ></div>
 
       {/* Right Section - Verification Message */}
-      <div className="w-1/2 h-full flex flex-col items-center justify-center bg-gray-50 px-8">
+      <div className="w-full md:w-1/2 h-full flex flex-col items-center justify-center bg-gray-50 px-4 md:px-8">
         <div className="max-w-md w-full flex flex-col items-center">
           {/* Email Icon */}
           <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-6">
@@ -50,7 +54,7 @@ const VerifyEmail: React.FC = () => {
           {/* Okay Button */}
           <Button
             onClick={handleOkayClick}
-            className="w-ful"
+            className="w-full" // Fixed typo (was "w-ful")
             variant={"default"}
           >
             I have received my OTP
