@@ -482,7 +482,7 @@ export default function AddFarm() {
                               onChange={(e) => {
                                 const value = e.target.value;
                                 const parsedValue =
-                                  value === "" ? 0 : Number(value);
+                                  value === "" ? 1 : Number(value);
                                 field.onChange(parsedValue);
                               }}
                               onBlur={field.onBlur}
