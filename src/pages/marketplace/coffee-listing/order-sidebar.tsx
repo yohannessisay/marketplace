@@ -54,10 +54,10 @@ export function OrderSidebar({ listing, demoOrderStatus }: OrderSidebarProps) {
   const handleSubmitBid = async () => {
     if (!listing?.id) return;
     try {
-      await apiService().post("/bids/place-bid", {
+      await apiService().post("/buyers/bids/place-bid", {
         listingId: listing.id,
-        quantity,
-        pricePerKg: bidPrice,
+        quantity_kg:quantity,
+        unit_price: bidPrice,
       });
     } catch (error) {
       console.error("[OrderSidebar] Error submitting bid:", error);
