@@ -811,12 +811,7 @@ export default function CoffeeListingSellerView() {
                                 <p className="text-sm font-medium text-gray-900">
                                   ${bid.total_amount?.toFixed(2)}
                                 </p>
-                                <Button
-                                  variant="link"
-                                  className="p-0 h-auto text-emerald-600"
-                                >
-                                  View Details
-                                </Button>
+                           
                               </div>
                             </div>
                           </div>

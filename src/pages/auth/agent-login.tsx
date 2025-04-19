@@ -35,8 +35,11 @@ const AgentLogin = () => {
           ...data,
         },
       );
+
       successMessage("Login successful!");
       const { access_token, refresh_token, agent } = response.data;
+
+      
       Cookies.set("accessToken", access_token, { expires: 1 / 48 });
       Cookies.set("refreshToken", refresh_token, { expires: 1 });
 
@@ -46,9 +49,10 @@ const AgentLogin = () => {
         lastName: agent.last_name,
         phone: agent.phone,
         email: agent.email,
-        image: agent.image,
+        image: agent.image??'',
         userType: "agent",
       };
+
 
       saveToLocalStorage("userProfile", userProfile);
       navigate("/agent/farmer-management");

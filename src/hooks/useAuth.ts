@@ -1,3 +1,4 @@
+import { getFromLocalStorage } from '@/lib/utils';
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
@@ -40,20 +41,18 @@ export const useAuth = (): AuthState => {
 
       const accessToken = Cookies.get(ACCESS_TOKEN_KEY);
       const refreshToken = Cookies.get(REFRESH_TOKEN_KEY);
-      const storedProfile = localStorage.getItem(USER_PROFILE_KEY);
+      const storedProfile = getFromLocalStorage(USER_PROFILE_KEY,{});
       let userProfile: UserProfile | null = null;
+  
 
       if (storedProfile) {
+      
         try {
-          userProfile = JSON.parse(storedProfile);
+          userProfile = storedProfile as UserProfile;
+        
+          
           if (
-            userProfile &&
-            userProfile.id &&
-            userProfile.email &&
-            userProfile.first_name &&
-            userProfile.last_name &&
-            userProfile.phone &&
-            userProfile.userType
+            userProfile
           ) {
             if (accessToken) {
               setAuthState({
@@ -67,6 +66,7 @@ export const useAuth = (): AuthState => {
           } else {
             console.warn("Invalid userProfile in localStorage, clearing...");
             localStorage.removeItem(USER_PROFILE_KEY);
+            return 0;
           }
         } catch (error) {
           console.error(
@@ -80,9 +80,12 @@ export const useAuth = (): AuthState => {
       if (accessToken) {
         try {
           const response: any = await apiService().get("/users/profile");
-
+          let user: UserProfile;
           if (response.success && response.data) {
-            const user: UserProfile = response.data;
+            if (response.data.agent) {
+              user={...response.data,user:response.data.agent}
+            }
+           user=response.data;
             localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(user));
             setAuthState({
               isAuthenticated: true,

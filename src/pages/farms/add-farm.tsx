@@ -272,7 +272,7 @@ export default function AddFarm() {
                             <div className="flex items-center space-x-4">
                               <FileText className="h-8 w-8 text-gray-500" />
                               <div>
-                                <p className="text-sm font-medium">
+                                <p className="text-sm font-medium break-all">
                                   {file.name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
@@ -340,7 +340,7 @@ export default function AddFarm() {
                             <div className="flex items-center space-x-4">
                               <FileText className="h-8 w-8 text-gray-500" />
                               <div>
-                                <p className="text-sm font-medium">
+                                <p className="text-sm font-medium break-all">
                                   {file.name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
@@ -507,7 +507,7 @@ export default function AddFarm() {
                               onChange={(e) => {
                                 const value = e.target.value;
                                 const parsedValue =
-                                  value === "" ? 0 : Number(value);
+                                  value === "" ? 1: Number(value);
                                 field.onChange(parsedValue);
                               }}
                               onBlur={field.onBlur}
