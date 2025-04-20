@@ -1,5 +1,4 @@
-"use client";
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -66,6 +65,7 @@ export default function StepTwo() {
   };
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Initialize form with default values or values from local storage
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
@@ -136,8 +136,13 @@ export default function StepTwo() {
     );
   };
 
+  // Handle form submission
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
+    const isBackButtonClicked = getFromLocalStorage(
+      "back-button-clicked",
+      false
+    );
     try {
       const formData = new FormData();
 
@@ -184,12 +189,11 @@ export default function StepTwo() {
           formData.append("farm_id", farmId.replace(/"/g, ""));
         }
 
-      if (user?.onboarding_stage === "crops_to_sell") {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/coffee-details",
           formData,
           true,
-          user?.userType === "agent" ? user?.id : "",
+          isAgent.userType === "agent" && farmer ? farmer.id : ""
         );
 
         if (response && response.success) {
@@ -242,6 +246,7 @@ export default function StepTwo() {
     }
   };
 
+  // Go back to previous step
   const goBack = () => {
     navigation("/onboarding/step-one");
     localStorage.setItem("back-button-clicked", "true");
@@ -252,61 +257,24 @@ export default function StepTwo() {
   }
 
   return (
-    <div className="min-h-screen bg-primary/5 pt-26">
-      <Header />
+    <div className="min-h-screen bg-white">
+      <Header></Header>
       <main className="container mx-auto p-4 max-w-5xl">
         <Stepper currentStep={2} />
+
         <Form {...form}>
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit(onSubmit)();
-            }}
-            className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white pt-10"
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-8 shadow-lg px-4  rounded-md py-4"
           >
-            <h2 className="text-center text-2xl">Add Coffee Crop Details</h2>
-            <div className="mb-8">
-              <h3 className="text-lg font-medium mb-2">Farm Information</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                This crop is produced at the following farm:
-              </p>
-
-              <FormField
-                control={form.control}
-                name="farmId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Farm</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Input
-                          disabled
-                          value={
-                            farm
-                              ? `${farm.farm_name} (${farm.region}, ${farm.country})`
-                              : "No farm selected"
-                          }
-                          className="w-full bg-gray-100"
-                        />
-                        <input
-                          type="hidden"
-                          {...field}
-                          value={farm?.id || ""}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Step 1: Upload Grading Report */}
             <div className="mb-8">
               <Card className="max-w-2xl mx-auto">
                 <CardHeader>
                   <CardTitle>Upload grading report</CardTitle>
                   <CardDescription>
-                    Upload a single PDF document or image. Drag and drop or
-                    click to select a file.
+                    Upload PDF documents and images. Drag and drop or click to
+                    select files.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -324,7 +292,7 @@ export default function StepTwo() {
                   </div>
                 </CardFooter>
               </Card>
-              <p className="text-sm text-gray-600 mb-5 mt-4 text-center">
+              <p className="text-sm text-gray-600 mb-4">
                 Submit your Grading Report to provide a detailed quality
                 assessment of your coffee, including bean size, moisture
                 content, and cup profile.
@@ -356,6 +324,7 @@ export default function StepTwo() {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="grade"
@@ -376,8 +345,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Bean type</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -411,114 +380,19 @@ export default function StepTwo() {
 
               {/* Crop specification */}
               <h3 className="text-lg font-medium mb-4">Crop specification</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <FormField
-                  control={form.control}
-                  name="is_organic"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Is Organic?</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select organic status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="processing_method"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Processing Method</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="moisture_percentage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Moisture Percentage</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          value={field.value}
-                          onChange={(e) =>
-                            field.onChange(Number(e.target.value) || 0)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="screen_size"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Screen Size</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          value={field.value ?? ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const parsedValue =
-                              value === "" ? 0 : Number(value);
-                            field.onChange(parsedValue);
-                          }}
-                          onBlur={field.onBlur}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="drying_method"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Drying Method</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="wet_mill"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Wet Mill</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+              <FormField
+                control={form.control}
+                name="is_organic"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Is Organic?</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               {/* Cup taste */}
               <h3 className="text-lg font-medium mb-4">Cup taste</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -529,8 +403,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Acidity</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -552,8 +426,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Body</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -575,8 +449,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Sweetness</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -598,8 +472,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Aftertaste</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -623,8 +497,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Balance</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -884,91 +758,93 @@ export default function StepTwo() {
                 </div>
               </div>
 
-            {/* Readiness and Delivery Details */}
-            <div className="mb-8">
-              <h3 className="text-lg font-medium mb-2">
-                Readiness and Delivery Details
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Specify the harvest readiness date, bagging period, and delivery
-                type to inform buyers
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField
-                  control={form.control}
-                  name="readiness_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Readiness date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button variant="outline" className="w-full">
-                              {field.value
-                                ? new Date(field.value).toDateString()
-                                : "Pick a date"}
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={
-                              field.value ? new Date(field.value) : undefined
-                            }
-                            onSelect={(date) => {
-                              if (date) {
-                                const formatted = date
-                                  .toISOString()
-                                  .slice(0, 10);
-                                field.onChange(formatted);
+              {/* Readiness and Delivery Details */}
+              <div className="mb-8">
+                <h3 className="text-lg font-medium mb-2">
+                  Readiness and Delivery Details
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Specify the harvest readiness date, bagging period, and
+                  delivery type to inform buyers
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="readiness_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Readiness date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button variant="outline" className="w-full">
+                                {field.value
+                                  ? new Date(field.value).toDateString()
+                                  : "Pick a date"}
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                field.value ? new Date(field.value) : undefined
                               }
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="lot_length"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Lot number</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Optional" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="delivery_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Delivery type</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                      >
+                              onSelect={(date) => {
+                                if (date) {
+                                  const formatted = date
+                                    .toISOString()
+                                    .slice(0, 10);
+                                  field.onChange(formatted);
+                                }
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lot_length"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lot number</FormLabel>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select delivery type" />
-                          </SelectTrigger>
+                          <Input {...field} placeholder="Optional" />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="FOB (Free on Board) - Port of Djibouti">
-                            FOB (Free on Board) - Port of Djibouti
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="delivery_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Delivery type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select delivery type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="FOB (Free on Board) - Port of Djibouti">
+                              FOB (Free on Board) - Port of Djibouti
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             </div>
 
@@ -977,11 +853,7 @@ export default function StepTwo() {
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting || !form.formState.isValid}
-                className="my-4"
-              >
+              <Button type="submit" disabled={isSubmitting} className=" my-4">
                 {isSubmitting ? "Saving..." : "Save and continue"}
               </Button>
             </div>
