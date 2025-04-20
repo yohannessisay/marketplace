@@ -234,14 +234,11 @@ export default function StepTwo() {
           errorMessage("Something went wrong, please try again");
         }
       }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
     } catch (error: any) {
-      console.log(error);
-
-      // errorMessage(
-      //   error?.message || "An error occurred while saving farm details"
-      // );
+      errorMessage(
+        error?.message || "An error occurred while saving farm details"
+      );
       setIsSubmitting(false);
     }
   };

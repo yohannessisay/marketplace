@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -28,46 +29,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import Stepper from "@/components/ui/stepper";
+import {
+  farmDetailsSchema,
+  type FarmDetailsFormData,
+} from "@/types/validation/seller-onboarding";
 import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { FileUpload } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
-import { FileText, X } from "lucide-react";
-import { APIErrorResponse } from "@/types/api";
-import { useAuth } from "@/hooks/useAuth";
-
-// Define the FarmDetailsFormData type based on the schema
-export type FarmDetailsFormData = z.infer<typeof farmDetailsSchema>;
-
-// Define the Zod schema for farm details
-export const farmDetailsSchema = z
-  .object({
-    region: z.string().min(1, "Region is required"),
-    longitude: z.coerce.number().min(1, "Longitude is required"),
-    latitude: z.coerce.number().min(1, "Latitude is required"),
-    crop_type: z.string().min(1, "Crop type is required"),
-    crop_source: z.string().min(1, "Crop source is required"),
-    origin: z.string().min(1, "Origin is required"),
-    tree_type: z.string().min(1, "Tree type is required"),
-    tree_variety: z.string().min(1, "Tree variety is required"),
-    soil_type: z.string().min(1, "Soil type is required"),
-    farm_name: z.string().min(1, "Farm name is required"),
-    town_location: z.string().min(1, "Town location is required"),
-    country: z.string().min(1, "Country is required"),
-    total_size_hectares: z.coerce.number().min(1, "Total size is required"),
-    coffee_area_hectares: z.coerce.number().min(1, "Coffee area is required"),
-    altitude_meters: z.coerce.number().min(1, "Altitude is required"),
-    capacity_kg: z.coerce.number().min(1, "Capacity is required"),
-    avg_annual_temp: z.coerce
-      .number()
-      .min(1, "Average annual temperature is required"),
-    annual_rainfall_mm: z.coerce.number().min(1, "Annual rainfall is required"),
-  })
-  .refine((data) => data.coffee_area_hectares <= data.total_size_hectares, {
-    message: "Coffee area cannot be greater than total farm size",
-    path: ["coffee_area_hectares"],
-  });
 
 export default function StepOne() {
   const navigate = useNavigate();
@@ -120,28 +90,17 @@ export default function StepOne() {
     setIsClient(true);
     const savedData = getFromLocalStorage<FarmDetailsFormData>(
       "step-one",
-      {} as FarmDetailsFormData,
+      {} as FarmDetailsFormData
     );
     if (savedData && Object.keys(savedData).length > 0) {
-      // Ensure numeric fields are parsed as numbers
-      const parsedData: FarmDetailsFormData = {
-        ...savedData,
-        longitude: Number(savedData.longitude),
-        latitude: Number(savedData.latitude),
-        total_size_hectares: Number(savedData.total_size_hectares),
-        coffee_area_hectares: Number(savedData.coffee_area_hectares),
-        altitude_meters: Number(savedData.altitude_meters),
-        capacity_kg: Number(savedData.capacity_kg),
-        avg_annual_temp: Number(savedData.avg_annual_temp),
-        annual_rainfall_mm: Number(savedData.annual_rainfall_mm),
-      };
-      reset(parsedData);
+      reset(savedData);
     }
   }, [reset]);
 
   const onSubmit = async (data: FarmDetailsFormData) => {
     setIsSubmitting(true);
     try {
+      const isAgent = parsed.userType;
       const farmer: any = getFromLocalStorage("farmer-profile", {});
       const formData = new FormData();
 
@@ -163,15 +122,19 @@ export default function StepOne() {
         false
       );
       if (
-        (user?.onboarding_stage === "farm_profile" ||
-          user?.userType === "agent") &&
-        (getFromLocalStorage("current-step", "") as string) === "farm_profile"
+        (currentUserStage === "farm_profile" || isAgent === "agent") &&
+        (getFromLocalStorage("current-step", "") as string) ===
+          "farm_profile" &&
+        !isBackButtonClicked
       ) {
-        const response: any = await apiService().postFormData(
+        let response: { success: boolean; data?: { farm: { id: string } } } = {
+          success: false,
+        };
+        response = await apiService().postFormData(
           "/onboarding/seller/farm-details",
           formData,
           true,
-          user?.userType === "agent" && farmer ? farmer.id : "",
+          isAgent === "agent" && farmer ? farmer.id : ""
         );
         if (response && response.success) {
           parsed.onboarding_stage = "crops_to_sell";
@@ -188,23 +151,33 @@ export default function StepOne() {
           errorMessage("Failed to save farm details");
         }
       } else {
-        const existingFarmId: any = getFromLocalStorage("farm-id", "");
+        const existingFarmId = getFromLocalStorage("farm-id", "");
         formData.append("farmId", existingFarmId);
         try {
           const response: any = await apiService().patchFormData(
             "/sellers/farms/update-farm",
             formData,
             true,
-            user?.userType === "agent" && farmer ? farmer.id : "",
+            isAgent === "agent" && farmer ? farmer.id : ""
           );
-          navigate("/onboarding/step-two");
-          successMessage("Farm data updated");
-        } catch (error: any) {
-          errorMessage(error as APIErrorResponse);
+          if (response.success) {
+            saveToLocalStorage("is-back-button-clicked", "false");
+            navigate("/onboarding/step-two");
+            successMessage("Farm data updated");
+          }
+        } catch {
+          errorMessage("Something went wrong, please try again");
         }
       }
+
+      setIsSubmitting(false);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      errorMessage(error as APIErrorResponse);
+      errorMessage(
+        error?.message || "An error occurred while saving farm details"
+      );
+      setIsSubmitting(false);
     } finally {
       saveToLocalStorage("step-one", data);
       setIsSubmitting(false);
@@ -222,7 +195,7 @@ export default function StepOne() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 shadow-lg px-8 rounded-md py-4 bg-white"
+          className="space-y-8 shadow-lg px-8  rounded-md py-4 bg-white"
         >
           {/* Document Upload Section */}
           <div className="mb-10">
@@ -232,22 +205,18 @@ export default function StepOne() {
                 Upload your farm documents
               </h3>
               <p className="text-sm text-gray-600">
-                Upload one clear government registration and one land rights
-                document. Ensure text is readable and high-quality.
+                Upload a clear government registration and land rights document.
+                Make sure text is readable and high-quality
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              {/* Government Document Card */}
-              <Card className="max-w-2xl mx-auto w-full">
+              <Card className="max-w-2xl mx-auto">
                 <CardHeader>
-                  <CardTitle className="truncate max-w-[250px]">
-                    Government Registration Document
-                  </CardTitle>
-                  <CardDescription className="truncate max-w-[250px]">
-                    {files.government
-                      ? "Document uploaded"
-                      : "Upload PDF/image (Max 5MB)"}
+                  <CardTitle>Government registration document</CardTitle>
+                  <CardDescription>
+                    Upload PDF documents and images. Drag and drop or click to
+                    select files.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -266,16 +235,12 @@ export default function StepOne() {
                 </CardFooter>
               </Card>
 
-              {/* Land Rights Document Card */}
-              <Card className="max-w-2xl mx-auto w-full">
+              <Card className="max-w-2xl mx-auto">
                 <CardHeader>
-                  <CardTitle className="truncate max-w-[250px]">
-                    Land Rights Document
-                  </CardTitle>
-                  <CardDescription className="truncate max-w-[250px]">
-                    {files.landRights
-                      ? "Document uploaded"
-                      : "Upload PDF/image (Max 5MB)"}
+                  <CardTitle>Land right documents</CardTitle>
+                  <CardDescription>
+                    Upload PDF documents and images. Drag and drop or click to
+                    select files.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -551,6 +516,7 @@ export default function StepOne() {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="avg_annual_temp"
@@ -572,6 +538,7 @@ export default function StepOne() {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="annual_rainfall_mm"
@@ -698,7 +665,7 @@ export default function StepOne() {
 
           {/* Navigation Buttons */}
           <div className="flex justify-end mb-8">
-            <Button type="submit" disabled={isSubmitting} className="my-4">
+            <Button type="submit" disabled={isSubmitting} className=" my-4">
               {isSubmitting ? "Saving..." : "Save and continue"}
             </Button>
           </div>

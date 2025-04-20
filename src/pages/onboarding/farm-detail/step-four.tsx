@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -27,21 +25,20 @@ import {
   getFromLocalStorage, 
 } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
+import Header from "@/components/layout/header";
 import { apiService } from "@/services/apiService";
 import { UserProfile } from "@/types/user";
 
 export default function StepFour() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [profileInfo, setProfileInfo] = useState<ProfileInfo | undefined>();
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
-  const { user } = useAuth();
   const { successMessage, errorMessage } = useNotification();
-
+  const [files, setFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userProfile: any = getFromLocalStorage("userProfile", {});
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
     defaultValues: {
@@ -98,15 +95,19 @@ export default function StepFour() {
   // Handle form submission
   const onSubmit = async (data: ProfileInfoFormData) => {
     try {
-      setIsSubmitting(true);
-      const farmer: any = getFromLocalStorage("farmer-profile", {});
-
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const currentStep: any = getFromLocalStorage("current-step", "");
       if (
         (userProfile.onboarding_stage === "avatar_image" ||
           userProfile.userType === "agent") &&
         currentStep === "avatar_image"
       ) {
+        saveToLocalStorage("step-four", data);
+        setIsSubmitting(true);
+        // Combine all data from all steps
+
         const formData = new FormData();
+
         for (const key in data) {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
@@ -118,8 +119,12 @@ export default function StepFour() {
         files.forEach((file) => {
           formData.append("files", file);
         });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isAgent: any = getFromLocalStorage("userProfile", {});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const farmer: any = getFromLocalStorage("farmer-profile", {});
 
-        await apiService().postFormData(
+        const response: { success: boolean } = await apiService().postFormData(
           "/onboarding/seller/profile",
           formData,
           true,
@@ -130,40 +135,20 @@ export default function StepFour() {
           localStorage.clear();
           saveToLocalStorage("userProfile", userProfile);
 
-        successMessage("Registration completed successfully!");
-        navigation("/seller-dashboard");
-      } else {
-        const formData = new FormData();
-        for (const key in data) {
-          if (Object.prototype.hasOwnProperty.call(data, key)) {
-            formData.append(
-              key,
-              String(data[key as keyof ProfileInfoFormData]),
-            );
-          }
+          successMessage("Registration completed successfully!");
+          navigation("/seller-dashboard");
+        } else {
+          errorMessage("Failed to save farm details");
         }
-        files.forEach((file) => {
-          formData.append("files", file);
-        });
-        formData.append("id", profileInfo?.id || "");
-
-        await apiService().patchFormData(
-          "/sellers/profile/update-profile",
-          formData,
-          true,
-          user?.userType === "agent" && farmer ? farmer.id : "",
-        );
-
-        successMessage("Profile data updated successfully");
-        navigation("/seller-dashboard");
+        setIsSubmitting(false);
       }
-    } catch (error: any) {
-      errorMessage(error as APIErrorResponse);
-    } finally {
+    } catch {
       setIsSubmitting(false);
+      errorMessage("Registration failed!");
     }
   };
 
+  // Go back to previous step
   const goBack = () => {
     localStorage.setItem("back-button-clicked", "true");
     navigation("/onboarding/step-three");
@@ -175,14 +160,15 @@ export default function StepFour() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header></Header>
+      {/* Main Content */}
       <main className="container mx-auto p-6">
         <Stepper currentStep={4} />
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 shadow-lg px-8 rounded-md py-4"
+            className="space-y-8 shadow-lg px-8  rounded-md py-4"
           >
             <div className="mb-10">
               <div className="mb-6">
@@ -298,11 +284,12 @@ export default function StepFour() {
               </div>
             </div>
 
+            {/* Navigation Buttons */}
             <div className="flex justify-between mb-8">
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="my-4">
+              <Button type="submit" disabled={isSubmitting} className=" my-4">
                 {isSubmitting ? "Registering..." : "Complete Registration"}
               </Button>
             </div>

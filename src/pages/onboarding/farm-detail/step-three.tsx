@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -30,9 +31,12 @@ import { UserProfile } from "@/types/user";
 
 export default function StepThree() {
   const navigation = useNavigate();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userProfile: any = getFromLocalStorage("userProfile", {});
   const [isClient, setIsClient] = useState(false);
-  const [bankAccount, setBankAccount] = useState<BankAccount>();
   const { successMessage, errorMessage } = useNotification();
+  // Initialize form with default values or values from local storage
   const form = useForm<BankInfoFormData>({
     resolver: zodResolver(bankInfoSchema),
     defaultValues: {
@@ -59,14 +63,16 @@ export default function StepThree() {
   // Load saved data from local storage on component mount
   useEffect(() => {
     setIsClient(true);
-    fetchBankAccount();
-  }, []);
+    const savedData = getFromLocalStorage<BankInfoFormData>(
+      "step-three",
+      {} as BankInfoFormData
+    );
+    if (savedData && Object.keys(savedData).length > 0) {
+      form.reset(savedData);
+    }
+  }, [form]);
 
-  const { user, setUser } = useAuth();
-  if (!user) {
-    return;
-  }
-
+  // Handle form submission
   const onSubmit = async (data: BankInfoFormData) => {
     try {
       setIsSubmitting(true);
@@ -86,7 +92,7 @@ export default function StepThree() {
         const response: any = await apiService().post(
           "/onboarding/seller/bank-information",
           data,
-          isAgent.userType === "agent" && farmer ? farmer.id : "",
+          isAgent.userType === "agent" && farmer ? farmer.id : ""
         );
         if (response && response.success) {
           userProfile.onboarding_stage = "avatar_image";
@@ -123,10 +129,11 @@ export default function StepThree() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch {
       setIsSubmitting(false);
-      errorMessage(error as APIErrorResponse);
+      errorMessage("Failed to save farm details");
     }
   };
 
+  // Go back to previous step
   const goBack = () => {
     localStorage.setItem("back-button-clicked", "true");
     navigation("/onboarding/step-two");
