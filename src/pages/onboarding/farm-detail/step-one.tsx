@@ -73,39 +73,22 @@ export default function StepOne() {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
-  const [files, setFiles] = useState<{
-    government: File | null;
-    landRights: File | null;
-  }>({
-    government: null,
-    landRights: null,
-  });
+  const [govFiles, setGovFiles] = useState<File[]>([]);
+  const [landFiles, setLandFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, setUser } = useAuth();
+  const userProfile = localStorage.getItem("userProfile");
+  const parsed = userProfile ? JSON.parse(userProfile) : null;
+  const currentUserStage = parsed?.onboarding_stage;
 
-  const handleFilesSelected = (
-    selectedFiles: File[],
-    type: "government" | "landRights",
-  ) => {
-    if (selectedFiles.length > 1) {
-      errorMessage("Please upload only one file");
-      return;
-    }
-    if (selectedFiles.length > 0) {
-      setFiles((prev) => ({
-        ...prev,
-        [type]: selectedFiles[0],
-      }));
-    }
+  const handleGovFilesSelected = (selectedFiles: File[]) => {
+    setGovFiles((prev) => [...prev, ...selectedFiles]);
   };
 
-  const removeFile = (type: "government" | "landRights") => {
-    setFiles((prev) => ({
-      ...prev,
-      [type]: null,
-    }));
+  const handleLandFilesSelected = (selectedFiles: File[]) => {
+    setLandFiles((prev) => [...prev, ...selectedFiles]);
   };
 
+  // Initialize form with default values or values from local storage
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
@@ -121,11 +104,11 @@ export default function StepOne() {
       farm_name: "",
       town_location: "",
       country: "",
-      total_size_hectares: 0,
-      coffee_area_hectares: 0,
+      total_size_hectares: 1,
+      coffee_area_hectares: 1,
       altitude_meters: 0,
-      capacity_kg: 0,
-      avg_annual_temp: 0,
+      capacity_kg: 1,
+      avg_annual_temp: 1,
       annual_rainfall_mm: 0,
     },
   });
@@ -168,13 +151,17 @@ export default function StepOne() {
         }
       }
 
-      if (files.government) {
-        formData.append("files", files.government);
-      }
-      if (files.landRights) {
-        formData.append("files", files.landRights);
-      }
+      landFiles.forEach((file) => {
+        formData.append("files", file);
+      });
+      govFiles.forEach((file) => {
+        formData.append("files", file);
+      });
 
+      const isBackButtonClicked = getFromLocalStorage(
+        "back-button-clicked",
+        false
+      );
       if (
         (user?.onboarding_stage === "farm_profile" ||
           user?.userType === "agent") &&
@@ -186,22 +173,25 @@ export default function StepOne() {
           true,
           user?.userType === "agent" && farmer ? farmer.id : "",
         );
-
-        setUser({
-          ...user,
-          onboarding_stage: "crops_to_sell",
-        });
-
-        saveToLocalStorage("step-one", data);
-        saveToLocalStorage("farm-id", response.data.farm.id);
-        successMessage("Farm details saved successfully!");
-        navigate("/onboarding/step-two");
-        localStorage.setItem("current-step", JSON.stringify("crops_to_sell"));
+        if (response && response.success) {
+          parsed.onboarding_stage = "crops_to_sell";
+          saveToLocalStorage("userProfile", parsed);
+          saveToLocalStorage("step-one", data);
+          if (response.data?.farm?.id) {
+            saveToLocalStorage("farm-id", response.data.farm.id);
+          }
+          navigate("/onboarding/step-two");
+          successMessage("Farm details saved successfully!");
+          saveToLocalStorage("is-back-button-clicked", "false");
+          localStorage.setItem("current-step", JSON.stringify("crops_to_sell"));
+        } else {
+          errorMessage("Failed to save farm details");
+        }
       } else {
         const existingFarmId: any = getFromLocalStorage("farm-id", "");
         formData.append("farmId", existingFarmId);
         try {
-          await apiService().patchFormData(
+          const response: any = await apiService().patchFormData(
             "/sellers/farms/update-farm",
             formData,
             true,
@@ -260,45 +250,20 @@ export default function StepOne() {
                       : "Upload PDF/image (Max 5MB)"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="min-h-[200px] flex items-center justify-center">
-                  {files.government ? (
-                    <div className="w-full flex flex-col items-center gap-3 p-4 border rounded-lg">
-                      <div className="w-full flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <FileText className="h-6 w-6 text-gray-400 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="truncate max-w-[200px] font-medium">
-                              {files.government.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {(files.government.size / 1024 / 1024).toFixed(2)}{" "}
-                              MB
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFile("government")}
-                          aria-label="Remove government registration document"
-                          className="shrink-0 text-red-500 hover:text-red-700 h-8 w-8"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <FileUpload
-                      key={files.government ? "has-file" : "no-file"} // Force re-render
-                      onFilesSelected={(files) =>
-                        handleFilesSelected(files, "government")
-                      }
-                      maxFiles={1}
-                      maxSizeMB={5}
-                      className="h-full"
-                    />
-                  )}
+                <CardContent>
+                  <FileUpload
+                    onFilesSelected={handleGovFilesSelected}
+                    maxFiles={5}
+                    maxSizeMB={5}
+                  />
                 </CardContent>
+                <CardFooter className="flex justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    {govFiles.length > 0
+                      ? `${govFiles.length} file(s) selected`
+                      : "No files selected"}
+                  </div>
+                </CardFooter>
               </Card>
 
               {/* Land Rights Document Card */}
@@ -313,45 +278,20 @@ export default function StepOne() {
                       : "Upload PDF/image (Max 5MB)"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="min-h-[200px] flex items-center justify-center">
-                  {files.landRights ? (
-                    <div className="w-full flex flex-col items-center gap-3 p-4 border rounded-lg">
-                      <div className="w-full flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <FileText className="h-6 w-6 text-gray-400 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="truncate max-w-[200px] font-medium">
-                              {files.landRights.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {(files.landRights.size / 1024 / 1024).toFixed(2)}{" "}
-                              MB
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFile("landRights")}
-                          aria-label="Remove land rights document"
-                          className="shrink-0 text-red-500 hover:text-red-700 h-8 w-8"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <FileUpload
-                      key={files.landRights ? "has-file" : "no-file"} // Force re-render
-                      onFilesSelected={(files) =>
-                        handleFilesSelected(files, "landRights")
-                      }
-                      maxFiles={1}
-                      maxSizeMB={5}
-                      className="h-full"
-                    />
-                  )}
+                <CardContent>
+                  <FileUpload
+                    onFilesSelected={handleLandFilesSelected}
+                    maxFiles={5}
+                    maxSizeMB={5}
+                  />
                 </CardContent>
+                <CardFooter className="flex justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    {landFiles.length > 0
+                      ? `${landFiles.length} file(s) selected`
+                      : "No files selected"}
+                  </div>
+                </CardFooter>
               </Card>
             </div>
           </div>
@@ -429,7 +369,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Total farm size (hectar)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -442,7 +390,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Total coffee size (hectar)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -464,7 +420,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Longitude</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -477,7 +441,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Latitude</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -490,7 +462,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Altitude (meters)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -557,7 +537,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Crop Capacity (kg)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -570,7 +558,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Average Annual Temp</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -583,7 +579,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Annual Rainfall (mm)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

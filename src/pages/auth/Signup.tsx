@@ -23,9 +23,10 @@ import { buyerSchema, sellerSchema } from "@/types/validation/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
-import { MoveLeft } from "lucide-react";
+import { InfoIcon, MoveLeft } from "lucide-react";
 import { APIErrorResponse } from "@/types/api";
 import { SIGNUP_PROFILE_KEY } from "@/types/constants";
+import { saveToLocalStorage } from "@/lib/utils";
 
 type BuyerFormValues = z.infer<typeof buyerSchema>;
 type SellerFormValues = z.infer<typeof sellerSchema>;
@@ -58,7 +59,6 @@ export default function SignupPage() {
       phone: "",
       email: "",
       password: "",
-      productCategory: "",
     },
     mode: "onChange",
   });
@@ -72,9 +72,9 @@ export default function SignupPage() {
       });
 
       successMessage(
-        "Buyer Registration successful! Please verify your email.",
+        "Buyer Registration successful! Please verify your email."
       );
-      localStorage.setItem(SIGNUP_PROFILE_KEY, data.email);
+      saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
     } catch (error: unknown) {
       setIsSubmitting(false);
@@ -92,9 +92,9 @@ export default function SignupPage() {
       });
 
       successMessage(
-        "Seller registration successful! Please verify your email.",
+        "Seller registration successful! Please verify your email."
       );
-      localStorage.setItem(SIGNUP_PROFILE_KEY, data.email);
+      saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
     } catch (error: unknown) {
       setIsSubmitting(false);
@@ -170,7 +170,13 @@ export default function SignupPage() {
               Sign up as Seller
             </Button>
           </div>
-
+          <h3 className=" my-6  flex justify-center">
+            <InfoIcon className="mr-2 text-orange-400"></InfoIcon>You are currently
+            filling the form as{" "}
+            <span className="text-orange-400 font-semibold  ml-2 border rounded-md px-2 shadow-md border-primary  ">
+              {role.toUpperCase()}
+            </span>
+          </h3>
           {/* Buyer Form */}
           {role === "buyer" && (
             <Form {...buyerForm}>

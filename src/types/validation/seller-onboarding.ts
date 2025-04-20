@@ -32,29 +32,23 @@ export type FarmDetailsFormData = z.infer<typeof farmDetailsSchema>;
 
 // Step 2: Coffee Crops Schema - Updated to match the provided component
 export const coffeeCropsSchema = z.object({
-  // Basic Info
-  farmId: z.string(),
+  // Ensure all fields match the form
+  farmId: z.string().optional(), // Optional if not always provided
   coffee_variety: z.string().min(1, "Coffee variety is required"),
   grade: z.string().min(1, "Initial grading is required"),
   bean_type: z.string().min(1, "Bean type is required"),
   crop_year: z.string().min(1, "Crop year is required"),
-
-  // Crop Specification
   processing_method: z.string().min(1, "Processing method is required"),
   moisture_percentage: z.number().min(1, "Moisture is required"),
   screen_size: z.number().min(1, "Screen size is required"),
   drying_method: z.string().min(1, "Drying method is required"),
   wet_mill: z.string().min(1, "Wet mill is required"),
   is_organic: z.string().min(1, "Organic property is required"),
-
-  // Cup Taste
   cup_taste_acidity: z.string().min(1, "Acidity is required"),
   cup_taste_body: z.string().min(1, "Body is required"),
   cup_taste_sweetness: z.string().min(1, "Sweetness is required"),
   cup_taste_aftertaste: z.string().min(1, "Aftertaste is required"),
   cup_taste_balance: z.string().min(1, "Balance is required"),
-
-  // Price and Quantity
   quantity_kg: z.number().min(1, "Quantity is required"),
   price_per_kg: z.number().min(1, "Price is required"),
   readiness_date: z.string().min(1, "Readiness date is required"),

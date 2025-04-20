@@ -155,8 +155,7 @@ class ChatService {
       return () => {};
     }
 
-    const handler = (message: SocketChatMessage) => {
-      console.log("Received message:", message);
+    const handler = (message: SocketChatMessage) => { 
       callback(message);
     };
 

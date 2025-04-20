@@ -33,6 +33,7 @@ const Login = () => {
       const response: any = await apiService().postWithoutAuth("/auth/login", {
         ...data,
       });
+      localStorage.clear();
       successMessage("Login successful!");
 
       const { access_token, refresh_token, user } = response.data;
@@ -77,6 +78,7 @@ const Login = () => {
       }
 
       navigate(redirectTo);
+      saveToLocalStorage('current-step',user.onboarding_stage);
       saveToLocalStorage(USER_PROFILE_KEY, user);
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;

@@ -16,8 +16,7 @@ export function OrderStatusCard({
 }: OrderStatusCardProps) {
   const { successMessage, errorMessage } = useNotification();
   const deleteOrder = async (id: string) => {
-    console.log(orderStatus);
-    
+ 
     if (!id) return;
 
     try {

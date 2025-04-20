@@ -244,8 +244,8 @@ export default function ListingDetailModal({
 
               <div className="p-6">
                 {sampleError && (
-                  <p className="text-sm text-red-600 bg-red-100 p-2 rounded-md mb-4">
-                    Error: {sampleError}
+                  <p className="text-sm text-orange-400 bg-orange-100 p-2 rounded-md mb-4">
+                    Verify: {sampleError}
                   </p>
                 )}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
@@ -526,20 +526,28 @@ export default function ListingDetailModal({
                   ) : (
                     <></>
                   )}
-                  <Link
-                    to={`/listing/${listingId}`}
-                    className="w-full sm:flex-1"
-                  >
-                    <Button
-                      onClick={() => setIsviewLoading(true)}
-                      disabled={
-                        user?.onboarding_stage !== "completed" || isviewLoading
-                      }
-                      className="w-full sm:flex-1 px-4 py-2"
+                  {user?.onboarding_stage !== "completed" || isviewLoading ? (
+                    <div className="w-full sm:flex-1">
+                      <Button
+                        disabled
+                        className="w-full sm:flex-1 px-4 py-2"
+                      >
+                        {isviewLoading ? "Loading..." : "View Listing Details"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Link
+                      to={`/listing/${listingId}`}
+                      className="w-full sm:flex-1"
                     >
-                      {isviewLoading ? "Loading..." : "View Listing Details"}
-                    </Button>
-                  </Link>
+                      <Button
+                        onClick={() => setIsviewLoading(true)}
+                        className="w-full sm:flex-1 px-4 py-2"
+                      >
+                        {isviewLoading ? "Loading..." : "View Listing Details"}
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </>

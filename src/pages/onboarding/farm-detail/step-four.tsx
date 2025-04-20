@@ -22,23 +22,15 @@ import {
   profileInfoSchema,
   type ProfileInfoFormData,
 } from "@/types/validation/seller-onboarding";
-import { getFromLocalStorage, removeFromLocalStorage } from "@/lib/utils";
+import {
+  saveToLocalStorage,
+  getFromLocalStorage, 
+} from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
-import { useAuth } from "@/hooks/useAuth";
-import { APIErrorResponse } from "@/types/api";
-
-interface ProfileInfo {
-  id: string;
-  telegram: string;
-  about_me: string;
-  address: string;
-  profile_image?: string;
-  created_at: string;
-  updated_at: string;
-}
+import { UserProfile } from "@/types/user";
 
 export default function StepFour() {
   const navigation = useNavigate();
@@ -58,33 +50,21 @@ export default function StepFour() {
       address: "",
     },
   });
-
-  const fetchProfileInfo = async () => {
-    try {
-      const response: any = await apiService().get(
-        "/onboarding/seller/get-profile",
-        user?.userType === "agent" ? user?.id : "",
-      );
-      setProfileInfo(response.data.profile);
-      form.reset({
-        telegram: response.data.profile.telegram || "",
-        about_me: response.data.profile.about_me || "",
-        address: response.data.profile.address || "",
-      });
-      if (response.data.profile.avatar_url) {
-        setProfileImage(response.data.profile.avatar_url);
-        localStorage.setItem("profile-image", response.data.profile.avatar_url);
-      }
-    } catch (error: any) {
-      errorMessage(error as APIErrorResponse);
-    }
-  };
-
   useEffect(() => {
-    setIsClient(true);
-    fetchProfileInfo();
-  }, [form]);
+    const user = getFromLocalStorage<UserProfile | null>("userProfile", null);
 
+    if (user && user.onboarding_stage !== "avatar_image") {
+      if (user.onboarding_stage === "crops_to_sell") {
+        navigation("/onboarding/step-two");
+        return;
+      }
+      if (user.onboarding_stage === "bank_information") {
+        navigation("/onboarding/step-three");
+        return;
+      }
+      navigation("/onboarding/step-one");
+    }
+  }, []);
   const handleFilesSelected = (selectedFiles: File[]) => {
     const file = selectedFiles[0];
     if (file) {
@@ -98,22 +78,40 @@ export default function StepFour() {
     }
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
+  // Load saved data from local storage on component mount
+  useEffect(() => {
+    setIsClient(true);
+    const savedData = getFromLocalStorage<ProfileInfoFormData>(
+      "step-four",
+      {} as ProfileInfoFormData
+    );
+    if (savedData && Object.keys(savedData).length > 0) {
+      form.reset(savedData);
+    }
 
+    const savedImage = localStorage.getItem("profile-image");
+    if (savedImage) {
+      setProfileImage(savedImage);
+    }
+  }, [form]);
+
+  // Handle form submission
   const onSubmit = async (data: ProfileInfoFormData) => {
     try {
       setIsSubmitting(true);
       const farmer: any = getFromLocalStorage("farmer-profile", {});
 
       if (
-        user?.onboarding_stage === "avatar_image" ||
-        user?.userType === "agent"
+        (userProfile.onboarding_stage === "avatar_image" ||
+          userProfile.userType === "agent") &&
+        currentStep === "avatar_image"
       ) {
         const formData = new FormData();
         for (const key in data) {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
               key,
-              String(data[key as keyof ProfileInfoFormData]),
+              String(data[key as keyof ProfileInfoFormData])
             );
           }
         }
@@ -125,19 +123,12 @@ export default function StepFour() {
           "/onboarding/seller/profile",
           formData,
           true,
-          user?.userType === "agent" && farmer ? farmer.id : "",
+          isAgent.userType === "agent" && farmer ? farmer.id : ""
         );
-
-        removeFromLocalStorage("step-one");
-        removeFromLocalStorage("step-two");
-        removeFromLocalStorage("step-three");
-        removeFromLocalStorage("step-four");
-        removeFromLocalStorage("bank-id");
-        removeFromLocalStorage("farm-id");
-        removeFromLocalStorage("crop-id");
-        removeFromLocalStorage("back-button-clicked");
-        removeFromLocalStorage("current-step");
-        removeFromLocalStorage("profile-image");
+        if (response && response.success) {
+          const userProfile = getFromLocalStorage("userProfile", {});
+          localStorage.clear();
+          saveToLocalStorage("userProfile", userProfile);
 
         successMessage("Registration completed successfully!");
         navigation("/seller-dashboard");
@@ -239,7 +230,7 @@ export default function StepFour() {
                           accept="image/*"
                           onChange={(e) => {
                             const selectedFiles = Array.from(
-                              e.target.files || [],
+                              e.target.files || []
                             );
                             handleFilesSelected(selectedFiles);
                           }}

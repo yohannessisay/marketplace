@@ -35,7 +35,7 @@ const AgentLogin = () => {
           ...data,
         },
       );
-
+      localStorage.clear();
       successMessage("Login successful!");
       const { access_token, refresh_token, agent } = response.data;
 

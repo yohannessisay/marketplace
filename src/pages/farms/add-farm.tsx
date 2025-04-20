@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FileText, X } from "lucide-react";
+import { UserProfile } from "@/types/user";
 
 interface FileWithId extends File {
   id: string;
@@ -77,12 +78,18 @@ export default function AddFarm() {
       annual_rainfall_mm: 0,
     },
   });
+  useEffect(() => {
+    const user = getFromLocalStorage<UserProfile | null>("userProfile", null);
 
+    if (user && user.onboarding_stage !== "completed") {
+      navigate("/home");
+    }
+  }, []);
   // Populate form data for editing
   const populateForm = async (farmId: string) => {
     try {
       const response: any = await apiService().get(
-        `/sellers/farms/get-farm?farmId=${farmId}`,
+        `/sellers/farms/get-farm?farmId=${farmId}`
       );
       if (response.success) {
         const farm = response.data.farm;
@@ -122,7 +129,7 @@ export default function AddFarm() {
                   doc.doc_url.split("/").pop() || `document_${doc.id}`;
                 const file = Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id || Math.random().toString(36).substring(2) },
+                  { id: doc.id || Math.random().toString(36).substring(2) }
                 );
 
                 if (doc.doc_type === "government_registration") {
@@ -133,7 +140,7 @@ export default function AddFarm() {
               } catch (err) {
                 console.error(`Error fetching document ${doc.doc_url}:`, err);
               }
-            }),
+            })
           );
 
           setGovRegFiles(govRegFilesTemp);
@@ -203,7 +210,7 @@ export default function AddFarm() {
           `/sellers/farms/update-farm`,
           formData,
           true,
-          xfmrId ? xfmrId : "",
+          xfmrId ? xfmrId : ""
         );
         successMessage("Farm updated successfully!");
       } else {
@@ -211,7 +218,7 @@ export default function AddFarm() {
           `/sellers/farms/create-farm`,
           formData,
           true,
-          xfmrId ? xfmrId : "",
+          xfmrId ? xfmrId : ""
         );
         successMessage("Farm added successfully!");
       }
@@ -301,7 +308,7 @@ export default function AddFarm() {
                             ...selectedFiles.map((f) =>
                               Object.assign(f, {
                                 id: Math.random().toString(36).substring(2),
-                              }),
+                              })
                             ),
                           ]);
                         }}
@@ -369,7 +376,7 @@ export default function AddFarm() {
                             ...selectedFiles.map((f) =>
                               Object.assign(f, {
                                 id: Math.random().toString(36).substring(2),
-                              }),
+                              })
                             ),
                           ]);
                         }}
@@ -507,7 +514,7 @@ export default function AddFarm() {
                               onChange={(e) => {
                                 const value = e.target.value;
                                 const parsedValue =
-                                  value === "" ? 1: Number(value);
+                                  value === "" ? 1 : Number(value);
                                 field.onChange(parsedValue);
                               }}
                               onBlur={field.onBlur}
@@ -826,8 +833,8 @@ export default function AddFarm() {
                     ? "Updating..."
                     : "Adding..."
                   : isEditMode
-                    ? "Update Farm"
-                    : "Add Farm"}
+                  ? "Update Farm"
+                  : "Add Farm"}
               </Button>
             </div>
           </form>

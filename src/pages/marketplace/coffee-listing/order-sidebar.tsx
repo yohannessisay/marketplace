@@ -37,16 +37,14 @@ export function OrderSidebar({ listing, demoOrderStatus }: OrderSidebarProps) {
   }, [listing?.id, checkBid]);
 
   const handleBidSubmitted = useCallback(() => {
-    if (listing?.id) {
-      console.log("[OrderSidebar] Checking bid status after submission");
+    if (listing?.id) { 
       checkBid(listing.id);
     }
   }, [listing?.id, checkBid]);
 
   const handleModalClose = useCallback(() => {
     setShowBidModal(false);
-    if (listing?.id) {
-      console.log("[OrderSidebar] Fallback bid status check on modal close");
+    if (listing?.id) { 
       checkBid(listing.id);
     }
   }, [listing?.id, checkBid]);

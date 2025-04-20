@@ -114,8 +114,7 @@ class ApiService {
       headers["x-fmr-id"] = xFmrId;
     }
 
-    try {
-      console.log(body);
+    try { 
       const response = await fetch(`${this.baseURL}${url}`, {
         method,
         headers,
