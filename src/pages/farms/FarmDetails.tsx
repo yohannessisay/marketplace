@@ -6,8 +6,7 @@ const FarmDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-primary/5">
       <Header></Header>
-
-      <main className="container mx-auto p-6">
+      <main className="container mx-auto p-6 pt-30">
         <StepOne />
       </main>
     </div>

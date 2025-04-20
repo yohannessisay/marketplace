@@ -14,8 +14,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getFromLocalStorage } from "@/lib/utils";
 import Header from "@/components/layout/header";
+import { useAuth } from "@/hooks/useAuth";
 
 // Step item component for each onboarding step
 interface StepItemProps {
@@ -44,8 +44,8 @@ const StepItem: React.FC<StepItemProps> = ({
           isCompleted
             ? "bg-emerald-100 border-emerald-500 text-emerald-600"
             : isActive
-            ? "bg-emerald-50 border-emerald-500 text-emerald-600"
-            : "bg-white border-slate-200 text-slate-400 group-hover:border-emerald-200 group-hover:text-emerald-500"
+              ? "bg-emerald-50 border-emerald-500 text-emerald-600"
+              : "bg-white border-slate-200 text-slate-400 group-hover:border-emerald-200 group-hover:text-emerald-500"
         }`}
       >
         {icon}
@@ -93,22 +93,18 @@ const StepItem: React.FC<StepItemProps> = ({
 );
 
 const WelcomePage: React.FC = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const user: any = getFromLocalStorage("userProfile", {});
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-primary/5 p-8">
-      {/* Header */}
-      <Header></Header>
+      <Header />
 
-      {/* Main content */}
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        {/* Welcome message */}
+      <main className="max-w-4xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
             <Sparkles className="h-8 w-8 text-emerald-600" />
           </div>
           <h1 className="text-3xl font-bold text-slate-800 mb-3">
-            Welcome,{user.firstName}!
+            Welcome, {user?.first_name}!
           </h1>
           <p className="text-slate-600 text-lg">
             Congratulations on joining AfroValley. Let's set up your account.
@@ -122,12 +118,12 @@ const WelcomePage: React.FC = () => {
               Get Started with AfroValley
             </h2>
             <div className="bg-emerald-50 text-emerald-700 text-sm font-medium px-3 py-1 rounded-full">
-              {user.userType === "buyer" ? "1 step" : "4 steps"} to complete
+              {user?.userType === "buyer" ? "1 step" : "4 steps"} to complete
             </div>
           </div>
 
           <div className="space-y-8">
-            {user.userType === "buyer" ? (
+            {user?.userType === "buyer" ? (
               <>
                 {" "}
                 <StepItem
@@ -178,7 +174,7 @@ const WelcomePage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
           <Link
             to={
-              user.userType === "buyer"
+              user?.userType === "buyer"
                 ? "/company-onboarding"
                 : "/onboarding/step-one"
             }

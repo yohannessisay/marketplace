@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -27,15 +26,24 @@ import Header from "@/components/layout/header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
-
+import { useAuth } from "@/hooks/useAuth";
+import { APIErrorResponse } from "@/types/api";
+interface BankAccount {
+  id: string;
+  bank_name: string;
+  account_holder_name: string;
+  account_number: string;
+  swift_code?: string; // optional field
+  branch_name?: string; // optional field
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+}
 export default function StepThree() {
   const navigation = useNavigate();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userProfile: any = getFromLocalStorage("userProfile", {});
   const [isClient, setIsClient] = useState(false);
+  const [bankAccount, setBankAccount] = useState<BankAccount>();
   const { successMessage, errorMessage } = useNotification();
-  // Initialize form with default values or values from local storage
   const form = useForm<BankInfoFormData>({
     resolver: zodResolver(bankInfoSchema),
     defaultValues: {
@@ -48,80 +56,68 @@ export default function StepThree() {
     },
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Load saved data from local storage on component mount
+
+  const fetchBankAccount = async () => {
+    try {
+      const response: any = await apiService().get(
+        "/onboarding/seller/get-bank-information",
+        user?.userType === "agent" ? user?.id : "",
+      );
+      setBankAccount(response.data.bank_account);
+    } catch (error: any) {
+      errorMessage(error as APIErrorResponse);
+    }
+  };
+
   useEffect(() => {
     setIsClient(true);
-    const savedData = getFromLocalStorage<BankInfoFormData>(
-      "step-three",
-      {} as BankInfoFormData
-    );
-    if (savedData && Object.keys(savedData).length > 0) {
-      form.reset(savedData);
-    }
-  }, [form]);
+    fetchBankAccount();
+  }, []);
 
-  // Handle form submission
+  const { user, setUser } = useAuth();
+  if (!user) {
+    return;
+  }
+
   const onSubmit = async (data: BankInfoFormData) => {
     try {
       setIsSubmitting(true);
       const isAgent: any = getFromLocalStorage("userProfile", {});
       const farmer: any = getFromLocalStorage("farmer-profile", {});
       const currentStep: any = getFromLocalStorage("current-step", "");
-      const isBackButtonClicked = getFromLocalStorage(
-        "back-button-clicked",
-        false
-      );
-      if (
-        (userProfile.userType === "agent" &&
-          currentStep === "bank_information") ||
-        (userProfile.onboardingStage === "bank_information" &&
-          !isBackButtonClicked)
-      ) { 
-        const response: any = await apiService().post(
+
+      if (user?.userType !== "agent" && currentStep === "bank_information") {
+        await apiService().post(
           "/onboarding/seller/bank-information",
           data,
-          isAgent.userType === "agent" && farmer ? farmer.id : ""
+          isAgent.userType === "agent" && farmer ? farmer.id : "",
         );
-        if (response && response.success) {
-          userProfile.onboardingStage = "avatar_image";
-          saveToLocalStorage("userProfile", userProfile);
-          successMessage("Bank details saved successfully!");
-          saveToLocalStorage("step-three", data);
-          saveToLocalStorage("bank-id", response.data.bank_account.id);
-          saveToLocalStorage("current-step", "avatar_image");
-          navigation("/onboarding/step-four");
-          localStorage.setItem("back-button-clicked", "false");
-        } else {
-          errorMessage("Failed to save farm details");
-        }
+
+        setUser({
+          ...user,
+          onboarding_stage: "avatar_image",
+        });
+
+        successMessage("Bank details saved successfully!");
+        saveToLocalStorage("step-three", data);
+        saveToLocalStorage("current-step", "avatar_image");
+        navigation("/onboarding/step-four");
         setIsSubmitting(false);
       } else {
-        const existingBankId = getFromLocalStorage("bank-id", "");
-
-        try { 
-          const response: any = await apiService().patch(
-            "/sellers/banks/update-bank-information",
-            { ...data, id: existingBankId },
-            isAgent.userType === "agent" && farmer ? farmer.id : ""
-          );
-          if (response.success) {
-            saveToLocalStorage("is-back-button-clicked", "false");
-            navigation("/onboarding/step-four");
-            successMessage("Crop data updated");
-          }
-        } catch {
-          setIsSubmitting(false);
-          errorMessage("Something went wrong, please try again");
-        }
+        await apiService().patch(
+          "/sellers/banks/update-bank-information",
+          { ...data, id: bankAccount?.id },
+          isAgent.userType === "agent" && farmer ? farmer.id : "",
+        );
+        navigation("/onboarding/step-four");
+        successMessage("Bank account data updated successfully");
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch {
+    } catch (error: any) {
       setIsSubmitting(false);
-      errorMessage("Failed to save farm details");
+      errorMessage(error as APIErrorResponse);
     }
   };
 
-  // Go back to previous step
   const goBack = () => {
     localStorage.setItem("back-button-clicked", "true");
     navigation("/onboarding/step-two");
