@@ -255,6 +255,27 @@ interface Listing {
   }>;
 }
 
+interface Farm {
+  farm_name: string;
+  region: string;
+}
+
+interface Listing {
+  id: string;
+  coffee_variety: string;
+  bean_type: string;
+  is_organic: boolean;
+  processing_method: string;
+  quantity_kg: number;
+  price_per_kg: number;
+  farm: Farm;
+}
+
+interface Buyer {
+  first_name: string;
+  last_name: string;
+}
+
 interface Bid {
   id: string;
   buyer_id: string;
@@ -267,6 +288,8 @@ interface Bid {
   expires_at: string;
   created_at: string;
   updated_at: string;
+  listing: Listing;
+  buyer: Buyer;
 }
 
 function PhotoGallery({
@@ -811,7 +834,6 @@ export default function CoffeeListingSellerView() {
                                 <p className="text-sm font-medium text-gray-900">
                                   ${bid.total_amount?.toFixed(2)}
                                 </p>
-                           
                               </div>
                             </div>
                           </div>
@@ -1151,8 +1173,10 @@ export default function CoffeeListingSellerView() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Buyer ID</TableHead>
+                          <TableHead>Buyer Details</TableHead>
                           <TableHead>Date</TableHead>
+                          <TableHead>Expires at</TableHead>
+                          <TableHead>Unit Price</TableHead>
                           <TableHead>Quantity</TableHead>
                           <TableHead>Total</TableHead>
                           <TableHead>Status</TableHead>
@@ -1172,10 +1196,25 @@ export default function CoffeeListingSellerView() {
                         )}
                         {bids.map((bid) => (
                           <TableRow key={bid.id}>
-                            <TableCell>{bid.buyer_id}</TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-2">
+                                <div className="font-semibold">
+                                  <span className="font-bold">Name:</span>{" "}
+                                  {bid.buyer.first_name} {bid.buyer.last_name}
+                                </div>
+                                <div>
+                                  <span className="font-bold">ID:</span>{" "}
+                                  {bid.buyer_id.slice(0, 18)}.....
+                                </div>
+                              </div>
+                            </TableCell>
                             <TableCell>
                               {new Date(bid.created_at).toLocaleDateString()}
                             </TableCell>
+                            <TableCell>
+                              {new Date(bid.expires_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>${bid.unit_price}</TableCell>
                             <TableCell>{bid.quantity_kg} kg</TableCell>
                             <TableCell>
                               ${bid.total_amount?.toFixed(2)}

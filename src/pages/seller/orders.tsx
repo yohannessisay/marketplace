@@ -816,12 +816,14 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
               <Badge
                 variant={
                   deliveryStatus === "delivered"
-                    ? "secondary"
+                    ? "default"
                     : deliveryStatus === "inprogress"
-                      ? "default"
-                      : deliveryStatus === "pending"
-                        ? "warning"
-                        : "destructive"
+                      ? "warning"
+                      : deliveryStatus === "accepted"
+                        ? "default"
+                        : deliveryStatus === "pending"
+                          ? "warning"
+                          : "destructive"
                 }
               >
                 {deliveryStatus.charAt(0).toUpperCase() +

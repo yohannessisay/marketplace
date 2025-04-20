@@ -1,30 +1,17 @@
 import { z } from "zod";
 
-// Step 1: Farm Details Schema
 export const farmDetailsSchema = z
   .object({
-    // Farm Location
     region: z.string().min(1, "Region is required"),
-
-    // Coffee Land Details
     longitude: z.number().min(1, "Longitude is required"),
     latitude: z.number().min(1, "Latitude is required"),
-
-    // Crop Environment
     crop_type: z.string().min(1, "Crop type is required"),
     crop_source: z.string().min(1, "Crop source is required"),
     origin: z.string().min(1, "Origin is required"),
-
-    // Tree Information
     tree_type: z.string().min(1, "Tree type is required"),
     tree_variety: z.string().min(1, "Tree variety is required"),
-
-    // Growing Conditions
     soil_type: z.string().min(1, "Soil type is required"),
-
-    // Farm Name
     farm_name: z.string().min(1, "Farm name is required"),
-
     town_location: z.string().min(1, "Town location is required"),
     country: z.string().min(1, "Country is required"),
     total_size_hectares: z.number().min(1, "Total size is required"),
@@ -70,8 +57,6 @@ export const coffeeCropsSchema = z.object({
   // Price and Quantity
   quantity_kg: z.number().min(1, "Quantity is required"),
   price_per_kg: z.number().min(1, "Price is required"),
-
-  // Readiness and Delivery
   readiness_date: z.string().min(1, "Readiness date is required"),
   lot_length: z.string().optional(),
   delivery_type: z.string().min(1, "Delivery type is required"),
