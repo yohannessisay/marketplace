@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -19,16 +19,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
-import Header from "@/components/layout/header";
-import { FileUpload } from "@/components/common/file-upload";
-import { buyerOnboardingSchema } from "@/types/validation/buyer";
-import { Textarea } from "@/components/ui/textarea";
-import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
-import { useNavigate } from "react-router-dom";
+import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
+import { buyerOnboardingSchema } from "@/types/validation/buyer";
+import { z } from "zod";
+import { FileUpload } from "@/components/common/file-upload";
+import Header from "@/components/layout/header";
 
 type CompanyDetails = z.infer<typeof buyerOnboardingSchema>;
 
@@ -97,7 +96,7 @@ export default function CompanyVerification() {
   return (
     <div className="min-h-screen bg-primary/5 p-8">
       {/* Header */}
-      <Header></Header>
+      <Header/ >
       {/* Main content */}
       <main className="max-w-3xl mx-auto px-4 py-8">
         <Form {...form}>

@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus, X } from "lucide-react";
-
+import { Plus, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,77 +46,115 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { UserProfile } from "@/types/user"; 
+import { useAuth } from "@/hooks/useAuth";
+import { APIErrorResponse } from "@/types/api";
+
+interface Farm {
+  id: string;
+  farm_name: string;
+  town_location: string;
+  region: string;
+  country: string;
+  total_size_hectares: number;
+  coffee_area_hectares: number;
+  longitude: number;
+  latitude: number;
+  altitude_meters: number;
+  crop_type: string;
+  crop_source: string;
+  origin: string;
+  capacity_kg: number;
+  tree_type: string;
+  tree_variety: string;
+  soil_type: string;
+  avg_annual_temp: number;
+  annual_rainfall_mm: number;
+  verification_status: string;
+  created_at: string; // or Date if you parse it
+  created_by_agent_id: string | null; // assuming this can be null
+}
+interface FileWithId extends File {
+  id: string;
+  url?: string;
+}
+
 export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
-  const [gradingReportFiles, setGradingReportFiles] = useState<File[]>([]);
-  const [cropPhotoFiles, setCropPhotoFiles] = useState<File[]>([]);
-  const userProfile: any = getFromLocalStorage("userProfile", {});
-  const { successMessage, errorMessage } = useNotification();
-  const handleGradingReportFilesSelected = (selectedFiles: File[]) => {
-    setGradingReportFiles((prev) => [...prev, ...selectedFiles]);
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState<FileWithId[]>([]);
+  const [photos, setPhotos] = useState<FileWithId[]>([]);
+  const [farm, setFarm] = useState<Farm>();
   const [discounts, setDiscounts] = useState<
     { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
   >([]);
-  const handleCropPhotoFilesSelected = (selectedFiles: File[]) => {
-    setCropPhotoFiles((prev) => [...prev, ...selectedFiles]);
-  };
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user, setUser } = useAuth();
+  const { successMessage, errorMessage } = useNotification();
 
-  // Initialize form with default values or values from local storage
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
-      coffee_variety: "",
-      grade: "",
-      bean_type: "",
-      crop_year: "",
-      processing_method: "",
-      moisture_percentage: 1,
-      screen_size: 1,
-      drying_method: "",
-      wet_mill: "",
-      is_organic: "",
-      cup_taste_acidity: "",
-      cup_taste_body: "",
-      cup_taste_sweetness: "",
-      cup_taste_aftertaste: "",
-      cup_taste_balance: "",
-      quantity_kg: 1,
-      price_per_kg: 1,
+      farmId: "",
+      coffee_variety: "Ethiopian Heirloom",
+      grade: "Grade 1",
+      bean_type: "Green beans",
+      crop_year: "2024",
+      processing_method: "Washed (Wet Process)",
+      moisture_percentage: 10, // Changed to satisfy min(1)
+      screen_size: 14, // Changed to satisfy min(1)
+      drying_method: "Sun dried on raised beds",
+      wet_mill: "Hand-pulped and fermented",
+      is_organic: "yes",
+      cup_taste_acidity: "Delicate",
+      cup_taste_body: "Heavy",
+      cup_taste_sweetness: "Honey-like",
+      cup_taste_aftertaste: "Long-lasting",
+      cup_taste_balance: "Complex",
+      quantity_kg: 100, // Changed to satisfy min(1)
+      price_per_kg: 5, // Changed to satisfy min(1)
       readiness_date: new Date().toISOString(),
       lot_length: "",
-      delivery_type: "",
-      shipping_port: "",
+      delivery_type: "FOB (Free on Board) - Port of Djibouti",
+      shipping_port: "Port of Djibouti", // Changed to satisfy min(1)
     },
+    mode: "onChange",
   });
 
-  useEffect(() => {
-    const user = getFromLocalStorage<UserProfile | null>("userProfile", null);
+  const handleFilesSelected = (selectedFiles: File[]) => {
+    if (selectedFiles.length > 0) {
+      setFiles([
+        Object.assign(selectedFiles[0], {
+          id: Math.random().toString(36).substring(2),
+        }),
+      ]);
+    }
+  };
 
-    if (user && user.onboarding_stage !== "crops_to_sell") {
-      navigation("/onboarding/step-one");
+  const handlePhotosSelected = (selectedPhotos: File[]) => {
+    setPhotos((prev) => [
+      ...prev,
+      ...selectedPhotos.map((p) =>
+        Object.assign(p, {
+          id: Math.random().toString(36).substring(2),
+        }),
+      ),
+    ]);
+  };
+
+  const handleRemoveFile = (id: string, type: "files" | "photos") => {
+    if (type === "files") {
+      setFiles((prev) => prev.filter((file) => file.id !== id));
+    } else {
+      setPhotos((prev) => prev.filter((photo) => photo.id !== id));
     }
-  }, []);
-  // Load saved data from local storage on component mount
-  useEffect(() => {
-    setIsClient(true);
-    const savedData = getFromLocalStorage<CoffeeCropsFormData>(
-      "step-two",
-      {} as CoffeeCropsFormData
-    );
-    if (savedData && Object.keys(savedData).length > 0) {
-      form.reset(savedData);
-    }
-  }, [form]);
+  };
+
   const handleAddDiscount = () => {
     setDiscounts((prev) => [
       ...prev,
       {
-        minimum_quantity_kg: 1,
-        discount_percentage: 1,
+        minimum_quantity_kg: 0,
+        discount_percentage: 0,
         id: Math.random().toString(36).substring(2),
       },
     ]);
@@ -129,20 +167,32 @@ export default function StepTwo() {
   const handleDiscountChange = (
     id: string,
     field: "minimum_quantity_kg" | "discount_percentage",
-    value: number
+    value: number,
   ) => {
     setDiscounts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
     );
   };
 
-  // Handle form submission
+  const fetchFirstFarm = async () => {
+    try {
+      const response: any = await apiService().get(
+        "/onboarding/seller/get-first-farm",
+        user?.userType === "agent" ? user?.id : "",
+      );
+      setFarm(response.data.farm);
+    } catch (error: any) {
+      errorMessage(error as APIErrorResponse);
+    }
+  };
+
+  useEffect(() => {
+    setIsClient(true);
+    fetchFirstFarm();
+  }, []);
+
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
-    const isBackButtonClicked = getFromLocalStorage(
-      "back-button-clicked",
-      false
-    );
     try {
       const formData = new FormData();
 
@@ -152,98 +202,61 @@ export default function StepTwo() {
         }
       }
 
-      gradingReportFiles.forEach((file) => {
+      files.forEach((file) => {
         formData.append("files", file);
       });
 
-      cropPhotoFiles.forEach((file) => {
-        formData.append("files", file);
+      photos.forEach((photo) => {
+        formData.append("files", photo);
       });
-      formData.append(
-        "discounts",
-        JSON.stringify(discounts.map(({ ...rest }) => rest))
-      );
 
-      const isAgent: any = getFromLocalStorage("userProfile", {});
-      const farmer: any = getFromLocalStorage("farmer-profile", {});
+      if (farm) {
+        formData.append("farm_id", farm?.id);
+      }
 
-      if (
-        (userProfile.onboarding_stage === "crops_to_sell" ||
-          userProfile.userType === "agent") &&
-        (getFromLocalStorage("current-step", "") as string) ===
-          "crops_to_sell" &&
-        !isBackButtonClicked
-      ) {
-        let farmId = localStorage.getItem("farm-id");
-
-        if (!farmId) {
-          const farmResp: any = await apiService().get(
-            "/onboarding/seller/get-first-farm"
-          );
-
-          if (farmResp.success) {
-            farmId = farmResp.data.farm.id;
-          }
-        } 
-        if (farmId) {
-          formData.append("farm_id", farmId.replace(/"/g, ""));
-        }
-
+      if (user?.onboarding_stage === "crops_to_sell") {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/coffee-details",
           formData,
           true,
-          isAgent.userType === "agent" && farmer ? farmer.id : ""
+          user?.userType === "agent" ? user?.id : "",
         );
 
-        if (response && response.success) {
-          userProfile.onboarding_stage = "bank_information";
-          saveToLocalStorage("crop-id", response.data.coffee_listing.id);
-          saveToLocalStorage("userProfile", userProfile);
-          saveToLocalStorage("step-two", data);
-          navigation("/onboarding/step-three");
-          localStorage.setItem(
-            "current-step",
-            JSON.stringify("bank_information")
-          );
-          successMessage("Crop information saved successfully");
-          saveToLocalStorage("is-back-button-clicked", false);
-        } else {
-          setIsSubmitting(false);
-          errorMessage("Failed to save crop details");
-        }
+        saveToLocalStorage("crop-id", response.data?.coffee_listing?.id);
+        setUser({
+          ...user,
+          onboarding_stage: "bank_information",
+        });
+
+        saveToLocalStorage("step-two", data);
+        localStorage.setItem(
+          "current-step",
+          JSON.stringify("bank_information"),
+        );
+        successMessage("Crop information saved successfully");
+        navigation("/onboarding/step-three");
       } else {
         const existingFarmId = getFromLocalStorage("farm-id", "");
         formData.append("farmId", existingFarmId);
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const response: any = await apiService().patchFormData(
-            "/sellers/listings/update-listing",
-            formData,
-            true,
-            isAgent.userType === "agent" && farmer ? farmer.id : ""
-          );
-          if (response.success) {
-            saveToLocalStorage("is-back-button-clicked", "false");
-            navigation("/onboarding/step-three");
-            successMessage("Crop data updated");
-          }
-          setIsSubmitting(false);
-        } catch {
-          setIsSubmitting(false);
-          errorMessage("Something went wrong, please try again");
-        }
+
+        await apiService().patchFormData(
+          "/sellers/listings/update-listing",
+          formData,
+          true,
+          user?.userType === "agent" ? user?.id : "",
+        );
+
+        successMessage("Crop data updated");
+        navigation("/onboarding/step-three");
       }
- 
     } catch (error: any) {
-      errorMessage(
-        error?.message || "An error occurred while saving farm details"
-      );
+      console.error("Form submission error:", error);
+      errorMessage(error as APIErrorResponse);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Go back to previous step
   const goBack = () => {
     navigation("/onboarding/step-one");
     localStorage.setItem("back-button-clicked", "true");
@@ -254,42 +267,102 @@ export default function StepTwo() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <Header></Header>
+    <div className="min-h-screen bg-primary/5 pt-26">
+      <Header />
       <main className="container mx-auto p-4 max-w-5xl">
         <Stepper currentStep={2} />
-
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 shadow-lg px-4  rounded-md py-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit(onSubmit)();
+            }}
+            className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white pt-10"
           >
-            {/* Step 1: Upload Grading Report */}
+            <h2 className="text-center text-2xl">Add Coffee Crop Details</h2>
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-2">Farm Information</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                This crop is produced at the following farm:
+              </p>
+
+              <FormField
+                control={form.control}
+                name="farmId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Farm</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center">
+                        <Input
+                          disabled
+                          value={
+                            farm
+                              ? `${farm.farm_name} (${farm.region}, ${farm.country})`
+                              : "No farm selected"
+                          }
+                          className="w-full bg-gray-100"
+                        />
+                        <input
+                          type="hidden"
+                          {...field}
+                          value={farm?.id || ""}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <div className="mb-8">
               <Card className="max-w-2xl mx-auto">
                 <CardHeader>
                   <CardTitle>Upload grading report</CardTitle>
                   <CardDescription>
-                    Upload PDF documents and images. Drag and drop or click to
-                    select files.
+                    Upload a single PDF document or image. Drag and drop or
+                    click to select a file.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FileUpload
-                    onFilesSelected={handleGradingReportFilesSelected}
-                    maxFiles={5}
-                    maxSizeMB={5}
-                  />
+                  {files.length > 0 ? (
+                    <div className="mb-4">
+                      <Card className="p-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <FileText className="h-8 w-8 text-gray-500" />
+                          <div>
+                            <p className="text-sm font-medium">
+                              {files[0].name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Grading Report
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile(files[0].id, "files")}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </Card>
+                    </div>
+                  ) : (
+                    <FileUpload
+                      onFilesSelected={handleFilesSelected}
+                      maxFiles={1}
+                      maxSizeMB={5}
+                    />
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {gradingReportFiles.length > 0
-                      ? `${gradingReportFiles.length} file(s) selected`
-                      : "No files selected"}
+                    {files.length > 0 ? "1 file selected" : "No file selected"}
                   </div>
                 </CardFooter>
               </Card>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-5 mt-4 text-center">
                 Submit your Grading Report to provide a detailed quality
                 assessment of your coffee, including bean size, moisture
                 content, and cup profile.
@@ -321,7 +394,6 @@ export default function StepTwo() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="grade"
@@ -342,8 +414,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Bean type</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -377,19 +449,114 @@ export default function StepTwo() {
 
               {/* Crop specification */}
               <h3 className="text-lg font-medium mb-4">Crop specification</h3>
-              <FormField
-                control={form.control}
-                name="is_organic"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Is Organic?</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <FormField
+                  control={form.control}
+                  name="is_organic"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Is Organic?</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select organic status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="processing_method"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Processing Method</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="moisture_percentage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Moisture Percentage</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="screen_size"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Screen Size</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 0 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                          onBlur={field.onBlur}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="drying_method"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Drying Method</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="wet_mill"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Wet Mill</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               {/* Cup taste */}
               <h3 className="text-lg font-medium mb-4">Cup taste</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -400,8 +567,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Acidity</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -423,8 +590,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Body</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -446,8 +613,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Sweetness</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -469,8 +636,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Aftertaste</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -494,8 +661,8 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Balance</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -519,223 +686,31 @@ export default function StepTwo() {
                 representation. Start with a primary photo that best showcases
                 your crop, then add additional images if needed.
               </p>
-
-              <div className="mb-8">
-                <h4 className="text-base font-medium mb-2">
-                  Coffee Crop photos
-                </h4>
-                <div className="flex flex-wrap gap-4">
-                  <Card className="max-w-2xl mx-auto">
-                    <CardHeader>
-                      <CardTitle>Coffee crop photos</CardTitle>
-                      <CardDescription>
-                        Upload PDF documents and images. Drag and drop or click
-                        to select files.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <FileUpload
-                        onFilesSelected={handleCropPhotoFilesSelected}
-                        maxFiles={6}
-                        maxSizeMB={5}
-                      />
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <div className="text-sm text-muted-foreground">
-                        {cropPhotoFiles.length > 0
-                          ? `${cropPhotoFiles.length} file(s) selected`
-                          : "No files selected"}
-                      </div>
-                    </CardFooter>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Set the price and discounts */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium mb-2">
-                  Set the price and discounts
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Provide details on crop variety, quality, quantity, and base
-                  price to help buyers assess availability and cost
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                  <FormField
-                    control={form.control}
-                    name="quantity_kg"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Crop Quantity (kg)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="price_per_kg"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Community Base Price per kg</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="shipping_port"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Shipping Port</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="processing_method"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Processing Method</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="moisture_percentage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Moisture Percentage</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="screen_size"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Screen Size</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="drying_method"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Drying Method</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="wet_mill"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Wet Mill</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Discounts section */}
-                <div className="mb-4">
-                  <h4 className="text-base font-medium mb-2">Discounts</h4>
-                  {discounts.length > 0 && (
-                    <div className="space-y-2">
-                      {discounts.map((discount) => (
+              <Card className="max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle>Coffee crop photos</CardTitle>
+                  <CardDescription>
+                    Upload images. Drag and drop or click to select files.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {photos.length > 0 && (
+                    <div className="mb-4 flex flex-row flex-wrap gap-4">
+                      {photos.map((photo) => (
                         <div
-                          key={discount.id}
-                          className="flex items-center gap-2"
+                          key={photo.id}
+                          className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden"
                         >
-                          <Input
-                            type="number"
-                            min={0}
-                            className="w-40"
-                            placeholder="Min. quantity (kg)"
-                            value={discount.minimum_quantity_kg}
-                            onChange={(e) =>
-                              handleDiscountChange(
-                                discount.id,
-                                "minimum_quantity_kg",
-                                Number(e.target.value) || 1
-                              )
-                            }
+                          <img
+                            src={photo.url || URL.createObjectURL(photo)}
+                            alt={photo.name}
+                            className="w-full h-full object-cover"
                           />
-                          <span className="mx-2">kg</span>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            className="w-32"
-                            placeholder="Discount (%)"
-                            value={discount.discount_percentage}
-                            onChange={(e) =>
-                              handleDiscountChange(
-                                discount.id,
-                                "discount_percentage",
-                                Number(e.target.value) || 1
-                              )
-                            }
-                          />
-                          <span className="mx-2">%</span>
                           <Button
-                            type="button"
-                            variant="ghost"
+                            variant="destructive"
                             size="icon"
-                            onClick={() => handleRemoveDiscount(discount.id)}
-                            className="text-red-500"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => handleRemoveFile(photo.id, "photos")}
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -743,105 +718,236 @@ export default function StepTwo() {
                       ))}
                     </div>
                   )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                    onClick={handleAddDiscount}
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add discount</span>
-                  </Button>
-                </div>
+                  <FileUpload
+                    onFilesSelected={handlePhotosSelected}
+                    maxFiles={6}
+                    maxSizeMB={5}
+                  />
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    {photos.length > 0
+                      ? `${photos.length} photo(s) selected`
+                      : "No photos selected"}
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+
+            {/* Set the price and discounts */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-2">
+                Set the price and discounts
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Provide details on crop variety, quality, quantity, and base
+                price to help buyers assess availability and cost
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <FormField
+                  control={form.control}
+                  name="quantity_kg"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Crop Quantity (kg)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="price_per_kg"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Community Base Price per kg</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="shipping_port"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shipping Port</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              {/* Readiness and Delivery Details */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium mb-2">
-                  Readiness and Delivery Details
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Specify the harvest readiness date, bagging period, and
-                  delivery type to inform buyers
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="readiness_date"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Readiness date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button variant="outline" className="w-full">
-                                {field.value
-                                  ? new Date(field.value).toDateString()
-                                  : "Pick a date"}
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={
-                                field.value ? new Date(field.value) : undefined
-                              }
-                              onSelect={(date) => {
-                                if (date) {
-                                  const formatted = date
-                                    .toISOString()
-                                    .slice(0, 10);
-                                  field.onChange(formatted);
-                                }
-                              }}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lot_length"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lot number</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Optional" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="delivery_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Delivery type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
+              {/* Discounts section */}
+              <div className="mb-4">
+                <h4 className="text-base font-medium mb-2">Discounts</h4>
+                {discounts.length > 0 && (
+                  <div className="space-y-2">
+                    {discounts.map((discount) => (
+                      <div
+                        key={discount.id}
+                        className="flex items-center gap-2"
+                      >
+                        <Input
+                          type="number"
+                          min={0}
+                          className="w-40"
+                          placeholder="Min. quantity (kg)"
+                          value={discount.minimum_quantity_kg}
+                          onChange={(e) =>
+                            handleDiscountChange(
+                              discount.id,
+                              "minimum_quantity_kg",
+                              Number(e.target.value) || 0,
+                            )
+                          }
+                        />
+                        <span className="mx-2">kg</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="w-32"
+                          placeholder="Discount (%)"
+                          value={discount.discount_percentage}
+                          onChange={(e) =>
+                            handleDiscountChange(
+                              discount.id,
+                              "discount_percentage",
+                              Number(e.target.value) || 0,
+                            )
+                          }
+                        />
+                        <span className="mx-2">%</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveDiscount(discount.id)}
+                          className="text-red-500"
                         >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                  onClick={handleAddDiscount}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add discount</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Readiness and Delivery Details */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium mb-2">
+                Readiness and Delivery Details
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Specify the harvest readiness date, bagging period, and delivery
+                type to inform buyers
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="readiness_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Readiness date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
                           <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select delivery type" />
-                            </SelectTrigger>
+                            <Button variant="outline" className="w-full">
+                              {field.value
+                                ? new Date(field.value).toDateString()
+                                : "Pick a date"}
+                            </Button>
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="FOB (Free on Board) - Port of Djibouti">
-                              FOB (Free on Board) - Port of Djibouti
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={
+                              field.value ? new Date(field.value) : undefined
+                            }
+                            onSelect={(date) => {
+                              if (date) {
+                                const formatted = date
+                                  .toISOString()
+                                  .slice(0, 10);
+                                field.onChange(formatted);
+                              }
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lot_length"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lot number</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Optional" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="delivery_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Delivery type</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select delivery type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="FOB (Free on Board) - Port of Djibouti">
+                            FOB (Free on Board) - Port of Djibouti
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
@@ -850,7 +956,11 @@ export default function StepTwo() {
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button type="submit" disabled={isSubmitting} className=" my-4">
+              <Button
+                type="submit"
+                disabled={isSubmitting || !form.formState.isValid}
+                className="my-4"
+              >
                 {isSubmitting ? "Saving..." : "Save and continue"}
               </Button>
             </div>

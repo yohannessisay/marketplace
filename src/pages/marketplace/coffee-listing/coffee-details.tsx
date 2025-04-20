@@ -22,11 +22,13 @@ import { getUserId, getUserProfile } from "@/lib/utils";
 interface CoffeeDetailsProps {
   listing: CoffeeListing | null;
   demoOrderStatus: OrderStatus;
+  onRequireAuth: () => void;
 }
 
 export function CoffeeDetails({
   listing,
   demoOrderStatus,
+  onRequireAuth,
 }: CoffeeDetailsProps) {
   const [activeTab, setActiveTab] = useState("details");
   const [chatMessage, setChatMessage] = useState("");
@@ -43,7 +45,7 @@ export function CoffeeDetails({
   const user = getUserProfile();
 
   const handleFetchMessages = async () => {
-    if (!listing || !listing.id) return;
+    if (!user || !listing || !listing.id) return;
 
     try {
       const senderId = getUserId();
@@ -78,7 +80,8 @@ export function CoffeeDetails({
   };
 
   useEffect(() => {
-    if (!listing || !listing.id) return;
+    if (!user || !listing || !listing.id) return;
+
     handleFetchMessages();
 
     chatService().connect();
@@ -106,9 +109,14 @@ export function CoffeeDetails({
       unsubscribe();
       chatService().disconnect();
     };
-  }, [listing?.id]);
+  }, [listing?.id, user]);
 
   const handleSendMessage = async () => {
+    if (!user) {
+      onRequireAuth();
+      return;
+    }
+
     if (!chatMessage.trim() || !listing) return;
 
     try {
@@ -229,7 +237,7 @@ export function CoffeeDetails({
             </CardContent>
           </Card>
         )}
-      {user?.userType != "seller" && (
+      {(!user || user?.userType !== "seller") && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center">
@@ -242,7 +250,9 @@ export function CoffeeDetails({
             <div className="h-60 overflow-y-auto mb-4 flex flex-col-reverse">
               {chatMessages.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
-                  No messages yet. Start a conversation with the seller.
+                  {user
+                    ? "No messages yet. Start a conversation with the seller."
+                    : "Sign up to message the seller."}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -284,15 +294,25 @@ export function CoffeeDetails({
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
+                placeholder={
+                  user ? "Type your message..." : "Sign up to send a message"
+                }
                 className="flex-1"
-                disabled={user?.onboarding_stage !== "completed"}
+                disabled={
+                  !user ||
+                  (user?.onboarding_stage !== "completed" &&
+                    user?.userType !== "seller")
+                }
+                onClick={() => !user && onRequireAuth()}
               />
               <Button
                 onClick={handleSendMessage}
                 className="ml-3"
                 disabled={
-                  chatMessage == "" || user?.onboarding_stage !== "completed"
+                  chatMessage === "" ||
+                  !user ||
+                  (user?.onboarding_stage !== "completed" &&
+                    user?.userType !== "seller")
                 }
               >
                 <Send size={16} />

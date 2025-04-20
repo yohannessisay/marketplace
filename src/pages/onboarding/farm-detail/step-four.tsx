@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -20,25 +22,34 @@ import {
   profileInfoSchema,
   type ProfileInfoFormData,
 } from "@/types/validation/seller-onboarding";
-import {
-  saveToLocalStorage,
-  getFromLocalStorage, 
-} from "@/lib/utils";
+import { getFromLocalStorage, removeFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { useNotification } from "@/hooks/useNotification";
 import Header from "@/components/layout/header";
+import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
-import { UserProfile } from "@/types/user";
+import { useAuth } from "@/hooks/useAuth";
+import { APIErrorResponse } from "@/types/api";
+
+interface ProfileInfo {
+  id: string;
+  telegram: string;
+  about_me: string;
+  address: string;
+  profile_image?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function StepFour() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const { successMessage, errorMessage } = useNotification();
-  const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userProfile: any = getFromLocalStorage("userProfile", {});
+  const [profileInfo, setProfileInfo] = useState<ProfileInfo | undefined>();
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const { user } = useAuth();
+  const { successMessage, errorMessage } = useNotification();
+
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
     defaultValues: {
@@ -47,21 +58,33 @@ export default function StepFour() {
       address: "",
     },
   });
-  useEffect(() => {
-    const user = getFromLocalStorage<UserProfile | null>("userProfile", null);
 
-    if (user && user.onboarding_stage !== "avatar_image") {
-      if (user.onboarding_stage === "crops_to_sell") {
-        navigation("/onboarding/step-two");
-        return;
+  const fetchProfileInfo = async () => {
+    try {
+      const response: any = await apiService().get(
+        "/onboarding/seller/get-profile",
+        user?.userType === "agent" ? user?.id : "",
+      );
+      setProfileInfo(response.data.profile);
+      form.reset({
+        telegram: response.data.profile.telegram || "",
+        about_me: response.data.profile.about_me || "",
+        address: response.data.profile.address || "",
+      });
+      if (response.data.profile.avatar_url) {
+        setProfileImage(response.data.profile.avatar_url);
+        localStorage.setItem("profile-image", response.data.profile.avatar_url);
       }
-      if (user.onboarding_stage === "bank_information") {
-        navigation("/onboarding/step-three");
-        return;
-      }
-      navigation("/onboarding/step-one");
+    } catch (error: any) {
+      errorMessage(error as APIErrorResponse);
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    setIsClient(true);
+    fetchProfileInfo();
+  }, [form]);
+
   const handleFilesSelected = (selectedFiles: File[]) => {
     const file = selectedFiles[0];
     if (file) {
@@ -75,80 +98,81 @@ export default function StepFour() {
     }
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
-  // Load saved data from local storage on component mount
-  useEffect(() => {
-    setIsClient(true);
-    const savedData = getFromLocalStorage<ProfileInfoFormData>(
-      "step-four",
-      {} as ProfileInfoFormData
-    );
-    if (savedData && Object.keys(savedData).length > 0) {
-      form.reset(savedData);
-    }
 
-    const savedImage = localStorage.getItem("profile-image");
-    if (savedImage) {
-      setProfileImage(savedImage);
-    }
-  }, [form]);
-
-  // Handle form submission
   const onSubmit = async (data: ProfileInfoFormData) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const currentStep: any = getFromLocalStorage("current-step", "");
+      setIsSubmitting(true);
+      const farmer: any = getFromLocalStorage("farmer-profile", {});
+
       if (
-        (userProfile.onboarding_stage === "avatar_image" ||
-          userProfile.userType === "agent") &&
-        currentStep === "avatar_image"
+        user?.onboarding_stage === "avatar_image" ||
+        user?.userType === "agent"
       ) {
-        saveToLocalStorage("step-four", data);
-        setIsSubmitting(true);
-        // Combine all data from all steps
-
         const formData = new FormData();
-
         for (const key in data) {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
               key,
-              String(data[key as keyof ProfileInfoFormData])
+              String(data[key as keyof ProfileInfoFormData]),
             );
           }
         }
         files.forEach((file) => {
           formData.append("files", file);
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isAgent: any = getFromLocalStorage("userProfile", {});
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const farmer: any = getFromLocalStorage("farmer-profile", {});
 
-        const response: { success: boolean } = await apiService().postFormData(
+        await apiService().postFormData(
           "/onboarding/seller/profile",
           formData,
           true,
-          isAgent.userType === "agent" && farmer ? farmer.id : ""
+          user?.userType === "agent" && farmer ? farmer.id : "",
         );
-        if (response && response.success) {
-          const userProfile = getFromLocalStorage("userProfile", {});
-          localStorage.clear();
-          saveToLocalStorage("userProfile", userProfile);
 
-          successMessage("Registration completed successfully!");
-          navigation("/seller-dashboard");
-        } else {
-          errorMessage("Failed to save farm details");
+        removeFromLocalStorage("step-one");
+        removeFromLocalStorage("step-two");
+        removeFromLocalStorage("step-three");
+        removeFromLocalStorage("step-four");
+        removeFromLocalStorage("bank-id");
+        removeFromLocalStorage("farm-id");
+        removeFromLocalStorage("crop-id");
+        removeFromLocalStorage("back-button-clicked");
+        removeFromLocalStorage("current-step");
+        removeFromLocalStorage("profile-image");
+
+        successMessage("Registration completed successfully!");
+        navigation("/seller-dashboard");
+      } else {
+        const formData = new FormData();
+        for (const key in data) {
+          if (Object.prototype.hasOwnProperty.call(data, key)) {
+            formData.append(
+              key,
+              String(data[key as keyof ProfileInfoFormData]),
+            );
+          }
         }
-        setIsSubmitting(false);
+        files.forEach((file) => {
+          formData.append("files", file);
+        });
+        formData.append("id", profileInfo?.id || "");
+
+        await apiService().patchFormData(
+          "/sellers/profile/update-profile",
+          formData,
+          true,
+          user?.userType === "agent" && farmer ? farmer.id : "",
+        );
+
+        successMessage("Profile data updated successfully");
+        navigation("/seller-dashboard");
       }
-    } catch {
+    } catch (error: any) {
+      errorMessage(error as APIErrorResponse);
+    } finally {
       setIsSubmitting(false);
-      errorMessage("Registration failed!");
     }
   };
 
-  // Go back to previous step
   const goBack = () => {
     localStorage.setItem("back-button-clicked", "true");
     navigation("/onboarding/step-three");
@@ -160,15 +184,14 @@ export default function StepFour() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header></Header>
-      {/* Main Content */}
+      <Header />
       <main className="container mx-auto p-6">
         <Stepper currentStep={4} />
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 shadow-lg px-8  rounded-md py-4"
+            className="space-y-8 shadow-lg px-8 rounded-md py-4"
           >
             <div className="mb-10">
               <div className="mb-6">
@@ -216,7 +239,7 @@ export default function StepFour() {
                           accept="image/*"
                           onChange={(e) => {
                             const selectedFiles = Array.from(
-                              e.target.files || []
+                              e.target.files || [],
                             );
                             handleFilesSelected(selectedFiles);
                           }}
@@ -284,12 +307,11 @@ export default function StepFour() {
               </div>
             </div>
 
-            {/* Navigation Buttons */}
             <div className="flex justify-between mb-8">
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button type="submit" disabled={isSubmitting} className=" my-4">
+              <Button type="submit" disabled={isSubmitting} className="my-4">
                 {isSubmitting ? "Registering..." : "Complete Registration"}
               </Button>
             </div>

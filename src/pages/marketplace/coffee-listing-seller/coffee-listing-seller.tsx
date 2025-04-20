@@ -255,22 +255,6 @@ interface Listing {
   }>;
 }
 
-interface Farm {
-  farm_name: string;
-  region: string;
-}
-
-interface Listing {
-  id: string;
-  coffee_variety: string;
-  bean_type: string;
-  is_organic: boolean;
-  processing_method: string;
-  quantity_kg: number;
-  price_per_kg: number;
-  farm: Farm;
-}
-
 interface Buyer {
   first_name: string;
   last_name: string;

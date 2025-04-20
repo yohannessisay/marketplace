@@ -84,7 +84,7 @@ export default function ContactModal() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen} className="bg-green-200">
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="default" size="lg">
           Contact Us

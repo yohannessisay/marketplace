@@ -37,7 +37,6 @@ import { apiService } from "@/services/apiService";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
-import { LoadingState } from "@/components/common/loading";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 

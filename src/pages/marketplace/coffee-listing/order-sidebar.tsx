@@ -20,31 +20,36 @@ interface OrderSidebarProps {
   demoOrderStatus?: OrderStatus;
   setShowOrderModal?: (show: boolean) => void;
   setShowReviewModal?: (show: boolean) => void;
+  onRequireAuth: () => void;
 }
 
-export function OrderSidebar({ listing, demoOrderStatus }: OrderSidebarProps) {
+export function OrderSidebar({
+  listing,
+  demoOrderStatus,
+  onRequireAuth,
+}: OrderSidebarProps) {
   const orderStatus = useOrderStatus(demoOrderStatus);
   const { user } = useAuth();
-  const { hasBid, loading, error, checkBid } = useBuyerOrderData();
+  const { hasBid, loading, checkBid } = useBuyerOrderData();
   const [showBidModal, setShowBidModal] = useState(false);
   const [quantity, setQuantity] = useState<number>();
   const [bidPrice, setBidPrice] = useState(0);
 
   useEffect(() => {
-    if (listing?.id) {
+    if (listing?.id && user) {
       checkBid(listing.id);
     }
-  }, [listing?.id, checkBid]);
+  }, [listing?.id, checkBid, user]);
 
   const handleBidSubmitted = useCallback(() => {
-    if (listing?.id) { 
+    if (listing?.id) {
       checkBid(listing.id);
     }
   }, [listing?.id, checkBid]);
 
   const handleModalClose = useCallback(() => {
     setShowBidModal(false);
-    if (listing?.id) { 
+    if (listing?.id) {
       checkBid(listing.id);
     }
   }, [listing?.id, checkBid]);
@@ -54,7 +59,7 @@ export function OrderSidebar({ listing, demoOrderStatus }: OrderSidebarProps) {
     try {
       await apiService().post("/buyers/bids/place-bid", {
         listingId: listing.id,
-        quantity_kg:quantity,
+        quantity_kg: quantity,
         unit_price: bidPrice,
       });
     } catch (error) {
@@ -64,6 +69,10 @@ export function OrderSidebar({ listing, demoOrderStatus }: OrderSidebarProps) {
   };
 
   const openBidModal = () => {
+    if (!user) {
+      onRequireAuth();
+      return;
+    }
     setShowBidModal(true);
     setQuantity(listing?.quantity_kg as number);
     setBidPrice(listing?.price_per_kg || 0);
@@ -138,30 +147,37 @@ export function OrderSidebar({ listing, demoOrderStatus }: OrderSidebarProps) {
           <div className="mb-2 text-sm text-muted-foreground">
             <b>Delivery:</b> {listing?.delivery_type}
           </div>
-          {user?.userType !== "seller" &&
+          {(!user || user?.userType !== "seller") &&
             listing?.listing_status === "active" && (
               <div className="flex flex-col gap-3 pt-4">
                 <ActionTooltip
                   onClick={openBidModal}
                   className="w-full"
                   disabled={
-                    user?.onboarding_stage !== "completed" ||
-                    hasBid === true ||
-                    loading
+                    user
+                      ? user.onboarding_stage !== "completed" ||
+                        hasBid === true ||
+                        loading
+                      : false
                   }
                   disabledMessage={
-                    hasBid
-                      ? "You have already placed a bid on this order, wait for the seller's response"
-                      : loading
-                        ? "Checking bid status..."
-                        : "Complete your onboarding to place a bid"
+                    user
+                      ? hasBid
+                        ? "You have already placed a bid on this order, wait for the seller's response"
+                        : loading
+                          ? "Checking bid status..."
+                          : "Complete your onboarding to place a bid"
+                      : "Sign up to place a bid"
                   }
                 >
-                  {hasBid ? "Bid Placed" : "Place Bid"}
+                  {loading
+                    ? "Checking bid status..."
+                    : hasBid
+                      ? "Bid Placed"
+                      : "Place Bid"}
                 </ActionTooltip>
               </div>
             )}
-          {error && <p className="text-sm text-red-500 mt-2">Error: {error}</p>}
         </CardContent>
       </Card>
 
@@ -192,7 +208,7 @@ export function OrderSidebar({ listing, demoOrderStatus }: OrderSidebarProps) {
             </CardContent>
           </Card>
         )}
-      {user?.userType !== "seller" && (
+      {(!user || user?.userType !== "seller") && (
         <Card>
           <CardContent className="p-6">
             <h3 className="text-lg font-medium mb-4">About the Seller</h3>

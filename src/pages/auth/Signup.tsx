@@ -72,7 +72,7 @@ export default function SignupPage() {
       });
 
       successMessage(
-        "Buyer Registration successful! Please verify your email."
+        "Buyer Registration successful! Please verify your email.",
       );
       saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
@@ -92,7 +92,7 @@ export default function SignupPage() {
       });
 
       successMessage(
-        "Seller registration successful! Please verify your email."
+        "Seller registration successful! Please verify your email.",
       );
       saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
@@ -170,13 +170,7 @@ export default function SignupPage() {
               Sign up as Seller
             </Button>
           </div>
-          <h3 className=" my-6  flex justify-center">
-            <InfoIcon className="mr-2 text-orange-400"></InfoIcon>You are currently
-            filling the form as{" "}
-            <span className="text-orange-400 font-semibold  ml-2 border rounded-md px-2 shadow-md border-primary  ">
-              {role.toUpperCase()}
-            </span>
-          </h3>
+
           {/* Buyer Form */}
           {role === "buyer" && (
             <Form {...buyerForm}>
@@ -397,6 +391,14 @@ export default function SignupPage() {
               </form>
             </Form>
           )}
+
+          <h3 className="my-6 flex justify-center">
+            <InfoIcon className="mr-2 text-orange-400"></InfoIcon>You are
+            currently filling the form as{" "}
+            <span className="text-gray-500 font-semibold  ml-2 border rounded-md px-2 shadow-md   ">
+              {role.toUpperCase()}
+            </span>
+          </h3>
 
           {/* Sign-in Option */}
           <p className="mt-4 text-center text-gray-600">

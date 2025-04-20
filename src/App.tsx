@@ -21,7 +21,7 @@ import AddFarm from "./pages/farms/add-farm";
 import CoffeeMarketplace from "./pages/marketplace/coffee-marketplace";
 import FarmerSignupViaAgentPage from "./pages/auth/farmer-signup-via-agent";
 import MyOrdersPage from "./pages/marketplace/my-orders";
-import CoffeeListingPage from "./pages/marketplace/coffee-listing/coffee-page";
+import CoffeeListingPage from "./pages/marketplace/coffee-listing/CoffeeListingPage";
 import CoffeeListingSellerView from "./pages/marketplace/coffee-listing-seller/coffee-listing-seller";
 import AddCrop from "./pages/farms/add-crop";
 import { initializeChatService } from "./services/chatService";
@@ -116,6 +116,7 @@ const RouterContent: React.FC = () => {
       <Route path="/verification" element={<VerifyEmail />} />
       <Route path="/first-time-user" element={<CreatePassword />} />
       <Route path="/market-place" element={<CoffeeMarketplace />} />
+      <Route path="/listing/:id" element={<CoffeeListingPage />} />
 
       {/* Protected Routes */}
       <Route
@@ -123,15 +124,11 @@ const RouterContent: React.FC = () => {
         element={
           <ProtectedRoute>
             {userType === "buyer" ? (
-              currentStep === "completed" ? (
-                <CoffeeMarketplace />
-              ) : (
-                <CompanyOnboarding />
-              )
+              <Navigate to="/market-place" replace />
             ) : currentStep !== "completed" ? (
               <Welcome />
             ) : (
-              <CoffeeMarketplace />
+              <FarmManagement />
             )}
           </ProtectedRoute>
         }
@@ -269,14 +266,6 @@ const RouterContent: React.FC = () => {
         element={
           <ProtectedRoute>
             <FarmersTable />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/listing/:id"
-        element={
-          <ProtectedRoute>
-            <CoffeeListingPage />
           </ProtectedRoute>
         }
       />

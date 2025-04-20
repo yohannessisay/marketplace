@@ -25,16 +25,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { APIErrorResponse } from "@/types/api";
-import {
-  USER_PROFILE_KEY,
-  ACCESS_TOKEN_KEY,
-  REFRESH_TOKEN_KEY,
-} from "@/types/constants";
 import { User, Settings, Upload, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
-import ConfirmationModal from "@/components/modals/ConfrmationModal";
-import Cookies from "js-cookie";
 import { UserProfile } from "@/types/user";
 
 export const profileSchema = z.object({
@@ -73,8 +66,6 @@ type AccountDetails = z.infer<typeof accountSchema>;
 export default function SettingsPage() {
   const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
   const [isAccountSubmitting, setIsAccountSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const { successMessage, errorMessage } = useNotification();
@@ -106,6 +97,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
+      console.log("[SettingsPage] User updated:", {
+        avatar_url: user.avatar_url,
+      });
       profileForm.reset({
         company_name: user.company_name || "",
         country: user.country || "",
@@ -122,6 +116,8 @@ export default function SettingsPage() {
         phone: user.phone,
         files: undefined,
       });
+      // Clear previewImage to ensure user.avatar_url is used
+      setPreviewImage(null);
     }
   }, [user, profileForm, accountForm]);
 
@@ -183,7 +179,7 @@ export default function SettingsPage() {
         throw new Error("Failed to update profile");
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error("[SettingsPage] Error updating profile:", error);
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsProfileSubmitting(false);
@@ -209,8 +205,11 @@ export default function SettingsPage() {
         true,
       );
 
+      console.log("[SettingsPage] Account update response:", response);
+
       if (response.success) {
         const newAvatarUrl = response.data?.avatar_url || user!.avatar_url;
+        console.log("[SettingsPage] New avatar_url:", newAvatarUrl);
         const updatedUser: UserProfile = {
           ...user!,
           email: data.email,
@@ -246,40 +245,16 @@ export default function SettingsPage() {
           ...data,
           files: undefined,
         });
-        setPreviewImage(null);
+        // Set previewImage to new avatar_url to ensure immediate UI update
+        setPreviewImage(newAvatarUrl);
       } else {
         throw new Error("Failed to update account");
       }
     } catch (error) {
-      console.error("Error updating account:", error);
+      console.error("[SettingsPage] Error updating account:", error);
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsAccountSubmitting(false);
-    }
-  };
-  const onDeleteAccount = async () => {
-    setIsDeleting(true);
-
-    try {
-      const response: any = await apiService().post(
-        "/buyers/profile/delete-account",
-        {},
-      );
-      if (response.success) {
-        localStorage.removeItem(USER_PROFILE_KEY);
-        Cookies.remove(ACCESS_TOKEN_KEY);
-        Cookies.remove(REFRESH_TOKEN_KEY);
-        localStorage.clear();
-        successMessage("Your account has been deleted successfully.");
-        window.location.href = "/";
-      } else {
-        throw new Error("Failed to delete account");
-      }
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      errorMessage(error as APIErrorResponse);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -594,27 +569,23 @@ export default function SettingsPage() {
                                   </p>
                                 </div>
                                 <div className="relative w-40 h-40 rounded-full bg-gray-100 flex items-center justify-center mb-4 overflow-hidden">
-                                  {previewImage ? (
+                                  {previewImage || user.avatar_url ? (
                                     <>
                                       <img
-                                        src={previewImage}
-                                        alt="Selected Profile"
+                                        src={previewImage || user.avatar_url!}
+                                        alt="Profile"
                                         className="w-full h-full object-cover"
                                       />
-                                      <button
-                                        type="button"
-                                        onClick={handleRemoveImage}
-                                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
+                                      {previewImage && (
+                                        <button
+                                          type="button"
+                                          onClick={handleRemoveImage}
+                                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      )}
                                     </>
-                                  ) : user.avatar_url ? (
-                                    <img
-                                      src={user.avatar_url}
-                                      alt="Profile"
-                                      className="w-full h-full object-cover"
-                                    />
                                   ) : (
                                     <User className="w-20 h-20 text-gray-400" />
                                   )}
@@ -648,6 +619,8 @@ export default function SettingsPage() {
                                               setPreviewImage(
                                                 URL.createObjectURL(file),
                                               );
+                                            } else {
+                                              setPreviewImage(null);
                                             }
                                           }}
                                         />
@@ -689,51 +662,12 @@ export default function SettingsPage() {
                         </div>
                       </form>
                     </Form>
-
-                    {/* Danger Zone */}
-                    <div className="mt-8">
-                      <h3 className="text-lg font-semibold text-red-600">
-                        Danger Zone
-                      </h3>
-                      <div className="mt-4 border-t border-red-200 pt-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-medium text-gray-800">
-                              Delete Account
-                            </h4>
-                            <p className="text-sm text-gray-500">
-                              Permanently delete your account and all associated
-                              data.
-                            </p>
-                          </div>
-                          <Button
-                            variant="destructive"
-                            onClick={() => setIsDeleteModalOpen(true)}
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? "Deleting..." : "Delete Account"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
               )}
             </>
           )}
         </div>
-
-        {/* Delete Account Confirmation Modal */}
-        <ConfirmationModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          title="Delete Account"
-          message="Are you sure you want to delete your account? This action cannot be undone."
-          confirmText="Delete"
-          cancelText="Cancel"
-          onConfirm={onDeleteAccount}
-          isDestructive={true}
-        />
       </main>
     </div>
   );

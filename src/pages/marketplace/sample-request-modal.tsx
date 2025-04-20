@@ -16,8 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
-import { getFromLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SampleRequestModalProps {
   open: boolean;
@@ -25,12 +25,6 @@ interface SampleRequestModalProps {
   listingId: string;
   coffeeName: string;
   farmName: string;
-}
-
-interface UserProfile {
-  address?: string;
-  phone?: string;
-  [key: string]: any;
 }
 
 export default function SampleRequestModal({
@@ -49,21 +43,28 @@ export default function SampleRequestModal({
     notes: "",
   });
   const { successMessage, errorMessage } = useNotification();
+  const { user } = useAuth();
+
   React.useEffect(() => {
-    try {
-      const storedUserProfile = getFromLocalStorage("userProfile", {});
-      if (storedUserProfile) {
-        const userProfile: UserProfile = storedUserProfile;
-        setFormData((prev) => ({
-          ...prev,
-          deliveryAddress: userProfile.address || "",
-          phone: userProfile.phone || "",
-        }));
-      }
-    } catch (error) {
-      console.error("Error loading user profile from localStorage:", error);
+    if (open && user) {
+      setFormData((prev) => ({
+        ...prev,
+        listingId,
+        deliveryAddress: prev.deliveryAddress || user.address || "",
+        phone: prev.phone || user.phone || "",
+        weight: prev.weight || "",
+        notes: prev.notes || "",
+      }));
+    } else if (open) {
+      setFormData({
+        listingId,
+        deliveryAddress: "",
+        phone: "",
+        weight: "",
+        notes: "",
+      });
     }
-  }, []);
+  }, [open, user, listingId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -92,7 +93,7 @@ export default function SampleRequestModal({
       }
 
       await apiService().post("/marketplace/listings/request-sample", {
-        listingId: listingId,
+        listingId: formData.listingId,
         delivery_address: formData.deliveryAddress,
         phone: formData.phone,
         weight: parseFloat(formData.weight),
