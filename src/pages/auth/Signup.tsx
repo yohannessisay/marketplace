@@ -26,6 +26,7 @@ import { useNotification } from "@/hooks/useNotification";
 import { MoveLeft } from "lucide-react";
 import { APIErrorResponse } from "@/types/api";
 import { SIGNUP_PROFILE_KEY } from "@/types/constants";
+import { saveToLocalStorage } from "@/lib/utils";
 
 type BuyerFormValues = z.infer<typeof buyerSchema>;
 type SellerFormValues = z.infer<typeof sellerSchema>;
@@ -57,8 +58,7 @@ export default function SignupPage() {
       last_name: "",
       phone: "",
       email: "",
-      password: "",
-      productCategory: "",
+      password: "", 
     },
     mode: "onChange",
   });
@@ -74,7 +74,7 @@ export default function SignupPage() {
       successMessage(
         "Buyer Registration successful! Please verify your email.",
       );
-      localStorage.setItem(SIGNUP_PROFILE_KEY, data.email);
+      saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
     } catch (error: unknown) {
       setIsSubmitting(false);
@@ -93,8 +93,8 @@ export default function SignupPage() {
 
       successMessage(
         "Seller registration successful! Please verify your email.",
-      );
-      localStorage.setItem(SIGNUP_PROFILE_KEY, data.email);
+      ); 
+      saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
     } catch (error: unknown) {
       setIsSubmitting(false);
@@ -104,6 +104,8 @@ export default function SignupPage() {
   };
 
   const handleRoleChange = (newRole: "buyer" | "seller") => {
+  
+    
     if (newRole === "buyer" && role === "seller") {
       const { first_name, last_name, phone, email, password } =
         sellerForm.getValues();

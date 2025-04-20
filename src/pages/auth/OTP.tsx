@@ -23,7 +23,7 @@ import { createOTPValidationSchema } from "@/types/validation/auth";
 import { useNotification } from "@/hooks/useNotification";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
-import { saveToLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
 import { OTP_TIMER_KEY, SIGNUP_PROFILE_KEY } from "@/types/constants";
 
@@ -87,7 +87,9 @@ export default function OTPInputPage() {
 
   const onSubmit = async (data: OTPValidationType) => {
     try {
-      const email = localStorage.getItem(SIGNUP_PROFILE_KEY);
+      const email = getFromLocalStorage(SIGNUP_PROFILE_KEY,null);
+
+      
       if (!email) {
         throw {
           error: {
@@ -122,9 +124,9 @@ export default function OTPInputPage() {
   };
 
   const requestNewOTP = async () => {
-    try {
-      const userProfile = localStorage.getItem("userProfile");
-      const email = userProfile ? JSON.parse(userProfile).email : "";
+    try { 
+      const email =getFromLocalStorage(SIGNUP_PROFILE_KEY,null);
+   
       if (!email) {
         throw {
           error: {

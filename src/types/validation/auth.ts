@@ -38,7 +38,7 @@ export const passwordSchema = z.object({
 export type PasswordValidationType = z.infer<typeof passwordSchema>;
 
 // Phone number schema compatible with libphonenumber-js
-const phoneNumberRegex = /^\+[1-9]\d{1,14}$/; // Adjusted regex
+const phoneNumberRegex = /^\+[1-9]\d{9,14}$/; // Enforces 10-15 digits after the '+' sign
 
 export const buyerSchema = z.object({
   first_name: z.string().min(2, "First name must be at least 2 characters"),
@@ -83,8 +83,7 @@ export const sellerSchema = z.object({
     .regex(
       /[!@#$%^&*]/,
       "Password must contain at least one special character (!@#$%^&*)",
-    ),
-  productCategory: z.string().min(1, "Please select a product category"),
+    ), 
 });
 
 export const sellerSchemaForAgent = z.object({
