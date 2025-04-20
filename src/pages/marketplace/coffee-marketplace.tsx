@@ -323,9 +323,7 @@ export default function CoffeeMarketplace() {
 
   const { user: loggedInUser, loading: authLoading } = useAuth();
 
-  React.useEffect(() => {
-    console.log("CoffeeMarketplace mounted", { loggedInUser, authLoading });
-  }, []);
+ 
 
   const checkFavoriteStatus = async (listingIds: string[]) => {
     if (!loggedInUser || loggedInUser.userType === "seller") return;
@@ -396,8 +394,7 @@ export default function CoffeeMarketplace() {
       const response = await apiService().get<ApiResponse>(
         `/marketplace/listings/get-all-listings?${queryParams.toString()}`,
       );
-
-      console.log("API Response:", response);
+ 
 
       if (response.success) {
         const listings = response.data.listings || [];
@@ -809,16 +806,16 @@ export default function CoffeeMarketplace() {
                           <div className="flex items-center text-slate-500 text-sm mb-4">
                             <Map className="h-4 w-4 mr-1" />
                             <span>
-                              {listing.farm?.region}, {listing.farm.country}
+                              {listing.farm?.region}, {listing.farm?.country}
                             </span>
                           </div>
                           <div className="flex items-center text-slate-500 text-sm mb-2">
                             <Droplet className="h-4 w-4 mr-1" />
-                            <span>{listing.processing_method}</span>
+                            <span>{listing?.processing_method}</span>
                           </div>
                           <div className="flex items-center text-slate-500 text-sm mb-2">
                             <Coffee className="h-4 w-4 mr-1" />
-                            <span>{listing.bean_type}</span>
+                            <span>{listing?.bean_type}</span>
                           </div>
                           {loggedInUser?.userType !== "seller" && (
                             <div className="flex justify-end items-end mb-2 mt-4">

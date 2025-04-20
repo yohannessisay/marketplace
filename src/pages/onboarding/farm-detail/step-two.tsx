@@ -184,8 +184,7 @@ export default function StepTwo() {
           if (farmResp.success) {
             farmId = farmResp.data.farm.id;
           }
-        }
-        console.log("Farm ID Is", farmId);
+        } 
         if (farmId) {
           formData.append("farm_id", farmId.replace(/"/g, ""));
         }

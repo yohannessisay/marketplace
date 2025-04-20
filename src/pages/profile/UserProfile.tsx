@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import type React from "react" 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,22 +34,21 @@ const ProfileItem: React.FC<ProfileItemProps> = ({ label, value, editable = fals
 }
 
 export default function UserProfile() {
-  const [profile, setProfile] = useState({
+  const profile = {
     name: "John Wick",
     phone: "+66 (081) *** **36",
     email: "Email****@.com",
     verification: 25, // Percentage of verification progress
-  })
+  }
 
   const handleEdit = (field: string) => {
-    // Implement edit functionality
+    // Implement edit functionality 
     console.log(`Editing ${field}`)
     // In a real app, you would show a modal or form for editing
   }
 
   const handleLogout = () => {
-    // Implement logout functionality
-    console.log("Logging out")
+    // Implement logout functionality 
   }
 
   return (

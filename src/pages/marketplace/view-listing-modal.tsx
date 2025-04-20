@@ -244,8 +244,8 @@ export default function ListingDetailModal({
 
               <div className="p-6">
                 {sampleError && (
-                  <p className="text-sm text-red-600 bg-red-100 p-2 rounded-md mb-4">
-                    Error: {sampleError}
+                  <p className="text-sm text-orange-400 bg-orange-100 p-2 rounded-md mb-4">
+                    Verify: {sampleError}
                   </p>
                 )}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
