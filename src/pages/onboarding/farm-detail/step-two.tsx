@@ -46,7 +46,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { UserProfile } from "@/types/user";
+import { UserProfile } from "@/types/user"; 
 export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
@@ -58,8 +58,8 @@ export default function StepTwo() {
     setGradingReportFiles((prev) => [...prev, ...selectedFiles]);
   };
   const [discounts, setDiscounts] = useState<
-  { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
->([]);
+    { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
+  >([]);
   const handleCropPhotoFilesSelected = (selectedFiles: File[]) => {
     setCropPhotoFiles((prev) => [...prev, ...selectedFiles]);
   };
@@ -136,8 +136,6 @@ export default function StepTwo() {
     );
   };
 
-
-
   // Handle form submission
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
@@ -155,11 +153,11 @@ export default function StepTwo() {
       }
 
       gradingReportFiles.forEach((file) => {
-        formData.append("grading_report_files", file);
+        formData.append("files", file);
       });
 
       cropPhotoFiles.forEach((file) => {
-        formData.append("crop_photo_files", file);
+        formData.append("files", file);
       });
       formData.append(
         "discounts",
@@ -168,8 +166,7 @@ export default function StepTwo() {
 
       const isAgent: any = getFromLocalStorage("userProfile", {});
       const farmer: any = getFromLocalStorage("farmer-profile", {});
-     
-      
+
       if (
         (userProfile.onboarding_stage === "crops_to_sell" ||
           userProfile.userType === "agent") &&
@@ -177,7 +174,18 @@ export default function StepTwo() {
           "crops_to_sell" &&
         !isBackButtonClicked
       ) {
-        const farmId = localStorage.getItem("farm-id");
+        let farmId = localStorage.getItem("farm-id");
+
+        if (!farmId) {
+          const farmResp: any = await apiService().get(
+            "/onboarding/seller/get-first-farm"
+          );
+
+          if (farmResp.success) {
+            farmId = farmResp.data.farm.id;
+          }
+        }
+        console.log("Farm ID Is", farmId);
         if (farmId) {
           formData.append("farm_id", farmId.replace(/"/g, ""));
         }
@@ -202,6 +210,7 @@ export default function StepTwo() {
           successMessage("Crop information saved successfully");
           saveToLocalStorage("is-back-button-clicked", false);
         } else {
+          setIsSubmitting(false);
           errorMessage("Failed to save crop details");
         }
       } else {
@@ -220,15 +229,20 @@ export default function StepTwo() {
             navigation("/onboarding/step-three");
             successMessage("Crop data updated");
           }
+          setIsSubmitting(false);
         } catch {
+          setIsSubmitting(false);
           errorMessage("Something went wrong, please try again");
         }
       }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      errorMessage(
-        error?.message || "An error occurred while saving farm details"
-      );
+      console.log(error);
+
+      // errorMessage(
+      //   error?.message || "An error occurred while saving farm details"
+      // );
       setIsSubmitting(false);
     }
   };
@@ -559,9 +573,12 @@ export default function StepTwo() {
                       <FormItem>
                         <FormLabel>Crop Quantity (kg)</FormLabel>
                         <FormControl>
-                          <Input {...field}   onChange={(e) =>
-                                  field.onChange(Number(e.target.value) || 0)
-                                }/>
+                          <Input
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -574,9 +591,12 @@ export default function StepTwo() {
                       <FormItem>
                         <FormLabel>Community Base Price per kg</FormLabel>
                         <FormControl>
-                          <Input {...field}   onChange={(e) =>
-                                  field.onChange(Number(e.target.value) || 0)
-                                }/>
+                          <Input
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -616,9 +636,12 @@ export default function StepTwo() {
                       <FormItem>
                         <FormLabel>Moisture Percentage</FormLabel>
                         <FormControl>
-                          <Input {...field}   onChange={(e) =>
-                                  field.onChange(Number(e.target.value) || 0)
-                                }/>
+                          <Input
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -631,9 +654,12 @@ export default function StepTwo() {
                       <FormItem>
                         <FormLabel>Screen Size</FormLabel>
                         <FormControl>
-                          <Input {...field}   onChange={(e) =>
-                                  field.onChange(Number(e.target.value) || 0)
-                                }/>
+                          <Input
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -667,70 +693,70 @@ export default function StepTwo() {
                   />
                 </div>
 
-            {/* Discounts section */}
-            <div className="mb-4">
-                    <h4 className="text-base font-medium mb-2">Discounts</h4>
-                    {discounts.length > 0 && (
-                      <div className="space-y-2">
-                        {discounts.map((discount) => (
-                          <div
-                            key={discount.id}
-                            className="flex items-center gap-2"
+                {/* Discounts section */}
+                <div className="mb-4">
+                  <h4 className="text-base font-medium mb-2">Discounts</h4>
+                  {discounts.length > 0 && (
+                    <div className="space-y-2">
+                      {discounts.map((discount) => (
+                        <div
+                          key={discount.id}
+                          className="flex items-center gap-2"
+                        >
+                          <Input
+                            type="number"
+                            min={0}
+                            className="w-40"
+                            placeholder="Min. quantity (kg)"
+                            value={discount.minimum_quantity_kg}
+                            onChange={(e) =>
+                              handleDiscountChange(
+                                discount.id,
+                                "minimum_quantity_kg",
+                                Number(e.target.value) || 1
+                              )
+                            }
+                          />
+                          <span className="mx-2">kg</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            className="w-32"
+                            placeholder="Discount (%)"
+                            value={discount.discount_percentage}
+                            onChange={(e) =>
+                              handleDiscountChange(
+                                discount.id,
+                                "discount_percentage",
+                                Number(e.target.value) || 1
+                              )
+                            }
+                          />
+                          <span className="mx-2">%</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveDiscount(discount.id)}
+                            className="text-red-500"
                           >
-                            <Input
-                              type="number"
-                              min={0}
-                              className="w-40"
-                              placeholder="Min. quantity (kg)"
-                              value={discount.minimum_quantity_kg}
-                              onChange={(e) =>
-                                handleDiscountChange(
-                                  discount.id,
-                                  "minimum_quantity_kg",
-                                  Number(e.target.value) || 1
-                                )
-                              }
-                            />
-                            <span className="mx-2">kg</span>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              className="w-32"
-                              placeholder="Discount (%)"
-                              value={discount.discount_percentage}
-                              onChange={(e) =>
-                                handleDiscountChange(
-                                  discount.id,
-                                  "discount_percentage",
-                                  Number(e.target.value) || 1
-                                )
-                              }
-                            />
-                            <span className="mx-2">%</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveDiscount(discount.id)}
-                              className="text-red-500"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                      onClick={handleAddDiscount}
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add discount</span>
-                    </Button>
-                  </div>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                    onClick={handleAddDiscount}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add discount</span>
+                  </Button>
+                </div>
               </div>
 
               {/* Readiness and Delivery Details */}
