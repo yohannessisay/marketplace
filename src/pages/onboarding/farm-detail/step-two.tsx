@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,11 +50,18 @@ import { UserProfile } from "@/types/user";
 export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [gradingReportFiles, setGradingReportFiles] = useState<File[]>([]);
+  const [cropPhotoFiles, setCropPhotoFiles] = useState<File[]>([]);
   const userProfile: any = getFromLocalStorage("userProfile", {});
   const { successMessage, errorMessage } = useNotification();
-  const handleFilesSelected = (selectedFiles: File[]) => {
-    setFiles((prev) => [...prev, ...selectedFiles]);
+  const handleGradingReportFilesSelected = (selectedFiles: File[]) => {
+    setGradingReportFiles((prev) => [...prev, ...selectedFiles]);
+  };
+  const [discounts, setDiscounts] = useState<
+  { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
+>([]);
+  const handleCropPhotoFilesSelected = (selectedFiles: File[]) => {
+    setCropPhotoFiles((prev) => [...prev, ...selectedFiles]);
   };
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -85,6 +92,7 @@ export default function StepTwo() {
       shipping_port: "",
     },
   });
+
   useEffect(() => {
     const user = getFromLocalStorage<UserProfile | null>("userProfile", null);
 
@@ -103,6 +111,32 @@ export default function StepTwo() {
       form.reset(savedData);
     }
   }, [form]);
+  const handleAddDiscount = () => {
+    setDiscounts((prev) => [
+      ...prev,
+      {
+        minimum_quantity_kg: 1,
+        discount_percentage: 1,
+        id: Math.random().toString(36).substring(2),
+      },
+    ]);
+  };
+
+  const handleRemoveDiscount = (id: string) => {
+    setDiscounts((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  const handleDiscountChange = (
+    id: string,
+    field: "minimum_quantity_kg" | "discount_percentage",
+    value: number
+  ) => {
+    setDiscounts((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
+    );
+  };
+
+
 
   // Handle form submission
   const onSubmit = async (data: CoffeeCropsFormData) => {
@@ -120,13 +154,24 @@ export default function StepTwo() {
         }
       }
 
-      files.forEach((file) => {
-        formData.append("files", file);
+      gradingReportFiles.forEach((file) => {
+        formData.append("grading_report_files", file);
       });
+
+      cropPhotoFiles.forEach((file) => {
+        formData.append("crop_photo_files", file);
+      });
+      formData.append(
+        "discounts",
+        JSON.stringify(discounts.map(({ ...rest }) => rest))
+      );
+
       const isAgent: any = getFromLocalStorage("userProfile", {});
       const farmer: any = getFromLocalStorage("farmer-profile", {});
+     
+      
       if (
-        (userProfile.onboardingStage === "crops_to_sell" ||
+        (userProfile.onboarding_stage === "crops_to_sell" ||
           userProfile.userType === "agent") &&
         (getFromLocalStorage("current-step", "") as string) ===
           "crops_to_sell" &&
@@ -145,7 +190,7 @@ export default function StepTwo() {
         );
 
         if (response && response.success) {
-          userProfile.onboardingStage = "bank_information";
+          userProfile.onboarding_stage = "bank_information";
           saveToLocalStorage("crop-id", response.data.coffee_listing.id);
           saveToLocalStorage("userProfile", userProfile);
           saveToLocalStorage("step-two", data);
@@ -221,15 +266,15 @@ export default function StepTwo() {
                 </CardHeader>
                 <CardContent>
                   <FileUpload
-                    onFilesSelected={handleFilesSelected}
+                    onFilesSelected={handleGradingReportFilesSelected}
                     maxFiles={5}
                     maxSizeMB={5}
                   />
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {files.length > 0
-                      ? `${files.length} file(s) selected`
+                    {gradingReportFiles.length > 0
+                      ? `${gradingReportFiles.length} file(s) selected`
                       : "No files selected"}
                   </div>
                 </CardFooter>
@@ -480,15 +525,15 @@ export default function StepTwo() {
                     </CardHeader>
                     <CardContent>
                       <FileUpload
-                        onFilesSelected={handleFilesSelected}
+                        onFilesSelected={handleCropPhotoFilesSelected}
                         maxFiles={6}
                         maxSizeMB={5}
                       />
                     </CardContent>
                     <CardFooter className="flex justify-between">
                       <div className="text-sm text-muted-foreground">
-                        {files.length > 0
-                          ? `${files.length} file(s) selected`
+                        {cropPhotoFiles.length > 0
+                          ? `${cropPhotoFiles.length} file(s) selected`
                           : "No files selected"}
                       </div>
                     </CardFooter>
@@ -514,7 +559,9 @@ export default function StepTwo() {
                       <FormItem>
                         <FormLabel>Crop Quantity (kg)</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field}   onChange={(e) =>
+                                  field.onChange(Number(e.target.value) || 0)
+                                }/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -527,7 +574,9 @@ export default function StepTwo() {
                       <FormItem>
                         <FormLabel>Community Base Price per kg</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field}   onChange={(e) =>
+                                  field.onChange(Number(e.target.value) || 0)
+                                }/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -567,7 +616,9 @@ export default function StepTwo() {
                       <FormItem>
                         <FormLabel>Moisture Percentage</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field}   onChange={(e) =>
+                                  field.onChange(Number(e.target.value) || 0)
+                                }/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -580,7 +631,9 @@ export default function StepTwo() {
                       <FormItem>
                         <FormLabel>Screen Size</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field}   onChange={(e) =>
+                                  field.onChange(Number(e.target.value) || 0)
+                                }/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -614,14 +667,70 @@ export default function StepTwo() {
                   />
                 </div>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add discount</span>
-                </Button>
+            {/* Discounts section */}
+            <div className="mb-4">
+                    <h4 className="text-base font-medium mb-2">Discounts</h4>
+                    {discounts.length > 0 && (
+                      <div className="space-y-2">
+                        {discounts.map((discount) => (
+                          <div
+                            key={discount.id}
+                            className="flex items-center gap-2"
+                          >
+                            <Input
+                              type="number"
+                              min={0}
+                              className="w-40"
+                              placeholder="Min. quantity (kg)"
+                              value={discount.minimum_quantity_kg}
+                              onChange={(e) =>
+                                handleDiscountChange(
+                                  discount.id,
+                                  "minimum_quantity_kg",
+                                  Number(e.target.value) || 1
+                                )
+                              }
+                            />
+                            <span className="mx-2">kg</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              className="w-32"
+                              placeholder="Discount (%)"
+                              value={discount.discount_percentage}
+                              onChange={(e) =>
+                                handleDiscountChange(
+                                  discount.id,
+                                  "discount_percentage",
+                                  Number(e.target.value) || 1
+                                )
+                              }
+                            />
+                            <span className="mx-2">%</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveDiscount(discount.id)}
+                              className="text-red-500"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                      onClick={handleAddDiscount}
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add discount</span>
+                    </Button>
+                  </div>
               </div>
 
               {/* Readiness and Delivery Details */}

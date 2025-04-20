@@ -43,13 +43,19 @@ export default function StepOne() {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [govFiles, setGovFiles] = useState<File[]>([]);
+  const [landFiles, setLandFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const userProfile = localStorage.getItem("userProfile");
   const parsed = userProfile ? JSON.parse(userProfile) : null;
-  const currentUserStage = parsed?.onboardingStage;
-  const handleFilesSelected = (selectedFiles: File[]) => {
-    setFiles((prev) => [...prev, ...selectedFiles]);
+  const currentUserStage = parsed?.onboarding_stage;
+
+  const handleGovFilesSelected = (selectedFiles: File[]) => {
+    setGovFiles((prev) => [...prev, ...selectedFiles]);
+  };
+
+  const handleLandFilesSelected = (selectedFiles: File[]) => {
+    setLandFiles((prev) => [...prev, ...selectedFiles]);
   };
 
   // Initialize form with default values or values from local storage
@@ -57,8 +63,8 @@ export default function StepOne() {
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
       region: "",
-      longitude: "",
-      latitude: "",
+      longitude: 0,
+      latitude: 0,
       crop_type: "",
       crop_source: "",
       origin: "",
@@ -68,12 +74,12 @@ export default function StepOne() {
       farm_name: "",
       town_location: "",
       country: "",
-      total_size_hectares: "",
-      coffee_area_hectares: "",
-      altitude_meters: "",
-      capacity_kg: "",
-      avg_annual_temp: "",
-      annual_rainfall_mm: "",
+      total_size_hectares: 1,
+      coffee_area_hectares: 1,
+      altitude_meters: 0,
+      capacity_kg: 1,
+      avg_annual_temp: 1,
+      annual_rainfall_mm: 0,
     },
   });
 
@@ -104,7 +110,10 @@ export default function StepOne() {
         }
       }
 
-      files.forEach((file) => {
+      landFiles.forEach((file) => {
+        formData.append("files", file);
+      });
+      govFiles.forEach((file) => {
         formData.append("files", file);
       });
 
@@ -128,7 +137,7 @@ export default function StepOne() {
           isAgent === "agent" && farmer ? farmer.id : ""
         );
         if (response && response.success) {
-          parsed.onboardingStage = "crops_to_sell";
+          parsed.onboarding_stage = "crops_to_sell";
           saveToLocalStorage("userProfile", parsed);
           saveToLocalStorage("step-one", data);
           if (response.data?.farm?.id) {
@@ -144,7 +153,7 @@ export default function StepOne() {
       } else {
         const existingFarmId = getFromLocalStorage("farm-id", "");
         formData.append("farmId", existingFarmId);
-        try { 
+        try {
           const response: any = await apiService().patchFormData(
             "/sellers/farms/update-farm",
             formData,
@@ -212,15 +221,15 @@ export default function StepOne() {
                 </CardHeader>
                 <CardContent>
                   <FileUpload
-                    onFilesSelected={handleFilesSelected}
+                    onFilesSelected={handleGovFilesSelected}
                     maxFiles={5}
                     maxSizeMB={5}
                   />
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {files.length > 0
-                      ? `${files.length} file(s) selected`
+                    {govFiles.length > 0
+                      ? `${govFiles.length} file(s) selected`
                       : "No files selected"}
                   </div>
                 </CardFooter>
@@ -236,15 +245,15 @@ export default function StepOne() {
                 </CardHeader>
                 <CardContent>
                   <FileUpload
-                    onFilesSelected={handleFilesSelected}
+                    onFilesSelected={handleLandFilesSelected}
                     maxFiles={5}
                     maxSizeMB={5}
                   />
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {files.length > 0
-                      ? `${files.length} file(s) selected`
+                    {landFiles.length > 0
+                      ? `${landFiles.length} file(s) selected`
                       : "No files selected"}
                   </div>
                 </CardFooter>
@@ -325,7 +334,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Total farm size (hectar)</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -338,7 +355,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Total coffee size (hectar)</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -360,7 +385,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Longitude</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -373,7 +406,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Latitude</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -386,7 +427,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Altitude (meters)</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -453,7 +502,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Crop Capacity (kg)</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -467,7 +524,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Average Annual Temp</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -481,7 +546,15 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Annual Rainfall (mm)</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const parsedValue =
+                              value === "" ? 1 : Number(value);
+                            field.onChange(parsedValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

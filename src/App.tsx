@@ -79,14 +79,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   );
 };
 
-const getStepFromStage = (onboardingStage?: string, userType?: string) => {
+const getStepFromStage = (onboarding_stage?: string, userType?: string) => {
   if (userType === "buyer") {
-    return onboardingStage === "completed"
+    return onboarding_stage === "completed"
       ? "/market-place"
       : "/company-verification";
   }
 
-  switch (onboardingStage) {
+  switch (onboarding_stage) {
     case "crops_to_sell":
       return "/onboarding/step-two";
     case "crop-specification":

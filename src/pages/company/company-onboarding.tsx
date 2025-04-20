@@ -255,7 +255,7 @@ export default function SettingsPage() {
       saveToLocalStorage(USER_PROFILE_KEY, {
         ...userProfile,
         ...fieldsToSend,
-        onboardingStage: "completed",
+        onboarding_stage: "completed",
       });
 
       successMessage("Profile updated successfully!");
@@ -577,7 +577,7 @@ export default function CompanyVerification() {
   const userProfile: any = getFromLocalStorage(USER_PROFILE_KEY, {});
 
   useEffect(() => {
-    if (userProfile?.onboardingStage === "completed") {
+    if (userProfile?.onboarding_stage === "completed") {
       setShowConfirmation(true);
       const timer = setInterval(() => {
         setCountdown((prev) => {
@@ -636,7 +636,7 @@ export default function CompanyVerification() {
       saveToLocalStorage("current-step", "completed");
       saveToLocalStorage(USER_PROFILE_KEY, {
         ...userProfile,
-        onboardingStage: "completed",
+        onboarding_stage: "completed",
       });
       successMessage(
         "Your company verification has been submitted successfully.",

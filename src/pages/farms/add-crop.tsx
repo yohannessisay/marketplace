@@ -306,7 +306,7 @@ export default function AddCrop() {
 
       formData.append(
         "discounts",
-        JSON.stringify(discounts.map(({ id, ...rest }) => rest))
+        JSON.stringify(discounts.map(({ ...rest }) => rest))
       );
 
       formData.append("farm_id", data.farmId);

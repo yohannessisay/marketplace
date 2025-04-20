@@ -86,7 +86,7 @@ export default function StepThree() {
       if (
         (userProfile.userType === "agent" &&
           currentStep === "bank_information") ||
-        (userProfile.onboardingStage === "bank_information" &&
+        (userProfile.onboarding_stage === "bank_information" &&
           !isBackButtonClicked)
       ) {
         const response: any = await apiService().post(
@@ -95,7 +95,7 @@ export default function StepThree() {
           isAgent.userType === "agent" && farmer ? farmer.id : ""
         );
         if (response && response.success) {
-          userProfile.onboardingStage = "avatar_image";
+          userProfile.onboarding_stage = "avatar_image";
           saveToLocalStorage("userProfile", userProfile);
           successMessage("Bank details saved successfully!");
           saveToLocalStorage("step-three", data);

@@ -98,7 +98,7 @@ export default function StepFour() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const currentStep: any = getFromLocalStorage("current-step", "");
       if (
-        (userProfile.onboardingStage === "avatar_image" ||
+        (userProfile.onboarding_stage === "avatar_image" ||
           userProfile.userType === "agent") &&
         currentStep === "avatar_image"
       ) {
