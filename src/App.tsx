@@ -27,6 +27,7 @@ import AddCrop from "./pages/farms/add-crop";
 import { initializeChatService } from "./services/chatService";
 import EditBank from "./pages/bank/edit-bank";
 import OrdersPage from "./pages/seller/orders";
+import SellerProfilePage from "./pages/seller/SellerProfilePage";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -117,6 +118,7 @@ const RouterContent: React.FC = () => {
       <Route path="/first-time-user" element={<CreatePassword />} />
       <Route path="/market-place" element={<CoffeeMarketplace />} />
       <Route path="/listing/:id" element={<CoffeeListingPage />} />
+      <Route path="/sellers/:sellerId" element={<SellerProfilePage />} />
 
       {/* Protected Routes */}
       <Route

@@ -5,7 +5,7 @@ import { loginSchema } from "../../types/validation/auth";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
@@ -16,6 +16,7 @@ import { APIErrorResponse } from "@/types/api";
 import { USER_PROFILE_KEY } from "@/types/constants";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
+
 const Login = () => {
   const {
     register,
@@ -25,8 +26,12 @@ const Login = () => {
     resolver: zodResolver(loginSchema),
   });
   const navigate = useNavigate();
+  const location = useLocation();
   const { successMessage, errorMessage } = useNotification();
   const [showPassword, setShowPassword] = useState(false);
+
+  const queryParams = new URLSearchParams(location.search);
+  const redirectTo = queryParams.get("redirectTo");
 
   const onSubmit = async (data: LoginFormInputs) => {
     try {
@@ -40,20 +45,20 @@ const Login = () => {
       Cookies.set("accessToken", access_token, { expires: 1 / 48 });
       Cookies.set("refreshToken", refresh_token, { expires: 1 });
 
-      let redirectTo = "/home";
+      let defaultRedirect = "/home";
       if (user?.userType === "seller") {
         switch (user?.onboarding_stage) {
           case "crops_to_sell":
-            redirectTo = "/onboarding/step-two";
+            defaultRedirect = "/onboarding/step-two";
             break;
           case "bank_information":
-            redirectTo = "/onboarding/step-three";
+            defaultRedirect = "/onboarding/step-three";
             break;
           case "avatar_image":
-            redirectTo = "/onboarding/step-four";
+            defaultRedirect = "/onboarding/step-four";
             break;
           case "completed":
-            redirectTo = "/seller-dashboard";
+            defaultRedirect = "/seller-dashboard";
             break;
           case "farm_profile":
             saveToLocalStorage("current-step", "farm_profile");
@@ -62,23 +67,32 @@ const Login = () => {
             break;
         }
       } else if (user?.userType === "agent") {
-        redirectTo = "/agent/farmer-management";
+        defaultRedirect = "/agent/farmer-management";
       } else if (user?.userType === "buyer") {
         switch (user?.onboarding_stage) {
           case "company_verification":
-            redirectTo = "/company-verification";
+            defaultRedirect = "/company-verification";
             saveToLocalStorage("current-step", "company_verification");
             break;
           case "completed":
-            redirectTo = "/market-place";
+            defaultRedirect = "/market-place";
             break;
           default:
             break;
         }
       }
 
-      navigate(redirectTo);
-      saveToLocalStorage('current-step',user.onboarding_stage);
+      let finalRedirect = defaultRedirect;
+      if (
+        user?.userType !== "seller" &&
+        redirectTo &&
+        isValidRedirect(redirectTo)
+      ) {
+        finalRedirect = redirectTo;
+      }
+
+      navigate(finalRedirect);
+      saveToLocalStorage("current-step", user.onboarding_stage);
       saveToLocalStorage(USER_PROFILE_KEY, user);
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
@@ -91,6 +105,15 @@ const Login = () => {
       } else {
         errorMessage(errorResponse);
       }
+    }
+  };
+
+  const isValidRedirect = (url: string) => {
+    try {
+      const decodedUrl = decodeURIComponent(url);
+      return decodedUrl.startsWith("/") && !decodedUrl.includes("://");
+    } catch {
+      return false;
     }
   };
 

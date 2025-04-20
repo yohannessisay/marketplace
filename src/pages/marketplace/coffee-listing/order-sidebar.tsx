@@ -234,9 +234,11 @@ export function OrderSidebar({
               {listing?.seller?.total_reviews ?? 0} review
               {listing?.seller?.total_reviews !== 1 ? "s" : ""})
             </div>
-            <Button variant="outline" className="w-full mt-2">
-              View Seller Profile
-            </Button>
+            <Link to={`/sellers/${listing?.seller?.id}`}>
+              <Button variant="outline" className="w-full mt-2">
+                View Seller Profile
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       )}

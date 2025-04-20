@@ -78,7 +78,7 @@ export default function Header() {
       path.startsWith(to)
         ? "text-green-700 font-semibold bg-gray-100"
         : "text-gray-600",
-      isMobile && "text-base", // Larger text on mobile for readability
+      isMobile && "text-base",
     );
 
   const handleLogout = () => {
@@ -88,6 +88,9 @@ export default function Header() {
     navigate("/login");
     setIsMenuOpen(false);
   };
+
+  // Construct login URL with redirectTo query parameter
+  const loginUrl = `/login?redirectTo=${encodeURIComponent(location.pathname)}`;
 
   return (
     <header
@@ -208,7 +211,7 @@ export default function Header() {
             ) : (
               <div className="flex gap-2">
                 <Button asChild variant="outline">
-                  <Link to="/login">Login</Link>
+                  <Link to={loginUrl}>Login</Link>
                 </Button>
                 <Button asChild>
                   <Link to="/registration">Sign Up</Link>
@@ -337,7 +340,7 @@ export default function Header() {
                       Marketplace
                     </Link>
                     <Link
-                      to="/login"
+                      to={loginUrl}
                       className={linkClasses("/login")}
                       onClick={() => setIsMenuOpen(false)}
                     >

@@ -8,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface SignUpPromptModalProps {
   open: boolean;
@@ -22,14 +22,17 @@ export function SignUpPromptModal({
   onClose,
 }: SignUpPromptModalProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignUp = () => {
-    navigate("/registration", { state: { from: "/market-place" } });
+    const registrationUrl = `/registration?redirectTo=${encodeURIComponent(location.pathname)}`;
+    navigate(registrationUrl);
     onClose();
   };
 
   const handleSignIn = () => {
-    navigate("/login", { state: { from: "/market-place" } });
+    const loginUrl = `/login?redirectTo=${encodeURIComponent(location.pathname)}`;
+    navigate(loginUrl);
     onClose();
   };
 
