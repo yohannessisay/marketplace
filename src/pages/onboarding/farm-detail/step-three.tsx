@@ -27,6 +27,7 @@ import Header from "@/components/layout/header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
+import { UserProfile } from "@/types/user";
 
 export default function StepThree() {
   const navigation = useNavigate();
@@ -48,6 +49,17 @@ export default function StepThree() {
     },
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    const user = getFromLocalStorage<UserProfile | null>("userProfile", null);
+
+    if (user && user.onboarding_stage !== "bank_information") {
+      if (user.onboarding_stage === "crops_to_sell") {
+        navigation("/onboarding/step-two");
+        return;
+      }
+      navigation("/onboarding/step-one");
+    }
+  }, []);
   // Load saved data from local storage on component mount
   useEffect(() => {
     setIsClient(true);
@@ -76,7 +88,7 @@ export default function StepThree() {
           currentStep === "bank_information") ||
         (userProfile.onboardingStage === "bank_information" &&
           !isBackButtonClicked)
-      ) { 
+      ) {
         const response: any = await apiService().post(
           "/onboarding/seller/bank-information",
           data,
@@ -98,7 +110,7 @@ export default function StepThree() {
       } else {
         const existingBankId = getFromLocalStorage("bank-id", "");
 
-        try { 
+        try {
           const response: any = await apiService().patch(
             "/sellers/banks/update-bank-information",
             { ...data, id: existingBankId },

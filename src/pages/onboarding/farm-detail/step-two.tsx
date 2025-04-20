@@ -46,6 +46,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { UserProfile } from "@/types/user";
 export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
@@ -61,30 +62,36 @@ export default function StepTwo() {
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
-      coffee_variety: "Ethiopian Heirloom",
-      grade: "Grade 1",
-      bean_type: "Green beans",
-      crop_year: "2024",
-      processing_method: "Washed (Wet Process)",
-      moisture_percentage: "11.5%",
-      screen_size: "14",
-      drying_method: "Sun dried on raised beds",
-      wet_mill: "Hand-pulped and fermented",
-      is_organic: "yes",
-      cup_taste_acidity: "Delicate",
-      cup_taste_body: "Heavy",
-      cup_taste_sweetness: "Honey-like",
-      cup_taste_aftertaste: "Long-lasting",
-      cup_taste_balance: "Complex",
-      quantity_kg: "5,000",
-      price_per_kg: "$4.50",
+      coffee_variety: "",
+      grade: "",
+      bean_type: "",
+      crop_year: "",
+      processing_method: "",
+      moisture_percentage: 1,
+      screen_size: 1,
+      drying_method: "",
+      wet_mill: "",
+      is_organic: "",
+      cup_taste_acidity: "",
+      cup_taste_body: "",
+      cup_taste_sweetness: "",
+      cup_taste_aftertaste: "",
+      cup_taste_balance: "",
+      quantity_kg: 1,
+      price_per_kg: 1,
       readiness_date: new Date().toISOString(),
       lot_length: "",
-      delivery_type: "FOB (Free on Board) - Port of Djibouti",
+      delivery_type: "",
       shipping_port: "",
     },
   });
+  useEffect(() => {
+    const user = getFromLocalStorage<UserProfile | null>("userProfile", null);
 
+    if (user && user.onboarding_stage !== "crops_to_sell") {
+      navigation("/onboarding/step-one");
+    }
+  }, []);
   // Load saved data from local storage on component mount
   useEffect(() => {
     setIsClient(true);

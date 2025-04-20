@@ -109,18 +109,18 @@ export default function AddCrop() {
       setIsLoadingFarms(true);
       try {
         const response: any = await apiService().get(
-          "/sellers/farms/get-farms",
+          "/sellers/farms/get-farms"
         );
         if (response.success) {
           const fetchedFarms: Farm[] = response.data.farms || [];
           setFarms(fetchedFarms);
           if (fetchedFarms.length === 0) {
             setFarmError(
-              "No farms found. Please add a farm first to create a crop listing.",
+              "No farms found. Please add a farm first to create a crop listing."
             );
           } else if (farmIdFromQuery && !id) {
             const selectedFarm = fetchedFarms.find(
-              (farm: Farm) => farm.id === farmIdFromQuery,
+              (farm: Farm) => farm.id === farmIdFromQuery
             );
             if (selectedFarm) {
               form.setValue("farmId", farmIdFromQuery, {
@@ -130,7 +130,7 @@ export default function AddCrop() {
             } else {
               console.error("[AddCrop] No farm found for ID:", farmIdFromQuery); // Debug log
               setFarmError(
-                "The farm ID provided in the URL is invalid. Please select a valid farm.",
+                "The farm ID provided in the URL is invalid. Please select a valid farm."
               );
             }
           }
@@ -151,7 +151,7 @@ export default function AddCrop() {
   const populateForm = async (listingId: string) => {
     try {
       const response: any = await apiService().get(
-        `/sellers/listings/get-listing?listingId=${listingId}`,
+        `/sellers/listings/get-listing?listingId=${listingId}`
       );
 
       if (response.success) {
@@ -193,13 +193,13 @@ export default function AddCrop() {
                   doc.doc_url.split("/").pop() || `grading_report_${doc.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id },
+                  { id: doc.id }
                 );
               } catch (err) {
                 console.error(`Error fetching document ${doc.doc_url}:`, err);
                 return null;
               }
-            }),
+            })
           );
           setFiles(filesTemp.filter((f): f is FileWithId => f !== null));
         }
@@ -216,13 +216,13 @@ export default function AddCrop() {
                   photo.photo_url.split("/").pop() || `photo_${photo.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: photo.id, url: photo.photo_url },
+                  { id: photo.id, url: photo.photo_url }
                 );
               } catch (err) {
                 console.error(`Error fetching photo ${photo.photo_url}:`, err);
                 return null;
               }
-            }),
+            })
           );
           setPhotos(photosTemp.filter((p): p is FileWithId => p !== null));
         }
@@ -233,7 +233,7 @@ export default function AddCrop() {
               minimum_quantity_kg: Number(d.minimum_quantity_kg) || 0,
               discount_percentage: Number(d.discount_percentage) || 0,
               id: d.id || Math.random().toString(36).substring(2),
-            })),
+            }))
           );
         }
       } else {
@@ -278,10 +278,10 @@ export default function AddCrop() {
   const handleDiscountChange = (
     id: string,
     field: "minimum_quantity_kg" | "discount_percentage",
-    value: number,
+    value: number
   ) => {
     setDiscounts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
     );
   };
 
@@ -306,7 +306,7 @@ export default function AddCrop() {
 
       formData.append(
         "discounts",
-        JSON.stringify(discounts.map(({ id, ...rest }) => rest)),
+        JSON.stringify(discounts.map(({ id, ...rest }) => rest))
       );
 
       formData.append("farm_id", data.farmId);
@@ -316,14 +316,14 @@ export default function AddCrop() {
         await apiService().patchFormData(
           "/sellers/listings/update-listing",
           formData,
-          true,
+          true
         );
         successMessage("Listing updated successfully!");
       } else {
         await apiService().postFormData(
           "/sellers/listings/create-listing",
           formData,
-          true,
+          true
         );
         successMessage("Listing created successfully!");
       }
@@ -379,8 +379,8 @@ export default function AddCrop() {
                                 isLoadingFarms
                                   ? "Loading farms..."
                                   : farms.length === 0
-                                    ? "No farms available"
-                                    : "Select a farm"
+                                  ? "No farms available"
+                                  : "Select a farm"
                               }
                             />
                           </SelectTrigger>
@@ -414,727 +414,747 @@ export default function AddCrop() {
               />
             </div>
 
-            {/* Step 1: Upload Grading Report */}
-            <div className="mb-8">
-              <Card className="max-w-2xl mx-auto">
-                <CardHeader>
-                  <CardTitle>Upload grading report</CardTitle>
-                  <CardDescription>
-                    Upload PDF documents and images. Drag and drop or click to
-                    select files.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {files.length > 0 && (
-                    <div className="mb-4 space-y-4">
-                      {files.map((file) => (
-                        <Card
-                          key={file.id}
-                          className="p-4 flex items-center justify-between"
-                        >
-                          <div className="flex items-center space-x-4">
-                            <FileText className="h-8 w-8 text-gray-500" />
-                            <div>
-                              <p className="text-sm font-medium">{file.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Grading Report
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFile(file.id, "files")}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                  {files.length === 0 && (
-                    <FileUpload
-                      onFilesSelected={(newFiles) =>
-                        setFiles((prev) => [
-                          ...prev,
-                          ...newFiles.map((f) =>
-                            Object.assign(f, {
-                              id: Math.random().toString(36).substring(2),
-                            }),
-                          ),
-                        ])
-                      }
-                      maxFiles={5}
-                      maxSizeMB={5}
-                    />
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    {files.length > 0
-                      ? `${files.length} file(s) selected`
-                      : "No files selected"}
-                  </div>
-                </CardFooter>
-              </Card>
-              <p className="text-sm text-gray-600 mb-5 mt-4 text-center">
-                Submit your Grading Report to provide a detailed quality
-                assessment of your coffee, including bean size, moisture
-                content, and cup profile.
-              </p>
-            </div>
-
-            {/* Step 2: Check and edit coffee crop information */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">
-                Check and edit coffee crop information
-              </h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Provide details on crop variety, quality, quantity, and base
-                price to help buyers assess availability and cost
-              </p>
-
-              {/* Coffee basic info */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <FormField
-                  control={form.control}
-                  name="coffee_variety"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Coffee variety</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="grade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Initial grading</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="bean_type"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Bean type</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                          }}
-                          value={field.value || ""}
-                          disabled={isLoadingFarms}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select bean type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Green beans">
-                              Green beans
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="crop_year"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Crop year</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Crop specification */}
-              <h3 className="text-lg font-medium mb-4">Crop specification</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <FormField
-                  control={form.control}
-                  name="is_organic"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Is Organic?</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                          }}
-                          value={field.value || ""}
-                          disabled={isLoadingFarms}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select organic status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="true">Yes</SelectItem>
-                            <SelectItem value="false">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="processing_method"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Processing Method</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="moisture_percentage"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Moisture Percentage</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            value={field.value}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="screen_size"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Screen Size</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            value={field.value ?? ""}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const parsedValue =
-                                value === "" ? 1 : Number(value);
-                              field.onChange(parsedValue);
-                            }}
-                            onBlur={field.onBlur}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="drying_method"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Drying Method</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="wet_mill"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Wet Mill</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-              </div>
-
-              {/* Cup taste */}
-              <h3 className="text-lg font-medium mb-4">Cup taste</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <FormField
-                  control={form.control}
-                  name="cup_taste_acidity"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Acidity</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                          }}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select acidity" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Delicate">Delicate</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="cup_taste_body"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Body</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                          }}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select body" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Heavy">Heavy</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="cup_taste_sweetness"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Sweetness</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                          }}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select sweetness" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Honey-like">
-                              Honey-like
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="cup_taste_aftertaste"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Aftertaste</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                          }}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select aftertaste" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Long-lasting">
-                              Long-lasting
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name="cup_taste_balance"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Balance</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                          }}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select balance" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Complex">Complex</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-              </div>
-
-              {/* Coffee crop photos */}
-              <h3 className="text-lg font-medium mb-4">Coffee crop photos</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Upload high-quality images of your coffee crop to create a clear
-                representation. Start with a primary photo that best showcases
-                your crop, then add additional images if needed.
-              </p>
-              <Card className="max-w-2xl mx-auto">
-                <CardHeader>
-                  <CardTitle>Coffee crop photos</CardTitle>
-                  <CardDescription>
-                    Upload images. Drag and drop or click to select files.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {photos.length > 0 && (
-                    <div className="mb-4 flex flex-row flex-wrap gap-4">
-                      {photos.map((photo) => (
-                        <div
-                          key={photo.id}
-                          className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden"
-                        >
-                          <img
-                            src={photo.url || URL.createObjectURL(photo)}
-                            alt={photo.name}
-                            className="w-full h-full object-cover"
-                          />
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6"
-                            onClick={() => handleRemoveFile(photo.id, "photos")}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+            {farmError && farmError === "" ? (
+              <>
+                {/* Step 1: Upload Grading Report */}
+                <div className="mb-8">
+                  <Card className="max-w-2xl mx-auto">
+                    <CardHeader>
+                      <CardTitle>Upload grading report</CardTitle>
+                      <CardDescription>
+                        Upload PDF documents and images. Drag and drop or click
+                        to select files.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {files.length > 0 && (
+                        <div className="mb-4 space-y-4">
+                          {files.map((file) => (
+                            <Card
+                              key={file.id}
+                              className="p-4 flex items-center justify-between"
+                            >
+                              <div className="flex items-center space-x-4">
+                                <FileText className="h-8 w-8 text-gray-500" />
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    {file.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Grading Report
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleRemoveFile(file.id, "files")
+                                }
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </Card>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  <FileUpload
-                    onFilesSelected={(newPhotos) =>
-                      setPhotos((prev) => [
-                        ...prev,
-                        ...newPhotos.map((p) =>
-                          Object.assign(p, {
-                            id: Math.random().toString(36).substring(2),
-                          }),
-                        ),
-                      ])
-                    }
-                    maxFiles={6}
-                    maxSizeMB={5}
-                  />
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    {photos.length > 0
-                      ? `${photos.length} photo(s) selected`
-                      : "No photos selected"}
-                  </div>
-                </CardFooter>
-              </Card>
-            </div>
-
-            {/* Set the price and discounts */}
-            <div className="mb-8">
-              <h3 className="text-lg font-medium mb-2">
-                Set the price and discounts
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Provide details on crop variety, quality, quantity, and base
-                price to help buyers assess availability and cost
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                <FormField
-                  control={form.control}
-                  name="quantity_kg"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Crop Quantity (kg)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          value={field.value}
-                          onChange={(e) =>
-                            field.onChange(Number(e.target.value) || 0)
+                      )}
+                      {files.length === 0 && (
+                        <FileUpload
+                          onFilesSelected={(newFiles) =>
+                            setFiles((prev) => [
+                              ...prev,
+                              ...newFiles.map((f) =>
+                                Object.assign(f, {
+                                  id: Math.random().toString(36).substring(2),
+                                })
+                              ),
+                            ])
                           }
+                          maxFiles={5}
+                          maxSizeMB={5}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="price_per_kg"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Community Base Price per kg</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          value={field.value}
-                          onChange={(e) =>
-                            field.onChange(Number(e.target.value) || 0)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="shipping_port"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Shipping Port</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Discounts section */}
-              <div className="mb-4">
-                <h4 className="text-base font-medium mb-2">Discounts</h4>
-                {discounts.length > 0 && (
-                  <div className="space-y-2">
-                    {discounts.map((discount) => (
-                      <div
-                        key={discount.id}
-                        className="flex items-center gap-2"
-                      >
-                        <Input
-                          type="number"
-                          min={0}
-                          className="w-40"
-                          placeholder="Min. quantity (kg)"
-                          value={discount.minimum_quantity_kg}
-                          onChange={(e) =>
-                            handleDiscountChange(
-                              discount.id,
-                              "minimum_quantity_kg",
-                              Number(e.target.value) || 0,
-                            )
-                          }
-                        />
-                        <span className="mx-2">kg</span>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={100}
-                          className="w-32"
-                          placeholder="Discount (%)"
-                          value={discount.discount_percentage}
-                          onChange={(e) =>
-                            handleDiscountChange(
-                              discount.id,
-                              "discount_percentage",
-                              Number(e.target.value) || 0,
-                            )
-                          }
-                        />
-                        <span className="mx-2">%</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveDiscount(discount.id)}
-                          className="text-red-500"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                      )}
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        {files.length > 0
+                          ? `${files.length} file(s) selected`
+                          : "No files selected"}
                       </div>
-                    ))}
-                  </div>
-                )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                  onClick={handleAddDiscount}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add discount</span>
-                </Button>
-              </div>
-            </div>
+                    </CardFooter>
+                  </Card>
+                  <p className="text-sm text-gray-600 mb-5 mt-4 text-center">
+                    Submit your Grading Report to provide a detailed quality
+                    assessment of your coffee, including bean size, moisture
+                    content, and cup profile.
+                  </p>
+                </div>
 
-            {/* Readiness and Delivery Details */}
-            <div className="mb-8">
-              <h3 className="text-lg font-medium mb-2">
-                Readiness and Delivery Details
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Specify the harvest readiness date, bagging period, and delivery
-                type to inform buyers
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField
-                  control={form.control}
-                  name="readiness_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Readiness date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
+                {/* Step 2: Check and edit coffee crop information */}
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold mb-2">
+                    Check and edit coffee crop information
+                  </h2>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Provide details on crop variety, quality, quantity, and base
+                    price to help buyers assess availability and cost
+                  </p>
+
+                  {/* Coffee basic info */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <FormField
+                      control={form.control}
+                      name="coffee_variety"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Coffee variety</FormLabel>
                           <FormControl>
-                            <Button variant="outline" className="w-full">
-                              {field.value
-                                ? new Date(field.value).toDateString()
-                                : "Pick a date"}
-                            </Button>
+                            <Input {...field} />
                           </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={
-                              field.value ? new Date(field.value) : undefined
-                            }
-                            onSelect={(date) => {
-                              if (date) {
-                                const formatted = date
-                                  .toISOString()
-                                  .slice(0, 10);
-                                field.onChange(formatted);
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="grade"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Initial grading</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="bean_type"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Bean type</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value || ""}
+                              disabled={isLoadingFarms}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select bean type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Green beans">
+                                  Green beans
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="crop_year"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Crop year</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Crop specification */}
+                  <h3 className="text-lg font-medium mb-4">
+                    Crop specification
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <FormField
+                      control={form.control}
+                      name="is_organic"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Is Organic?</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value || ""}
+                              disabled={isLoadingFarms}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select organic status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="true">Yes</SelectItem>
+                                <SelectItem value="false">No</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="processing_method"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Processing Method</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="moisture_percentage"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Moisture Percentage</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                {...field}
+                                value={field.value}
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value) || 0)
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="screen_size"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Screen Size</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                value={field.value ?? ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const parsedValue =
+                                    value === "" ? 1 : Number(value);
+                                  field.onChange(parsedValue);
+                                }}
+                                onBlur={field.onBlur}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="drying_method"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Drying Method</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="wet_mill"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Wet Mill</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  </div>
+
+                  {/* Cup taste */}
+                  <h3 className="text-lg font-medium mb-4">Cup taste</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <FormField
+                      control={form.control}
+                      name="cup_taste_acidity"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Acidity</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select acidity" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Delicate">
+                                  Delicate
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="cup_taste_body"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Body</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select body" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Heavy">Heavy</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="cup_taste_sweetness"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Sweetness</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select sweetness" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Honey-like">
+                                  Honey-like
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="cup_taste_aftertaste"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Aftertaste</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select aftertaste" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Long-lasting">
+                                  Long-lasting
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="cup_taste_balance"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Balance</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select balance" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Complex">Complex</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  </div>
+
+                  {/* Coffee crop photos */}
+                  <h3 className="text-lg font-medium mb-4">
+                    Coffee crop photos
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Upload high-quality images of your coffee crop to create a
+                    clear representation. Start with a primary photo that best
+                    showcases your crop, then add additional images if needed.
+                  </p>
+                  <Card className="max-w-2xl mx-auto">
+                    <CardHeader>
+                      <CardTitle>Coffee crop photos</CardTitle>
+                      <CardDescription>
+                        Upload images. Drag and drop or click to select files.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {photos.length > 0 && (
+                        <div className="mb-4 flex flex-row flex-wrap gap-4">
+                          {photos.map((photo) => (
+                            <div
+                              key={photo.id}
+                              className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden"
+                            >
+                              <img
+                                src={photo.url || URL.createObjectURL(photo)}
+                                alt={photo.name}
+                                className="w-full h-full object-cover"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6"
+                                onClick={() =>
+                                  handleRemoveFile(photo.id, "photos")
+                                }
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <FileUpload
+                        onFilesSelected={(newPhotos) =>
+                          setPhotos((prev) => [
+                            ...prev,
+                            ...newPhotos.map((p) =>
+                              Object.assign(p, {
+                                id: Math.random().toString(36).substring(2),
+                              })
+                            ),
+                          ])
+                        }
+                        maxFiles={6}
+                        maxSizeMB={5}
+                      />
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        {photos.length > 0
+                          ? `${photos.length} photo(s) selected`
+                          : "No photos selected"}
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </div>
+
+                {/* Set the price and discounts */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-medium mb-2">
+                    Set the price and discounts
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Provide details on crop variety, quality, quantity, and base
+                    price to help buyers assess availability and cost
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <FormField
+                      control={form.control}
+                      name="quantity_kg"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Crop Quantity (kg)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              value={field.value}
+                              onChange={(e) =>
+                                field.onChange(Number(e.target.value) || 0)
                               }
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="lot_length"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Lot number</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Optional" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="delivery_type"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>Delivery type</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                          }}
-                          value={field.value || ""}
-                          disabled={isLoadingFarms}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select delivery type" />
-                            </SelectTrigger>
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="FOB (Free on Board) - Port of Djibouti">
-                              FOB (Free on Board) - Port of Djibouti
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-              </div>
-            </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="price_per_kg"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Community Base Price per kg</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              value={field.value}
+                              onChange={(e) =>
+                                field.onChange(Number(e.target.value) || 0)
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="shipping_port"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Shipping Port</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Discounts section */}
+                  <div className="mb-4">
+                    <h4 className="text-base font-medium mb-2">Discounts</h4>
+                    {discounts.length > 0 && (
+                      <div className="space-y-2">
+                        {discounts.map((discount) => (
+                          <div
+                            key={discount.id}
+                            className="flex items-center gap-2"
+                          >
+                            <Input
+                              type="number"
+                              min={0}
+                              className="w-40"
+                              placeholder="Min. quantity (kg)"
+                              value={discount.minimum_quantity_kg}
+                              onChange={(e) =>
+                                handleDiscountChange(
+                                  discount.id,
+                                  "minimum_quantity_kg",
+                                  Number(e.target.value) || 0
+                                )
+                              }
+                            />
+                            <span className="mx-2">kg</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              className="w-32"
+                              placeholder="Discount (%)"
+                              value={discount.discount_percentage}
+                              onChange={(e) =>
+                                handleDiscountChange(
+                                  discount.id,
+                                  "discount_percentage",
+                                  Number(e.target.value) || 0
+                                )
+                              }
+                            />
+                            <span className="mx-2">%</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveDiscount(discount.id)}
+                              className="text-red-500"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                      onClick={handleAddDiscount}
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add discount</span>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Readiness and Delivery Details */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-medium mb-2">
+                    Readiness and Delivery Details
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Specify the harvest readiness date, bagging period, and
+                    delivery type to inform buyers
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="readiness_date"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Readiness date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button variant="outline" className="w-full">
+                                  {field.value
+                                    ? new Date(field.value).toDateString()
+                                    : "Pick a date"}
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={
+                                  field.value
+                                    ? new Date(field.value)
+                                    : undefined
+                                }
+                                onSelect={(date) => {
+                                  if (date) {
+                                    const formatted = date
+                                      .toISOString()
+                                      .slice(0, 10);
+                                    field.onChange(formatted);
+                                  }
+                                }}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lot_length"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Lot number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Optional" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="delivery_type"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel>Delivery type</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value || ""}
+                              disabled={isLoadingFarms}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select delivery type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="FOB (Free on Board) - Port of Djibouti">
+                                  FOB (Free on Board) - Port of Djibouti
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <></>
+            )}
 
             {/* Navigation Buttons */}
             <div className="flex justify-end mb-8">
-              <Button type="submit" disabled={isSubmitting} className="my-4">
+              <Button type="submit" disabled={isSubmitting||farmError!==''} className="my-4">
                 {isSubmitting
                   ? isEditMode
                     ? "Updating..."
                     : "Adding..."
                   : isEditMode
-                    ? "Update Listing"
-                    : "Add Crop Listing"}
+                  ? "Update Listing"
+                  : "Add Crop Listing"}
               </Button>
             </div>
           </form>

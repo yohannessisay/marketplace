@@ -22,13 +22,13 @@ import {
 } from "@/types/validation/seller-onboarding";
 import {
   saveToLocalStorage,
-  getFromLocalStorage,
-  removeFromLocalStorage,
+  getFromLocalStorage, 
 } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useNotification } from "@/hooks/useNotification";
 import Header from "@/components/layout/header";
 import { apiService } from "@/services/apiService";
+import { UserProfile } from "@/types/user";
 
 export default function StepFour() {
   const navigation = useNavigate();
@@ -47,6 +47,21 @@ export default function StepFour() {
       address: "",
     },
   });
+  useEffect(() => {
+    const user = getFromLocalStorage<UserProfile | null>("userProfile", null);
+
+    if (user && user.onboarding_stage !== "avatar_image") {
+      if (user.onboarding_stage === "crops_to_sell") {
+        navigation("/onboarding/step-two");
+        return;
+      }
+      if (user.onboarding_stage === "bank_information") {
+        navigation("/onboarding/step-three");
+        return;
+      }
+      navigation("/onboarding/step-one");
+    }
+  }, []);
   const handleFilesSelected = (selectedFiles: File[]) => {
     const file = selectedFiles[0];
     if (file) {
@@ -65,7 +80,7 @@ export default function StepFour() {
     setIsClient(true);
     const savedData = getFromLocalStorage<ProfileInfoFormData>(
       "step-four",
-      {} as ProfileInfoFormData,
+      {} as ProfileInfoFormData
     );
     if (savedData && Object.keys(savedData).length > 0) {
       form.reset(savedData);
@@ -97,7 +112,7 @@ export default function StepFour() {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
               key,
-              String(data[key as keyof ProfileInfoFormData]),
+              String(data[key as keyof ProfileInfoFormData])
             );
           }
         }
@@ -113,19 +128,12 @@ export default function StepFour() {
           "/onboarding/seller/profile",
           formData,
           true,
-          isAgent.userType === "agent" && farmer ? farmer.id : "",
+          isAgent.userType === "agent" && farmer ? farmer.id : ""
         );
         if (response && response.success) {
-          removeFromLocalStorage("step-one");
-          removeFromLocalStorage("step-two");
-          removeFromLocalStorage("step-three");
-          removeFromLocalStorage("step-four");
-          removeFromLocalStorage("bank-id");
-          removeFromLocalStorage("farm-id");
-          removeFromLocalStorage("crop-id");
-          removeFromLocalStorage("back-button-clicked");
-          removeFromLocalStorage("current-step");
-          removeFromLocalStorage("profile-image");
+          const userProfile = getFromLocalStorage("userProfile", {});
+          localStorage.clear();
+          saveToLocalStorage("userProfile", userProfile);
 
           successMessage("Registration completed successfully!");
           navigation("/seller-dashboard");
@@ -208,7 +216,7 @@ export default function StepFour() {
                           accept="image/*"
                           onChange={(e) => {
                             const selectedFiles = Array.from(
-                              e.target.files || [],
+                              e.target.files || []
                             );
                             handleFilesSelected(selectedFiles);
                           }}
