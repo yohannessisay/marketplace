@@ -187,14 +187,6 @@ const WelcomePage: React.FC = () => {
               <ChevronRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
-
-          <Button
-            variant="outline"
-            size="lg"
-            className="  rounded-lg transition-all duration-200 text-base"
-          >
-            I'll Do This Later
-          </Button>
         </div>
       </main>
 
