@@ -41,13 +41,13 @@ export default function OTPInputPage() {
   const [timer, setTimer] = useState(60);
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
-  
-useEffect(()=>{
-  const email = getFromLocalStorage(SIGNUP_PROFILE_KEY,null);
-if (!email) {
-  navigate("/login")
-}
-},[])
+
+  useEffect(() => {
+    const email = getFromLocalStorage(SIGNUP_PROFILE_KEY, null);
+    if (!email) {
+      navigate("/login");
+    }
+  }, []);
   useEffect(() => {
     const savedExpiration = localStorage.getItem(OTP_TIMER_KEY);
     let interval: NodeJS.Timeout;
@@ -93,9 +93,8 @@ if (!email) {
 
   const onSubmit = async (data: OTPValidationType) => {
     try {
-      const email = getFromLocalStorage(SIGNUP_PROFILE_KEY,null);
+      const email = getFromLocalStorage(SIGNUP_PROFILE_KEY, null);
 
-      
       if (!email) {
         throw {
           error: {
@@ -130,9 +129,9 @@ if (!email) {
   };
 
   const requestNewOTP = async () => {
-    try { 
-      const email =getFromLocalStorage(SIGNUP_PROFILE_KEY,null);
-   
+    try {
+      const email = getFromLocalStorage(SIGNUP_PROFILE_KEY, null);
+
       if (!email) {
         throw {
           error: {

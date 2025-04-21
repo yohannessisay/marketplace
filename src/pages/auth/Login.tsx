@@ -13,7 +13,7 @@ import { useState } from "react";
 import { Eye, EyeOff, MoveLeft } from "lucide-react";
 import { saveToLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
-import { USER_PROFILE_KEY } from "@/types/constants";
+import { SIGNUP_PROFILE_KEY, USER_PROFILE_KEY } from "@/types/constants";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 
@@ -100,6 +100,7 @@ const Login = () => {
         errorResponse.error.details ===
         "Email verification is required for this account"
       ) {
+        saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
         navigate("/otp");
         successMessage("Verify your email to continue");
       } else {

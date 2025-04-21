@@ -38,7 +38,7 @@ export default function CompanyVerification() {
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const userProfile: any = getFromLocalStorage("userProfile", {});
   const form = useForm<CompanyDetails>({
     resolver: zodResolver(buyerOnboardingSchema),
@@ -84,7 +84,7 @@ export default function CompanyVerification() {
       successMessage(
         "Your company verification has been submitted successfully.",
       );
-      navigate("/market-place")
+      navigate("/market-place");
     } catch (error) {
       console.error("Error submitting form:", error);
       errorMessage(error as APIErrorResponse);
@@ -96,9 +96,9 @@ export default function CompanyVerification() {
   return (
     <div className="min-h-screen bg-primary/5 p-8">
       {/* Header */}
-      <Header/ >
+      <Header />
       {/* Main content */}
-      <main className="max-w-3xl mx-auto px-4 py-8">
+      <main className="max-w-3xl mx-auto px-4 py-8 mt-10">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {/* Step 1 */}
