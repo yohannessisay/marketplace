@@ -70,8 +70,8 @@ interface Farm {
   avg_annual_temp: number;
   annual_rainfall_mm: number;
   verification_status: string;
-  created_at: string; // or Date if you parse it
-  created_by_agent_id: string | null; // assuming this can be null
+  created_at: string;
+  created_by_agent_id: string | null;
 }
 interface FileWithId extends File {
   id: string;
@@ -95,27 +95,27 @@ export default function StepTwo() {
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
       farmId: "",
-      coffee_variety: "Ethiopian Heirloom",
-      grade: "Grade 1",
-      bean_type: "Green beans",
-      crop_year: "2024",
-      processing_method: "Washed (Wet Process)",
-      moisture_percentage: 10, // Changed to satisfy min(1)
-      screen_size: 14, // Changed to satisfy min(1)
-      drying_method: "Sun dried on raised beds",
-      wet_mill: "Hand-pulped and fermented",
-      is_organic: "yes",
-      cup_taste_acidity: "Delicate",
-      cup_taste_body: "Heavy",
-      cup_taste_sweetness: "Honey-like",
-      cup_taste_aftertaste: "Long-lasting",
-      cup_taste_balance: "Complex",
-      quantity_kg: 100, // Changed to satisfy min(1)
-      price_per_kg: 5, // Changed to satisfy min(1)
+      coffee_variety: "",
+      grade: "",
+      bean_type: "",
+      crop_year: "",
+      processing_method: "",
+      moisture_percentage: 1,
+      screen_size: 10,
+      drying_method: "",
+      wet_mill: "",
+      is_organic: "",
+      cup_taste_acidity: "",
+      cup_taste_body: "",
+      cup_taste_sweetness: "",
+      cup_taste_aftertaste: "",
+      cup_taste_balance: "",
+      quantity_kg: 1,
+      price_per_kg: 5,
       readiness_date: new Date().toISOString(),
       lot_length: "",
-      delivery_type: "FOB (Free on Board) - Port of Djibouti",
-      shipping_port: "Port of Djibouti", // Changed to satisfy min(1)
+      delivery_type: "",
+      shipping_port: "",
     },
     mode: "onChange",
   });
@@ -212,6 +212,15 @@ export default function StepTwo() {
 
       if (farm) {
         formData.append("farm_id", farm?.id);
+      }
+
+      // Append discounts as a JSON string
+      if (discounts.length > 0) {
+        const formattedDiscounts = discounts.map((discount) => ({
+          minimum_quantity_kg: discount.minimum_quantity_kg,
+          discount_percentage: discount.discount_percentage,
+        }));
+        formData.append("discounts", JSON.stringify(formattedDiscounts));
       }
 
       if (user?.onboarding_stage === "crops_to_sell") {
@@ -436,11 +445,44 @@ export default function StepTwo() {
                   control={form.control}
                   name="crop_year"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Crop year</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Crop Year</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button variant="outline" className="w-full">
+                              {field.value || "Select a year"}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <div className="p-3">
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                              }}
+                              value={field.value}
+                            >
+                              <SelectTrigger className="w-70">
+                                <SelectValue placeholder="Select year" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[300px] overflow-y-auto w-70">
+                                {Array.from({ length: 20 }, (_, i) => {
+                                  const year = new Date().getFullYear() - i;
+                                  return (
+                                    <SelectItem
+                                      key={year}
+                                      value={year.toString()}
+                                    >
+                                      {year}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -559,7 +601,7 @@ export default function StepTwo() {
 
               {/* Cup taste */}
               <h3 className="text-lg font-medium mb-4">Cup taste</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-Environmentals grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <FormField
                   control={form.control}
                   name="cup_taste_acidity"
@@ -694,30 +736,6 @@ export default function StepTwo() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {photos.length > 0 && (
-                    <div className="mb-4 flex flex-row flex-wrap gap-4">
-                      {photos.map((photo) => (
-                        <div
-                          key={photo.id}
-                          className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden"
-                        >
-                          <img
-                            src={photo.url || URL.createObjectURL(photo)}
-                            alt={photo.name}
-                            className="w-full h-full object-cover"
-                          />
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6"
-                            onClick={() => handleRemoveFile(photo.id, "photos")}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                   <FileUpload
                     onFilesSelected={handlePhotosSelected}
                     maxFiles={6}

@@ -47,7 +47,7 @@ export default function StepFour() {
   const [profileInfo, setProfileInfo] = useState<ProfileInfo | undefined>();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { successMessage, errorMessage } = useNotification();
 
   const form = useForm<ProfileInfoFormData>({
@@ -138,7 +138,11 @@ export default function StepFour() {
         removeFromLocalStorage("back-button-clicked");
         removeFromLocalStorage("current-step");
         removeFromLocalStorage("profile-image");
-
+        removeFromLocalStorage("userProfile");
+        setUser({
+          ...user!,
+          onboarding_stage: "completed",
+        });
         successMessage("Registration completed successfully!");
         navigation("/seller-dashboard");
       } else {

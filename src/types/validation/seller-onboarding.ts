@@ -3,8 +3,14 @@ import { z } from "zod";
 export const farmDetailsSchema = z
   .object({
     region: z.string().min(1, "Region is required"),
-    longitude: z.number().min(1, "Longitude is required"),
-    latitude: z.number().min(1, "Latitude is required"),
+    longitude: z
+      .number()
+      .min(33, "Longitude must be within Ethiopia (33°E to 48°E)")
+      .max(48, "Longitude must be within Ethiopia (33°E to 48°E)"),
+    latitude: z
+      .number()
+      .min(3, "Latitude must be within Ethiopia (3°N to 15°N)")
+      .max(15, "Latitude must be within Ethiopia (3°N to 15°N)"),
     crop_type: z.string().min(1, "Crop type is required"),
     crop_source: z.string().min(1, "Crop source is required"),
     origin: z.string().min(1, "Origin is required"),
@@ -14,18 +20,38 @@ export const farmDetailsSchema = z
     farm_name: z.string().min(1, "Farm name is required"),
     town_location: z.string().min(1, "Town location is required"),
     country: z.string().min(1, "Country is required"),
-    total_size_hectares: z.number().min(1, "Total size is required"),
-    coffee_area_hectares: z.number().min(1, "Coffee area is required"),
-    altitude_meters: z.number().min(1, "Altitude is required"),
-    capacity_kg: z.number().min(1, "Capacity is required"),
+    total_size_hectares: z
+      .number()
+      .min(0.1, "Minimum farm size is 0.1 hectares")
+      .max(10000, "Maximum farm size is 10,000 hectares"),
+    coffee_area_hectares: z
+      .number()
+      .min(0.1, "Minimum coffee area is 0.1 hectares")
+      .max(10000, "Maximum coffee area is 10,000 hectares"),
+    altitude_meters: z
+      .number()
+      .min(500, "Minimum altitude for coffee is 500m")
+      .max(3000, "Maximum altitude for coffee is 3000m"),
+    capacity_kg: z
+      .number()
+      .min(1, "Minimum capacity is 1kg")
+      .max(1000000, "Maximum capacity is 1,000,000kg"),
     avg_annual_temp: z
       .number()
-      .min(1, "Average annual temperature is required"),
-    annual_rainfall_mm: z.number().min(1, "Annual rainfall is required"),
+      .min(15, "Minimum average temperature is 15°C")
+      .max(30, "Maximum average temperature is 30°C"),
+    annual_rainfall_mm: z
+      .number()
+      .min(600, "Minimum annual rainfall is 600mm")
+      .max(3000, "Maximum annual rainfall is 3000mm"),
   })
   .refine((data) => data.coffee_area_hectares <= data.total_size_hectares, {
     message: "Coffee area cannot be greater than total farm size",
     path: ["coffee_area_hectares"],
+  })
+  .refine((data) => data.country.toLowerCase() === "ethiopia", {
+    message: "Currently only Ethiopian farms are supported",
+    path: ["country"],
   });
 
 export type FarmDetailsFormData = z.infer<typeof farmDetailsSchema>;

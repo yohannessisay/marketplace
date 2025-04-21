@@ -1,8 +1,9 @@
-import { Award } from 'lucide-react'
-import { CoffeeListing } from "@/types/coffee"
+import { Award, Star } from "lucide-react";
+import { CoffeeListing } from "@/types/coffee";
+import { Badge } from "@/components/ui/badge";
 
 interface CupProfileProps {
-  listing: CoffeeListing|null
+  listing: CoffeeListing | null;
 }
 
 export function CupProfile({ listing }: CupProfileProps) {
@@ -17,65 +18,81 @@ export function CupProfile({ listing }: CupProfileProps) {
           <div className="text-xs text-muted-foreground">Cup Score</div>
         </div>
       </div>
-      
-      <div className="grid grid-cols-2 gap-6">
+
+      <div className="grid grid-cols-2 gap-6 pt-3">
+        <div className="flex items-start space-x-3">
+          <div className="mt-1">
+            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+          </div>
+          <Badge
+            variant="outline"
+            className="bg-yellow-100 text-yellow-800 border-0"
+          >
+            <Star size={16} className="mr-1 text-yellow-500 fill-current" />
+            {listing?.grade}
+          </Badge>
+        </div>
+
         <div className="flex items-start space-x-3">
           <div className="mt-1">
             <div className="w-3 h-3 rounded-full bg-red-400"></div>
           </div>
           <div>
             <h4 className="text-sm font-medium">Acidity</h4>
-            <p className="text-sm text-muted-foreground">{listing?.cup_taste_acidity}</p>
+            <p className="text-sm text-muted-foreground">
+              {listing?.cup_taste_acidity}
+            </p>
           </div>
         </div>
-        
+
         <div className="flex items-start space-x-3">
           <div className="mt-1">
             <div className="w-3 h-3 rounded-full bg-blue-400"></div>
           </div>
           <div>
             <h4 className="text-sm font-medium">Body</h4>
-            <p className="text-sm text-muted-foreground">{listing?.cup_taste_body}</p>
+            <p className="text-sm text-muted-foreground">
+              {listing?.cup_taste_body}
+            </p>
           </div>
         </div>
-        
+
         <div className="flex items-start space-x-3">
           <div className="mt-1">
             <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
           </div>
           <div>
             <h4 className="text-sm font-medium">Sweetness</h4>
-            <p className="text-sm text-muted-foreground">{listing?.cup_taste_sweetness}</p>
+            <p className="text-sm text-muted-foreground">
+              {listing?.cup_taste_sweetness}
+            </p>
           </div>
         </div>
-        
+
         <div className="flex items-start space-x-3">
           <div className="mt-1">
             <div className="w-3 h-3 rounded-full bg-purple-400"></div>
           </div>
           <div>
             <h4 className="text-sm font-medium">Aftertaste</h4>
-            <p className="text-sm text-muted-foreground">{listing?.cup_taste_aftertaste}</p>
+            <p className="text-sm text-muted-foreground">
+              {listing?.cup_taste_aftertaste}
+            </p>
           </div>
         </div>
-        
-        <div className="flex items-start space-x-3">
-          <div className="mt-1">
-            <div className="w-3 h-3 rounded-full bg-green-400"></div>
-          </div>
-         
-        </div>
-        
+
         <div className="flex items-start space-x-3">
           <div className="mt-1">
             <div className="w-3 h-3 rounded-full bg-violet-400"></div>
           </div>
           <div>
             <h4 className="text-sm font-medium">Balance</h4>
-            <p className="text-sm text-muted-foreground">{listing?.cup_taste_balance}</p>
+            <p className="text-sm text-muted-foreground">
+              {listing?.cup_taste_balance}
+            </p>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

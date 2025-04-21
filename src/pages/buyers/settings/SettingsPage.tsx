@@ -68,6 +68,9 @@ export default function SettingsPage() {
   const [isAccountSubmitting, setIsAccountSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [kycDocuments, setKYCDocuments] = useState<any[]>([]);
+  const [isLoadingKYCDocuments, setIsLoadingKYCDocuments] = useState(false);
+  const [kycDocsFetched, setKycDocsFetched] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   const { user, loading, setUser } = useAuth();
 
@@ -116,10 +119,33 @@ export default function SettingsPage() {
         phone: user.phone,
         files: undefined,
       });
-      // Clear previewImage to ensure user.avatar_url is used
       setPreviewImage(null);
     }
   }, [user, profileForm, accountForm]);
+
+  useEffect(() => {
+    if (activeTab === "account" && user && !kycDocsFetched) {
+      const fetchKYCDocuments = async () => {
+        setIsLoadingKYCDocuments(true);
+        try {
+          const response: any = await apiService().get(
+            "/buyers/profile/get-kyc-docs",
+          );
+          if (response.success) {
+            setKYCDocuments(response.data.documents);
+            setKycDocsFetched(true);
+          } else {
+            throw new Error("Failed to fetch KYC documents");
+          }
+        } catch (error) {
+          errorMessage(error as APIErrorResponse);
+        } finally {
+          setIsLoadingKYCDocuments(false);
+        }
+      };
+      fetchKYCDocuments();
+    }
+  }, [activeTab, user, errorMessage, kycDocsFetched]);
 
   const onProfileSubmit = async (data: ProfileDetails) => {
     setIsProfileSubmitting(true);
@@ -245,7 +271,6 @@ export default function SettingsPage() {
           ...data,
           files: undefined,
         });
-        // Set previewImage to new avatar_url to ensure immediate UI update
         setPreviewImage(newAvatarUrl);
       } else {
         throw new Error("Failed to update account");
@@ -630,6 +655,53 @@ export default function SettingsPage() {
                                   )}
                                 />
                               </div>
+                            </CardContent>
+                          </Card>
+                          <Card className="md:col-span-2">
+                            <CardContent className="p-6">
+                              <div className="mb-4">
+                                <h4 className="font-medium mb-2">
+                                  KYC Documents
+                                </h4>
+                                <p className="text-sm text-gray-500">
+                                  Your uploaded KYC documents
+                                </p>
+                              </div>
+                              {isLoadingKYCDocuments ? (
+                                <div className="text-center text-gray-500">
+                                  Loading KYC documents...
+                                </div>
+                              ) : kycDocuments.length === 0 ? (
+                                <div className="text-center text-gray-500">
+                                  No KYC documents uploaded
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                  {kycDocuments.map((doc) => (
+                                    <div
+                                      key={doc.id}
+                                      className="border rounded-lg p-4 flex flex-col items-center"
+                                    >
+                                      <img
+                                        src={doc.doc_url}
+                                        alt={doc.doc_type}
+                                        className="w-full h-32 object-cover rounded-md mb-2"
+                                      />
+                                      <p className="text-sm font-medium">
+                                        {doc.doc_type}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {doc.verified ? "Verified" : "Pending"}
+                                      </p>
+                                      {doc.note && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Note: {doc.note}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         </div>

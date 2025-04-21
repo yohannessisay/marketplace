@@ -45,7 +45,7 @@ export function CoffeeDetails({
   const user = getUserProfile();
 
   const handleFetchMessages = async () => {
-    if (!user || !listing || !listing.id) return;
+    if (!listing || !listing.id) return;
 
     try {
       const senderId = getUserId();
@@ -80,8 +80,7 @@ export function CoffeeDetails({
   };
 
   useEffect(() => {
-    if (!user || !listing || !listing.id) return;
-
+    if (!listing || !listing.id) return;
     handleFetchMessages();
 
     chatService().connect();
@@ -109,14 +108,9 @@ export function CoffeeDetails({
       unsubscribe();
       chatService().disconnect();
     };
-  }, [listing?.id, user]);
+  }, [listing?.id]);
 
   const handleSendMessage = async () => {
-    if (!user) {
-      onRequireAuth();
-      return;
-    }
-
     if (!chatMessage.trim() || !listing) return;
 
     try {

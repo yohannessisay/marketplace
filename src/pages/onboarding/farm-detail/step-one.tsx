@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -38,27 +37,22 @@ import { useNavigate } from "react-router-dom";
 import { FileUpload } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
+import { FileIcon, X } from "lucide-react";
+import { APIErrorResponse } from "@/types/api";
 
 export default function StepOne() {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
-  const [govFiles, setGovFiles] = useState<File[]>([]);
-  const [landFiles, setLandFiles] = useState<File[]>([]);
+  const [govFile, setGovFile] = useState<File | null>(null);
+  const [landFile, setLandFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [govFileError, setGovFileError] = useState<string>("");
+  const [landFileError, setLandFileError] = useState<string>("");
   const userProfile = localStorage.getItem("userProfile");
   const parsed = userProfile ? JSON.parse(userProfile) : null;
   const currentUserStage = parsed?.onboarding_stage;
 
-  const handleGovFilesSelected = (selectedFiles: File[]) => {
-    setGovFiles((prev) => [...prev, ...selectedFiles]);
-  };
-
-  const handleLandFilesSelected = (selectedFiles: File[]) => {
-    setLandFiles((prev) => [...prev, ...selectedFiles]);
-  };
-
-  // Initialize form with default values or values from local storage
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
@@ -74,32 +68,103 @@ export default function StepOne() {
       farm_name: "",
       town_location: "",
       country: "",
-      total_size_hectares: 1,
-      coffee_area_hectares: 1,
+      total_size_hectares: 0,
+      coffee_area_hectares: 0,
       altitude_meters: 0,
-      capacity_kg: 1,
-      avg_annual_temp: 1,
+      capacity_kg: 0,
+      avg_annual_temp: 0,
       annual_rainfall_mm: 0,
     },
   });
 
   const { reset } = form;
 
-  // Load saved data from local storage on component mount
   useEffect(() => {
     setIsClient(true);
     const savedData = getFromLocalStorage<FarmDetailsFormData>(
       "step-one",
-      {} as FarmDetailsFormData
+      {} as FarmDetailsFormData,
     );
     if (savedData && Object.keys(savedData).length > 0) {
       reset(savedData);
     }
   }, [reset]);
+  const validateFiles = (): { isValid: boolean; error?: APIErrorResponse } => {
+    setGovFileError("");
+    setLandFileError("");
+
+    if (!govFile) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Government registration document is required",
+          details: "Please upload the government registration document",
+          code: 400,
+          hint: "The file must be in PDF, JPG, or PNG format",
+        },
+      };
+      setGovFileError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    if (!landFile) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Land rights document is required",
+          details: "Please upload the land rights document",
+          code: 400,
+          hint: "The file must be in PDF, JPG, or PNG format",
+        },
+      };
+      setLandFileError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    if (govFile.size > 5 * 1024 * 1024) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Government document exceeds 5MB",
+          details: "File size must be less than 5MB",
+          code: 413,
+          hint: "Compress the file or upload a smaller version",
+        },
+      };
+      setGovFileError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    if (landFile.size > 5 * 1024 * 1024) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Land rights document exceeds 5MB",
+          details: "File size must be less than 5MB",
+          code: 413,
+          hint: "Compress the file or upload a smaller version",
+        },
+      };
+      setLandFileError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    return { isValid: true };
+  };
 
   const onSubmit = async (data: FarmDetailsFormData) => {
     setIsSubmitting(true);
     try {
+      const validation = validateFiles();
+      if (!validation.isValid) {
+        setIsSubmitting(false);
+        return;
+      }
+
       const isAgent = parsed.userType;
       const farmer: any = getFromLocalStorage("farmer-profile", {});
       const formData = new FormData();
@@ -110,33 +175,28 @@ export default function StepOne() {
         }
       }
 
-      landFiles.forEach((file) => {
-        formData.append("files", file);
-      });
-      govFiles.forEach((file) => {
-        formData.append("files", file);
-      });
+      formData.append("files", govFile!);
+      formData.append("files", landFile!);
 
       const isBackButtonClicked = getFromLocalStorage(
         "back-button-clicked",
-        false
+        false,
       );
+
       if (
         (currentUserStage === "farm_profile" || isAgent === "agent") &&
         (getFromLocalStorage("current-step", "") as string) ===
           "farm_profile" &&
         !isBackButtonClicked
       ) {
-        let response: { success: boolean; data?: { farm: { id: string } } } = {
-          success: false,
-        };
-        response = await apiService().postFormData(
+        const response: any = await apiService().postFormData(
           "/onboarding/seller/farm-details",
           formData,
           true,
-          isAgent === "agent" && farmer ? farmer.id : ""
+          isAgent === "agent" && farmer ? farmer.id : "",
         );
-        if (response && response.success) {
+
+        if (response?.success) {
           parsed.onboarding_stage = "crops_to_sell";
           saveToLocalStorage("userProfile", parsed);
           saveToLocalStorage("step-one", data);
@@ -148,36 +208,33 @@ export default function StepOne() {
           saveToLocalStorage("is-back-button-clicked", "false");
           localStorage.setItem("current-step", JSON.stringify("crops_to_sell"));
         } else {
-          errorMessage("Failed to save farm details");
+          errorMessage(response?.error as APIErrorResponse);
         }
       } else {
         const existingFarmId = getFromLocalStorage("farm-id", "");
         formData.append("farmId", existingFarmId);
+
         try {
           const response: any = await apiService().patchFormData(
             "/sellers/farms/update-farm",
             formData,
             true,
-            isAgent === "agent" && farmer ? farmer.id : ""
+            isAgent === "agent" && farmer ? farmer.id : "",
           );
+
           if (response.success) {
             saveToLocalStorage("is-back-button-clicked", "false");
             navigate("/onboarding/step-two");
-            successMessage("Farm data updated");
+            successMessage("Farm data updated successfully!");
+          } else {
+            errorMessage(response.error as APIErrorResponse);
           }
-        } catch {
-          errorMessage("Something went wrong, please try again");
+        } catch (error: any) {
+          errorMessage(error as APIErrorResponse);
         }
       }
-
-      setIsSubmitting(false);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      errorMessage(
-        error?.message || "An error occurred while saving farm details"
-      );
-      setIsSubmitting(false);
+      errorMessage(error as APIErrorResponse);
     } finally {
       saveToLocalStorage("step-one", data);
       setIsSubmitting(false);
@@ -185,7 +242,7 @@ export default function StepOne() {
   };
 
   if (!isClient) {
-    return null; // Or a loading indicator
+    return null;
   }
 
   return (
@@ -195,7 +252,7 @@ export default function StepOne() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 shadow-lg px-8  rounded-md py-4 bg-white"
+          className="space-y-8 shadow-lg px-8 rounded-md py-4 bg-white"
         >
           {/* Document Upload Section */}
           <div className="mb-10">
@@ -215,22 +272,49 @@ export default function StepOne() {
                 <CardHeader>
                   <CardTitle>Government registration document</CardTitle>
                   <CardDescription>
-                    Upload PDF documents and images. Drag and drop or click to
-                    select files.
+                    Upload PDF documents or images (Max 1 file, 5MB)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FileUpload
-                    onFilesSelected={handleGovFilesSelected}
-                    maxFiles={5}
-                    maxSizeMB={5}
-                  />
+                  {govFile ? (
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileIcon className="h-5 w-5 text-gray-500" />
+                        <span className="text-sm truncate max-w-[200px]">
+                          {govFile.name}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setGovFile(null);
+                          setGovFileError("");
+                        }}
+                        className="h-8 w-8"
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <FileUpload
+                      onFilesSelected={(files) => {
+                        if (files.length > 0) {
+                          setGovFile(files[0]);
+                          setGovFileError("");
+                        }
+                      }}
+                      maxFiles={1}
+                      maxSizeMB={5}
+                    />
+                  )}
+                  {govFileError && (
+                    <p className="text-red-500 text-sm mt-2">{govFileError}</p>
+                  )}
                 </CardContent>
-                <CardFooter className="flex justify-between">
+                <CardFooter>
                   <div className="text-sm text-muted-foreground">
-                    {govFiles.length > 0
-                      ? `${govFiles.length} file(s) selected`
-                      : "No files selected"}
+                    {govFile ? "1 file selected" : "No file selected"}
                   </div>
                 </CardFooter>
               </Card>
@@ -239,22 +323,49 @@ export default function StepOne() {
                 <CardHeader>
                   <CardTitle>Land right documents</CardTitle>
                   <CardDescription>
-                    Upload PDF documents and images. Drag and drop or click to
-                    select files.
+                    Upload PDF documents or images (Max 1 file, 5MB)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FileUpload
-                    onFilesSelected={handleLandFilesSelected}
-                    maxFiles={5}
-                    maxSizeMB={5}
-                  />
+                  {landFile ? (
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileIcon className="h-5 w-5 text-gray-500" />
+                        <span className="text-sm truncate max-w-[200px]">
+                          {landFile.name}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setLandFile(null);
+                          setLandFileError("");
+                        }}
+                        className="h-8 w-8"
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <FileUpload
+                      onFilesSelected={(files) => {
+                        if (files.length > 0) {
+                          setLandFile(files[0]);
+                          setLandFileError("");
+                        }
+                      }}
+                      maxFiles={1}
+                      maxSizeMB={5}
+                    />
+                  )}
+                  {landFileError && (
+                    <p className="text-red-500 text-sm mt-2">{landFileError}</p>
+                  )}
                 </CardContent>
-                <CardFooter className="flex justify-between">
+                <CardFooter>
                   <div className="text-sm text-muted-foreground">
-                    {landFiles.length > 0
-                      ? `${landFiles.length} file(s) selected`
-                      : "No files selected"}
+                    {landFile ? "1 file selected" : "No file selected"}
                   </div>
                 </CardFooter>
               </Card>
@@ -665,7 +776,7 @@ export default function StepOne() {
 
           {/* Navigation Buttons */}
           <div className="flex justify-end mb-8">
-            <Button type="submit" disabled={isSubmitting} className=" my-4">
+            <Button type="submit" disabled={isSubmitting} className="my-4">
               {isSubmitting ? "Saving..." : "Save and continue"}
             </Button>
           </div>

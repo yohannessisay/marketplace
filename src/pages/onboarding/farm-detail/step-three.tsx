@@ -28,6 +28,7 @@ import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
+
 interface BankAccount {
   id: string;
   bank_name: string;
@@ -39,11 +40,15 @@ interface BankAccount {
   created_at: string;
   updated_at: string;
 }
+
 export default function StepThree() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
   const [bankAccount, setBankAccount] = useState<BankAccount>();
   const { successMessage, errorMessage } = useNotification();
+  const { user, setUser } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<BankInfoFormData>({
     resolver: zodResolver(bankInfoSchema),
     defaultValues: {
@@ -55,7 +60,6 @@ export default function StepThree() {
       swift_code: "",
     },
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchBankAccount = async () => {
     try {
@@ -65,19 +69,16 @@ export default function StepThree() {
       );
       setBankAccount(response.data.bank_account);
     } catch (error: any) {
-      errorMessage(error as APIErrorResponse);
+      console.error(error.error.message);
     }
   };
 
   useEffect(() => {
     setIsClient(true);
-    fetchBankAccount();
-  }, []);
-
-  const { user, setUser } = useAuth();
-  if (!user) {
-    return;
-  }
+    if (user && user.onboarding_stage !== "completed") {
+      fetchBankAccount();
+    }
+  }, [user]);
 
   const onSubmit = async (data: BankInfoFormData) => {
     try {
@@ -94,7 +95,7 @@ export default function StepThree() {
         );
 
         setUser({
-          ...user,
+          ...user!,
           onboarding_stage: "avatar_image",
         });
 
@@ -123,21 +124,20 @@ export default function StepThree() {
     navigation("/onboarding/step-two");
   };
 
-  if (!isClient) {
-    return null; // Prevent hydration errors
+  if (!isClient || !user) {
+    return null; // Prevent hydration errors and handle unauthenticated state
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <Header></Header>
-      {/* Main Content */}
+      <Header />
       <main className="container mx-auto p-6">
         <Stepper currentStep={3} />
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 shadow-lg px-8  rounded-md py-4"
+            className="space-y-8 shadow-lg px-8 rounded-md py-4"
           >
             <div className="mb-10">
               <div className="mb-6">
@@ -264,12 +264,11 @@ export default function StepThree() {
               </Card>
             </div>
 
-            {/* Navigation Buttons */}
             <div className="flex justify-between mb-8">
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button type="submit" disabled={isSubmitting} className=" my-4">
+              <Button type="submit" disabled={isSubmitting} className="my-4">
                 {isSubmitting ? "Saving..." : "Save and continue"}
               </Button>
             </div>

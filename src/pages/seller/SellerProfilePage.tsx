@@ -421,101 +421,102 @@ export default function SellerProfilePage() {
             </Tabs>
           </div>
 
-          <div className="lg:col-span-1">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-medium mb-4">Contact Seller</h3>
-
-                {(!user || user?.userType !== "seller") && (
-                  <div className="mt-4">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg flex items-center">
-                        <MessageCircle
-                          size={20}
-                          className="mr-2 text-primary"
-                        />
-                        Chat with Seller
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-60 overflow-y-auto mb-4 flex flex-col-reverse">
-                        {chatMessages.length === 0 ? (
-                          <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
-                            {user
-                              ? "No messages yet. Start a conversation with the seller."
-                              : "Sign up to message the seller."}
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {chatMessages.map((message) => (
-                              <div
-                                key={message.id}
-                                className={`flex ${
+          {user?.userType === "seller" || user?.userType === "agent" ? null : (
+            <>
+              <div className="mt-4">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center">
+                    <MessageCircle size={20} className="mr-2 text-primary" />
+                    Chat with Seller
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-60 overflow-y-auto mb-4 flex flex-col-reverse">
+                    {chatMessages.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
+                        {user
+                          ? "No messages yet. Start a conversation with the seller."
+                          : "Sign in to message the seller."}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {chatMessages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`flex ${
+                              message.sender === "buyer"
+                                ? "justify-end"
+                                : "justify-start"
+                            }`}
+                          >
+                            <div
+                              className={`max-w-xs lg:max-w-md rounded-lg px-4 py-2 ${
+                                message.sender === "buyer"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-foreground"
+                              }`}
+                            >
+                              <p className="text-sm">{message.message}</p>
+                              <p
+                                className={`text-xs mt-1 ${
                                   message.sender === "buyer"
-                                    ? "justify-end"
-                                    : "justify-start"
+                                    ? "text-primary-foreground/70"
+                                    : "text-muted-foreground"
                                 }`}
                               >
-                                <div
-                                  className={`max-w-xs lg:max-w-md rounded-lg px-4 py-2 ${
-                                    message.sender === "buyer"
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-muted text-foreground"
-                                  }`}
-                                >
-                                  <p className="text-sm">{message.message}</p>
-                                  <p
-                                    className={`text-xs mt-1 ${
-                                      message.sender === "buyer"
-                                        ? "text-primary-foreground/70"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {message.timestamp}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
+                                {message.timestamp}
+                              </p>
+                            </div>
                           </div>
-                        )}
+                        ))}
                       </div>
-                      <div className="flex">
-                        <Input
-                          value={chatMessage}
-                          onChange={(e) => setChatMessage(e.target.value)}
-                          onKeyPress={handleKeyPress}
-                          placeholder={
-                            user
-                              ? "Type your message..."
-                              : "Sign up to send a message"
-                          }
-                          className="flex-1"
-                          disabled={
-                            !user ||
-                            (user?.onboarding_stage !== "completed" &&
-                              user?.userType !== "seller")
-                          }
-                          onClick={() => !user && setIsSignUpModalOpen(true)}
-                        />
-                        <Button
-                          onClick={handleSendMessage}
-                          className="ml-3"
-                          disabled={
-                            chatMessage === "" ||
-                            !user ||
-                            (user?.onboarding_stage !== "completed" &&
-                              user?.userType !== "seller")
-                          }
-                        >
-                          <Send size={16} />
-                        </Button>
-                      </div>
-                    </CardContent>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+
+                  {/* Chat input area - different states */}
+                  {!user ? (
+                    <div className="space-y-3">
+                      <Input
+                        placeholder="Sign in to send a message"
+                        disabled
+                        className="cursor-not-allowed"
+                      />
+                      <Button
+                        className="w-full"
+                        onClick={() => setIsSignUpModalOpen(true)}
+                      >
+                        Sign In to Chat
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex">
+                      <Input
+                        value={chatMessage}
+                        onChange={(e) => setChatMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Type your message..."
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleSendMessage}
+                        className="ml-3"
+                        disabled={chatMessage === ""}
+                      >
+                        <Send size={16} />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </div>
+              <div className="lg:col-span-1">
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-medium mb-4">Contact Seller</h3>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </div>
       </main>
 

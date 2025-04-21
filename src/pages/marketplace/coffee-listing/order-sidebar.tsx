@@ -208,40 +208,39 @@ export function OrderSidebar({
             </CardContent>
           </Card>
         )}
-      {(!user || user?.userType !== "seller") && (
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="text-lg font-medium mb-4">About the Seller</h3>
-            <div className="flex items-center mb-2">
-              <img
-                src={listing?.seller?.avatar_url_csv || "/placeholder.svg"}
-                alt="Seller Avatar"
-                className="w-10 h-10 rounded-full mr-3"
-              />
-              <div>
-                <div className="font-semibold">
-                  {listing?.seller?.first_name} {listing?.seller?.last_name}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {listing?.seller?.email}
-                </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="text-lg font-medium mb-4">About the Seller</h3>
+          <div className="flex items-center mb-2">
+            <img
+              src={listing?.seller?.avatar_url_csv || "/placeholder.svg"}
+              alt="Seller Avatar"
+              className="w-10 h-10 rounded-full mr-3"
+            />
+            <div>
+              <div className="font-semibold">
+                {listing?.seller?.first_name} {listing?.seller?.last_name}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {listing?.seller?.email}
               </div>
             </div>
-            <div className="text-sm text-muted-foreground mb-2 pt-2">
-              <b className="font-bold mr-1">Rating:</b>{" "}
-              {listing?.seller?.rating ?? 0}
-              <span className="ml-1 mr-1">⭐</span>(
-              {listing?.seller?.total_reviews ?? 0} review
-              {listing?.seller?.total_reviews !== 1 ? "s" : ""})
-            </div>
-            <Link to={`/sellers/${listing?.seller?.id}`}>
-              <Button variant="outline" className="w-full mt-2">
-                View Seller Profile
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          <div className="text-sm text-muted-foreground mb-2 pt-2">
+            <b className="font-bold mr-1">Rating:</b>{" "}
+            {listing?.seller?.rating ?? 0}
+            <span className="ml-1 mr-1">⭐</span>(
+            {listing?.seller?.total_reviews ?? 0} review
+            {listing?.seller?.total_reviews !== 1 ? "s" : ""})
+          </div>
+          <Link to={`/sellers/${listing?.seller?.id}`}>
+            <Button variant="outline" className="w-full mt-2">
+              View Seller Profile
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       {user?.userType === "seller" && listing?.seller.id === user?.id && (
         <Card>

@@ -98,7 +98,6 @@ export interface CoffeeListing {
   farm: Farm;
   seller: Seller;
   coffee_photo: CoffeePhoto[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   listing_discount: any[];
 }
 

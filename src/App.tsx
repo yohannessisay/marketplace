@@ -28,6 +28,7 @@ import { initializeChatService } from "./services/chatService";
 import EditBank from "./pages/bank/edit-bank";
 import OrdersPage from "./pages/seller/orders";
 import SellerProfilePage from "./pages/seller/SellerProfilePage";
+import { config } from "./lib/config";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -43,17 +44,8 @@ const CompanyOnboarding = lazy(
   () => import("./pages/company/company-onboarding"),
 );
 
-const baseURL = import.meta.env.VITE_API_BASE_URL;
-const socketURL = import.meta.env.VITE_SOCKET_URL;
-
-if (!baseURL || !socketURL) {
-  console.error(
-    "VITE_API_BASE_URL or VITE_SOCKET_URL are missing from the environment",
-  );
-} else {
-  initializeApiService(baseURL);
-  initializeChatService(socketURL);
-}
+initializeApiService(config.VITE_API_BASE_URL);
+initializeChatService(config.VITE_SOCKET_URL);
 
 const Loading = () => (
   <div className="flex items-center justify-center h-screen">
