@@ -168,19 +168,20 @@ export default function Header() {
                       <ShoppingBagIcon className="h-4 w-4 text-green-400" />
                       My Orders
                     </Link>
-                    <Link
-                      to="/market-place"
-                      className={linkClasses("/market-place")}
-                    >
-                      <LucideShoppingBag className="h-4 w-4 text-green-400" />
-                      Marketplace
-                    </Link>
-                    <Link to="/chats" className={linkClasses("/chats")}>
-                      <Send className="h-4 w-4 text-green-400" />
-                      Chats
-                    </Link>
                   </>
                 )}
+                <Link
+                  to="/market-place"
+                  className={linkClasses("/market-place")}
+                >
+                  <LucideShoppingBag className="h-4 w-4 text-green-400" />
+                  Marketplace
+                </Link>
+
+                <Link to="/chats" className={linkClasses("/chats")}>
+                  <Send className="h-4 w-4 text-green-400" />
+                  Chats
+                </Link>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
