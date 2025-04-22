@@ -15,27 +15,13 @@ export function PhotoGallery({ photos, isOrganic }: PhotoGalleryProps) {
   return (
     <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-6">
       <div className="flex flex-col gap-4 p-4">
-        {photos && (
+        {photos && photos.length > 0 ? (
           <div className="relative">
-            {photos.find((photo) => photo.is_primary) ? (
-              <>
-                <img
-                  src={
-                    photos.find((photo) => photo.is_primary)!.photo_url ||
-                    "/placeholder.svg"
-                  }
-                  alt="Primary coffee photo"
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              </>
-            ) : (
-              <img
-                src={photos[0]?.photo_url || "/placeholder.svg"}
-                alt="Coffee photo"
-                className="w-full h-full object-cover rounded-lg"
-              />
-            )}
-
+            <img
+              src={photos[activePhotoIndex].photo_url || "/placeholder.svg"}
+              alt={`Coffee photo ${activePhotoIndex + 1}`}
+              className="w-full h-96 object-cover rounded-lg"
+            />
             {isOrganic && (
               <div className="absolute top-4 right-4">
                 <Badge
@@ -47,14 +33,22 @@ export function PhotoGallery({ photos, isOrganic }: PhotoGalleryProps) {
               </div>
             )}
           </div>
+        ) : (
+          <div className="relative">
+            <img
+              src="/placeholder.svg"
+              alt="No coffee photo available"
+              className="w-full h-96 object-cover rounded-lg"
+            />
+          </div>
         )}
       </div>
-      <div className="flex p-2 space-x-2 overflow-x-auto ml-2">
-        {photos &&
-          photos.map((photo, index) => (
+      {photos && photos.length > 0 && (
+        <div className="flex p-2 space-x-2 overflow-x-auto ml-2">
+          {photos.map((photo, index) => (
             <button
               key={index}
-              className={`flex-shrink-0 bg-card w-25 h-25 rounded border-2 ${
+              className={`flex-shrink-0 bg-card w-24 h-24 rounded border-2 ${
                 index === activePhotoIndex
                   ? "border-primary"
                   : "border-transparent"
@@ -62,13 +56,14 @@ export function PhotoGallery({ photos, isOrganic }: PhotoGalleryProps) {
               onClick={() => setActivePhotoIndex(index)}
             >
               <img
-                src={photo.photo_url ? photo.photo_url : "/placeholder.svg"}
-                alt=""
+                src={photo.photo_url || "/placeholder.svg"}
+                alt={`Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover rounded"
               />
             </button>
           ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

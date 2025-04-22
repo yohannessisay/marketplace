@@ -46,9 +46,9 @@ export default function ListingDetailModal({
 
   React.useEffect(() => {
     if (user && user.userType !== "seller") {
-      checkSampleRequest(listing?.id);
+      checkSampleRequest(listing.id);
     }
-  }, [listing?.id, user, checkSampleRequest]);
+  }, [listing.id, user, checkSampleRequest]);
 
   const getPhotos = (listing: CoffeeListing): CoffeePhoto[] => {
     return [...listing.coffee_photo].sort((a, b) => {
@@ -66,12 +66,16 @@ export default function ListingDetailModal({
   const prevPhoto = () => {
     const photos = getPhotos(listing);
     setCurrentPhotoIndex(
-      (prevIndex) => (prevIndex - 1 + photos.length) % photos.length,
+      (prevIndex) => (prevIndex - 1 + photos.length) % photos.length
     );
   };
 
+  const selectPhoto = (index: number) => {
+    setCurrentPhotoIndex(index);
+  };
+
   const getCurrentPhotoUrl = (): string => {
-    if (!listing || listing?.coffee_photo.length === 0)
+    if (!listing || listing.coffee_photo.length === 0)
       return "/placeholder.svg";
     const photos = getPhotos(listing);
     return photos[currentPhotoIndex]?.photo_url || "/placeholder.svg";
@@ -119,15 +123,15 @@ export default function ListingDetailModal({
             <div className="relative h-64 md:h-80 bg-slate-200">
               <CoffeeImage
                 src={getCurrentPhotoUrl()}
-                alt={listing?.coffee_variety}
-                className="w-full h-full px-5"
+                alt={listing.coffee_variety}
+                className="w-full h-full px-5 object-cover"
               />
-              {listing?.is_organic && (
+              {listing.is_organic && (
                 <Badge className="absolute top-4 left-4 bg-emerald-500 ml-4">
                   Organic
                 </Badge>
               )}
-              {listing?.coffee_photo.length > 1 && (
+              {listing.coffee_photo.length > 1 && (
                 <>
                   <Button
                     variant="outline"
@@ -154,7 +158,7 @@ export default function ListingDetailModal({
                             ? "bg-white"
                             : "bg-white/50"
                         }`}
-                        onClick={() => setCurrentPhotoIndex(index)}
+                        onClick={() => selectPhoto(index)}
                       />
                     ))}
                   </div>
@@ -171,13 +175,13 @@ export default function ListingDetailModal({
               <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-800">
-                    {listing?.coffee_variety}
+                    {listing.coffee_variety}
                   </h2>
-                  <p className="text-slate-600">{listing?.farm?.farm_name}</p>
+                  <p className="text-slate-600">{listing.farm.farm_name}</p>
                   <div className="flex items-center mt-2">
                     <Map className="h-5 w-5 text-slate-500 mr-1" />
                     <span className="text-slate-600">
-                      {listing?.farm?.region}, {listing?.farm?.country}
+                      {listing.farm.region}, {listing.farm.country}
                     </span>
                   </div>
                 </div>
@@ -186,16 +190,16 @@ export default function ListingDetailModal({
                     <Star className="h-5 w-5 text-amber-500 mr-2" />
                     <div>
                       <span className="text-lg font-semibold text-amber-700">
-                        {listing?.grade}
+                        {listing.grade}
                       </span>
                       <span className="text-slate-500 text-sm ml-1">grade</span>
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-emerald-700">
-                    ${listing?.price_per_kg.toFixed(2)}/kg
+                    ${listing.price_per_kg.toFixed(2)}/kg
                   </div>
                   <div className="text-slate-600 text-sm">
-                    {listing?.quantity_kg.toLocaleString()} kg available
+                    {listing.quantity_kg.toLocaleString()} kg available
                   </div>
                 </div>
               </div>
@@ -209,41 +213,41 @@ export default function ListingDetailModal({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-slate-500">Bean Type</p>
-                        <p className="font-medium">{listing?.bean_type}</p>
+                        <p className="font-medium">{listing.bean_type}</p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Processing</p>
                         <p className="font-medium">
-                          {listing?.processing_method}
+                          {listing.processing_method}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Organic</p>
                         <p className="font-medium">
-                          {listing?.is_organic ? "Yes" : "No"}
+                          {listing.is_organic ? "Yes" : "No"}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Region</p>
-                        <p className="font-medium">{listing?.farm?.region}</p>
+                        <p className="font-medium">{listing.farm.region}</p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Crop Year</p>
-                        <p className="font-medium">{listing?.crop_year}</p>
+                        <p className="font-medium">{listing.crop_year}</p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Drying Method</p>
-                        <p className="font-medium">{listing?.drying_method}</p>
+                        <p className="font-medium">{listing.drying_method}</p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Moisture</p>
                         <p className="font-medium">
-                          {listing?.moisture_percentage}%
+                          {listing.moisture_percentage}%
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Screen Size</p>
-                        <p className="font-medium">{listing?.screen_size}</p>
+                        <p className="font-medium">{listing.screen_size}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -258,11 +262,11 @@ export default function ListingDetailModal({
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-slate-500">Acidity</span>
                         <span className="text-sm font-medium">
-                          {listing?.cup_taste_acidity}
+                          {listing.cup_taste_acidity}
                         </span>
                       </div>
                       <Progress
-                        value={getCupTastePercentage(listing?.cup_taste_acidity)}
+                        value={getCupTastePercentage(listing.cup_taste_acidity)}
                         className="h-2"
                       />
                     </div>
@@ -270,11 +274,11 @@ export default function ListingDetailModal({
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-slate-500">Body</span>
                         <span className="text-sm font-medium">
-                          {listing?.cup_taste_body}
+                          {listing.cup_taste_body}
                         </span>
                       </div>
                       <Progress
-                        value={getCupTastePercentage(listing?.cup_taste_body)}
+                        value={getCupTastePercentage(listing.cup_taste_body)}
                         className="h-2"
                       />
                     </div>
@@ -284,12 +288,12 @@ export default function ListingDetailModal({
                           Sweetness
                         </span>
                         <span className="text-sm font-medium">
-                          {listing?.cup_taste_sweetness}
+                          {listing.cup_taste_sweetness}
                         </span>
                       </div>
                       <Progress
                         value={getCupTastePercentage(
-                          listing?.cup_taste_sweetness,
+                          listing.cup_taste_sweetness
                         )}
                         className="h-2"
                       />
@@ -300,12 +304,12 @@ export default function ListingDetailModal({
                           Aftertaste
                         </span>
                         <span className="text-sm font-medium">
-                          {listing?.cup_taste_aftertaste}
+                          {listing.cup_taste_aftertaste}
                         </span>
                       </div>
                       <Progress
                         value={getCupTastePercentage(
-                          listing?.cup_taste_aftertaste,
+                          listing.cup_taste_aftertaste
                         )}
                         className="h-2"
                       />
@@ -314,11 +318,11 @@ export default function ListingDetailModal({
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-slate-500">Balance</span>
                         <span className="text-sm font-medium">
-                          {listing?.cup_taste_balance}
+                          {listing.cup_taste_balance}
                         </span>
                       </div>
                       <Progress
-                        value={getCupTastePercentage(listing?.cup_taste_balance)}
+                        value={getCupTastePercentage(listing.cup_taste_balance)}
                         className="h-2"
                       />
                     </div>
@@ -332,45 +336,45 @@ export default function ListingDetailModal({
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-700 mb-4">
-                    {listing?.farm?.farm_name} is located in the{" "}
-                    {listing?.farm?.region} region of {listing?.farm?.country}
-                    at {listing?.farm?.altitude_meters} meters above sea level,
+                    {listing.farm.farm_name} is located in the{" "}
+                    {listing.farm.region} region of {listing.farm.country}
+                    at {listing.farm.altitude_meters} meters above sea level,
                     creating ideal growing conditions for specialty coffee. The
-                    farm covers {listing?.farm?.total_size_hectares} hectares with{" "}
-                    {listing?.farm?.coffee_area_hectares} hectares dedicated to
+                    farm covers {listing.farm.total_size_hectares} hectares with{" "}
+                    {listing.farm.coffee_area_hectares} hectares dedicated to
                     coffee production.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm text-slate-500">Altitude</p>
                       <p className="font-medium">
-                        {listing?.farm?.altitude_meters} masl
+                        {listing.farm.altitude_meters} masl
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Soil Type</p>
-                      <p className="font-medium">{listing?.farm?.soil_type}</p>
+                      <p className="font-medium">{listing.farm.soil_type}</p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Tree Type</p>
-                      <p className="font-medium">{listing?.farm?.tree_type}</p>
+                      <p className="font-medium">{listing.farm.tree_type}</p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Tree Variety</p>
-                      <p className="font-medium">{listing?.farm?.tree_variety}</p>
+                      <p className="font-medium">{listing.farm.tree_variety}</p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">
                         Average Temperature
                       </p>
                       <p className="font-medium">
-                        {listing?.farm?.avg_annual_temp}°C
+                        {listing.farm.avg_annual_temp}°C
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Annual Rainfall</p>
                       <p className="font-medium">
-                        {listing?.farm?.annual_rainfall_mm} mm
+                        {listing.farm.annual_rainfall_mm} mm
                       </p>
                     </div>
                   </div>
@@ -385,21 +389,21 @@ export default function ListingDetailModal({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm text-slate-500">Delivery Type</p>
-                      <p className="font-medium">{listing?.delivery_type}</p>
+                      <p className="font-medium">{listing.delivery_type}</p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Shipping Port</p>
-                      <p className="font-medium">{listing?.shipping_port}</p>
+                      <p className="font-medium">{listing.shipping_port}</p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Readiness Date</p>
                       <p className="font-medium">
-                        {new Date(listing?.readiness_date).toLocaleDateString()}
+                        {new Date(listing.readiness_date).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Lot Size</p>
-                      <p className="font-medium">{listing?.lot_length}</p>
+                      <p className="font-medium">{listing.lot_length}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -422,12 +426,12 @@ export default function ListingDetailModal({
                     {user && sampleLoading
                       ? "Checking..."
                       : user && hasSampleRequest
-                        ? "Sample Requested"
-                        : "Request Samples"}
+                      ? "Sample Requested"
+                      : "Request Samples"}
                   </Button>
                 )}
                 <Link
-                  to={`/listing/${listing?.id}`}
+                  to={`/listing/${listing.id}`}
                   className="w-full sm:flex-1"
                 >
                   <Button
@@ -450,9 +454,9 @@ export default function ListingDetailModal({
       <SampleRequestModal
         open={showSampleRequestModal}
         onClose={() => setShowSampleRequestModal(false)}
-        listingId={listing?.id}
-        coffeeName={listing?.coffee_variety}
-        farmName={listing?.farm?.farm_name}
+        listingId={listing.id}
+        coffeeName={listing.coffee_variety}
+        farmName={listing.farm.farm_name}
       />
     </>
   );

@@ -17,7 +17,7 @@ import { apiService } from "@/services/apiService";
 import { chatService } from "@/services/chatService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse, SocketChatMessage } from "@/types/api";
-import { getUserId, getUserProfile } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CoffeeDetailsProps {
   listing: CoffeeListing | null;
@@ -42,13 +42,13 @@ export function CoffeeDetails({
   >([]);
   const orderStatus = useOrderStatus(demoOrderStatus);
   const { errorMessage } = useNotification();
-  const user = getUserProfile();
+  const { user } = useAuth();
 
   const handleFetchMessages = async () => {
-    if (!listing || !listing.id) return;
+    if (!listing || !listing.id || !user) return;
 
     try {
-      const senderId = getUserId();
+      const senderId = user?.id;
       if (!senderId) {
         throw new Error("No authenticated user found");
       }
@@ -81,40 +81,42 @@ export function CoffeeDetails({
 
   useEffect(() => {
     if (!listing || !listing.id) return;
-    handleFetchMessages();
 
-    chatService().connect();
+    if (user) {
+      handleFetchMessages();
+      chatService().connect();
 
-    const unsubscribe = chatService().onMessage(
-      (message: SocketChatMessage) => {
-        setChatMessages((prev) => {
-          if (prev.some((msg) => msg.id === message.id)) {
-            return prev;
-          }
-          return [
-            ...prev,
-            {
-              id: message.id,
-              sender: message.senderId === getUserId() ? "buyer" : "seller",
-              message: message.message,
-              timestamp: new Date(message.created_at).toLocaleDateString(),
-            },
-          ];
-        });
-      },
-    );
+      const unsubscribe = chatService().onMessage(
+        (message: SocketChatMessage) => {
+          setChatMessages((prev) => {
+            if (prev.some((msg) => msg.id === message.id)) {
+              return prev;
+            }
+            return [
+              ...prev,
+              {
+                id: message.id,
+                sender: message.senderId === user?.id ? "buyer" : "seller",
+                message: message.message,
+                timestamp: new Date(message.created_at).toLocaleDateString(),
+              },
+            ];
+          });
+        },
+      );
 
-    return () => {
-      unsubscribe();
-      chatService().disconnect();
-    };
-  }, [listing?.id]);
+      return () => {
+        unsubscribe();
+        chatService().disconnect();
+      };
+    }
+  }, [listing?.id, user]);
 
   const handleSendMessage = async () => {
-    if (!chatMessage.trim() || !listing) return;
+    if (!chatMessage.trim() || !listing || !user) return;
 
     try {
-      const senderId = getUserId();
+      const senderId = user?.id;
       if (!senderId) {
         throw new Error("No authenticated user found");
       }
@@ -131,7 +133,7 @@ export function CoffeeDetails({
         ...prev,
         {
           id: tempId,
-          sender: "buyer",
+          sender: senderId === user?.id ? "buyer" : "seller",
           message: chatMessage,
           timestamp,
         },
@@ -242,11 +244,13 @@ export function CoffeeDetails({
 
           <CardContent>
             <div className="h-60 overflow-y-auto mb-4 flex flex-col-reverse">
-              {chatMessages.length === 0 ? (
+              {user && chatMessages.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
-                  {user
-                    ? "No messages yet. Start a conversation with the seller."
-                    : "Sign up to message the seller."}
+                  No messages yet. Start a conversation with the seller.
+                </div>
+              ) : !user ? (
+                <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
+                  Please sign in to message the seller.
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -289,7 +293,7 @@ export function CoffeeDetails({
                 onChange={(e) => setChatMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={
-                  user ? "Type your message..." : "Sign up to send a message"
+                  user ? "Type your message..." : "Sign in to send a message"
                 }
                 className="flex-1"
                 disabled={
