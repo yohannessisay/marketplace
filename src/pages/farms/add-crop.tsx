@@ -46,6 +46,8 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { APIErrorResponse } from "@/types/api";
 import { AddCropSkeletonForm } from "./SkeletonForm";
+import { useAuth } from "@/hooks/useAuth";
+import { getFromLocalStorage } from "@/lib/utils";
 
 interface FileWithId extends File {
   id: string;
@@ -77,7 +79,8 @@ export default function AddCrop() {
   >([]);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farmError, setFarmError] = useState<string | null>(null);
-
+  const { user } = useAuth();
+  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const isLoading = isLoadingFarms || isLoadingListing;
 
   const form = useForm<CoffeeCropsFormData>({
@@ -112,19 +115,27 @@ export default function AddCrop() {
     const fetchFarms = async () => {
       setIsLoadingFarms(true);
       try {
+        if (!user) {
+          return;
+        }
+
+        const farmerId =
+          user.userType === "agent" ? farmerProfile?.id : undefined;
+
         const response: any = await apiService().get(
           "/sellers/farms/get-farms",
+          farmerId
         );
         if (response.success) {
           const fetchedFarms: Farm[] = response.data.farms || [];
           setFarms(fetchedFarms);
           if (fetchedFarms.length === 0) {
             setFarmError(
-              "No farms found. Please add a farm first to create a crop listing.",
+              "No farms found. Please add a farm first to create a crop listing."
             );
           } else if (farmIdFromQuery && !id) {
             const selectedFarm = fetchedFarms.find(
-              (farm: Farm) => farm.id === farmIdFromQuery,
+              (farm: Farm) => farm.id === farmIdFromQuery
             );
             if (selectedFarm) {
               form.setValue("farmId", farmIdFromQuery, {
@@ -134,7 +145,7 @@ export default function AddCrop() {
             } else {
               console.error("[AddCrop] No farm found for ID:", farmIdFromQuery);
               setFarmError(
-                "The farm ID provided in the URL is invalid. Please select a valid farm.",
+                "The farm ID provided in the URL is invalid. Please select a valid farm."
               );
             }
           }
@@ -155,8 +166,16 @@ export default function AddCrop() {
   const populateForm = async (listingId: string) => {
     setIsLoadingListing(true);
     try {
+      if (!user) {
+        return;
+      } 
+
+      const farmerId =
+        user.userType === "agent" ? farmerProfile?.id : undefined;
+
       const response: any = await apiService().get(
         `/sellers/listings/get-listing?listingId=${listingId}`,
+        farmerId
       );
 
       if (response.success) {
@@ -198,13 +217,13 @@ export default function AddCrop() {
                   doc.doc_url.split("/").pop() || `grading_report_${doc.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id },
+                  { id: doc.id }
                 );
               } catch (err) {
                 console.error(`Error fetching document ${doc.doc_url}:`, err);
                 return null;
               }
-            }),
+            })
           );
           setFiles(filesTemp.filter((f): f is FileWithId => f !== null));
         }
@@ -221,13 +240,13 @@ export default function AddCrop() {
                   photo.photo_url.split("/").pop() || `photo_${photo.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: photo.id, url: photo.photo_url },
+                  { id: photo.id, url: photo.photo_url }
                 );
               } catch (err) {
                 console.error(`Error fetching photo ${photo.photo_url}:`, err);
                 return null;
               }
-            }),
+            })
           );
           setPhotos(photosTemp.filter((p): p is FileWithId => p !== null));
         }
@@ -238,7 +257,7 @@ export default function AddCrop() {
               minimum_quantity_kg: Number(d.minimum_quantity_kg) || 0,
               discount_percentage: Number(d.discount_percentage) || 0,
               id: d.id || Math.random().toString(36).substring(2),
-            })),
+            }))
           );
         }
       } else {
@@ -285,10 +304,10 @@ export default function AddCrop() {
   const handleDiscountChange = (
     id: string,
     field: "minimum_quantity_kg" | "discount_percentage",
-    value: number,
+    value: number
   ) => {
     setDiscounts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
     );
   };
 
@@ -313,7 +332,7 @@ export default function AddCrop() {
 
       formData.append(
         "discounts",
-        JSON.stringify(discounts.map(({ id, ...rest }) => rest)),
+        JSON.stringify(discounts.map(({ ...rest }) => rest))
       );
 
       formData.append("farm_id", data.farmId!);
@@ -323,14 +342,14 @@ export default function AddCrop() {
         await apiService().patchFormData(
           "/sellers/listings/update-listing",
           formData,
-          true,
+          true
         );
         successMessage("Listing updated successfully!");
       } else {
         await apiService().postFormData(
           "/sellers/listings/create-listing",
           formData,
-          true,
+          true
         );
         successMessage("Listing created successfully!");
       }
@@ -389,8 +408,8 @@ export default function AddCrop() {
                                   isLoadingFarms
                                     ? "Loading farms..."
                                     : farms.length === 0
-                                      ? "No farms available"
-                                      : "Select a farm"
+                                    ? "No farms available"
+                                    : "Select a farm"
                                 }
                               />
                             </SelectTrigger>
@@ -472,7 +491,7 @@ export default function AddCrop() {
                             ...newFiles.map((f) =>
                               Object.assign(f, {
                                 id: Math.random().toString(36).substring(2),
-                              }),
+                              })
                             ),
                           ])
                         }
@@ -897,7 +916,7 @@ export default function AddCrop() {
                           ...newPhotos.map((p) =>
                             Object.assign(p, {
                               id: Math.random().toString(36).substring(2),
-                            }),
+                            })
                           ),
                         ])
                       }
@@ -1000,7 +1019,7 @@ export default function AddCrop() {
                               handleDiscountChange(
                                 discount.id,
                                 "minimum_quantity_kg",
-                                Number(e.target.value) || 0,
+                                Number(e.target.value) || 0
                               )
                             }
                           />
@@ -1016,7 +1035,7 @@ export default function AddCrop() {
                               handleDiscountChange(
                                 discount.id,
                                 "discount_percentage",
-                                Number(e.target.value) || 0,
+                                Number(e.target.value) || 0
                               )
                             }
                           />
@@ -1147,8 +1166,8 @@ export default function AddCrop() {
                       ? "Updating..."
                       : "Adding..."
                     : isEditMode
-                      ? "Update Listing"
-                      : "Add Crop Listing"}
+                    ? "Update Listing"
+                    : "Add Crop Listing"}
                 </Button>
               </div>
             </form>
