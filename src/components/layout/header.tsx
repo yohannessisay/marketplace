@@ -35,6 +35,7 @@ import {
 import Logo from "./Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { useMobile } from "@/hooks/useMobile";
+import { chatService } from "@/services/chatService";
 
 export default function Header() {
   const { user } = useAuth();
@@ -87,9 +88,11 @@ export default function Header() {
     Cookies.remove("refreshToken");
     navigate("/login");
     setIsMenuOpen(false);
+    if (chatService().isConnected()) {
+      chatService().disconnect();
+    }
   };
 
-  // Construct login URL with redirectTo query parameter
   const loginUrl = `/login?redirectTo=${encodeURIComponent(location.pathname)}`;
 
   return (

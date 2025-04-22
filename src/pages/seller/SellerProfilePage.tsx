@@ -68,12 +68,11 @@ export default function SellerProfilePage() {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const { user } = useAuth();
   const { errorMessage } = useNotification();
-  const isWebSocketConnected = useRef(false);
-  const hasFetchedData = useRef(false); // Track if data has been fetched
+  const hasFetchedData = useRef(false);
 
   const fetchSellerData = useCallback(async () => {
     if (!sellerId || hasFetchedData.current) return;
-    hasFetchedData.current = true; // Mark data as fetched
+    hasFetchedData.current = true;
     setLoading(true);
     setError(null);
 
@@ -121,7 +120,7 @@ export default function SellerProfilePage() {
     if (!user || !sellerId) return;
 
     try {
-      const senderId = getUserId();
+      const senderId = user?.id;
       if (!senderId) throw new Error("No authenticated user found");
 
       const response = await apiService().get<{
@@ -143,32 +142,30 @@ export default function SellerProfilePage() {
     }
   }, [user, sellerId, errorMessage]);
 
-  // Fetch seller data only once on mount
   useEffect(() => {
     fetchSellerData();
-  }, []); // Empty dependency array to run only once
+  }, [fetchSellerData]);
 
-  // Handle WebSocket and initial message fetch only once
   useEffect(() => {
-    if (!user || !sellerId || isWebSocketConnected.current) return;
+    if (!user || !sellerId) return;
 
-    // Connect WebSocket
-    chatService().connect();
-    isWebSocketConnected.current = true;
-
-    // Fetch initial messages
     handleFetchMessages();
 
-    // Subscribe to new messages
+    if (!chatService().isConnected()) {
+      chatService().connect();
+    }
+
     const unsubscribe = chatService().onMessage(
       (message: SocketChatMessage) => {
         setChatMessages((prev) => {
-          if (prev.some((msg) => msg.id === message.id)) return prev;
+          if (prev.some((msg) => msg.id === message.id)) {
+            return prev;
+          }
           return [
             ...prev,
             {
               id: message.id,
-              sender: message.senderId === getUserId() ? "buyer" : "seller",
+              sender: message.senderId === user?.id ? "buyer" : "seller",
               message: message.message,
               timestamp: new Date(message.created_at).toLocaleDateString(),
             },
@@ -177,15 +174,10 @@ export default function SellerProfilePage() {
       },
     );
 
-    // Cleanup on unmount
     return () => {
       unsubscribe();
-      if (isWebSocketConnected.current) {
-        chatService().disconnect();
-        isWebSocketConnected.current = false;
-      }
     };
-  }, [user, sellerId, handleFetchMessages]); // Dependencies only for initial setup
+  }, [user, sellerId, handleFetchMessages]);
 
   const handleSendMessage = async () => {
     if (!user) {
@@ -473,7 +465,6 @@ export default function SellerProfilePage() {
                     )}
                   </div>
 
-                  {/* Chat input area - different states */}
                   {!user ? (
                     <div className="space-y-3">
                       <Input
