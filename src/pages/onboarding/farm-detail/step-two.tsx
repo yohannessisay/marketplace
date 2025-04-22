@@ -90,7 +90,7 @@ export default function StepTwo() {
   >([]);
   const { user, setUser } = useAuth();
   const { successMessage, errorMessage } = useNotification();
-
+  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
@@ -136,7 +136,7 @@ export default function StepTwo() {
       ...selectedPhotos.map((p) =>
         Object.assign(p, {
           id: Math.random().toString(36).substring(2),
-        }),
+        })
       ),
     ]);
   };
@@ -167,18 +167,26 @@ export default function StepTwo() {
   const handleDiscountChange = (
     id: string,
     field: "minimum_quantity_kg" | "discount_percentage",
-    value: number,
+    value: number
   ) => {
     setDiscounts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
     );
   };
 
   const fetchFirstFarm = async () => {
     try {
+      // Wait for user data to be available
+      if (!user) {
+        return;
+      }
+
+      const farmerId =
+        user.userType === "agent" ? farmerProfile?.id : undefined;
+
       const response: any = await apiService().get(
         "/onboarding/seller/get-first-farm",
-        user?.userType === "agent" ? user?.id : "",
+        farmerId
       );
       setFarm(response.data.farm);
     } catch (error: any) {
@@ -188,8 +196,11 @@ export default function StepTwo() {
 
   useEffect(() => {
     setIsClient(true);
-    fetchFirstFarm();
-  }, []);
+    // Only fetch farm data when user data is available
+    if (user) {
+      fetchFirstFarm();
+    }
+  }, [user]); // Add user as a dependency
 
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
@@ -223,12 +234,16 @@ export default function StepTwo() {
         formData.append("discounts", JSON.stringify(formattedDiscounts));
       }
 
-      if (user?.onboarding_stage === "crops_to_sell") {
+      if (
+        user?.onboarding_stage === "crops_to_sell" ||
+        (user?.userType === "agent" &&
+          farmerProfile?.onboarding_stage === "crops_to_sell")
+      ) {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/coffee-details",
           formData,
           true,
-          user?.userType === "agent" ? user?.id : "",
+          user?.userType === "agent" ? user?.id : ""
         );
 
         saveToLocalStorage("crop-id", response.data?.coffee_listing?.id);
@@ -240,7 +255,7 @@ export default function StepTwo() {
         saveToLocalStorage("step-two", data);
         localStorage.setItem(
           "current-step",
-          JSON.stringify("bank_information"),
+          JSON.stringify("bank_information")
         );
         successMessage("Crop information saved successfully");
         navigation("/onboarding/step-three");
@@ -252,7 +267,7 @@ export default function StepTwo() {
           "/sellers/listings/update-listing",
           formData,
           true,
-          user?.userType === "agent" ? user?.id : "",
+          user?.userType === "agent" ? user?.id : ""
         );
 
         successMessage("Crop data updated");
@@ -835,7 +850,7 @@ export default function StepTwo() {
                             handleDiscountChange(
                               discount.id,
                               "minimum_quantity_kg",
-                              Number(e.target.value) || 0,
+                              Number(e.target.value) || 0
                             )
                           }
                         />
@@ -851,7 +866,7 @@ export default function StepTwo() {
                             handleDiscountChange(
                               discount.id,
                               "discount_percentage",
-                              Number(e.target.value) || 0,
+                              Number(e.target.value) || 0
                             )
                           }
                         />

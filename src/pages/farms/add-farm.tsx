@@ -57,6 +57,7 @@ export default function AddFarm() {
   const [govRegFiles, setGovRegFiles] = useState<FileWithId[]>([]);
   const [landRightsFiles, setLandRightsFiles] = useState<FileWithId[]>([]);
   const { user } = useAuth();
+  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
@@ -82,14 +83,14 @@ export default function AddFarm() {
   });
 
   useEffect(() => {
-    if (user && user.onboarding_stage !== "completed") {
+    if (user?.userType==='seller' && user.onboarding_stage !== "completed") {
       navigate("/home");
     }
   }, [navigate]);
 
   const normalizeSelectValue = (
     value: string | null | undefined,
-    validValues: string[],
+    validValues: string[]
   ): string => {
     if (!value) return "";
     const normalized = value.toLowerCase().replace(/\s+/g, "_");
@@ -99,12 +100,20 @@ export default function AddFarm() {
   const populateForm = async (farmId: string) => {
     setIsLoading(true);
     try {
+      
+      if (!user) {
+        return;
+      }
+
+      const farmerId =
+        user.userType === "agent" ? farmerProfile?.id : undefined;
+
       const response: any = await apiService().get(
         `/sellers/farms/get-farm?farmId=${farmId}`,
+        farmerId
       );
       if (response.success) {
-        const farm = response.data.farm;
-        console.log("[AddFarm] Fetched farm data:", farm);
+        const farm = response.data.farm; 
 
         const validTreeTypes = ["shade_grown", "sun_grown", "mixed"];
         const validTreeVarieties = ["heirloom", "typica", "bourbon", "geisha"];
@@ -126,15 +135,14 @@ export default function AddFarm() {
           tree_type: normalizeSelectValue(farm.tree_type, validTreeTypes),
           tree_variety: normalizeSelectValue(
             farm.tree_variety,
-            validTreeVarieties,
+            validTreeVarieties
           ),
           soil_type: normalizeSelectValue(farm.soil_type, validSoilTypes),
           capacity_kg: farm.capacity_kg ?? 0,
           avg_annual_temp: farm.avg_annual_temp ?? 0,
           annual_rainfall_mm: farm.annual_rainfall_mm ?? 0,
         });
-
-        console.log("[AddFarm] Form state after reset:", form.getValues());
+ 
 
         if (farm.kyc_documents?.length > 0) {
           const govRegFilesTemp: FileWithId[] = [];
@@ -150,7 +158,7 @@ export default function AddFarm() {
                   doc.doc_url.split("/").pop() || `document_${doc.id}`;
                 const file = Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id || Math.random().toString(36).substring(2) },
+                  { id: doc.id || Math.random().toString(36).substring(2) }
                 );
 
                 if (doc.doc_type === "government_registration") {
@@ -161,10 +169,10 @@ export default function AddFarm() {
               } catch (err) {
                 console.error(
                   `[AddFarm] Error fetching document ${doc.doc_url}:`,
-                  err,
+                  err
                 );
               }
-            }),
+            })
           );
 
           setGovRegFiles(govRegFilesTemp);
@@ -173,8 +181,7 @@ export default function AddFarm() {
       } else {
         throw new Error(response.message || "Failed to fetch farm data");
       }
-    } catch (error) {
-      console.error("[AddFarm] Error fetching farm data:", error);
+    } catch  { 
       errorMessage({ message: "Failed to fetch farm data." });
     } finally {
       setIsLoading(false);
@@ -186,7 +193,7 @@ export default function AddFarm() {
       setIsEditMode(true);
       populateForm(id);
     }
-  }, [id]);
+  }, [id,user]);
 
   const handleRemoveFile = (id: string, type: "govReg" | "landRights") => {
     if (type === "govReg") {
@@ -226,11 +233,14 @@ export default function AddFarm() {
       }
 
       if (isEditMode) {
+        if (id) {
+          formData.append("farmId", id);
+        }
         await apiService().patchFormData(
           `/sellers/farms/update-farm`,
           formData,
           true,
-          xfmrId ? xfmrId : "",
+          xfmrId ? xfmrId : ""
         );
         successMessage("Farm updated successfully!");
       } else {
@@ -238,14 +248,13 @@ export default function AddFarm() {
           `/sellers/farms/create-farm`,
           formData,
           true,
-          xfmrId ? xfmrId : "",
+          xfmrId ? xfmrId : ""
         );
         successMessage("Farm added successfully!");
       }
 
       navigate("/seller-dashboard");
-    } catch (error: any) {
-      console.error("[AddFarm] Error submitting form:", error);
+    } catch (error: any) { 
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsSubmitting(false);
@@ -331,7 +340,7 @@ export default function AddFarm() {
                               ...selectedFiles.map((f) =>
                                 Object.assign(f, {
                                   id: Math.random().toString(36).substring(2),
-                                }),
+                                })
                               ),
                             ]);
                           }}
@@ -399,7 +408,7 @@ export default function AddFarm() {
                               ...selectedFiles.map((f) =>
                                 Object.assign(f, {
                                   id: Math.random().toString(36).substring(2),
-                                }),
+                                })
                               ),
                             ]);
                           }}
@@ -665,7 +674,7 @@ export default function AddFarm() {
                               type="number"
                               value={field.value ?? ""}
                               onChange={(e) =>
-                                field.onChange(Number(e.target.value) || 0)
+                                field.onChange(Number(e.target.value) || 1)
                               }
                             />
                           </FormControl>
@@ -684,7 +693,7 @@ export default function AddFarm() {
                               type="number"
                               value={field.value ?? ""}
                               onChange={(e) =>
-                                field.onChange(Number(e.target.value) || 0)
+                                field.onChange(Number(e.target.value) || 1)
                               }
                             />
                           </FormControl>
@@ -703,7 +712,7 @@ export default function AddFarm() {
                               type="number"
                               value={field.value ?? ""}
                               onChange={(e) =>
-                                field.onChange(Number(e.target.value) || 0)
+                                field.onChange(Number(e.target.value) || 1)
                               }
                             />
                           </FormControl>
@@ -719,7 +728,7 @@ export default function AddFarm() {
                   <h4 className="font-medium mb-4 text-gray-700">
                     Tree information
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="tree_type"
@@ -729,15 +738,12 @@ export default function AddFarm() {
                           <Select
                             onValueChange={(value) => {
                               field.onChange(value);
-                              console.log(
-                                "[AddFarm] tree_type changed:",
-                                value,
-                              );
+                          
                             }}
                             value={field.value || ""}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full"> 
                                 <SelectValue placeholder="Select tree type" />
                               </SelectTrigger>
                             </FormControl>
@@ -764,15 +770,12 @@ export default function AddFarm() {
                           <Select
                             onValueChange={(value) => {
                               field.onChange(value);
-                              console.log(
-                                "[AddFarm] tree_variety changed:",
-                                value,
-                              );
+                          
                             }}
                             value={field.value || ""}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select tree variety" />
                               </SelectTrigger>
                             </FormControl>
@@ -787,16 +790,7 @@ export default function AddFarm() {
                         </FormItem>
                       )}
                     />
-                  </div>
-                </div>
-
-                {/* Growing Conditions */}
-                <div className="mb-6">
-                  <h4 className="font-medium mb-4 text-gray-700">
-                    Growing Conditions
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <FormField
+                         <FormField
                       control={form.control}
                       name="soil_type"
                       render={({ field }) => (
@@ -805,15 +799,12 @@ export default function AddFarm() {
                           <Select
                             onValueChange={(value) => {
                               field.onChange(value);
-                              console.log(
-                                "[AddFarm] soil_type changed:",
-                                value,
-                              );
+                           
                             }}
                             value={field.value || ""}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select soil type" />
                               </SelectTrigger>
                             </FormControl>
@@ -832,6 +823,8 @@ export default function AddFarm() {
                     />
                   </div>
                 </div>
+
+          
               </div>
 
               {/* Navigation Buttons */}
@@ -842,8 +835,8 @@ export default function AddFarm() {
                       ? "Updating..."
                       : "Adding..."
                     : isEditMode
-                      ? "Update Farm"
-                      : "Add Farm"}
+                    ? "Update Farm"
+                    : "Add Farm"}
                 </Button>
               </div>
             </form>

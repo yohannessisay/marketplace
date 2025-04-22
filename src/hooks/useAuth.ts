@@ -46,6 +46,7 @@ export const useAuth = (): AuthState => {
   
 
       if (storedProfile) {
+    
       
         try {
           userProfile = storedProfile as UserProfile;
@@ -55,13 +56,14 @@ export const useAuth = (): AuthState => {
             userProfile
           ) {
             if (accessToken) {
+            
               setAuthState({
                 isAuthenticated: true,
                 user: userProfile,
                 loading: false,
                 setUser: authState.setUser,
               });
-              return;
+              return ;
             }
           } else {
             console.warn("Invalid userProfile in localStorage, clearing...");

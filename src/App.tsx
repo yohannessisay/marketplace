@@ -41,7 +41,7 @@ const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const ChatsPage = lazy(() => import("./pages/chats/ChatsPage"));
 const SettingsPage = lazy(() => import("./pages/buyers/settings/SettingsPage"));
 const CompanyOnboarding = lazy(
-  () => import("./pages/company/company-onboarding"),
+  () => import("./pages/company/company-onboarding")
 );
 
 initializeApiService(config.VITE_API_BASE_URL);
@@ -119,7 +119,7 @@ const RouterContent: React.FC = () => {
           <ProtectedRoute>
             {userType === "buyer" ? (
               <Navigate to="/market-place" replace />
-            ) : currentStep !== "completed" ? (
+            ) : userType === "seller" && currentStep !== "completed" ? (
               <Welcome />
             ) : (
               <FarmManagement />
