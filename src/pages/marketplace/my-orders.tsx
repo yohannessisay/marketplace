@@ -40,6 +40,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
+import { ReviewModal } from "./review-modal";
 
 interface Seller {
   first_name?: string;
@@ -92,7 +93,8 @@ interface Order {
   updated_at: string | null;
   created_by_agent_id: string | null;
   listing?: Listing;
-  seller?: Seller;
+  seller_name?: string;
+  buyer_name?: string;
 }
 
 interface SampleRequest {
@@ -224,6 +226,8 @@ export default function OrdersPage() {
   const [bidSearchTerm, setBidSearchTerm] = useState<string>("");
   const [favoritesSearchTerm, setFavoritesSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("current");
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [fetchedTabs, setFetchedTabs] = useState<{
     current: boolean;
     historical: boolean;
@@ -524,6 +528,11 @@ export default function OrdersPage() {
       const errorResponse = error as APIErrorResponse;
       errorMessage(errorResponse);
     }
+  };
+
+  const openReviewModal = (order: Order) => {
+    setSelectedOrder(order);
+    setShowReviewModal(true);
   };
 
   const renderOrderProgress = (order: Order) => {
@@ -1034,20 +1043,13 @@ export default function OrdersPage() {
               <span className="text-sm font-medium">
                 {(isBid
                   ? (item as Bid).seller?.first_name
-                  : (item as Order).seller?.first_name) || "Unknown"}{" "}
-                {(isBid
-                  ? (item as Bid).seller?.last_name
-                  : (item as Order).seller?.last_name) || ""}
+                  : (item as Order).seller_name) || "Unknown"}{" "}
               </span>
-              {(isBid ? (item as Bid).seller : (item as Order).seller) && (
+              {(isBid ? (item as Bid).seller : (item as Order)) && (
                 <Link
-                  to={`/sellers/${(isBid
-                    ? (item as Bid).seller!.first_name
-                    : (item as Order).seller!.first_name
-                  )?.toLowerCase()}-${(isBid
-                    ? (item as Bid).seller!.last_name
-                    : (item as Order).seller!.last_name
-                  )?.toLowerCase()}`}
+                  to={`/sellers/${
+                    isBid ? (item as Bid).seller_id : (item as Order).seller_id
+                  }`}
                   className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
                 >
                   View Seller
@@ -1060,7 +1062,7 @@ export default function OrdersPage() {
                 variant={
                   (isBid ? (item as Bid).status : (item as Order).status) ===
                   "completed"
-                    ? "secondary"
+                    ? "default"
                     : (isBid
                           ? (item as Bid).status
                           : (item as Order).status) === "confirmed"
@@ -1105,7 +1107,9 @@ export default function OrdersPage() {
                       <span className="text-muted-foreground">
                         {isBid ? "Bid ID" : "Order ID"}:
                       </span>
-                      <span className="font-medium">{item.id}</span>
+                      <span className="font-medium">
+                        {isBid ? item.id : (item as Order).order_id}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Unit Price:</span>
@@ -1191,6 +1195,14 @@ export default function OrdersPage() {
                     </Link>
                   </>
                 )}
+                {tabType === "historical" && (
+                  <Button
+                    variant="default"
+                    onClick={() => openReviewModal(item as Order)}
+                  >
+                    Review Seller
+                  </Button>
+                )}
                 {isBid && (
                   <Link to={`/listing/${item.listing_id}`}>
                     <Button variant="outline">View Listing</Button>
@@ -1241,9 +1253,7 @@ export default function OrdersPage() {
             {message}
           </p>
           <Link to="/market-place">
-            <Button className="mt-6 bg-green-600 hover:bg-green-700">
-              Browse Marketplace
-            </Button>
+            <Button className="mt-6">Browse Marketplace</Button>
           </Link>
         </CardContent>
       </Card>
@@ -1338,9 +1348,14 @@ export default function OrdersPage() {
           <TabsContent value="current" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
-                {activeLoading
-                  ? "Loading..."
-                  : `${activeOrders.length} Active Orders`}
+                {activeLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : (
+                  `${activeOrders.length} Active Orders`
+                )}
               </p>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
@@ -1449,9 +1464,16 @@ export default function OrdersPage() {
           <TabsContent value="historical" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
-                {historyLoading
-                  ? "Loading..."
-                  : `${historicalOrders.length} Past Orders`}
+                {historyLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : historicalOrders.length === 0 ? (
+                  "No past orders"
+                ) : (
+                  `${historicalOrders.length} Past Orders`
+                )}
               </p>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
@@ -1562,11 +1584,16 @@ export default function OrdersPage() {
           <TabsContent value="sample" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
-                {sampleLoading
-                  ? "Loading..."
-                  : sampleRequests && sampleRequests.length > 0
-                    ? `${sampleRequests.length} Sample Requests`
-                    : "No Sample Requests"}
+                {sampleLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : sampleRequests?.length === 0 ? (
+                  "No past orders"
+                ) : (
+                  `${sampleRequests?.length} Past Orders`
+                )}
               </p>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
@@ -1675,7 +1702,16 @@ export default function OrdersPage() {
           <TabsContent value="bids" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
-                {bidLoading ? "Loading..." : `${bids.length} Bids`}
+                {bidLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : bids?.length === 0 ? (
+                  "No past orders"
+                ) : (
+                  `${bids?.length} Past Orders`
+                )}
               </p>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
@@ -1780,9 +1816,16 @@ export default function OrdersPage() {
           <TabsContent value="favorites" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <p className="text-sm text-muted-foreground font-medium">
-                {favoritesLoading
-                  ? "Loading..."
-                  : `${favorites.length} Favorited Listings`}
+                {favoritesLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : favorites?.length === 0 ? (
+                  "No past orders"
+                ) : (
+                  `${favorites?.length} Past Orders`
+                )}
               </p>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
@@ -1894,6 +1937,16 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
         </Tabs>
+        {showReviewModal && selectedOrder && (
+          <ReviewModal
+            orderId={selectedOrder.id}
+            sellerId={selectedOrder.seller_id}
+            onClose={() => {
+              setShowReviewModal(false);
+              setSelectedOrder(null);
+            }}
+          />
+        )}
       </main>
     </div>
   );

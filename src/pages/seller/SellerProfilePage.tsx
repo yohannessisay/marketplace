@@ -48,11 +48,45 @@ interface CoffeeListing {
   listing_status: string;
 }
 
+interface Review {
+  id: string;
+  order_id: string;
+  reviewer_buyer_id: string | null;
+  reviewed_seller_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer: {
+    id: string;
+    name: string;
+    email: string;
+    company_name: string | null;
+    country: string | null;
+    rating: number;
+    total_reviews: number;
+    deals_completed: number;
+    avatar_url_csv: string | null;
+  } | null;
+  order: {
+    id: string;
+    listing_id: string;
+    listing: {
+      id: string;
+      coffee_variety: string;
+      farm: {
+        farm_name: string;
+        country: string;
+      } | null;
+    } | null;
+  } | null;
+}
+
 export default function SellerProfilePage() {
   const { sellerId } = useParams<{ sellerId: string }>();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [listings, setListings] = useState<CoffeeListing[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("farms");
@@ -69,6 +103,7 @@ export default function SellerProfilePage() {
   const { user } = useAuth();
   const { errorMessage } = useNotification();
   const hasFetchedData = useRef(false);
+  const hasFetchedMessages = useRef(false);
 
   const fetchSellerData = useCallback(async () => {
     if (!sellerId || hasFetchedData.current) return;
@@ -77,7 +112,7 @@ export default function SellerProfilePage() {
     setError(null);
 
     try {
-      const [sellerResponse, farmsResponse, listingsResponse]: Array<any> =
+      const [sellerResponse, farmsResponse, listingsResponse, reviewsResponse] =
         await Promise.all([
           apiService().getWithoutAuth(
             `/sellers/profile/get-profile-details?sellerId=${sellerId}`,
@@ -87,6 +122,9 @@ export default function SellerProfilePage() {
           ),
           apiService().getWithoutAuth(
             `/sellers/profile/get-listings?sellerId=${sellerId}`,
+          ),
+          apiService().getWithoutAuth(
+            `/sellers/profile/get-reviews?sellerId=${sellerId}&page=1&limit=10`,
           ),
         ]);
 
@@ -107,6 +145,12 @@ export default function SellerProfilePage() {
       } else {
         setListings([]);
       }
+
+      if (reviewsResponse.success && reviewsResponse.data.reviews) {
+        setReviews(reviewsResponse.data.reviews);
+      } else {
+        setReviews([]);
+      }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
       setError(errorResponse.error?.message || "An error occurred");
@@ -117,9 +161,10 @@ export default function SellerProfilePage() {
   }, [sellerId, errorMessage]);
 
   const handleFetchMessages = useCallback(async () => {
-    if (!user || !sellerId) return;
+    if (!user || !sellerId || hasFetchedMessages.current) return;
 
     try {
+      hasFetchedMessages.current = true;
       const senderId = user?.id;
       if (!senderId) throw new Error("No authenticated user found");
 
@@ -268,7 +313,7 @@ export default function SellerProfilePage() {
                   <img
                     src={seller.avatar_url_csv || "/placeholder.svg"}
                     alt={`${seller.first_name} ${seller.last_name}`}
-                    className="w-16 h-16 rounded-full mr-4"
+                    className="w-16 h-16 rounded-full mr-4 object-cover"
                   />
                   <div>
                     <h2 className="text-2xl font-bold">{`${seller.first_name} ${seller.last_name}`}</h2>
@@ -296,9 +341,10 @@ export default function SellerProfilePage() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="farms">Farms</TabsTrigger>
                 <TabsTrigger value="listings">Coffee Listings</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews</TabsTrigger>
               </TabsList>
 
               <TabsContent value="farms" className="border rounded-md mt-2">
@@ -410,6 +456,64 @@ export default function SellerProfilePage() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              <TabsContent value="reviews" className="border rounded-md mt-2">
+                <Card>
+                  <CardContent className="p-6">
+                    {reviews.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground">
+                        No reviews available for this seller.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <Card key={review.id} className="p-4">
+                            <div className="flex flex-col space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <img
+                                    src={
+                                      review.reviewer?.avatar_url_csv ||
+                                      "/placeholder.svg"
+                                    }
+                                    alt={review.reviewer?.name || "Reviewer"}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                  <div>
+                                    <span className="font-semibold text-slate-800">
+                                      {review.reviewer?.name || "Anonymous"}
+                                    </span>
+                                    <div className="flex mt-1">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`h-4 w-4 ${
+                                            i < review.rating
+                                              ? "text-yellow-500 fill-current"
+                                              : "text-gray-300"
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                                <span className="text-sm text-slate-600">
+                                  {new Date(
+                                    review.created_at,
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <p className="text-sm text-slate-600 leading-relaxed">
+                                {review.comment || "No comment provided."}
+                              </p>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
 
@@ -498,13 +602,6 @@ export default function SellerProfilePage() {
                     </div>
                   )}
                 </CardContent>
-              </div>
-              <div className="lg:col-span-1">
-                <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-medium mb-4">Contact Seller</h3>
-                  </CardContent>
-                </Card>
               </div>
             </>
           )}

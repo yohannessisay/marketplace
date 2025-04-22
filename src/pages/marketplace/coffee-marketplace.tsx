@@ -504,10 +504,17 @@ export default function CoffeeMarketplace() {
             </Card>
           )}
           <div className="mb-4">
-            <p className="text-slate-600">
-              {listings.length} {listings.length === 1 ? "listing" : "listings"}{" "}
-              found
-            </p>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                <p className="text-slate-600">Loading listings...</p>
+              </div>
+            ) : (
+              <p className="text-slate-600">
+                {listings.length}{" "}
+                {listings.length === 1 ? "listing" : "listings"} found
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading
