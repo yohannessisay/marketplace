@@ -14,6 +14,7 @@ import {
   Menu,
   Settings,
   UserCheck,
+  LogIn,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -392,7 +393,7 @@ export default function Header() {
                       className={linkClasses("/login")}
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      <の高 className="h-4 w-4 text-green-400" />
+                      <LogIn className="h-4 w-4 text-green-400" />
                       Login
                     </Link>
                     <Link
