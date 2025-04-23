@@ -78,13 +78,14 @@ export default function EditProfile() {
   const [isClient, setIsClient] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const [initialData, setInitialData] = useState<ProfileInfoFormData | null>(
     null,
   );
-  const { successMessage, errorMessage } = useNotification();
   const { user } = useAuth();
+  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+  const { successMessage, errorMessage } = useNotification();
+ 
 
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
@@ -97,8 +98,16 @@ export default function EditProfile() {
 
   const fetchProfileData = useCallback(async () => {
     try {
+      if (!user) {
+        return;
+      } 
+
+      const farmerId =
+        user.userType === "agent" ? farmerProfile?.id : undefined;
+
       const response: any = await apiService().get(
         "/onboarding/seller/get-profile",
+        farmerId
       );
       if (response.success && response.data) {
         const { profile } = response.data;
@@ -127,37 +136,13 @@ export default function EditProfile() {
         const imageUrl = event.target?.result as string;
         setProfileImage(imageUrl);
         localStorage.setItem("profile-image", imageUrl);
-        setFiles([file]);
-        checkForChanges(form.getValues(), true);
+        setFiles([file]); 
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const checkForChanges = useCallback(
-    (formValues: ProfileInfoFormData, imageChanged: boolean = false) => {
-      if (!initialData) return;
-
-      const formChanged =
-        (formValues.telegram?.trim() || "") !== (initialData.telegram || "") ||
-        (formValues.about_me?.trim() || "") !== (initialData.about_me || "") ||
-        (formValues.address?.trim() || "") !== (initialData.address || "");
-
-      const hasImageChange = imageChanged || files.length > 0;
-
-      setHasChanges(formChanged || hasImageChange);
-    },
-    [initialData, files],
-  );
-
-  const watchedFields = form.watch(["telegram", "about_me", "address"]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      checkForChanges(form.getValues());
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [watchedFields, files, checkForChanges, form]);
+ 
 
   useEffect(() => {
     setIsClient(true);
@@ -205,13 +190,19 @@ export default function EditProfile() {
           formData.append("files", file);
         });
       }
+ 
+      if (!user) {
+        return;
+      } 
 
-      const farmer: any = getFromLocalStorage("farmer-profile", {});
+      const farmerId =
+        user.userType === "agent" ? farmerProfile?.id : undefined;
+
       await apiService().patchFormData(
         "/sellers/profile/update-profile",
         formData,
         true,
-        user?.userType === "agent" ? farmer.id : "",
+        farmerId
       );
 
       // Update initialData and reset form to new values
@@ -224,9 +215,7 @@ export default function EditProfile() {
       };
       setInitialData(updatedData);
       form.reset(updatedData);
-      setFiles([]); // Clear files to prevent re-uploading
-      setHasChanges(false); // Disable button
-      checkForChanges(updatedData); // Re-check changes
+      setFiles([]); // Clear files to prevent re-upload
       successMessage("Profile updated successfully!");
       navigation("/seller-dashboard");
     } catch (error: any) {
@@ -358,7 +347,7 @@ export default function EditProfile() {
               <div className="flex justify-end mb-8">
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !hasChanges || !initialData}
+                  disabled={isSubmitting  || !initialData}
                   className="my-4"
                 >
                   {isSubmitting ? "Updating..." : "Update Profile"}

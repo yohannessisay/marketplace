@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
@@ -27,6 +27,8 @@ import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { APIErrorResponse } from "@/types/api";
+import { useAuth } from "@/hooks/useAuth";
+import { getFromLocalStorage } from "@/lib/utils";
 
 const SkeletonBankForm = () => (
   <div className="space-y-8 shadow-lg px-8 rounded-md py-4">
@@ -80,12 +82,12 @@ export default function EditBank() {
   const navigation = useNavigate();
   const { id } = useParams();
   const [isClient, setIsClient] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const [initialData, setInitialData] = useState<BankInfoFormData | null>(null);
   const { successMessage, errorMessage } = useNotification();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const { user } = useAuth();
+  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const form = useForm<BankInfoFormData>({
     resolver: zodResolver(bankInfoSchema),
     defaultValues: {
@@ -98,51 +100,26 @@ export default function EditBank() {
     },
   });
 
-  const checkForChanges = useCallback(
-    (formValues: BankInfoFormData) => {
-      if (!initialData) return;
+ 
 
-      const formChanged =
-        (formValues.account_holder_name?.trim() || "") !==
-          (initialData.account_holder_name || "") ||
-        (formValues.bank_name?.trim() || "") !==
-          (initialData.bank_name || "") ||
-        (formValues.account_number?.trim() || "") !==
-          (initialData.account_number || "") ||
-        (formValues.branch_name?.trim() || "") !==
-          (initialData.branch_name || "") ||
-        (formValues.swift_code?.trim() || "") !==
-          (initialData.swift_code || "") ||
-        formValues.is_primary !== initialData.is_primary;
-
-      setHasChanges(formChanged);
-    },
-    [initialData],
-  );
-
-  const watchedFields = form.watch([
-    "account_holder_name",
-    "bank_name",
-    "account_number",
-    "branch_name",
-    "swift_code",
-    "is_primary",
-  ]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      checkForChanges(form.getValues());
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [watchedFields, checkForChanges, form]);
+   
+ 
 
   useEffect(() => {
     setIsClient(true);
     const fetchBankData = async () => {
       try {
         setIsLoading(true);
+        if (!user) {
+          return;
+        } 
+  
+        const farmerId =
+          user.userType === "agent" ? farmerProfile?.id : undefined;
+  
         const response: any = await apiService().get(
           `/sellers/banks/get-bank-information?bankId=${id}`,
+          farmerId
         );
         const bankData: BankInfoFormData = {
           account_holder_name:
@@ -170,11 +147,18 @@ export default function EditBank() {
   const onSubmit = async (data: BankInfoFormData) => {
     try {
       setIsSubmitting(true);
+      if (!user) {
+        return;
+      } 
+
+      const farmerId =
+        user.userType === "agent" ? farmerProfile?.id : undefined;
+
       await apiService().patch("/sellers/banks/update-bank-information", {
         ...data,
         id: id,
         is_primary: data.is_primary === "yes",
-      });
+      },farmerId);
       const updatedData: BankInfoFormData = {
         account_holder_name: data.account_holder_name || "",
         bank_name: data.bank_name || "",
@@ -184,9 +168,7 @@ export default function EditBank() {
         is_primary: data.is_primary,
       };
       setInitialData(updatedData);
-      form.reset(updatedData);
-      setHasChanges(false);
-      checkForChanges(updatedData);
+      form.reset(updatedData);  
       successMessage("Bank details updated successfully!");
       navigation("/seller-dashboard");
     } catch (error: any) {
@@ -346,7 +328,7 @@ export default function EditBank() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !hasChanges}
+                  disabled={isSubmitting}
                   className="my-4"
                 >
                   {isSubmitting ? "Updating..." : "Update bank information"}
