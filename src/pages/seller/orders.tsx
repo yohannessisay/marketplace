@@ -584,44 +584,44 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     setFetchedTabs((prev) => ({ ...prev, bids: false }));
   };
 
-  const deleteOrder = async (orderId: string) => {
-    if (!orderId) {
-      errorMessage({
-        success: false,
-        error: {
-          message: "Invalid order ID",
-          details: "No order ID provided",
-          code: 400,
-        },
-      });
-      return;
-    }
+  // const deleteOrder = async (orderId: string) => {
+  //   if (!orderId) {
+  //     errorMessage({
+  //       success: false,
+  //       error: {
+  //         message: "Invalid order ID",
+  //         details: "No order ID provided",
+  //         code: 400,
+  //       },
+  //     });
+  //     return;
+  //   }
 
-    try {
-      await apiService().post(`/orders/cancel-order?orderId=${orderId}`, {});
-      setActiveOrders((prev) => prev.filter((order) => order.id !== orderId));
-      setActivePagination((prev) => {
-        const newTotalItems = Math.max(0, prev.totalItems - 1);
-        const newTotalPages = Math.ceil(newTotalItems / prev.limit);
-        return {
-          ...prev,
-          totalItems: newTotalItems,
-          totalPages: newTotalPages,
-          page:
-            activeCurrentPage > newTotalPages && newTotalPages > 0
-              ? newTotalPages
-              : prev.page,
-        };
-      });
-      if (expandedOrderId === orderId) {
-        setExpandedOrderId(null);
-      }
-      successMessage("Order cancelled successfully");
-    } catch (error: unknown) {
-      const errorResponse = error as APIErrorResponse;
-      errorMessage(errorResponse);
-    }
-  };
+  //   try {
+  //     await apiService().post(`/orders/cancel-order?orderId=${orderId}`, {});
+  //     setActiveOrders((prev) => prev.filter((order) => order.id !== orderId));
+  //     setActivePagination((prev) => {
+  //       const newTotalItems = Math.max(0, prev.totalItems - 1);
+  //       const newTotalPages = Math.ceil(newTotalItems / prev.limit);
+  //       return {
+  //         ...prev,
+  //         totalItems: newTotalItems,
+  //         totalPages: newTotalPages,
+  //         page:
+  //           activeCurrentPage > newTotalPages && newTotalPages > 0
+  //             ? newTotalPages
+  //             : prev.page,
+  //       };
+  //     });
+  //     if (expandedOrderId === orderId) {
+  //       setExpandedOrderId(null);
+  //     }
+  //     successMessage("Order cancelled successfully");
+  //   } catch (error: unknown) {
+  //     const errorResponse = error as APIErrorResponse;
+  //     errorMessage(errorResponse);
+  //   }
+  // };
 
   // Render order status progress
   const renderOrderProgress = (order: Order) => {
@@ -961,7 +961,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
 
   // Order Item Component
   const OrderItem = ({ item, tabType }: { item: Order; tabType: string }) => {
-    const isOrderTab = tabType === "current" || tabType === "historical";
+    // const isOrderTab = tabType === "current" || tabType === "historical";
     const isExpanded = expandedOrderId === item.id;
     const listing: Listing | undefined = item.listing;
 
@@ -1025,7 +1025,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
               <Badge
                 variant={
                   item.status === "completed"
-                    ? "secondary"
+                    ? "default"
                     : item.status === "confirmed"
                       ? "default"
                       : item.status === "pending"
@@ -1114,7 +1114,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
               </div>
 
               {tabType === "current" && renderOrderProgress(item)}
-
+              {/*
               <div className="mt-4 flex justify-end space-x-3">
                 {tabType === "current" && (
                   <>
@@ -1130,7 +1130,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                     </Link>
                   </>
                 )}
-              </div>
+              </div> */}
             </div>
           )}
 
