@@ -13,6 +13,8 @@ import {
   User2,
   Menu,
   Settings,
+  UserCheck,
+  LogIn,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -36,9 +38,11 @@ import Logo from "./Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { useMobile } from "@/hooks/useMobile";
 import { chatService } from "@/services/chatService";
+import { getFromLocalStorage } from "@/lib/utils";
 
 export default function Header() {
   const { user } = useAuth();
+  const farmerProfile = getFromLocalStorage("farmer-profile", {});
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
@@ -95,6 +99,27 @@ export default function Header() {
 
   const loginUrl = `/login?redirectTo=${encodeURIComponent(location.pathname)}`;
 
+  // Determine navigation items for agent based on farmer profile
+  const isAgentWithFarmerProfile =
+    user?.userType === "agent" && Object.keys(farmerProfile).length > 0;
+
+  const agentNavItems = isAgentWithFarmerProfile
+    ? [
+        { to: "/seller-dashboard", label: "My Dashboard", icon: Home },
+        { to: "/my-orders", label: "My Orders", icon: ShoppingBagIcon },
+        { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
+        { to: "/chats", label: "Chats", icon: Send },
+      ]
+    : [
+        {
+          to: "/agent/farmer-management",
+          label: "Farmer Management",
+          icon: List,
+        },
+        { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
+        { to: "/chats", label: "Chats", icon: Send },
+      ];
+
   return (
     <header
       className={clsx(
@@ -125,16 +150,26 @@ export default function Header() {
                   </>
                 )}
 
-                {user.userType === "agent" && (
-                  <Link
-                    to="/agent/farmer-management"
-                    className={linkClasses("/agent/farmer-management")}
-                  >
-                    <List className="h-4 w-4 text-green-400" />
-                    Farmer Management
-                  </Link>
-                )}
+                {user.userType === "agent" &&
+                  agentNavItems.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={linkClasses(item.to)}
+                    >
+                      <item.icon className="h-4 w-4 text-green-400" />
+                      {item.label}
+                    </Link>
+                  ))}
 
+                {user.userType === "buyer" && (
+                  <>
+                    <Link to="/my-orders" className={linkClasses("/my-orders")}>
+                      <ShoppingBagIcon className="h-4 w-4 text-green-400" />
+                      My Orders
+                    </Link>
+                  </>
+                )}
                 <Link
                   to="/market-place"
                   className={linkClasses("/market-place")}
@@ -142,13 +177,6 @@ export default function Header() {
                   <LucideShoppingBag className="h-4 w-4 text-green-400" />
                   Marketplace
                 </Link>
-
-                {user.userType === "buyer" && (
-                  <Link to="/my-orders" className={linkClasses("/my-orders")}>
-                    <ShoppingBagIcon className="h-4 w-4 text-green-400" />
-                    My Orders
-                  </Link>
-                )}
 
                 <Link to="/chats" className={linkClasses("/chats")}>
                   <Send className="h-4 w-4 text-green-400" />
@@ -194,6 +222,15 @@ export default function Header() {
                       </span>
                     </div>
                     <Separator className="my-2" />
+                    {user.userType === "agent" && !isAgentWithFarmerProfile && (
+                      <Link
+                        to="/agent/profile"
+                        className={linkClasses("/agent/profile")}
+                      >
+                        <UserCheck className="h-4 w-4 text-green-400" />
+                        Profile
+                      </Link>
+                    )}
                     {user.userType === "buyer" && (
                       <Link to="/settings" className={linkClasses("/settings")}>
                         <Settings className="h-4 w-4 text-green-400" />
@@ -271,54 +308,64 @@ export default function Header() {
                       </>
                     )}
 
-                    {user.userType === "agent" && (
-                      <Link
-                        to="/agent/farmer-management"
-                        className={linkClasses("/agent/farmer-management")}
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <List className="h-4 w-4 text-green-400" />
-                        Farmer Management
-                      </Link>
-                    )}
-
-                    <Link
-                      to="/market-place"
-                      className={linkClasses("/market-place")}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <LucideShoppingBag className="h-4 w-4 text-green-400" />
-                      Marketplace
-                    </Link>
+                    {user.userType === "agent" &&
+                      agentNavItems.map((item) => (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          className={linkClasses(item.to)}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <item.icon className="h-4 w-4 text-green-400" />
+                          {item.label}
+                        </Link>
+                      ))}
 
                     {user.userType === "buyer" && (
-                      <Link
-                        to="/my-orders"
-                        className={linkClasses("/my-orders")}
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <ShoppingBagIcon className="h-4 w-4 text-green-400" />
-                        My Orders
-                      </Link>
+                      <>
+                        <Link
+                          to="/my-orders"
+                          className={linkClasses("/my-orders")}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <ShoppingBagIcon className="h-4 w-4 text-green-400" />
+                          My Orders
+                        </Link>
+                        <Link
+                          to="/market-place"
+                          className={linkClasses("/market-place")}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <LucideShoppingBag className="h-4 w-4 text-green-400" />
+                          Marketplace
+                        </Link>
+                        <Link
+                          to="/chats"
+                          className={linkClasses("/chats")}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Send className="h-4 w-4 text-green-400" />
+                          Chats
+                        </Link>
+                        <Link
+                          to="/settings"
+                          className={linkClasses("/settings")}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Settings className="h-4 w-4 text-green-400" />
+                          Settings
+                        </Link>
+                      </>
                     )}
 
-                    <Link
-                      to="/chats"
-                      className={linkClasses("/chats")}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Send className="h-4 w-4 text-green-400" />
-                      Chats
-                    </Link>
-
-                    {user.userType === "buyer" && (
+                    {user.userType === "agent" && !isAgentWithFarmerProfile && (
                       <Link
-                        to="/settings"
-                        className={linkClasses("/settings")}
+                        to="/agent/profile"
+                        className={linkClasses("/agent/profile")}
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <Settings className="h-4 w-4 text-green-400" />
-                        Settings
+                        <UserCheck className="h-4 w-4 text-green-400" />
+                        Profile
                       </Link>
                     )}
 
@@ -347,7 +394,7 @@ export default function Header() {
                       className={linkClasses("/login")}
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      <User className="h-4 w-4 text-green-400" />
+                      <LogIn className="h-4 w-4 text-green-400" />
                       Login
                     </Link>
                     <Link
