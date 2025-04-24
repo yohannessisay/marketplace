@@ -152,10 +152,14 @@ export default function Header() {
                         ? "My Dashboard"
                         : "Onboarding"}
                     </Link>
-                    <Link to="/orders" className={linkClasses("/orders")}>
-                      <Receipt className="h-4 w-4 text-green-400" />
-                      Orders
-                    </Link>
+                    {user.onboarding_stage === "completed" ? (
+                      <Link to="/orders" className={linkClasses("/orders")}>
+                        <Receipt className="h-4 w-4 text-green-400" />
+                        Orders
+                      </Link>
+                    ) : (
+                      <></>
+                    )}
                   </>
                 )}
 

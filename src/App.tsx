@@ -150,7 +150,7 @@ const RouterContent: React.FC = () => {
         path="/add-farm"
         element={
           <ProtectedRoute>
-            <AddFarm />
+               {currentStep === "completed" ?<AddFarm />:<FarmDetails />}
           </ProtectedRoute>
         }
       />
@@ -166,7 +166,7 @@ const RouterContent: React.FC = () => {
         path="/add-crop"
         element={
           <ProtectedRoute>
-            <AddCrop />
+            {currentStep === "completed" ? <AddCrop /> : <FarmDetails />}
           </ProtectedRoute>
         }
       />
