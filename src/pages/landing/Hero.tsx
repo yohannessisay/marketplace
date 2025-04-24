@@ -66,8 +66,11 @@ export default function Hero() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <ContactModal />
-              <Link to="/market-place">
-                <Button className="bg-white text-green-700 hover:bg-primary hover:text-white">
+              <Link to="/market-place" className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  className="w-full bg-white text-green-700 hover:bg-primary hover:text-white"
+                >
                   Marketplace
                 </Button>
               </Link>
@@ -82,17 +85,7 @@ export default function Hero() {
             <p className="text-white/70 mb-4 md:mb-0">
               © {new Date().getFullYear()} AfroValley. All rights reserved.
             </p>
-            <div className="flex space-x-6">
-              {/* <Link to="#" className="text-white/70 hover:text-white">
-                Terms
-              </Link>
-              <Link to="#" className="text-white/70 hover:text-white">
-                Privacy
-              </Link>
-              <Link to="#" className="text-white/70 hover:text-white">
-                Contact
-              </Link> */}
-            </div>
+            <div className="flex space-x-6"></div>
           </div>
         </div>
       </footer>
