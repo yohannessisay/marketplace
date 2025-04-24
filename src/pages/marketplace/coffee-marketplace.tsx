@@ -466,6 +466,7 @@ export default function CoffeeMarketplace() {
                         onChange={(e) =>
                           handleFilterChange("min_price", e.target.value)
                         }
+                        min={0}
                       />
                     </div>
                     <div className="space-y-2">
@@ -478,6 +479,7 @@ export default function CoffeeMarketplace() {
                         onChange={(e) =>
                           handleFilterChange("max_price", e.target.value)
                         }
+                        min={0}
                       />
                     </div>
                     <div className="flex items-end">

@@ -7,55 +7,90 @@ import { CoffeeDetails } from "./coffee-details";
 import { OrderSidebar } from "./order-sidebar";
 import { ReviewModal } from "./review-modal";
 import { OrderModal } from "./order-modal";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { CoffeeListing } from "@/types/coffee";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import { SignUpPromptModal } from "@/components/modals/SignUpPromptModal";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 
 export default function CoffeeListingPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [demoOrderStatus, setDemoOrderStatus] = useState<OrderStatus>("none");
   const [listing, setListing] = useState<CoffeeListing | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const [showNotFound, setShowNotFound] = useState<boolean>(false);
+  const [fetched, setFetched] = useState<boolean>(false);
   const { successMessage, errorMessage } = useNotification();
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [quantity, setQuantity] = useState(100);
 
-  const fetchListingDetails = useCallback(async (listingId: string) => {
-    if (!listingId || loading) return;
-    setLoading(true);
-    try {
-      const response: any = await apiService().getWithoutAuth(
-        `/marketplace/listings/get-listing?listingId=${listingId}`,
+  const fetchListingDetails = useCallback(
+    async (listingId: string, isRetry: boolean = false) => {
+      if (!listingId || loading) return;
+      console.log(
+        `[CoffeeListingPage] Fetching listing ${listingId}, isRetry: ${isRetry}`,
       );
+      setLoading(true);
+      try {
+        const response: any = await apiService().getWithoutAuth(
+          `/marketplace/listings/get-listing?listingId=${listingId}`,
+        );
 
-      if (
-        response.success &&
-        response.data.listings &&
-        response.data.listings.length > 0
-      ) {
-        setListing(response.data.listings[0]);
-      } else {
+        if (
+          response.success &&
+          response.data.listings &&
+          response.data.listings.length > 0
+        ) {
+          setListing(response.data.listings[0]);
+          setShowNotFound(false);
+          setFetched(true);
+          console.log(
+            `[CoffeeListingPage] Successfully fetched listing ${listingId}`,
+          );
+        } else {
+          throw new Error("Failed to fetch listing details");
+        }
+      } catch (error: any) {
+        console.error(
+          `[CoffeeListingPage] Error fetching listing ${listingId}:`,
+          error,
+        );
         setListing(null);
-        errorMessage({ message: "Failed to fetch listing details" });
+        if (!isRetry && retryCount < 1) {
+          console.log(`[CoffeeListingPage] Retrying listing ${listingId}`);
+          setRetryCount(1);
+          setTimeout(() => fetchListingDetails(listingId, true), 1000); // Retry after 1s
+        } else {
+          setShowNotFound(true);
+          setFetched(true);
+          errorMessage(error as APIErrorResponse);
+          console.log(
+            `[CoffeeListingPage] Showing NotFoundUI for listing ${listingId}`,
+          );
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (error: any) {
-      setListing(null);
-      errorMessage(error as APIErrorResponse);
-    } finally {
-      setLoading(false);
-    }
-  }, []); // Remove errorMessage from dependencies
+    },
+    [loading, retryCount, errorMessage],
+  );
 
   useEffect(() => {
-    if (id) {
+    if (id && !fetched) {
       fetchListingDetails(id);
+    } else if (!id) {
+      setShowNotFound(true);
+      setFetched(true);
+      console.log("[CoffeeListingPage] No listingId, showing NotFoundUI");
     }
-  }, [id, fetchListingDetails]);
+  }, [id, fetchListingDetails, fetched]);
 
   const handleOrderSubmit = useCallback(async () => {
     if (!listing) return;
@@ -98,8 +133,49 @@ export default function CoffeeListingPage() {
     </div>
   );
 
+  const NotFoundUI = () => (
+    <div
+      className="bg-primary/5 p-8 min-h-screen flex items-center justify-center"
+      role="alert"
+      aria-live="polite"
+    >
+      <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
+        <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          Listing Not Found
+        </h2>
+        <p className="text-gray-600 mb-6">
+          The coffee listing you’re looking for doesn’t exist or is no longer
+          available.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Button
+            onClick={() => navigate("/marketplace")}
+            className="bg-primary text-white hover:bg-primary/90"
+          >
+            Back to Marketplace
+          </Button>
+          <Button
+            onClick={() => {
+              if (id && retryCount < 1) {
+                setRetryCount(1);
+                setFetched(false); // Allow retry
+                fetchListingDetails(id, true);
+              }
+            }}
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            disabled={retryCount >= 1}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) return <SkeletonLoader />;
-  if (!listing && !loading) return <div>No listing found.</div>;
+  if (showNotFound || (!listing && fetched)) return <NotFoundUI />;
 
   return (
     <div className="bg-primary/5 p-8 min-h-screen">

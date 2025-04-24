@@ -51,7 +51,7 @@ export function SignUpPromptModal({
             {message}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col space-y-3 mt-6">
+        <div className="flex flex-col space-y-5 mt-6">
           <Button
             onClick={handleSignUp}
             className="w-full py-6 text-base font-medium transition-all hover:shadow-md"
@@ -61,24 +61,9 @@ export function SignUpPromptModal({
           <Button
             onClick={handleSignIn}
             variant="outline"
-            className="w-full py-6 text-base font-medium border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:shadow-md"
+            className="w-full py-6 text-base mb-25 font-medium border-emerald-600 text-emerald-600 hover:bg-emerald-50 hover:shadow-md"
           >
             Sign In
-          </Button>
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-slate-500">or</span>
-            </div>
-          </div>
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            className="w-full text-slate-600 hover:bg-slate-100 py-6 text-base"
-          >
-            Continue Without Account
           </Button>
         </div>
       </DialogContent>
