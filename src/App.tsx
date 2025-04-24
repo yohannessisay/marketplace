@@ -150,7 +150,7 @@ const RouterContent: React.FC = () => {
         path="/add-farm"
         element={
           <ProtectedRoute>
-               {currentStep === "completed" ?<AddFarm />:<FarmDetails />}
+               {currentStep === "completed" ?<AddFarm />:<Welcome />}
           </ProtectedRoute>
         }
       />
@@ -166,7 +166,7 @@ const RouterContent: React.FC = () => {
         path="/add-crop"
         element={
           <ProtectedRoute>
-            {currentStep === "completed" ? <AddCrop /> : <FarmDetails />}
+            {currentStep === "completed" ? <AddCrop /> : <Welcome />}
           </ProtectedRoute>
         }
       />
@@ -230,7 +230,7 @@ const RouterContent: React.FC = () => {
         path="/seller-dashboard"
         element={
           <ProtectedRoute>
-            {currentStep === "completed" ? <FarmManagement /> : <FarmDetails />}
+            {currentStep === "completed" ? <FarmManagement /> : <Welcome />}
           </ProtectedRoute>
         }
       />

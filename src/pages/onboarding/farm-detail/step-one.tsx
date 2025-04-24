@@ -36,16 +36,15 @@ import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { FileUpload } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
-import { useNotification } from "@/hooks/useNotification";
-import { FileIcon, X } from "lucide-react";
+import { useNotification } from "@/hooks/useNotification"; 
 import { APIErrorResponse } from "@/types/api";
 
 export default function StepOne() {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
-  const [govFile, setGovFile] = useState<File | null>(null);
-  const [landFile, setLandFile] = useState<File | null>(null);
+  const [govFiles, setGovFiles] = useState<File[]>([]);
+  const [landFiles, setLandFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
@@ -83,7 +82,7 @@ export default function StepOne() {
     setIsClient(true);
     const savedData = getFromLocalStorage<FarmDetailsFormData>(
       "step-one",
-      {} as FarmDetailsFormData,
+      {} as FarmDetailsFormData
     );
     if (savedData && Object.keys(savedData).length > 0) {
       reset(savedData);
@@ -93,7 +92,7 @@ export default function StepOne() {
     setGovFileError("");
     setLandFileError("");
 
-    if (!govFile) {
+    if (govFiles.length === 0) {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -108,7 +107,7 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    if (!landFile) {
+    if (landFiles.length === 0) {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -123,7 +122,9 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    if (govFile.size > 5 * 1024 * 1024) {
+    // Check file sizes
+    const oversizedGovFiles = govFiles.some(file => file.size > 5 * 1024 * 1024);
+    if (oversizedGovFiles) {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -138,7 +139,8 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    if (landFile.size > 5 * 1024 * 1024) {
+    const oversizedLandFiles = landFiles.some(file => file.size > 5 * 1024 * 1024);
+    if (oversizedLandFiles) {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -175,12 +177,19 @@ export default function StepOne() {
         }
       }
 
-      formData.append("files", govFile!);
-      formData.append("files", landFile!);
+      // Append all government files
+      govFiles.forEach(file => {
+        formData.append("govFiles", file);
+      });
+
+      // Append all land files
+      landFiles.forEach(file => {
+        formData.append("landFiles", file);
+      });
 
       const isBackButtonClicked = getFromLocalStorage(
         "back-button-clicked",
-        false,
+        false
       );
 
       if (
@@ -193,7 +202,7 @@ export default function StepOne() {
           "/onboarding/seller/farm-details",
           formData,
           true,
-          isAgent === "agent" && farmer ? farmer.id : "",
+          isAgent === "agent" && farmer ? farmer.id : ""
         );
 
         if (response?.success) {
@@ -219,7 +228,7 @@ export default function StepOne() {
             "/sellers/farms/update-farm",
             formData,
             true,
-            isAgent === "agent" && farmer ? farmer.id : "",
+            isAgent === "agent" && farmer ? farmer.id : ""
           );
 
           if (response.success) {
@@ -262,7 +271,7 @@ export default function StepOne() {
                 Upload your farm documents
               </h3>
               <p className="text-sm text-gray-600">
-                Upload a clear government registration and land rights document.
+                Upload clear government registration and land rights documents.
                 Make sure text is readable and high-quality
               </p>
             </div>
@@ -270,51 +279,27 @@ export default function StepOne() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <Card className="max-w-2xl mx-auto">
                 <CardHeader>
-                  <CardTitle>Government registration document</CardTitle>
+                  <CardTitle>Government registration documents</CardTitle>
                   <CardDescription>
-                    Upload PDF documents or images (Max 1 file, 5MB)
+                    Upload PDF documents or images (Max 5 files, 5MB each)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {govFile ? (
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <FileIcon className="h-5 w-5 text-gray-500" />
-                        <span className="text-sm truncate max-w-[200px]">
-                          {govFile.name}
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setGovFile(null);
-                          setGovFileError("");
-                        }}
-                        className="h-8 w-8"
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <FileUpload
-                      onFilesSelected={(files) => {
-                        if (files.length > 0) {
-                          setGovFile(files[0]);
-                          setGovFileError("");
-                        }
-                      }}
-                      maxFiles={1}
-                      maxSizeMB={5}
-                    />
-                  )}
+                  <FileUpload
+                    onFilesSelected={(files) => {
+                      setGovFiles(files);
+                      setGovFileError("");
+                    }}
+                    maxFiles={5}
+                    maxSizeMB={5}
+                  />
                   {govFileError && (
                     <p className="text-red-500 text-sm mt-2">{govFileError}</p>
                   )}
                 </CardContent>
                 <CardFooter>
                   <div className="text-sm text-muted-foreground">
-                    {govFile ? "1 file selected" : "No file selected"}
+                    {govFiles.length > 0 ? `${govFiles.length} files selected` : "No files selected"}
                   </div>
                 </CardFooter>
               </Card>
@@ -323,49 +308,25 @@ export default function StepOne() {
                 <CardHeader>
                   <CardTitle>Land right documents</CardTitle>
                   <CardDescription>
-                    Upload PDF documents or images (Max 1 file, 5MB)
+                    Upload PDF documents or images (Max 5 files, 5MB each)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {landFile ? (
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <FileIcon className="h-5 w-5 text-gray-500" />
-                        <span className="text-sm truncate max-w-[200px]">
-                          {landFile.name}
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setLandFile(null);
-                          setLandFileError("");
-                        }}
-                        className="h-8 w-8"
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <FileUpload
-                      onFilesSelected={(files) => {
-                        if (files.length > 0) {
-                          setLandFile(files[0]);
-                          setLandFileError("");
-                        }
-                      }}
-                      maxFiles={1}
-                      maxSizeMB={5}
-                    />
-                  )}
+                  <FileUpload
+                    onFilesSelected={(files) => {
+                      setLandFiles(files);
+                      setLandFileError("");
+                    }}
+                    maxFiles={5}
+                    maxSizeMB={5}
+                  />
                   {landFileError && (
                     <p className="text-red-500 text-sm mt-2">{landFileError}</p>
                   )}
                 </CardContent>
                 <CardFooter>
                   <div className="text-sm text-muted-foreground">
-                    {landFile ? "1 file selected" : "No file selected"}
+                    {landFiles.length > 0 ? `${landFiles.length} files selected` : "No files selected"}
                   </div>
                 </CardFooter>
               </Card>
@@ -419,7 +380,7 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input disabled {...field} value="Ethiopia" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

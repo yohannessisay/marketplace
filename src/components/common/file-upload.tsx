@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useRef, type DragEvent } from "react";
+import { useState, useRef, type DragEvent, useEffect } from "react";
 import { FileIcon, X, Upload, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
@@ -79,6 +79,17 @@ export function FileUpload({
 
   const processFiles = async (fileList: FileList | File[]) => {
     const filesArray = Array.from(fileList);
+    
+    // Check if the files array is empty
+    if (filesArray.length === 0) {
+      setFiles([]);
+      setError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     const { valid, error } = validateFiles(filesArray);
 
     if (error) {
@@ -86,7 +97,14 @@ export function FileUpload({
       return;
     }
 
-    if (valid.length === 0) return;
+    if (valid.length === 0) {
+      setFiles([]);
+      setError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
 
     const newFilesWithPreview: FileWithPreview[] = await Promise.all(
       valid.map(async (file) => {
@@ -132,96 +150,120 @@ export function FileUpload({
 
   const removeFile = (indexToRemove: number) => {
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
-    setFiles(updatedFiles);
+    
+    // Clean up URL objects to prevent memory leaks
+    URL.revokeObjectURL(files[indexToRemove].preview);
+    
+    // Reset everything if no files remain
+    if (updatedFiles.length === 0) {
+      setFiles([]);
+      setError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';  // Reset the file input
+      }
+    } else {
+      setFiles(updatedFiles);
+    }
 
     if (onFilesSelected) {
       onFilesSelected(updatedFiles.map((f) => f.file));
     }
   };
 
-  const openFileDialog = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
+  // Cleanup URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      files.forEach(file => {
+        URL.revokeObjectURL(file.preview);
+      });
+    };
+  }, []);
 
   return (
     <div className={cn("w-full", className)}>
       <div
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 transition-colors cursor-pointer",
-          isDragging
-            ? "border-primary bg-muted/50"
-            : "border-muted-foreground/25 hover:border-primary/50",
-          "flex flex-col items-center justify-center gap-2",
+          "border-2 border-dashed rounded-lg p-6",
+          isDragging ? "border-primary bg-primary/5" : "border-gray-300",
+          "transition-colors duration-200",
+          "relative"
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={openFileDialog}
       >
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,application/pdf"
-          onChange={handleFileInputChange}
           className="hidden"
-          multiple
+          onChange={handleFileInputChange}
+          accept="image/*,.pdf"
+          multiple={maxFiles > 1}
         />
-        <Upload className="h-10 w-10 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground text-center">
-          <span className="font-medium">Click to upload</span> or drag and drop
-        </p>
-        <p className="text-xs text-muted-foreground">
-          PDF and images only (max {maxFiles} files, up to {maxSizeMB}MB each)
-        </p>
-      </div>
 
-      {error && (
-        <div className="mt-3 flex items-center gap-2 text-destructive text-sm">
-          <AlertCircle className="h-4 w-4" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {files.length > 0 && (
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {files.map((file, index) => (
-            <div
-              key={`${file.file.name}-${index}`}
-              className="relative group border rounded-lg overflow-hidden"
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <Upload className="h-10 w-10 text-gray-400" />
+          <div className="text-center">
+            <Button
+              type="button"
+              variant="outline"
+              className="text-primary hover:text-primary/80"
+              onClick={() => fileInputRef.current?.click()}
             >
-              <div className="aspect-square flex items-center justify-center bg-muted/30">
-                {file.type === "image" ? (
-                  <img
-                    src={file.preview || "/placeholder.svg"}
-                    alt={file.file.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-2">
+              Click to upload
+            </Button>
+            <span className="text-gray-500"> or drag and drop</span>
+          </div>
+          <p className="text-sm text-gray-500">
+            PDF or images up to {maxSizeMB}MB
+          </p>
+        </div>
+
+        {error && (
+          <div className="mt-4 flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
+        {files.length > 0 && (
+          <div className="mt-6 space-y-4">
+            {files.map((file, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between rounded-lg border p-4"
+              >
+                <div className="flex items-center space-x-4">
+                  {file.type === "pdf" ? (
                     <FileIcon className="h-8 w-8 text-primary" />
-                    <p className="text-xs text-center mt-1 truncate w-full">
-                      {file.file.name}
+                  ) : (
+                    <img
+                      src={file.preview}
+                      alt="preview"
+                      className="h-8 w-8 rounded object-cover"
+                    />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium">{file.file.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(file.file.size / 1024 / 1024).toFixed(2)}MB
                     </p>
                   </div>
-                )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => removeFile(index)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeFile(index);
-                }}
-                className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Remove file</span>
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
