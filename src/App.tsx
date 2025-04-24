@@ -41,10 +41,10 @@ const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const ChatsPage = lazy(() => import("./pages/chats/ChatsPage"));
 const SettingsPage = lazy(() => import("./pages/buyers/settings/SettingsPage"));
 const FarmProfilePage = lazy(
-  () => import("./pages/farms/farm-profile/FarmProfilePage"),
+  () => import("./pages/farms/farm-profile/FarmProfilePage")
 );
 const CompanyOnboarding = lazy(
-  () => import("./pages/company/company-onboarding"),
+  () => import("./pages/company/company-onboarding")
 );
 
 initializeApiService(config.VITE_API_BASE_URL);
@@ -230,7 +230,7 @@ const RouterContent: React.FC = () => {
         path="/seller-dashboard"
         element={
           <ProtectedRoute>
-            <FarmManagement />
+            {currentStep === "completed" ? <FarmManagement /> : <FarmDetails />}
           </ProtectedRoute>
         }
       />

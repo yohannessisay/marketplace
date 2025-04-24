@@ -83,7 +83,7 @@ export default function Header() {
       path.startsWith(to)
         ? "text-green-700 font-semibold bg-gray-100"
         : "text-gray-600",
-      isMobile && "text-base",
+      isMobile && "text-base"
     );
 
   const handleLogout = () => {
@@ -105,7 +105,14 @@ export default function Header() {
 
   const agentNavItems = isAgentWithFarmerProfile
     ? [
-        { to: "/seller-dashboard", label: "My Dashboard", icon: Home },
+        {
+          to: "/seller-dashboard",
+          label:
+            user.onboarding_stage === "completed"
+              ? "My Dashboard"
+              : "Onboarding",
+          icon: Home,
+        },
         { to: "/my-orders", label: "My Orders", icon: ShoppingBagIcon },
         { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
         { to: "/chats", label: "Chats", icon: Send },
@@ -124,7 +131,7 @@ export default function Header() {
     <header
       className={clsx(
         "bg-white border-b border-gray-200 shadow-md fixed top-0 left-0 right-0 z-50 transition-transform duration-300",
-        isVisible ? "translate-y-0" : "-translate-y-full",
+        isVisible ? "translate-y-0" : "-translate-y-full"
       )}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center">
@@ -141,7 +148,9 @@ export default function Header() {
                       className={linkClasses("/seller-dashboard")}
                     >
                       <Home className="h-4 w-4 text-green-400" />
-                      My Dashboard
+                      {user.onboarding_stage === "completed"
+                        ? "My Dashboard"
+                        : "Onboarding"}
                     </Link>
                     <Link to="/orders" className={linkClasses("/orders")}>
                       <Receipt className="h-4 w-4 text-green-400" />
