@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus, X, FileText } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -82,7 +82,7 @@ export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [files, setFiles] = useState<FileWithId[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [photos, setPhotos] = useState<FileWithId[]>([]);
   const [farm, setFarm] = useState<Farm>();
   const [discounts, setDiscounts] = useState<
@@ -120,15 +120,7 @@ export default function StepTwo() {
     mode: "onChange",
   });
 
-  const handleFilesSelected = (selectedFiles: File[]) => {
-    if (selectedFiles.length > 0) {
-      setFiles([
-        Object.assign(selectedFiles[0], {
-          id: Math.random().toString(36).substring(2),
-        }),
-      ]);
-    }
-  };
+ 
 
   const handlePhotosSelected = (selectedPhotos: File[]) => {
     setPhotos((prev) => [
@@ -141,13 +133,6 @@ export default function StepTwo() {
     ]);
   };
 
-  const handleRemoveFile = (id: string, type: "files" | "photos") => {
-    if (type === "files") {
-      setFiles((prev) => prev.filter((file) => file.id !== id));
-    } else {
-      setPhotos((prev) => prev.filter((photo) => photo.id !== id));
-    }
-  };
 
   const handleAddDiscount = () => {
     setDiscounts((prev) => [
@@ -349,40 +334,19 @@ export default function StepTwo() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {files.length > 0 ? (
-                    <div className="mb-4">
-                      <Card className="p-4 flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <FileText className="h-8 w-8 text-gray-500" />
-                          <div>
-                            <p className="text-sm font-medium">
-                              {files[0].name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Grading Report
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveFile(files[0].id, "files")}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </Card>
-                    </div>
-                  ) : (
-                    <FileUpload
-                      onFilesSelected={handleFilesSelected}
-                      maxFiles={1}
+               
+                    <FileUpload 
+                      onFilesSelected={(files) => {
+                        setFiles(files); 
+                      }}
+                      maxFiles={5}
                       maxSizeMB={5}
                     />
-                  )}
+              
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {files.length > 0 ? "1 file selected" : "No file selected"}
+                    {files.length > 0 ? files.length+" files selected" : "No file selected"}
                   </div>
                 </CardFooter>
               </Card>
@@ -616,7 +580,7 @@ export default function StepTwo() {
 
               {/* Cup taste */}
               <h3 className="text-lg font-medium mb-4">Cup taste</h3>
-              <div className="grid grid-cols-Environmentals grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid  grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <FormField
                   control={form.control}
                   name="cup_taste_acidity"

@@ -66,7 +66,7 @@ export default function StepOne() {
       soil_type: "",
       farm_name: "",
       town_location: "",
-      country: "",
+      country: "Ethiopia",
       total_size_hectares: 0,
       coffee_area_hectares: 0,
       altitude_meters: 0,
@@ -179,12 +179,12 @@ export default function StepOne() {
 
       // Append all government files
       govFiles.forEach(file => {
-        formData.append("govFiles", file);
+        formData.append("files", file);
       });
 
       // Append all land files
       landFiles.forEach(file => {
-        formData.append("landFiles", file);
+        formData.append("files", file);
       });
 
       const isBackButtonClicked = getFromLocalStorage(
@@ -380,7 +380,7 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <FormControl>
-                        <Input disabled {...field} value="Ethiopia" />
+                        <Input   {...field} disabled />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

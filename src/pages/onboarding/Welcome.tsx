@@ -37,7 +37,7 @@ const StepItem: React.FC<StepItemProps> = ({
   isCompleted = false,
   isLast = false,
 }) => (
-  <div className="flex items-start group">
+  <div className={`${isActive?'border border-primary rounded-md p-2 shadow-md':''} flex items-start group`}>
     <div className="flex flex-col items-center mr-6">
       <div
         className={`relative flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
@@ -141,7 +141,7 @@ const WelcomePage: React.FC = () => {
                   title="Add Farms to Your Profile"
                   description="Register your coffee farms with key details like location, size, and production capacity to help buyers find your premium coffee."
                   icon={<Farm className="h-5 w-5" />}
-                  isActive={true}
+                  isActive={user?.onboarding_stage==='farm_profile'}
                 />
 
                 <StepItem
@@ -149,6 +149,7 @@ const WelcomePage: React.FC = () => {
                   title="Add Your Coffee Crops for Sale"
                   description="Showcase your coffee varieties with detailed information about processing methods, flavor profiles, and available quantities."
                   icon={<Coffee className="h-5 w-5" />}
+                  isActive={user?.onboarding_stage==='crops_to_sell'}
                 />
 
                 <StepItem
@@ -156,6 +157,7 @@ const WelcomePage: React.FC = () => {
                   title="Set Up Your Banking Information"
                   description="Connect your bank account to receive secure and timely payments when your coffee is purchased by buyers around the world."
                   icon={<BadgeDollarSign className="h-5 w-5" />}
+                  isActive={user?.onboarding_stage==='bank_information'}
                 />
 
                 <StepItem
@@ -163,6 +165,7 @@ const WelcomePage: React.FC = () => {
                   title="Complete Your Profile"
                   description="Add a professional profile picture and additional details about your farming practices to build trust with potential buyers."
                   icon={<User className="h-5 w-5" />}
+                  isActive={user?.onboarding_stage==='avatar_image'}
                   isLast={true}
                 />
               </>
@@ -176,6 +179,14 @@ const WelcomePage: React.FC = () => {
             to={
               user?.userType === "buyer"
                 ? "/company-onboarding"
+                : user?.onboarding_stage === "farm_profile"
+                ? "/onboarding/step-one"
+                : user?.onboarding_stage === "crops_to_sell"
+                ? "/onboarding/step-two"
+                : user?.onboarding_stage === "bank_information"
+                ? "/onboarding/step-three"
+                : user?.onboarding_stage === "avatar_image"
+                ? "/onboarding/step-four"
                 : "/onboarding/step-one"
             }
           >
