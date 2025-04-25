@@ -117,9 +117,9 @@ const FarmManagement: React.FC = () => {
   const [loadingBanks, setLoadingBanks] = useState(true);
   const [farmSearch, setFarmSearch] = useState("");
   const [listingSearch, setListingSearch] = useState("");
-  const [bankSearch, setBankSearch] = useState("");
   const [page] = useState(1);
   const [limit] = useState(10);
+
   const user: any = getFromLocalStorage("userProfile", {});
   let fmrId = null;
   if (user && user.userType === "agent") {
@@ -127,57 +127,74 @@ const FarmManagement: React.FC = () => {
     fmrId = farmer ? farmer.id : null;
   }
 
+  const fetchFarms = async (searchValue = farmSearch) => {
+    try {
+      setLoadingFarms(true);
+      const response: any = await apiService().get(
+        `/sellers/farms/get-farms?search=${searchValue}&page=${page}&limit=${limit}`,
+        fmrId ? fmrId : ""
+      );
+      setFarms(response.data.farms);
+    } catch (error) {
+      console.error("Failed to fetch farms:", error);
+    } finally {
+      setLoadingFarms(false);
+    }
+  };
+
+  const fetchListings = async (searchValue = listingSearch) => {
+    try {
+      setLoadingListings(true);
+      const response: any = await apiService().get(
+        `/sellers/listings/get-listings?search=${searchValue}&page=${page}&limit=${limit}`,
+        fmrId ? fmrId : ""
+      );
+      setListings(response.data.listings);
+    } catch (error) {
+      console.error("Failed to fetch listings:", error);
+    } finally {
+      setLoadingListings(false);
+    }
+  };
+
+  const fetchBanks = async () => {
+    try {
+      setLoadingBanks(true);
+      const response: any = await apiService().get(
+        `/sellers/banks/get-banks?page=${page}&limit=${limit}`,
+        fmrId ? fmrId : ""
+      );
+      setBanks(response.data.bank_accounts);
+    } catch (error) {
+      console.error("Failed to fetch banks:", error);
+    } finally {
+      setLoadingBanks(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchFarms = async () => {
-      try {
-        setLoadingFarms(true);
-        const response: any = await apiService().get(
-          `/sellers/farms/get-farms?search=${farmSearch}&page=${page}&limit=${limit}`,
-          fmrId ? fmrId : "",
-        );
-        setFarms(response.data.farms);
-      } catch (error) {
-        console.error("Failed to fetch farms:", error);
-      } finally {
-        setLoadingFarms(false);
-      }
-    };
-
-    const fetchListings = async () => {
-      try {
-        setLoadingListings(true);
-        const response: any = await apiService().get(
-          `/sellers/listings/get-listings?search=${listingSearch}&page=${page}&limit=${limit}`,
-          fmrId ? fmrId : "",
-        );
-        setListings(response.data.listings);
-      } catch (error) {
-        console.error("Failed to fetch listings:", error);
-      } finally {
-        setLoadingListings(false);
-      }
-    };
-
-    const fetchBanks = async () => {
-      try {
-        setLoadingBanks(true);
-        const response: any = await apiService().get(
-          `/sellers/banks/get-banks?search=${bankSearch}&page=${page}&limit=${limit}`,
-          fmrId ? fmrId : "",
-        );
-        setBanks(response.data.bank_accounts);
-      } catch (error) {
-        console.error("Failed to fetch banks:", error);
-      } finally {
-        setLoadingBanks(false);
-      }
-    };
-
     fetchFarms();
     fetchListings();
     fetchBanks();
-  }, [farmSearch, listingSearch, bankSearch, page, limit]);
+  }, []);
 
+  // Debounced fetch for farm search
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchFarms(farmSearch);
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [farmSearch]);
+
+  // Debounced fetch for listing search
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchListings(listingSearch);
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [listingSearch]);
   return (
     <div className="bg-primary/5 min-h-screen py-8 px-8">
       <Header />
@@ -329,7 +346,7 @@ const FarmManagement: React.FC = () => {
                               <Scale className="h-4 w-4 mr-2 text-slate-400" />
                               <span>
                                 {Number.parseInt(
-                                  farm.capacity_kg || "0",
+                                  farm.capacity_kg || "0"
                                 )?.toLocaleString()}{" "}
                                 kg capacity
                               </span>
@@ -511,7 +528,7 @@ const FarmManagement: React.FC = () => {
                             <span>
                               Created on{" "}
                               {new Date(
-                                listing.created_at,
+                                listing.created_at
                               ).toLocaleDateString()}
                             </span>
                           </div>
@@ -551,7 +568,7 @@ const FarmManagement: React.FC = () => {
 
           {/* Banks Tab */}
           <TabsContent value="banks">
-            <div className="mb-6 max-w-md bg-white my-4 p-4 rounded-md">
+            {/* <div className="mb-6 max-w-md bg-white my-4 p-4 rounded-md">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
@@ -561,7 +578,7 @@ const FarmManagement: React.FC = () => {
                   className="pl-10"
                 />
               </div>
-            </div>
+            </div> */}
 
             {loadingBanks ? (
               <p className="text-slate-500 text-center">Loading banks...</p>
@@ -573,11 +590,11 @@ const FarmManagement: React.FC = () => {
                 <h3 className="text-lg font-medium text-slate-700 mb-2">
                   No banks found
                 </h3>
-                <p className="text-slate-500 max-w-md mx-auto mb-6">
+                {/* <p className="text-slate-500 max-w-md mx-auto mb-6">
                   {bankSearch
                     ? "No banks match your search criteria."
                     : "You haven't added any banks to your account. Start by adding your first bank account."}
-                </p>
+                </p> */}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
