@@ -120,8 +120,6 @@ export default function StepTwo() {
     mode: "onChange",
   });
 
- 
-
   const handlePhotosSelected = (selectedPhotos: File[]) => {
     setPhotos((prev) => [
       ...prev,
@@ -133,16 +131,17 @@ export default function StepTwo() {
     ]);
   };
 
-
   const handleAddDiscount = () => {
-    setDiscounts((prev) => [
-      ...prev,
-      {
-        minimum_quantity_kg: 0,
-        discount_percentage: 0,
-        id: Math.random().toString(36).substring(2),
-      },
-    ]);
+    if (discounts.length < 1) {
+      setDiscounts((prev) => [
+        ...prev,
+        {
+          minimum_quantity_kg: 0,
+          discount_percentage: 0,
+          id: Math.random().toString(36).substring(2),
+        },
+      ]);
+    }
   };
 
   const handleRemoveDiscount = (id: string) => {
@@ -334,19 +333,19 @@ export default function StepTwo() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-               
-                    <FileUpload 
-                      onFilesSelected={(files) => {
-                        setFiles(files); 
-                      }}
-                      maxFiles={5}
-                      maxSizeMB={5}
-                    />
-              
+                  <FileUpload
+                    onFilesSelected={(files) => {
+                      setFiles(files);
+                    }}
+                    maxFiles={5}
+                    maxSizeMB={5}
+                  />
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {files.length > 0 ? files.length+" files selected" : "No file selected"}
+                    {files.length > 0
+                      ? files.length + " files selected"
+                      : "No file selected"}
                   </div>
                 </CardFooter>
               </Card>
