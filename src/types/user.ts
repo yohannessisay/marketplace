@@ -4,7 +4,7 @@ export interface UserProfile {
   first_name: string;
   last_name: string;
   phone: string;
-  verifican_status: string;
+  verification_status: string;
   avatar_url: string;
   userType: string;
   identity_verified: boolean;

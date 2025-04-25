@@ -82,6 +82,8 @@ export default function UserProfile() {
                  <PencilIcon className="h-4 w-4" />
                  <span className="sr-only">Edit photo</span>
                </Button>
+
+            
              </div>
              <div className="text-center sm:text-left">
                <h2 className="text-xl font-semibold">{profile.name}</h2>

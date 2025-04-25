@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
 import { getFromLocalStorage } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 
 const SkeletonProfileForm = () => (
   <div className="space-y-8 shadow-lg px-8 rounded-md py-4">
@@ -78,14 +79,13 @@ export default function EditProfile() {
   const [isClient, setIsClient] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false); 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialData, setInitialData] = useState<ProfileInfoFormData | null>(
-    null,
+    null
   );
   const { user } = useAuth();
   const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const { successMessage, errorMessage } = useNotification();
- 
 
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
@@ -100,7 +100,7 @@ export default function EditProfile() {
     try {
       if (!user) {
         return;
-      } 
+      }
 
       const farmerId =
         user.userType === "agent" ? farmerProfile?.id : undefined;
@@ -136,13 +136,11 @@ export default function EditProfile() {
         const imageUrl = event.target?.result as string;
         setProfileImage(imageUrl);
         localStorage.setItem("profile-image", imageUrl);
-        setFiles([file]); 
+        setFiles([file]);
       };
       reader.readAsDataURL(file);
     }
   };
-
- 
 
   useEffect(() => {
     setIsClient(true);
@@ -190,10 +188,10 @@ export default function EditProfile() {
           formData.append("files", file);
         });
       }
- 
+
       if (!user) {
         return;
-      } 
+      }
 
       const farmerId =
         user.userType === "agent" ? farmerProfile?.id : undefined;
@@ -280,12 +278,25 @@ export default function EditProfile() {
                             accept="image/*"
                             onChange={(e) => {
                               const selectedFiles = Array.from(
-                                e.target.files || [],
+                                e.target.files || []
                               );
                               handleFilesSelected(selectedFiles);
                             }}
                           />
                         </label>
+                      </div>
+                      <div className="pt-6">
+                        <h3 className="text-sm text-muted-foreground mb-2">
+                          Your profile is on verification stage
+                        </h3>
+                        <Progress
+                          value={user?.verification_status === "pending" ? 50 : 100  }
+                          className="h-2"
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Usually it takes few hours. Please check your email
+                          for updates
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
@@ -347,7 +358,7 @@ export default function EditProfile() {
               <div className="flex justify-end mb-8">
                 <Button
                   type="submit"
-                  disabled={isSubmitting  || !initialData}
+                  disabled={isSubmitting || !initialData}
                   className="my-4"
                 >
                   {isSubmitting ? "Updating..." : "Update Profile"}

@@ -39,7 +39,7 @@ export type LoginResponseData = {
     identity_verified: boolean;
     onboarding_stage: string;
     last_login_at: string;
-    verifican_status: string;
+    verification_status: string;
   };
 };
 
