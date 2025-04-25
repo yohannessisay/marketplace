@@ -136,8 +136,8 @@ export default function StepTwo() {
       setDiscounts((prev) => [
         ...prev,
         {
-          minimum_quantity_kg: 0,
-          discount_percentage: 0,
+          minimum_quantity_kg: 1,
+          discount_percentage: 1,
           id: Math.random().toString(36).substring(2),
         },
       ]);
@@ -516,6 +516,7 @@ export default function StepTwo() {
                       <FormControl>
                         <Input
                           type="number"
+                          min={0}
                           value={field.value}
                           onChange={(e) =>
                             field.onChange(Number(e.target.value) || 0)
@@ -535,6 +536,7 @@ export default function StepTwo() {
                       <FormControl>
                         <Input
                           type="number"
+                          min={0}
                           value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
@@ -749,6 +751,7 @@ export default function StepTwo() {
                       <FormControl>
                         <Input
                           type="number"
+                          min={1}
                           value={field.value}
                           onChange={(e) =>
                             field.onChange(Number(e.target.value) || 0)
@@ -769,6 +772,7 @@ export default function StepTwo() {
                         <Input
                           type="number"
                           value={field.value}
+                          min={0}
                           onChange={(e) =>
                             field.onChange(Number(e.target.value) || 0)
                           }
@@ -805,7 +809,7 @@ export default function StepTwo() {
                       >
                         <Input
                           type="number"
-                          min={0}
+                          min={1}
                           className="w-40"
                           placeholder="Min. quantity (kg)"
                           value={discount.minimum_quantity_kg}
@@ -820,18 +824,20 @@ export default function StepTwo() {
                         <span className="mx-2">kg</span>
                         <Input
                           type="number"
-                          min={0}
-                          max={100}
+                          min={1} 
+                          disabled={form.getValues().quantity_kg === 0}
                           className="w-32"
                           placeholder="Discount (%)"
                           value={discount.discount_percentage}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const inputValue = Number(e.target.value) || 0;
+                            const max = form.getValues().quantity_kg;
                             handleDiscountChange(
                               discount.id,
                               "discount_percentage",
-                              Number(e.target.value) || 0
-                            )
-                          }
+                              inputValue > max ? max : inputValue
+                            );
+                          }}
                         />
                         <span className="mx-2">%</span>
                         <Button
@@ -847,7 +853,7 @@ export default function StepTwo() {
                     ))}
                   </div>
                 )}
-                <Button
+                {discounts.length <1 &&<Button
                   type="button"
                   variant="ghost"
                   className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
@@ -855,7 +861,7 @@ export default function StepTwo() {
                 >
                   <Plus className="h-4 w-4" />
                   <span>Add discount</span>
-                </Button>
+                </Button>}
               </div>
             </div>
 
