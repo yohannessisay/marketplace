@@ -27,6 +27,7 @@ import { InfoIcon, MoveLeft } from "lucide-react";
 import { APIErrorResponse } from "@/types/api";
 import { SIGNUP_PROFILE_KEY } from "@/types/constants";
 import { saveToLocalStorage } from "@/lib/utils";
+import { Eye, EyeOff } from "lucide-react";
 
 type BuyerFormValues = z.infer<typeof buyerSchema>;
 type SellerFormValues = z.infer<typeof sellerSchema>;
@@ -37,6 +38,12 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { successMessage, errorMessage } = useNotification();
 
+  // Add these lines for password visibility toggles
+  const [buyerPasswordVisible, setBuyerPasswordVisible] = useState(false);
+  const [buyerConfirmPasswordVisible, setBuyerConfirmPasswordVisible] = useState(false);
+  const [sellerPasswordVisible, setSellerPasswordVisible] = useState(false);
+  const [sellerConfirmPasswordVisible, setSellerConfirmPasswordVisible] = useState(false);
+
   const buyerForm = useForm<BuyerFormValues>({
     resolver: zodResolver(buyerSchema),
     defaultValues: {
@@ -44,7 +51,8 @@ export default function SignupPage() {
       last_name: "",
       phone: "",
       email: "",
-      password: "",
+      password: "", 
+      confirm_password:"",
       preferredCurrency: "",
       companyName: "",
     },
@@ -59,6 +67,7 @@ export default function SignupPage() {
       phone: "",
       email: "",
       password: "",
+      confirm_password:"",
     },
     mode: "onChange",
   });
@@ -72,7 +81,7 @@ export default function SignupPage() {
       });
 
       successMessage(
-        "Buyer Registration successful! Please verify your email.",
+        "Buyer Registration successful! Please verify your email."
       );
       saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
@@ -92,7 +101,7 @@ export default function SignupPage() {
       });
 
       successMessage(
-        "Seller registration successful! Please verify your email.",
+        "Seller registration successful! Please verify your email."
       );
       saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
@@ -105,21 +114,23 @@ export default function SignupPage() {
 
   const handleRoleChange = (newRole: "buyer" | "seller") => {
     if (newRole === "buyer" && role === "seller") {
-      const { first_name, last_name, phone, email, password } =
+      const { first_name, last_name, phone, email, password,confirm_password } =
         sellerForm.getValues();
       buyerForm.setValue("first_name", first_name);
       buyerForm.setValue("last_name", last_name);
       buyerForm.setValue("phone", phone);
       buyerForm.setValue("email", email);
       buyerForm.setValue("password", password);
+      buyerForm.setValue("confirm_password", confirm_password);
     } else if (newRole === "seller" && role === "buyer") {
-      const { first_name, last_name, phone, email, password } =
+      const { first_name, last_name, phone, email, password ,confirm_password} =
         buyerForm.getValues();
       sellerForm.setValue("first_name", first_name);
       sellerForm.setValue("last_name", last_name);
       sellerForm.setValue("phone", phone);
       sellerForm.setValue("email", email);
       sellerForm.setValue("password", password);
+      sellerForm.setValue("confirm_password", confirm_password);
     }
 
     setRole(newRole);
@@ -236,13 +247,52 @@ export default function SignupPage() {
                   control={buyerForm.control}
                   name="password"
                   render={({ field }) => (
-                    <FormItem id="">
+                    <FormItem id="password">
                       <FormControl>
-                        <Input
-                          placeholder="Password*"
-                          type="password"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <Input
+                            placeholder="Password*"
+                            type={buyerPasswordVisible ? "text" : "password"}
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            onClick={() => setBuyerPasswordVisible((v) => !v)}
+                            tabIndex={-1}
+                          >
+                            {buyerPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={buyerForm.control}
+                  name="confirm_password"
+                  render={({ field }) => (
+                    <FormItem id="confirm_password">
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            placeholder="Confirm Password*"
+                            type={buyerConfirmPasswordVisible ? "text" : "password"}
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            onClick={() => setBuyerConfirmPasswordVisible((v) => !v)}
+                            tabIndex={-1}
+                          >
+                            {buyerConfirmPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -369,11 +419,50 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem id="password">
                       <FormControl>
-                        <Input
-                          placeholder="Password*"
-                          type="password"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <Input
+                            placeholder="Password*"
+                            type={sellerPasswordVisible ? "text" : "password"}
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            onClick={() => setSellerPasswordVisible((v) => !v)}
+                            tabIndex={-1}
+                          >
+                            {sellerPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={sellerForm.control}
+                  name="confirm_password"
+                  render={({ field }) => (
+                    <FormItem id="confirm_password">
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            placeholder="Confirm Password*"
+                            type={sellerConfirmPasswordVisible ? "text" : "password"}
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            onClick={() => setSellerConfirmPasswordVisible((v) => !v)}
+                            tabIndex={-1}
+                          >
+                            {sellerConfirmPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
