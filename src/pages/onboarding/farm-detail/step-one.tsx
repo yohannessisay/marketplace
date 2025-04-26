@@ -48,9 +48,8 @@ export default function StepOne() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
-  const userProfile = localStorage.getItem("userProfile");
-  const parsed = userProfile ? JSON.parse(userProfile) : null;
-  const currentUserStage = parsed?.onboarding_stage;
+  const userProfile:any = getFromLocalStorage("userProfile",{}); 
+  const currentUserStage = userProfile?.onboarding_stage;
 
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
@@ -92,7 +91,7 @@ export default function StepOne() {
     setGovFileError("");
     setLandFileError("");
 
-    if (govFiles.length === 0) {
+    if (govFiles.length === 0&&userProfile.onboarding_stage==="farm_profile") {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -107,7 +106,7 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    if (landFiles.length === 0) {
+    if (landFiles.length === 0&&userProfile.onboarding_stage==="farm_profile") {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -167,7 +166,7 @@ export default function StepOne() {
         return;
       }
 
-      const isAgent = parsed.userType;
+      const isAgent = userProfile.userType;
       const farmer: any = getFromLocalStorage("farmer-profile", {});
       const formData = new FormData();
 
@@ -206,8 +205,8 @@ export default function StepOne() {
         );
 
         if (response?.success) {
-          parsed.onboarding_stage = "crops_to_sell";
-          saveToLocalStorage("userProfile", parsed);
+          userProfile.onboarding_stage = "crops_to_sell";
+          saveToLocalStorage("userProfile", userProfile);
           saveToLocalStorage("step-one", data);
           if (response.data?.farm?.id) {
             saveToLocalStorage("farm-id", response.data.farm.id);

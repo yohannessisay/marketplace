@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus, X, FileText } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -71,7 +71,7 @@ export default function AddCrop() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingFarms, setIsLoadingFarms] = useState(true);
   const [isLoadingListing, setIsLoadingListing] = useState(false);
-  const [files, setFiles] = useState<FileWithId[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [photos, setPhotos] = useState<FileWithId[]>([]);
   const { successMessage, errorMessage } = useNotification();
   const [discounts, setDiscounts] = useState<
@@ -79,7 +79,7 @@ export default function AddCrop() {
   >([]);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farmError, setFarmError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const isLoading = isLoadingFarms || isLoadingListing;
 
@@ -115,12 +115,11 @@ export default function AddCrop() {
     const fetchFarms = async () => {
       setIsLoadingFarms(true);
       try {
-        if (!user) {
+        if (loading) {
           return;
         }
-
         const farmerId =
-          user.userType === "agent" ? farmerProfile?.id : undefined;
+          user?.userType === "agent" ? farmerProfile?.id : undefined;
 
         const response: any = await apiService().get(
           "/sellers/farms/get-farms",
@@ -161,14 +160,14 @@ export default function AddCrop() {
     };
 
     fetchFarms();
-  }, [farmIdFromQuery, id, form]);
+  }, [loading]);
 
   const populateForm = async (listingId: string) => {
     setIsLoadingListing(true);
     try {
       if (!user) {
         return;
-      } 
+      }
 
       const farmerId =
         user.userType === "agent" ? farmerProfile?.id : undefined;
@@ -188,8 +187,8 @@ export default function AddCrop() {
           bean_type: listing.bean_type || "",
           crop_year: listing.crop_year || "",
           processing_method: listing.processing_method || "",
-          moisture_percentage: listing.moisture_percentage || 0,
-          screen_size: Number(listing.screen_size) || 0,
+          moisture_percentage: listing.moisture_percentage || 1,
+          screen_size: Number(listing.screen_size) || 1,
           drying_method: listing.drying_method || "",
           wet_mill: listing.wet_mill || "",
           is_organic: listing.is_organic ? "true" : "false",
@@ -198,35 +197,13 @@ export default function AddCrop() {
           cup_taste_sweetness: listing.cup_taste_sweetness || "",
           cup_taste_aftertaste: listing.cup_taste_aftertaste || "",
           cup_taste_balance: listing.cup_taste_balance || "",
-          quantity_kg: listing.quantity_kg || 0,
-          price_per_kg: listing.price_per_kg || 0,
+          quantity_kg: listing.quantity_kg || 1,
+          price_per_kg: listing.price_per_kg || 1,
           readiness_date: listing.readiness_date || "",
           lot_length: listing.lot_length || "",
           delivery_type: listing.delivery_type || "",
           shipping_port: listing.shipping_port || "",
         });
-
-        if (response.data.listing.documents?.length > 0) {
-          const filesTemp: FileWithId[] = await Promise.all(
-            response.data.listing.documents.map(async (doc: any) => {
-              try {
-                const res = await fetch(doc.doc_url);
-                if (!res.ok) throw new Error(`Failed to fetch ${doc.doc_url}`);
-                const blob = await res.blob();
-                const fileName =
-                  doc.doc_url.split("/").pop() || `grading_report_${doc.id}`;
-                return Object.assign(
-                  new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id }
-                );
-              } catch (err) {
-                console.error(`Error fetching document ${doc.doc_url}:`, err);
-                return null;
-              }
-            })
-          );
-          setFiles(filesTemp.filter((f): f is FileWithId => f !== null));
-        }
 
         if (response.data.listing.photos?.length > 0) {
           const photosTemp: FileWithId[] = await Promise.all(
@@ -254,8 +231,8 @@ export default function AddCrop() {
         if (Array.isArray(listing.discounts)) {
           setDiscounts(
             listing.discounts.map((d: any) => ({
-              minimum_quantity_kg: Number(d.minimum_quantity_kg) || 0,
-              discount_percentage: Number(d.discount_percentage) || 0,
+              minimum_quantity_kg: Number(d.minimum_quantity_kg) || 1,
+              discount_percentage: Number(d.discount_percentage) || 1,
               id: d.id || Math.random().toString(36).substring(2),
             }))
           );
@@ -278,23 +255,28 @@ export default function AddCrop() {
     }
   }, [id]);
 
-  const handleRemoveFile = (id: string, type: "files" | "photos") => {
-    if (type === "files") {
-      setFiles((prev) => prev.filter((file) => file.id !== id));
-    } else {
-      setPhotos((prev) => prev.filter((photo) => photo.id !== id));
-    }
+  const handlePhotosSelected = (selectedPhotos: File[]) => {
+    setPhotos((prev) => [
+      ...prev,
+      ...selectedPhotos.map((p) =>
+        Object.assign(p, {
+          id: Math.random().toString(36).substring(2),
+        })
+      ),
+    ]);
   };
 
   const handleAddDiscount = () => {
-    setDiscounts((prev) => [
-      ...prev,
-      {
-        minimum_quantity_kg: 0,
-        discount_percentage: 0,
-        id: Math.random().toString(36).substring(2),
-      },
-    ]);
+    if (discounts.length < 1) {
+      setDiscounts((prev) => [
+        ...prev,
+        {
+          minimum_quantity_kg: 1,
+          discount_percentage: 1,
+          id: Math.random().toString(36).substring(2),
+        },
+      ]);
+    }
   };
 
   const handleRemoveDiscount = (id: string) => {
@@ -345,16 +327,16 @@ export default function AddCrop() {
           true
         );
         successMessage("Listing updated successfully!");
+        navigation(`/manage-listing/${id}`);
       } else {
-        await apiService().postFormData(
+        const response: any = await apiService().postFormData(
           "/sellers/listings/create-listing",
           formData,
           true
         );
         successMessage("Listing created successfully!");
+        navigation(`/manage-listing/${response?.data.coffee_listing.id}`);
       }
-
-      navigation(`/manage-listing/${id}`);
     } catch (error: any) {
       console.error("Error submitting form:", error);
       errorMessage(error as APIErrorResponse);
@@ -449,62 +431,24 @@ export default function AddCrop() {
                   <CardHeader>
                     <CardTitle>Upload grading report</CardTitle>
                     <CardDescription>
-                      Upload PDF documents and images. Drag and drop or click to
-                      select files.
+                      Upload a single PDF document or image. Drag and drop or
+                      click to select a file.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {files.length > 0 && (
-                      <div className="mb-4 space-y-4">
-                        {files.map((file) => (
-                          <Card
-                            key={file.id}
-                            className="p-4 flex items-center justify-between"
-                          >
-                            <div className="flex items-center space-x-4">
-                              <FileText className="h-8 w-8 text-gray-500" />
-                              <div>
-                                <p className="text-sm font-medium">
-                                  {file.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Grading Report
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveFile(file.id, "files")}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                    {files.length === 0 && (
-                      <FileUpload
-                        onFilesSelected={(newFiles) =>
-                          setFiles((prev) => [
-                            ...prev,
-                            ...newFiles.map((f) =>
-                              Object.assign(f, {
-                                id: Math.random().toString(36).substring(2),
-                              })
-                            ),
-                          ])
-                        }
-                        maxFiles={5}
-                        maxSizeMB={5}
-                      />
-                    )}
+                    <FileUpload
+                      onFilesSelected={(files) => {
+                        setFiles(files);
+                      }}
+                      maxFiles={5}
+                      maxSizeMB={5}
+                    />
                   </CardContent>
                   <CardFooter className="flex justify-between">
                     <div className="text-sm text-muted-foreground">
                       {files.length > 0
-                        ? `${files.length} file(s) selected`
-                        : "No files selected"}
+                        ? files.length + " files selected"
+                        : "No file selected"}
                     </div>
                   </CardFooter>
                 </Card>
@@ -587,11 +531,44 @@ export default function AddCrop() {
                     control={form.control}
                     name="crop_year"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Crop year</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Crop Year</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button variant="outline" className="w-full">
+                                {field.value || "Select a year"}
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <div className="p-3">
+                              <Select
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                }}
+                                value={field.value}
+                              >
+                                <SelectTrigger className="w-70">
+                                  <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[300px] overflow-y-auto w-70">
+                                  {Array.from({ length: 20 }, (_, i) => {
+                                    const year = new Date().getFullYear() - i;
+                                    return (
+                                      <SelectItem
+                                        key={year}
+                                        value={year.toString()}
+                                      >
+                                        {year}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -658,7 +635,7 @@ export default function AddCrop() {
                               {...field}
                               value={field.value}
                               onChange={(e) =>
-                                field.onChange(Number(e.target.value) || 0)
+                                field.onChange(Number(e.target.value) || 1)
                               }
                             />
                           </FormControl>
@@ -883,43 +860,8 @@ export default function AddCrop() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {photos.length > 0 && (
-                      <div className="mb-4 flex flex-row flex-wrap gap-4">
-                        {photos.map((photo) => (
-                          <div
-                            key={photo.id}
-                            className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden"
-                          >
-                            <img
-                              src={photo.url || URL.createObjectURL(photo)}
-                              alt={photo.name}
-                              className="w-full h-full object-cover"
-                            />
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-1 right-1 h-6 w-6"
-                              onClick={() =>
-                                handleRemoveFile(photo.id, "photos")
-                              }
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                     <FileUpload
-                      onFilesSelected={(newPhotos) =>
-                        setPhotos((prev) => [
-                          ...prev,
-                          ...newPhotos.map((p) =>
-                            Object.assign(p, {
-                              id: Math.random().toString(36).substring(2),
-                            })
-                          ),
-                        ])
-                      }
+                      onFilesSelected={handlePhotosSelected}
                       maxFiles={6}
                       maxSizeMB={5}
                     />
@@ -956,7 +898,7 @@ export default function AddCrop() {
                             {...field}
                             value={field.value}
                             onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
+                              field.onChange(Number(e.target.value) || 1)
                             }
                           />
                         </FormControl>
@@ -976,7 +918,7 @@ export default function AddCrop() {
                             {...field}
                             value={field.value}
                             onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
+                              field.onChange(Number(e.target.value) || 1)
                             }
                           />
                         </FormControl>
@@ -1011,7 +953,7 @@ export default function AddCrop() {
                         >
                           <Input
                             type="number"
-                            min={0}
+                            min={1}
                             className="w-40"
                             placeholder="Min. quantity (kg)"
                             value={discount.minimum_quantity_kg}
@@ -1019,25 +961,27 @@ export default function AddCrop() {
                               handleDiscountChange(
                                 discount.id,
                                 "minimum_quantity_kg",
-                                Number(e.target.value) || 0
+                                Number(e.target.value) || 1
                               )
                             }
                           />
                           <span className="mx-2">kg</span>
                           <Input
                             type="number"
-                            min={0}
-                            max={100}
+                            min={1}
+                            disabled={form.getValues().quantity_kg === 0}
                             className="w-32"
                             placeholder="Discount (%)"
                             value={discount.discount_percentage}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const inputValue = Number(e.target.value) || 1;
+                              const max = form.getValues().quantity_kg;
                               handleDiscountChange(
                                 discount.id,
                                 "discount_percentage",
-                                Number(e.target.value) || 0
-                              )
-                            }
+                                inputValue > max ? max : inputValue
+                              );
+                            }}
                           />
                           <span className="mx-2">%</span>
                           <Button
@@ -1053,15 +997,17 @@ export default function AddCrop() {
                       ))}
                     </div>
                   )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                    onClick={handleAddDiscount}
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add discount</span>
-                  </Button>
+                  {discounts.length < 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                      onClick={handleAddDiscount}
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add discount</span>
+                    </Button>
+                  )}
                 </div>
               </div>
 

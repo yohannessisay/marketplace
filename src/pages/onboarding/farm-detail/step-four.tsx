@@ -187,9 +187,9 @@ export default function StepFour() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-primary/5 pt-26">
       <Header />
-      <main className="container mx-auto p-6">
+      <main className="container mx-auto p-4 max-w-5xl">
         <Stepper currentStep={4} />
 
         <Form {...form}>

@@ -129,15 +129,15 @@ export default function StepThree() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-primary/5 pt-26">
       <Header />
-      <main className="container mx-auto p-6">
+      <main className="container mx-auto p-4 max-w-5xl">
         <Stepper currentStep={3} />
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 shadow-lg px-8 rounded-md py-4"
+            className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white pt-10"
           >
             <div className="mb-10">
               <div className="mb-6">
