@@ -1,14 +1,11 @@
 import { z } from "zod";
 
-export const buyerOnboardingSchema = z.object({
+export const  buyerOnboardingSchema = z.object({
   company_name: z.string().min(1, { message: "Company name is required" }),
   country: z.string().min(1, { message: "Country is required" }),
   position: z.string().min(1, { message: "Position is required" }),
   website_url: z.string().optional(),
-  company_address: z.string().min(1, { message: "Position is required" }),
+  company_address: z.string().min(1, { message: "Company address is required" }),
   telegram: z.string().optional(),
   about_me: z.string().optional(),
-  files: z
-    .instanceof(File, { message: "File is required" })
-    .refine((file) => file.size > 0, { message: "File cannot be empty" }),
 });

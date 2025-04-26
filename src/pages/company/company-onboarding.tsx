@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,9 +36,7 @@ export default function CompanyVerification() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   const [files, setFiles] = useState<File[]>([]);
-  const handleFilesSelected = (selectedFiles: File[]) => {
-    setFiles((prev) => [...prev, ...selectedFiles]);
-  };
+ 
   const navigate = useNavigate();
   const userProfile: any = getFromLocalStorage("userProfile", {});
   const form = useForm<CompanyDetails>({
@@ -52,11 +51,7 @@ export default function CompanyVerification() {
       about_me: "",
     },
   });
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
+ 
   const onSubmit = async (data: CompanyDetails) => {
     setIsSubmitting(true);
 
@@ -102,81 +97,31 @@ export default function CompanyVerification() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {/* Step 1 */}
-            <Card>
-              <CardHeader>
-                <div className="text-sm font-medium text-gray-500">Step 1</div>
-                <CardTitle>Company registration document</CardTitle>
-                <CardDescription>
-                  Upload a clear farm registration land rights document. Make
-                  sure text is readable and high-quality.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* File upload area */}
-                <FileUpload
-                  onFilesSelected={(selectedFiles: File[]) => {
-                    handleFilesSelected(selectedFiles);
-                    if (selectedFiles.length > 0) {
-                      form.setValue("files", selectedFiles[0]); // Attach the first file to the form
-                      form.clearErrors("files"); // Clear file-related errors
-                    }
-                  }}
-                  maxFiles={5}
-                  maxSizeMB={5}
-                />
-
-                {/* File preview */}
-                {files.length > 0 && (
-                  <div className="mt-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">
-                      Selected files:
-                    </h3>
-                    <ul className="space-y-2">
-                      {files.map((file, index) => (
-                        <li
-                          key={index}
-                          className="flex items-center justify-between bg-gray-50 p-2 rounded-md"
-                        >
-                          <span className="text-sm truncate max-w-[80%]">
-                            {file.name}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              removeFile(index);
-                              if (index === 0) {
-                                form.setValue(
-                                  "files",
-                                  undefined as unknown as File,
-                                ); // Clear the file from the form
-                                form.setError("files", {
-                                  message: "File is required",
-                                }); // Set error if no file is uploaded
-                              }
-                            }}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            Remove
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* File validation error */}
-                <FormField
-                  control={form.control}
-                  name="files"
-                  render={({ fieldState }) => (
-                    <FormItem>
-                      <FormMessage>{fieldState.error?.message}</FormMessage>
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+            <Card className="max-w-2xl mx-auto">
+                  <CardHeader>
+                    <CardTitle>Upload grading report</CardTitle>
+                    <CardDescription>
+                      Upload an image. Drag and drop or
+                      click to select a file.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FileUpload
+                      onFilesSelected={(files) => {
+                        setFiles(files);
+                      }}
+                      maxFiles={5}
+                      maxSizeMB={5}
+                    />
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      {files.length > 0
+                        ? files.length + " files selected"
+                        : "No file selected"}
+                    </div>
+                  </CardFooter>
+                </Card>
 
             {/* Step 2 */}
             <Card>
