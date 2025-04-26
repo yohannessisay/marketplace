@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, Send, User, X } from "lucide-react";
+import { MessageCircle, Send, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -201,10 +201,7 @@ export function MessageThread({
           </div>
         </div>
         <div className="flex space-x-2">
-          <Button variant="ghost" size="icon">
-            <User size={18} />
-            <span className="sr-only">View profile</span>
-          </Button>
+        
           {isMobile && (
             <Button
               variant="ghost"

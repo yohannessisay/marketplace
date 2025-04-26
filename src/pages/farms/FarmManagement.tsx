@@ -134,7 +134,7 @@ const FarmManagement: React.FC = () => {
         `/sellers/farms/get-farms?search=${searchValue}&page=${page}&limit=${limit}`,
         fmrId ? fmrId : ""
       );
-      setFarms(response.data.farms);
+      setFarms(response.data.farms.filter);
     } catch (error) {
       console.error("Failed to fetch farms:", error);
     } finally {
@@ -393,29 +393,32 @@ const FarmManagement: React.FC = () => {
                     </CardContent>
 
                     <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col">
-                      <Link to={`/edit-farm/${farm.id}`} className="w-full">
-                        <Button
-                          variant="outline"
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center justify-center group"
+                        disabled={farm.verification_status === "rejected"}
+                      >
+                        <Link
+                          to={`/edit-farm/${farm.id}`}
                           className="w-full flex items-center justify-center group"
-                          disabled={farm.verification_status === "rejected"}
                         >
                           <span>Manage Farm</span>
                           <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
 
-                      <Link
-                        to={`/add-crop?farmId=${farm.id}`}
-                        className="w-full mt-2"
+                      <Button
+                        className="w-full flex items-center justify-center group mt-4"
+                        disabled={farm.verification_status === "rejected"}
                       >
-                        <Button
+                        <Link
+                          to={`/add-crop?farmId=${farm.id}`}
                           className="w-full flex items-center justify-center group"
-                          disabled={farm.verification_status === "rejected"}
                         >
                           <span>Add Crop</span>
                           <Plus className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </CardFooter>
                   </Card>
                 ))}

@@ -430,21 +430,23 @@ export default function ListingDetailModal({
                       : "Request Samples"}
                   </Button>
                 )}
-                <Link
-                  to={`/listing/${listing.id}`}
-                  className="w-full sm:flex-1"
+
+                <Button
+                  onClick={() => setIsviewLoading(true)}
+                  disabled={
+                    !user ||
+                    user.onboarding_stage !== "completed" ||
+                    isviewLoading
+                  }
+                  className="w-full sm:flex-1 px-4 py-2"
                 >
-                  <Button
-                    onClick={() => setIsviewLoading(true)}
-                    disabled={
-                      user! &&
-                      (user.onboarding_stage !== "completed" || isviewLoading)
-                    }
-                    className="w-full sm:flex-1 px-4 py-2"
+                  <Link
+                    to={`/listing/${listing.id}`}
+                    className="w-full sm:flex-1"
                   >
                     {isviewLoading ? "Loading..." : "View Listing Details"}
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </div>
           </>
