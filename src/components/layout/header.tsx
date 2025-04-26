@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  Home,
-  List,
+  Home, 
   Receipt,
   ShoppingBagIcon,
   LogOut,
@@ -15,6 +14,7 @@ import {
   Settings,
   UserCheck,
   LogIn,
+  List,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -42,7 +42,7 @@ import { getFromLocalStorage } from "@/lib/utils";
 
 export default function Header() {
   const { user } = useAuth();
-  const farmerProfile = getFromLocalStorage("farmer-profile", {});
+  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
@@ -87,10 +87,11 @@ export default function Header() {
     );
 
   const handleLogout = () => {
+    const userType = user?.userType;
     localStorage.clear();
     Cookies.remove("accessToken");
     Cookies.remove("refreshToken");
-    navigate("/login");
+    navigate(userType === "agent" ? "/agent/login" : "/login");
     setIsMenuOpen(false);
     if (chatService().isConnected()) {
       chatService().disconnect();
@@ -108,21 +109,17 @@ export default function Header() {
         {
           to: "/seller-dashboard",
           label:
-            user.onboarding_stage === "completed"
+            user.onboarding_stage === "completed" ||
+            (farmerProfile && farmerProfile?.onboarding_stage === "completed")
               ? "My Dashboard"
               : "Onboarding",
           icon: Home,
         },
-        { to: "/my-orders", label: "My Orders", icon: ShoppingBagIcon },
         { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
         { to: "/chats", label: "Chats", icon: Send },
       ]
     : [
-        {
-          to: "/agent/farmer-management",
-          label: "Farmer Management",
-          icon: List,
-        },
+ 
         { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
         { to: "/chats", label: "Chats", icon: Send },
       ];
@@ -163,17 +160,29 @@ export default function Header() {
                   </>
                 )}
 
-                {user.userType === "agent" &&
-                  agentNavItems.map((item) => (
+                {user.userType === "agent" ? (
+                  <>
                     <Link
-                      key={item.to}
-                      to={item.to}
-                      className={linkClasses(item.to)}
+                      to="/agent/farmer-management"
+                      className={linkClasses("/agent/farmer-management")}
                     >
-                      <item.icon className="h-4 w-4 text-green-400" />
-                      {item.label}
+                      <List className="h-4 w-4 text-green-400" />
+                      Farmer Management
                     </Link>
-                  ))}
+                    {agentNavItems.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        className={linkClasses(item.to)}
+                      >
+                        <item.icon className="h-4 w-4 text-green-400" />
+                        {item.label}
+                      </Link>
+                    ))}
+                  </>
+                ) : (
+                  <></>
+                )}
 
                 {user.userType === "buyer" && (
                   <>
@@ -183,18 +192,26 @@ export default function Header() {
                     </Link>
                   </>
                 )}
-                <Link
-                  to="/market-place"
-                  className={linkClasses("/market-place")}
-                >
-                  <LucideShoppingBag className="h-4 w-4 text-green-400" />
-                  Marketplace
-                </Link>
+                {user.userType !== "agent" ? (
+                  <Link
+                    to="/market-place"
+                    className={linkClasses("/market-place")}
+                  >
+                    <LucideShoppingBag className="h-4 w-4 text-green-400" />
+                    Marketplace
+                  </Link>
+                ) : (
+                  <></>
+                )}
 
-                <Link to="/chats" className={linkClasses("/chats")}>
-                  <Send className="h-4 w-4 text-green-400" />
-                  Chats
-                </Link>
+                {user.userType !== "agent" ? (
+                  <Link to="/chats" className={linkClasses("/chats")}>
+                    <Send className="h-4 w-4 text-green-400" />
+                    Chats
+                  </Link>
+                ) : (
+                  <></>
+                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

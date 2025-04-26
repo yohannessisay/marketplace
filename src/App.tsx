@@ -29,6 +29,7 @@ import EditBank from "./pages/bank/edit-bank";
 import OrdersPage from "./pages/seller/orders";
 import SellerProfilePage from "./pages/seller/SellerProfilePage";
 import { config } from "./lib/config";
+import { getFromLocalStorage } from "./lib/utils";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -100,7 +101,7 @@ const RouterContent: React.FC = () => {
   const { user } = useAuth();
   const currentStep = user?.onboarding_stage;
   const userType = user?.userType;
-
+  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   return (
     <Routes>
       {/* Public Routes */}
@@ -150,7 +151,8 @@ const RouterContent: React.FC = () => {
         path="/add-farm"
         element={
           <ProtectedRoute>
-               {currentStep === "completed" ?<AddFarm />:<Welcome />}
+            {currentStep === "completed"|| (farmerProfile &&
+              farmerProfile?.onboarding_stage === "completed") ? <AddFarm /> : <Welcome />}
           </ProtectedRoute>
         }
       />
@@ -166,7 +168,8 @@ const RouterContent: React.FC = () => {
         path="/add-crop"
         element={
           <ProtectedRoute>
-            {currentStep === "completed" ? <AddCrop /> : <Welcome />}
+            {currentStep === "completed"|| (farmerProfile &&
+              farmerProfile?.onboarding_stage === "completed") ? <AddCrop /> : <Welcome />}
           </ProtectedRoute>
         }
       />
@@ -230,7 +233,13 @@ const RouterContent: React.FC = () => {
         path="/seller-dashboard"
         element={
           <ProtectedRoute>
-            {currentStep === "completed" ? <FarmManagement /> : <Welcome />}
+            {currentStep === "completed" ||
+            (farmerProfile &&
+              farmerProfile?.onboarding_stage === "completed") ? (
+              <FarmManagement />
+            ) : (
+              <Welcome />
+            )}
           </ProtectedRoute>
         }
       />

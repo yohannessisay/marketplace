@@ -134,7 +134,7 @@ const FarmManagement: React.FC = () => {
         `/sellers/farms/get-farms?search=${searchValue}&page=${page}&limit=${limit}`,
         fmrId ? fmrId : ""
       );
-      setFarms(response.data.farms.filter);
+      setFarms(response.data.farms);
     } catch (error) {
       console.error("Failed to fetch farms:", error);
     } finally {

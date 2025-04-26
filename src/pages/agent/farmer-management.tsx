@@ -60,7 +60,7 @@ export default function FarmersTable() {
     const fetchFarmers = async () => {
       try {
         const response: any = await apiService().get(
-          `/agent/farmers/management`,
+          `/agent/farmers/management?search=${searchTerm}&page=${currentPage}`,
         );
         setFarmers(response.data.sellers || []);
         setTotalPages(response.data.pagination.totalPages || 1);
