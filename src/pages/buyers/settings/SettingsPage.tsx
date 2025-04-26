@@ -29,36 +29,8 @@ import { User, Settings, Upload, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
 import { UserProfile } from "@/types/user";
+import { accountSchema, profileSchema } from "@/types/validation/buyer";
 
-export const profileSchema = z.object({
-  company_name: z
-    .string()
-    .min(1, { message: "Company name is required" })
-    .optional(),
-  country: z.string().min(1, { message: "Country is required" }).optional(),
-  position: z.string().min(1, { message: "Position is required" }).optional(),
-  website_url: z.string().optional(),
-  company_address: z
-    .string()
-    .min(1, { message: "Company address is required" })
-    .optional(),
-  telegram: z.string().optional(),
-  about_me: z.string().optional(),
-});
-
-export const accountSchema = z.object({
-  email: z
-    .string()
-    .email("Please enter a valid email")
-    .min(1, "Email is required"),
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
-  phone: z.string().min(1, "Phone number is required"),
-  files: z
-    .instanceof(File, { message: "File is required" })
-    .refine((file) => file.size > 0, { message: "File cannot be empty" })
-    .optional(),
-});
 
 type ProfileDetails = z.infer<typeof profileSchema>;
 type AccountDetails = z.infer<typeof accountSchema>;
@@ -100,9 +72,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
-      console.log("[SettingsPage] User updated:", {
-        avatar_url: user.avatar_url,
-      });
+     
       profileForm.reset({
         company_name: user.company_name || "",
         country: user.country || "",
@@ -204,8 +174,7 @@ export default function SettingsPage() {
       } else {
         throw new Error("Failed to update profile");
       }
-    } catch (error) {
-      console.error("[SettingsPage] Error updating profile:", error);
+    } catch (error) { 
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsProfileSubmitting(false);
@@ -230,12 +199,11 @@ export default function SettingsPage() {
         formData,
         true,
       );
-
-      console.log("[SettingsPage] Account update response:", response);
+ 
 
       if (response.success) {
-        const newAvatarUrl = response.data?.avatar_url || user!.avatar_url;
-        console.log("[SettingsPage] New avatar_url:", newAvatarUrl);
+        const newAvatarUrl = response.data?.profile.avatar_url || user!.avatar_url;
+ 
         const updatedUser: UserProfile = {
           ...user!,
           email: data.email,
@@ -275,8 +243,7 @@ export default function SettingsPage() {
       } else {
         throw new Error("Failed to update account");
       }
-    } catch (error) {
-      console.error("[SettingsPage] Error updating account:", error);
+    } catch (error) { 
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsAccountSubmitting(false);

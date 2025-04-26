@@ -40,9 +40,11 @@ export default function SignupPage() {
 
   // Add these lines for password visibility toggles
   const [buyerPasswordVisible, setBuyerPasswordVisible] = useState(false);
-  const [buyerConfirmPasswordVisible, setBuyerConfirmPasswordVisible] = useState(false);
+  const [buyerConfirmPasswordVisible, setBuyerConfirmPasswordVisible] =
+    useState(false);
   const [sellerPasswordVisible, setSellerPasswordVisible] = useState(false);
-  const [sellerConfirmPasswordVisible, setSellerConfirmPasswordVisible] = useState(false);
+  const [sellerConfirmPasswordVisible, setSellerConfirmPasswordVisible] =
+    useState(false);
 
   const buyerForm = useForm<BuyerFormValues>({
     resolver: zodResolver(buyerSchema),
@@ -51,8 +53,8 @@ export default function SignupPage() {
       last_name: "",
       phone: "",
       email: "",
-      password: "", 
-      confirm_password:"",
+      password: "",
+      confirm_password: "",
       preferredCurrency: "",
       companyName: "",
     },
@@ -67,7 +69,7 @@ export default function SignupPage() {
       phone: "",
       email: "",
       password: "",
-      confirm_password:"",
+      confirm_password: "",
     },
     mode: "onChange",
   });
@@ -88,7 +90,14 @@ export default function SignupPage() {
     } catch (error: unknown) {
       setIsSubmitting(false);
       const errorResponse = error as APIErrorResponse;
-      errorMessage(errorResponse);
+      console.log(errorResponse);
+
+      if (errorResponse.error.details.includes("buyer_phone_key")) {
+        errorResponse.error.message = "Phone number already exists";
+        errorMessage(errorResponse);
+      } else {
+        errorMessage(errorResponse);
+      }
     }
   };
 
@@ -114,8 +123,14 @@ export default function SignupPage() {
 
   const handleRoleChange = (newRole: "buyer" | "seller") => {
     if (newRole === "buyer" && role === "seller") {
-      const { first_name, last_name, phone, email, password,confirm_password } =
-        sellerForm.getValues();
+      const {
+        first_name,
+        last_name,
+        phone,
+        email,
+        password,
+        confirm_password,
+      } = sellerForm.getValues();
       buyerForm.setValue("first_name", first_name);
       buyerForm.setValue("last_name", last_name);
       buyerForm.setValue("phone", phone);
@@ -123,8 +138,14 @@ export default function SignupPage() {
       buyerForm.setValue("password", password);
       buyerForm.setValue("confirm_password", confirm_password);
     } else if (newRole === "seller" && role === "buyer") {
-      const { first_name, last_name, phone, email, password ,confirm_password} =
-        buyerForm.getValues();
+      const {
+        first_name,
+        last_name,
+        phone,
+        email,
+        password,
+        confirm_password,
+      } = buyerForm.getValues();
       sellerForm.setValue("first_name", first_name);
       sellerForm.setValue("last_name", last_name);
       sellerForm.setValue("phone", phone);
@@ -262,7 +283,11 @@ export default function SignupPage() {
                             onClick={() => setBuyerPasswordVisible((v) => !v)}
                             tabIndex={-1}
                           >
-                            {buyerPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {buyerPasswordVisible ? (
+                              <EyeOff size={18} />
+                            ) : (
+                              <Eye size={18} />
+                            )}
                           </button>
                         </div>
                       </FormControl>
@@ -280,17 +305,25 @@ export default function SignupPage() {
                         <div className="relative">
                           <Input
                             placeholder="Confirm Password*"
-                            type={buyerConfirmPasswordVisible ? "text" : "password"}
+                            type={
+                              buyerConfirmPasswordVisible ? "text" : "password"
+                            }
                             {...field}
                             value={field.value ?? ""}
                           />
                           <button
                             type="button"
                             className="absolute right-2 top-1/2 -translate-y-1/2"
-                            onClick={() => setBuyerConfirmPasswordVisible((v) => !v)}
+                            onClick={() =>
+                              setBuyerConfirmPasswordVisible((v) => !v)
+                            }
                             tabIndex={-1}
                           >
-                            {buyerConfirmPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {buyerConfirmPasswordVisible ? (
+                              <EyeOff size={18} />
+                            ) : (
+                              <Eye size={18} />
+                            )}
                           </button>
                         </div>
                       </FormControl>
@@ -432,7 +465,11 @@ export default function SignupPage() {
                             onClick={() => setSellerPasswordVisible((v) => !v)}
                             tabIndex={-1}
                           >
-                            {sellerPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {sellerPasswordVisible ? (
+                              <EyeOff size={18} />
+                            ) : (
+                              <Eye size={18} />
+                            )}
                           </button>
                         </div>
                       </FormControl>
@@ -450,17 +487,25 @@ export default function SignupPage() {
                         <div className="relative">
                           <Input
                             placeholder="Confirm Password*"
-                            type={sellerConfirmPasswordVisible ? "text" : "password"}
+                            type={
+                              sellerConfirmPasswordVisible ? "text" : "password"
+                            }
                             {...field}
                             value={field.value ?? ""}
                           />
                           <button
                             type="button"
                             className="absolute right-2 top-1/2 -translate-y-1/2"
-                            onClick={() => setSellerConfirmPasswordVisible((v) => !v)}
+                            onClick={() =>
+                              setSellerConfirmPasswordVisible((v) => !v)
+                            }
                             tabIndex={-1}
                           >
-                            {sellerConfirmPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {sellerConfirmPasswordVisible ? (
+                              <EyeOff size={18} />
+                            ) : (
+                              <Eye size={18} />
+                            )}
                           </button>
                         </div>
                       </FormControl>

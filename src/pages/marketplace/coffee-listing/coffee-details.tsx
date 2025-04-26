@@ -61,7 +61,7 @@ export function CoffeeDetails({
       const response = await apiService().get<{
         data: { messages: Array<any> };
       }>(
-        `/chats/messages?senderId=${senderId}&receiverId=${receiverId}&listingId=${listing.id}`,
+        `/chats/messages?senderId=${senderId}&receiverId=${receiverId}&listingId=${listing.id}`
       );
 
       const messages = response.data.messages.map((msg: any) => ({
@@ -102,7 +102,7 @@ export function CoffeeDetails({
               },
             ];
           });
-        },
+        }
       );
 
       return () => {
@@ -309,8 +309,9 @@ export function CoffeeDetails({
                 disabled={
                   chatMessage === "" ||
                   !user ||
-                  (user?.onboarding_stage !== "completed" &&
-                    user?.userType !== "seller")
+                  user?.onboarding_stage !== "completed" ||
+                  (user?.userType !== "seller" &&
+                    user?.verification_status === "pending")
                 }
               >
                 <Send size={16} />
