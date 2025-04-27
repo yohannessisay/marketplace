@@ -95,6 +95,7 @@ interface Order {
   listing?: Listing;
   seller_name?: string;
   buyer_name?: string;
+  reviews: any;
 }
 
 interface SampleRequest {
@@ -165,13 +166,14 @@ interface PaginationData {
 }
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user,loading } = useAuth();
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
   const [sampleRequests, setSampleRequests] = useState<SampleRequest[] | null>(
-    null,
+    null
   );
+  const [reviewType, setReviewType] = useState<string | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [activePagination, setActivePagination] = useState<PaginationData>({
@@ -251,7 +253,7 @@ export default function OrdersPage() {
         const response: any = await apiService().get(
           `/orders/active-orders?page=${activeCurrentPage}&limit=${
             activePagination.limit
-          }&search=${encodeURIComponent(activeSearchTerm)}`,
+          }&search=${encodeURIComponent(activeSearchTerm)}`
         );
         if (response.success) {
           setActiveOrders(response.data.orders || []);
@@ -261,7 +263,7 @@ export default function OrdersPage() {
               limit: 10,
               total: 0,
               total_pages: 0,
-            },
+            }
           );
           setFetchedTabs((prev) => ({ ...prev, current: true }));
         } else {
@@ -276,7 +278,7 @@ export default function OrdersPage() {
       }
     };
 
-    if (activeTab === "current" && !fetchedTabs.current) {
+    if (activeTab === "current" ) {
       fetchActiveOrders();
     }
   }, [activeCurrentPage, activeSearchTerm, activeTab, fetchedTabs.current]);
@@ -288,7 +290,7 @@ export default function OrdersPage() {
         const response: any = await apiService().get(
           `/orders/order-history?page=${historyCurrentPage}&limit=${
             historyPagination.limit
-          }&search=${encodeURIComponent(historySearchTerm)}`,
+          }&search=${encodeURIComponent(historySearchTerm)}`
         );
         if (response.success) {
           setHistoricalOrders(response.data.orders || []);
@@ -298,7 +300,7 @@ export default function OrdersPage() {
               limit: 10,
               total: 0,
               total_pages: 0,
-            },
+            }
           );
           setFetchedTabs((prev) => ({ ...prev, historical: true }));
         } else {
@@ -313,7 +315,7 @@ export default function OrdersPage() {
       }
     };
 
-    if (activeTab === "historical" && !fetchedTabs.historical) {
+    if (activeTab === "historical" ) {
       fetchHistoricalOrders();
     }
   }, [
@@ -330,7 +332,7 @@ export default function OrdersPage() {
         const response: any = await apiService().get(
           `/buyers/samples/get-sample-requests?page=${sampleCurrentPage}&limit=${
             samplePagination.limit
-          }&search=${encodeURIComponent(sampleSearchTerm)}`,
+          }&search=${encodeURIComponent(sampleSearchTerm)}`
         );
         if (response.success && response.data) {
           setSampleRequests(response.data.sample_requests || null);
@@ -355,16 +357,14 @@ export default function OrdersPage() {
       }
     };
 
-    if (activeTab === "sample" && !fetchedTabs.sample) {
+    if (activeTab === "sample" ) {
       fetchSampleRequests();
     }
   }, [sampleCurrentPage, sampleSearchTerm, activeTab, fetchedTabs.sample]);
 
   useEffect(() => {
     const fetchBids = async () => {
-      if (!user?.id) {
-        setBidError("User not authenticated");
-        setBidLoading(false);
+      if (loading) {
         return;
       }
 
@@ -373,7 +373,7 @@ export default function OrdersPage() {
         const response: any = await apiService().get(
           `/buyers/bids/get-all-bids?page=${bidCurrentPage}&limit=${
             bidPagination.limit
-          }&search=${encodeURIComponent(bidSearchTerm)}`,
+          }&search=${encodeURIComponent(bidSearchTerm)}`
         );
         if (response.success) {
           setBids(response.data.bids || []);
@@ -383,7 +383,7 @@ export default function OrdersPage() {
               limit: 10,
               total: 0,
               total_pages: 0,
-            },
+            }
           );
           setFetchedTabs((prev) => ({ ...prev, bids: true }));
         } else {
@@ -398,7 +398,8 @@ export default function OrdersPage() {
       }
     };
 
-    if (activeTab === "bids" && !fetchedTabs.bids) {
+
+    if (activeTab === "bids") {
       fetchBids();
     }
   }, [bidCurrentPage, bidSearchTerm, activeTab, fetchedTabs.bids, user?.id]);
@@ -416,7 +417,7 @@ export default function OrdersPage() {
         const response: any = await apiService().get(
           `/buyers/listings/favorites/get-favorite-listings?page=${favoritesCurrentPage}&limit=${
             favoritesPagination.limit
-          }&search=${encodeURIComponent(favoritesSearchTerm)}`,
+          }&search=${encodeURIComponent(favoritesSearchTerm)}`
         );
         if (response.success) {
           setFavorites(response.data.favorites || []);
@@ -426,7 +427,7 @@ export default function OrdersPage() {
               limit: 10,
               total: 0,
               total_pages: 0,
-            },
+            }
           );
           setFetchedTabs((prev) => ({ ...prev, favorites: true }));
         } else {
@@ -441,7 +442,7 @@ export default function OrdersPage() {
       }
     };
 
-    if (activeTab === "favorites" && !fetchedTabs.favorites) {
+    if (activeTab === "favorites" ) {
       fetchFavorites();
     }
   }, [
@@ -530,9 +531,10 @@ export default function OrdersPage() {
     }
   };
 
-  const openReviewModal = (order: Order) => {
+  const openReviewModal = (order: Order, type: string) => { 
     setSelectedOrder(order);
     setShowReviewModal(true);
+    setReviewType(type ?? "add");
   };
 
   const renderOrderProgress = (order: Order) => {
@@ -607,8 +609,8 @@ export default function OrdersPage() {
                       step.completed
                         ? "text-foreground"
                         : index === currentStepIndex
-                          ? "text-foreground font-medium"
-                          : "text-muted-foreground"
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {step.label}
@@ -702,10 +704,10 @@ export default function OrdersPage() {
                   item.delivery_status === "delivered"
                     ? "secondary"
                     : item.delivery_status === "inprogress"
-                      ? "default"
-                      : item.delivery_status === "pending"
-                        ? "warning"
-                        : "destructive"
+                    ? "default"
+                    : item.delivery_status === "pending"
+                    ? "warning"
+                    : "destructive"
                 }
               >
                 {item.delivery_status.charAt(0).toUpperCase() +
@@ -1021,7 +1023,7 @@ export default function OrdersPage() {
               <span>
                 {isBid ? "Bid" : "Ordered"}:{" "}
                 {new Date(
-                  isBid ? (item as Bid).created_at : (item as Order).created_at,
+                  isBid ? (item as Bid).created_at : (item as Order).created_at
                 ).toLocaleDateString()}
               </span>
             </div>
@@ -1064,21 +1066,21 @@ export default function OrdersPage() {
                   "completed"
                     ? "default"
                     : (isBid
-                          ? (item as Bid).status
-                          : (item as Order).status) === "confirmed"
-                      ? "default"
-                      : (isBid
-                            ? (item as Bid).status
-                            : (item as Order).status) === "pending"
-                        ? "warning"
-                        : "outline"
+                        ? (item as Bid).status
+                        : (item as Order).status) === "confirmed"
+                    ? "default"
+                    : (isBid
+                        ? (item as Bid).status
+                        : (item as Order).status) === "pending"
+                    ? "warning"
+                    : "outline"
                 }
               >
                 {(isBid ? (item as Bid).status : (item as Order).status)
                   .charAt(0)
                   .toUpperCase() +
                   (isBid ? (item as Bid).status : (item as Order).status).slice(
-                    1,
+                    1
                   )}
               </Badge>
               <Button
@@ -1196,12 +1198,23 @@ export default function OrdersPage() {
                   </>
                 )}
                 {tabType === "historical" && (
-                  <Button
-                    variant="default"
-                    onClick={() => openReviewModal(item as Order)}
-                  >
-                    Review Seller
-                  </Button>
+                  <>
+                    {!(item as Order).reviews? (
+                      <Button
+                        variant="default"
+                        onClick={() => openReviewModal(item as Order,"")}
+                      >
+                        Review Seller
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        onClick={() => openReviewModal(item as Order, "view")}
+                      >
+                        View Review
+                      </Button>
+                    )}
+                  </>
                 )}
                 {isBid && (
                   <Link to={`/listing/${item.listing_id}`}>
@@ -1225,10 +1238,10 @@ export default function OrdersPage() {
       tabType === "sample"
         ? "No sample requests found. Check back later or browse the marketplace."
         : tabType === "bids"
-          ? "No bids found. Check back later or browse the marketplace."
-          : tabType === "favorites"
-            ? "No favorited listings found. Browse the marketplace to add your favorite coffees."
-            : "Head to the marketplace to place your first order of premium Ethiopian coffee.";
+        ? "No bids found. Check back later or browse the marketplace."
+        : tabType === "favorites"
+        ? "No favorited listings found. Browse the marketplace to add your favorite coffees."
+        : "Head to the marketplace to place your first order of premium Ethiopian coffee.";
 
     return (
       <Card className="w-full">
@@ -1241,12 +1254,12 @@ export default function OrdersPage() {
             {tabType === "current"
               ? "active orders"
               : tabType === "historical"
-                ? "order history"
-                : tabType === "sample"
-                  ? "sample requests"
-                  : tabType === "bids"
-                    ? "bids"
-                    : "favorited listings"}{" "}
+              ? "order history"
+              : tabType === "sample"
+              ? "sample requests"
+              : tabType === "bids"
+              ? "bids"
+              : "favorited listings"}{" "}
             found
           </h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-md">
@@ -1347,7 +1360,7 @@ export default function OrdersPage() {
 
           <TabsContent value="current" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
+              <div className="text-sm text-muted-foreground font-medium">
                 {activeLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
@@ -1356,7 +1369,7 @@ export default function OrdersPage() {
                 ) : (
                   `${activeOrders.length} Active Orders`
                 )}
-              </p>
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleActiveSearch}
@@ -1419,7 +1432,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: activePagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1463,7 +1476,7 @@ export default function OrdersPage() {
 
           <TabsContent value="historical" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
+              <div className="text-sm text-muted-foreground font-medium">
                 {historyLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
@@ -1474,7 +1487,7 @@ export default function OrdersPage() {
                 ) : (
                   `${historicalOrders.length} Past Orders`
                 )}
-              </p>
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleHistorySearch}
@@ -1537,7 +1550,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: historyPagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1583,7 +1596,7 @@ export default function OrdersPage() {
 
           <TabsContent value="sample" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
+              <div className="text-sm text-muted-foreground font-medium">
                 {sampleLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
@@ -1594,7 +1607,7 @@ export default function OrdersPage() {
                 ) : (
                   `${sampleRequests?.length} Past Orders`
                 )}
-              </p>
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleSampleSearch}
@@ -1657,7 +1670,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: samplePagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1701,7 +1714,7 @@ export default function OrdersPage() {
 
           <TabsContent value="bids" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
+              <div className="text-sm text-muted-foreground font-medium">
                 {bidLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
@@ -1712,7 +1725,7 @@ export default function OrdersPage() {
                 ) : (
                   `${bids?.length} Past Orders`
                 )}
-              </p>
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleBidSearch}
@@ -1773,7 +1786,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: bidPagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1815,7 +1828,7 @@ export default function OrdersPage() {
 
           <TabsContent value="favorites" className="mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
+              <div className="text-sm text-muted-foreground font-medium">
                 {favoritesLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
@@ -1826,7 +1839,7 @@ export default function OrdersPage() {
                 ) : (
                   `${favorites?.length} Past Orders`
                 )}
-              </p>
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleFavoritesSearch}
@@ -1879,7 +1892,7 @@ export default function OrdersPage() {
                               e.preventDefault();
                               if (favoritesCurrentPage > 1)
                                 setFavoritesCurrentPage(
-                                  favoritesCurrentPage - 1,
+                                  favoritesCurrentPage - 1
                                 );
                             }}
                             className={
@@ -1891,7 +1904,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: favoritesPagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1916,7 +1929,7 @@ export default function OrdersPage() {
                                 favoritesPagination.total_pages
                               )
                                 setFavoritesCurrentPage(
-                                  favoritesCurrentPage + 1,
+                                  favoritesCurrentPage + 1
                                 );
                             }}
                             className={
@@ -1939,6 +1952,8 @@ export default function OrdersPage() {
         </Tabs>
         {showReviewModal && selectedOrder && (
           <ReviewModal
+            viewData={selectedOrder.reviews[0]}
+            type={reviewType ?? "add"}
             orderId={selectedOrder.id}
             sellerId={selectedOrder.seller_id}
             onClose={() => {

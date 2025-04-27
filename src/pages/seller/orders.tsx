@@ -80,6 +80,7 @@ interface Listing {
 interface Order {
   id: string;
   order_id: string;
+  buyer_name:string;
   buyer_id: string;
   seller_id: string;
   listing_id: string;
@@ -715,7 +716,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                 </div>
               );
             })}
-            RD{" "}
+          
           </div>
         </CardContent>
       </Card>
@@ -1008,8 +1009,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
             <div className="flex items-center">
               <User className="h-4 w-4 mr-1 text-muted-foreground" />
               <span className="text-sm font-medium">
-                {item.seller?.first_name || "Unknown"}{" "}
-                {item.seller?.last_name || ""}
+                {item.buyer_name || "Unknown"}{" "} 
               </span>
               {item.seller && (
                 <Link
@@ -1644,7 +1644,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                                     to={`/buyers/${bid.buyer_id}`}
                                     className="text-green-600 hover:text-green-700"
                                   >
-                                    {bid.buyer.first_name || "Unknown"}{" "}
+                                    {bid.buyer.first_name || "Unknowns"}{" "}
                                     {bid.buyer.last_name || ""}
                                   </Link>
                                 ) : (

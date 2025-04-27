@@ -18,6 +18,7 @@ import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface SampleRequestModalProps {
   open: boolean;
@@ -65,7 +66,9 @@ export default function SampleRequestModal({
       });
     }
   }, [open, user, listingId]);
+  const navigate=useNavigate();
 
+  
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -102,8 +105,10 @@ export default function SampleRequestModal({
 
       successMessage("Your sample request has been sent to the seller.");
       onClose();
+      navigate("/market-place");
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
+      
     } finally {
       setIsSubmitting(false);
     }

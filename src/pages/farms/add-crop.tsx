@@ -64,7 +64,7 @@ interface Farm {
 
 export default function AddCrop() {
   const navigation = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const farmIdFromQuery: string | null = queryParams.get("farmId");
@@ -112,7 +112,7 @@ export default function AddCrop() {
     },
   });
 
-  useEffect(() => {
+  useEffect(() => { 
     const fetchFarms = async () => {
       setIsLoadingFarms(true);
       try {
@@ -129,9 +129,7 @@ export default function AddCrop() {
         if (response.success) {
           const fetchedFarms: Farm[] = response.data.farms || [];
           setFarms(() => {
-            return fetchedFarms.filter(
-              (farm) => farm?.verification_status !== "completed"
-            );
+            return fetchedFarms
           });
           if (fetchedFarms.length === 0) {
             setFarmError(
@@ -170,12 +168,13 @@ export default function AddCrop() {
   const populateForm = async (listingId: string) => {
     setIsLoadingListing(true);
     try {
-      if (!user) {
+
+      if (!loading) {
         return;
       }
 
       const farmerId =
-        user.userType === "agent" ? farmerProfile?.id : undefined;
+        user?.userType === "agent" ? farmerProfile?.id : undefined;
 
       const response: any = await apiService().get(
         `/sellers/listings/get-listing?listingId=${listingId}`,
@@ -186,7 +185,7 @@ export default function AddCrop() {
         const listing = response.data.listing;
 
         form.reset({
-          farmId: listing.farm?.farm_id || "",
+          farmId: listing.farm.farm_id || "",
           coffee_variety: listing.coffee_variety || "",
           grade: listing.grade || "",
           bean_type: listing.bean_type || "",
@@ -210,9 +209,9 @@ export default function AddCrop() {
           shipping_port: listing.shipping_port || "",
         });
 
-        if (response.data.listing.photos?.length > 0) {
+        if (listing.photos?.length > 0) {
           const photosTemp: FileWithId[] = await Promise.all(
-            response.data.listing.photos.map(async (photo: any) => {
+            listing.photos.map(async (photo: any) => {
               try {
                 const res = await fetch(photo.photo_url);
                 if (!res.ok)
@@ -229,9 +228,10 @@ export default function AddCrop() {
                 return null;
               }
             })
-          );
-          setPhotos(photosTemp.filter((p): p is FileWithId => p !== null));
+          ); 
+          setPhotos(photosTemp);
         }
+
 
         if (Array.isArray(listing.discounts)) {
           setDiscounts(
@@ -254,11 +254,14 @@ export default function AddCrop() {
   };
 
   useEffect(() => {
+ 
+    
     if (id) {
+     
       setIsEditMode(true);
       populateForm(id);
     }
-  }, [id]);
+  }, []);
 
   const handlePhotosSelected = (selectedPhotos: File[]) => {
     setPhotos((prev) => [

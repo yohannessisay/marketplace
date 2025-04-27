@@ -74,7 +74,7 @@ export default function CompanyVerification() {
       saveToLocalStorage("current-step", "completed");
       saveToLocalStorage("userProfile", {
         ...userProfile,
-        onboardingStage: "completed",
+        onboarding_stage: "completed",
       });
       successMessage(
         "Your company verification has been submitted successfully.",
