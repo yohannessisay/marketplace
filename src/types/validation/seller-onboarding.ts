@@ -86,22 +86,72 @@ export const coffeeCropsSchema = z.object({
 export type CoffeeCropsFormData = z.infer<typeof coffeeCropsSchema>;
 
 // Step 3: Bank Information Schema
+const nameRegex = /^[a-zA-Z]{2,50}$/;
+const accountHolderNameValidation = z
+  .string()
+  .min(2, "Account holder name must be at least 2 characters")
+  .max(50, "Account holder name cannot exceed 50 characters")
+  .regex(nameRegex, "Account holder name can only contain letters");
+
 export const bankInfoSchema = z.object({
-  account_holder_name: z.string().min(1, "Account holder name is required"),
-  bank_name: z.string().min(1, "Bank name is required"),
-  account_number: z.string().min(1, "Account number is required"),
-  branch_name: z.string().min(1, "Branch name is required"),
-  is_primary: z.string().min(1, "Account type is required"),
-  swift_code: z.string().min(1, "Swift code is required"),
+  account_holder_name: accountHolderNameValidation,
+  bank_name: z
+    .string()
+    .min(2, "Bank name must be at least 2 characters")
+    .max(100, "Bank name cannot exceed 100 characters")
+    .regex(
+      /^[a-zA-Z\s-]{2,100}$/,
+      "Bank name can only contain letters, spaces, or hyphens",
+    ),
+  account_number: z
+    .string()
+    .min(8, "Account number must be at least 8 digits")
+    .max(20, "Account number cannot exceed 20 digits")
+    .regex(
+      /^\d{8,20}$/,
+      "Account number must be numeric and between 8-20 digits",
+    ),
+  branch_name: z
+    .string()
+    .min(2, "Branch name must be at least 2 characters")
+    .max(100, "Branch name cannot exceed 100 characters")
+    .regex(
+      /^[a-zA-Z\s]{2,100}$/,
+      "Branch name can only contain letters or spaces",
+    ),
+  is_primary: z.boolean({
+    required_error: "Please specify if this is the primary account",
+  }),
+  swift_code: z
+    .string()
+    .regex(
+      /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
+      "Invalid SWIFT code (must be 8 or 11 characters, e.g., ABCDUS33 or ABCDUS33XXX)",
+    ),
 });
 
 export type BankInfoFormData = z.infer<typeof bankInfoSchema>;
 
 // Step 4: Profile Information Schema
 export const profileInfoSchema = z.object({
-  telegram: z.string().min(1, "Telegram is required"),
-  address: z.string().min(1, "Invalid  address"),
-  about_me: z.string().optional(),
+  telegram: z
+    .string()
+    .min(1, "Telegram is required")
+    .regex(
+      /^@[\w]{5,32}$/,
+      "Invalid Telegram handle (must start with @ and be 5-32 characters)",
+    ),
+  address: z
+    .string()
+    .min(1, "Address is required")
+    .regex(
+      /^[a-zA-Z0-9\s,.-]{10,100}$/,
+      "Invalid address format (must be 10-100 characters, including letters, numbers, spaces, commas, periods, or hyphens)",
+    ),
+  about_me: z
+    .string()
+    .max(500, "About me section cannot exceed 500 characters")
+    .optional(),
   avatar_url: z.string().optional(),
 });
 
