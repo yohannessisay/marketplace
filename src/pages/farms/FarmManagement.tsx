@@ -132,7 +132,7 @@ const FarmManagement: React.FC = () => {
       setLoadingFarms(true);
       const response: any = await apiService().get(
         `/sellers/farms/get-farms?search=${searchValue}&page=${page}&limit=${limit}`,
-        fmrId ? fmrId : ""
+        fmrId ? fmrId : "",
       );
       setFarms(response.data.farms);
     } catch (error) {
@@ -147,7 +147,7 @@ const FarmManagement: React.FC = () => {
       setLoadingListings(true);
       const response: any = await apiService().get(
         `/sellers/listings/get-listings?search=${searchValue}&page=${page}&limit=${limit}`,
-        fmrId ? fmrId : ""
+        fmrId ? fmrId : "",
       );
       setListings(response.data.listings);
     } catch (error) {
@@ -162,7 +162,7 @@ const FarmManagement: React.FC = () => {
       setLoadingBanks(true);
       const response: any = await apiService().get(
         `/sellers/banks/get-banks?page=${page}&limit=${limit}`,
-        fmrId ? fmrId : ""
+        fmrId ? fmrId : "",
       );
       setBanks(response.data.bank_accounts);
     } catch (error) {
@@ -208,14 +208,6 @@ const FarmManagement: React.FC = () => {
             <p className="text-slate-500">
               Manage your coffee farms, listings, and banks
             </p>
-          </div>
-          <div className="flex gap-4">
-            <Button className="mt-4 md:mt-0" asChild>
-              <Link to="/add-farm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add New Farm
-              </Link>
-            </Button>
           </div>
         </div>
 
@@ -346,7 +338,7 @@ const FarmManagement: React.FC = () => {
                               <Scale className="h-4 w-4 mr-2 text-slate-400" />
                               <span>
                                 {Number.parseInt(
-                                  farm.capacity_kg || "0"
+                                  farm.capacity_kg || "0",
                                 )?.toLocaleString()}{" "}
                                 kg capacity
                               </span>
@@ -531,7 +523,7 @@ const FarmManagement: React.FC = () => {
                             <span>
                               Created on{" "}
                               {new Date(
-                                listing.created_at
+                                listing.created_at,
                               ).toLocaleDateString()}
                             </span>
                           </div>

@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   InputOTP,
   InputOTPGroup,
@@ -39,56 +39,62 @@ export default function OTPInputPage() {
 
   const [value, setLocalValue] = useState("");
   const [timer, setTimer] = useState(60);
+  const [isRequestingOTP, setIsRequestingOTP] = useState(false);
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const email = getFromLocalStorage(SIGNUP_PROFILE_KEY, null);
     if (!email) {
       navigate("/login");
     }
-  }, []);
+  }, [navigate]);
+
   useEffect(() => {
     const savedExpiration = localStorage.getItem(OTP_TIMER_KEY);
-    let interval: NodeJS.Timeout;
+    let expirationTime: number;
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
 
     if (savedExpiration) {
-      const expirationTime = parseInt(savedExpiration, 10);
+      expirationTime = parseInt(savedExpiration, 10);
       const currentTime = Date.now();
       const remainingTimeMs = expirationTime - currentTime;
 
       if (remainingTimeMs > 0) {
         setTimer(Math.ceil(remainingTimeMs / 1000));
-        interval = setInterval(() => {
-          const newRemainingTimeMs = expirationTime - Date.now();
-          if (newRemainingTimeMs <= 0) {
-            setTimer(0);
-            localStorage.removeItem(OTP_TIMER_KEY);
-            clearInterval(interval);
-          } else {
-            setTimer(Math.ceil(newRemainingTimeMs / 1000));
-          }
-        }, 1000);
       } else {
         setTimer(0);
         localStorage.removeItem(OTP_TIMER_KEY);
+        return;
       }
     } else {
-      const expirationTime = Date.now() + 60 * 1000;
+      expirationTime = Date.now() + 60 * 1000;
       localStorage.setItem(OTP_TIMER_KEY, expirationTime.toString());
-      interval = setInterval(() => {
-        const remainingTimeMs = expirationTime - Date.now();
-        if (remainingTimeMs <= 0) {
-          setTimer(0);
-          localStorage.removeItem(OTP_TIMER_KEY);
-          clearInterval(interval);
-        } else {
-          setTimer(Math.ceil(remainingTimeMs / 1000));
-        }
-      }, 1000);
+      setTimer(60);
     }
 
-    return () => clearInterval(interval);
+    intervalRef.current = setInterval(() => {
+      const newRemainingTimeMs = expirationTime - Date.now();
+      if (newRemainingTimeMs <= 0) {
+        setTimer(0);
+        localStorage.removeItem(OTP_TIMER_KEY);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      } else {
+        setTimer(Math.ceil(newRemainingTimeMs / 1000));
+      }
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   const onSubmit = async (data: OTPValidationType) => {
@@ -129,6 +135,9 @@ export default function OTPInputPage() {
   };
 
   const requestNewOTP = async () => {
+    if (isRequestingOTP) return;
+    setIsRequestingOTP(true);
+
     try {
       const email = getFromLocalStorage(SIGNUP_PROFILE_KEY, null);
 
@@ -144,13 +153,14 @@ export default function OTPInputPage() {
       });
 
       successMessage("New OTP sent to your email!");
-      // Reset timer
-      const expirationTime = Date.now() + 60 * 1000; // 60 seconds from now
+      const expirationTime = Date.now() + 60 * 1000;
       localStorage.setItem(OTP_TIMER_KEY, expirationTime.toString());
       setTimer(60);
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
       errorMessage(errorResponse);
+    } finally {
+      setIsRequestingOTP(false);
     }
   };
 
@@ -225,7 +235,7 @@ export default function OTPInputPage() {
               <div className="text-center mt-4">
                 <Button
                   type="button"
-                  disabled={timer > 0}
+                  disabled={timer > 0 || isRequestingOTP}
                   onClick={requestNewOTP}
                   className="w-full hover:bg-primary bg-white text-black border border-green-400 hover:text-white"
                 >
