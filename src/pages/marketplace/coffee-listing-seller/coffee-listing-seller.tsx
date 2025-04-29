@@ -976,7 +976,7 @@ export default function CoffeeListingSellerView() {
                       </Link>
                     </CardContent>
                   </Card>
-                  <div className="grid grid-cols-1 gap-4">
+                  {/* <div className="grid grid-cols-1 gap-4">
                     <div className="p-4 bg-white rounded-lg shadow-sm border">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -1024,7 +1024,7 @@ export default function CoffeeListingSellerView() {
                         <p className="text-sm text-red-600">-5%</p>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}
