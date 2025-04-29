@@ -6,7 +6,7 @@ import React, {
   forwardRef,
 } from "react";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
-import { Trash2, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 // Type definitions
 export type PolygonCoord = {
@@ -379,14 +379,6 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
       },
     }));
 
-    // Handle polygon deletion
-    const handleDeletePolygon = () => {
-      const newPolygonPaths: PolygonCoord[][] = [];
-      setPolygonPaths(newPolygonPaths);
-      if (setParentData) setParentData(newPolygonPaths);
-      if (onPolygonDelete) onPolygonDelete();
-    };
-
     // Handle drawing mode
     const handleStartDrawing = () => {
       if (drawingManager && !isReadOnly) {
@@ -408,19 +400,7 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
       <div className={`flex flex-col h-full w-full ${className}`}>
         {!isReadOnly && (
           <div className="flex justify-between items-center mb-3 px-1">
-            <h3 className="text-lg font-medium text-gray-700">
-              {polygonPaths.length ? "Edit Area" : "Draw Area on Map"}
-            </h3>
             <div className="flex gap-2">
-              {polygonPaths.length > 0 && (
-                <button
-                  onClick={handleDeletePolygon}
-                  className="flex items-center px-3 py-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  <span>Delete</span>
-                </button>
-              )}
               {!isDrawingMode && polygonPaths.length === 0 && (
                 <button
                   onClick={handleStartDrawing}
@@ -436,7 +416,7 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
 
         <div className="relative h-full w-full overflow-hidden rounded-lg shadow-md">
           {isDrawingMode && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-md z-10 text-sm text-gray-700">
+            <div className="absolute mt-4  top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-md z-10 text-sm text-gray-700">
               Click on the map to draw a polygon
             </div>
           )}

@@ -38,11 +38,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; 
+} from "@/components/ui/select";
 import { SkeletonForm } from "./SkeletonForm";
 import { useAuth } from "@/hooks/useAuth";
-
- 
+import CropFieldManager from "@/components/CropFieldManager";
 
 export default function AddFarm() {
   const navigate = useNavigate();
@@ -78,6 +77,7 @@ export default function AddFarm() {
       capacity_kg: 0,
       avg_annual_temp: 0,
       annual_rainfall_mm: 0,
+      polygon_coords: [],
     },
   });
 
@@ -85,11 +85,11 @@ export default function AddFarm() {
     if (user?.userType === "seller" && user.onboarding_stage !== "completed") {
       navigate("/home");
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   const normalizeSelectValue = (
     value: string | null | undefined,
-    validValues: string[]
+    validValues: string[],
   ): string => {
     if (!value) return "";
     const normalized = value.toLowerCase().replace(/\s+/g, "_");
@@ -100,7 +100,7 @@ export default function AddFarm() {
     setIsLoading(true);
     try {
       if (!user) {
-        return;
+        throw new Error("User not authenticated");
       }
 
       const farmerId =
@@ -108,7 +108,7 @@ export default function AddFarm() {
 
       const response: any = await apiService().get(
         `/sellers/farms/get-farm?farmId=${farmId}`,
-        farmerId
+        farmerId,
       );
       if (response.success) {
         const farm = response.data.farm;
@@ -116,6 +116,11 @@ export default function AddFarm() {
         const validTreeTypes = ["shade_grown", "sun_grown", "mixed"];
         const validTreeVarieties = ["heirloom", "typica", "bourbon", "geisha"];
         const validSoilTypes = ["volcanic_loam", "clay", "sandy", "silty"];
+
+        // Ensure polygon_coords is an array of arrays of { lat, lng } objects
+        const polygonCoords = Array.isArray(farm.polygon_coords)
+          ? farm.polygon_coords
+          : [];
 
         form.reset({
           farm_name: farm.farm_name ?? "",
@@ -133,12 +138,13 @@ export default function AddFarm() {
           tree_type: normalizeSelectValue(farm.tree_type, validTreeTypes),
           tree_variety: normalizeSelectValue(
             farm.tree_variety,
-            validTreeVarieties
+            validTreeVarieties,
           ),
           soil_type: normalizeSelectValue(farm.soil_type, validSoilTypes),
           capacity_kg: farm.capacity_kg ?? 0,
           avg_annual_temp: farm.avg_annual_temp ?? 0,
           annual_rainfall_mm: farm.annual_rainfall_mm ?? 0,
+          polygon_coords: polygonCoords,
         });
 
         if (farm.kyc_documents?.length > 0) {
@@ -155,7 +161,7 @@ export default function AddFarm() {
                   doc.doc_url.split("/").pop() || `document_${doc.id}`;
                 const file = Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id || Math.random().toString(36).substring(2) }
+                  { id: doc.id || Math.random().toString(36).substring(2) },
                 );
 
                 if (doc.doc_type === "government_registration") {
@@ -166,10 +172,10 @@ export default function AddFarm() {
               } catch (err) {
                 console.error(
                   `[AddFarm] Error fetching document ${doc.doc_url}:`,
-                  err
+                  err,
                 );
               }
-            })
+            }),
           );
 
           setGovRegFiles(govRegFilesTemp);
@@ -178,8 +184,8 @@ export default function AddFarm() {
       } else {
         throw new Error(response.message || "Failed to fetch farm data");
       }
-    } catch {
-      errorMessage({ message: "Failed to fetch farm data." });
+    } catch (error: any) {
+      errorMessage(error as APIErrorResponse);
     } finally {
       setIsLoading(false);
     }
@@ -199,37 +205,37 @@ export default function AddFarm() {
 
       for (const key in data) {
         if (Object.prototype.hasOwnProperty.call(data, key)) {
-          formData.append(key, String(data[key as keyof FarmDetailsFormData]));
+          if (key === "polygon_coords") {
+            formData.append(key, JSON.stringify(data.polygon_coords));
+          } else {
+            formData.append(
+              key,
+              String(data[key as keyof FarmDetailsFormData]),
+            );
+          }
         }
       }
 
       govRegFiles.forEach((file) => {
-        formData.append("files", file);
+        formData.append(`files`, file);
       });
 
       landRightsFiles.forEach((file) => {
-        formData.append("files", file);
+        formData.append(`files`, file);
       });
 
-      let xfmrId = null;
-      if (user && user?.userType === "seller" && isEditMode && id) {
-        formData.append("farmId", id);
-      }
-
+      let xfmrId: string | null = null;
       if (user && user.userType === "agent") {
-        const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
         xfmrId = farmerProfile.id ?? "";
       }
 
-      if (isEditMode) {
-        if (id) {
-          formData.append("farmId", id);
-        }
+      if (isEditMode && id) {
+        formData.append("farmId", id);
         await apiService().patchFormData(
           `/sellers/farms/update-farm`,
           formData,
           true,
-          xfmrId ? xfmrId : ""
+          xfmrId ? xfmrId : "",
         );
         successMessage("Farm updated successfully!");
       } else {
@@ -237,7 +243,7 @@ export default function AddFarm() {
           `/sellers/farms/create-farm`,
           formData,
           true,
-          xfmrId ? xfmrId : ""
+          xfmrId ? xfmrId : "",
         );
         successMessage("Farm added successfully!");
       }
@@ -249,6 +255,10 @@ export default function AddFarm() {
       setIsSubmitting(false);
     }
   };
+
+  // Watch latitude and longitude to update map center
+  const latitude = form.watch("latitude");
+  const longitude = form.watch("longitude");
 
   return (
     <div className="bg-primary/5 py-8 px-8">
@@ -280,7 +290,6 @@ export default function AddFarm() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
-                  {/* Government Registration Document */}
                   <Card className="max-w-2xl mx-auto">
                     <CardHeader>
                       <CardTitle>Government registration documents</CardTitle>
@@ -312,37 +321,39 @@ export default function AddFarm() {
                     </CardFooter>
                   </Card>
 
-                  {/* Land Rights Document */}
                   <Card className="max-w-2xl mx-auto">
-                <CardHeader>
-                  <CardTitle>Land right documents</CardTitle>
-                  <CardDescription>
-                    Upload PDF documents or images (Max 5 files, 5MB each)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FileUpload
-                    onFilesSelected={(files) => {
-                      setLandRightsFiles(files);
-                      setLandFileError("");
-                    }}
-                    maxFiles={5}
-                    maxSizeMB={5}
-                  />
-                  {landFileError && (
-                    <p className="text-red-500 text-sm mt-2">{landFileError}</p>
-                  )}
-                </CardContent>
-                <CardFooter>
-                  <div className="text-sm text-muted-foreground">
-                    {landRightsFiles.length > 0 ? `${landRightsFiles.length} files selected` : "No files selected"}
-                  </div>
-                </CardFooter>
-              </Card>
+                    <CardHeader>
+                      <CardTitle>Land right documents</CardTitle>
+                      <CardDescription>
+                        Upload PDF documents or images (Max 5 files, 5MB each)
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <FileUpload
+                        onFilesSelected={(files) => {
+                          setLandRightsFiles(files);
+                          setLandFileError("");
+                        }}
+                        maxFiles={5}
+                        maxSizeMB={5}
+                      />
+                      {landFileError && (
+                        <p className="text-red-500 text-sm mt-2">
+                          {landFileError}
+                        </p>
+                      )}
+                    </CardContent>
+                    <CardFooter>
+                      <div className="text-sm text-muted-foreground">
+                        {landRightsFiles.length > 0
+                          ? `${landRightsFiles.length} files selected`
+                          : "No files selected"}
+                      </div>
+                    </CardFooter>
+                  </Card>
                 </div>
               </div>
 
-              {/* Farm Information Section */}
               <div className="mb-10">
                 <h3 className="text-xl text-gray-900 font-semibold mb-2">
                   Farm Information
@@ -352,7 +363,6 @@ export default function AddFarm() {
                   crops.
                 </p>
 
-                {/* Form Location */}
                 <div className="mb-6">
                   <h4 className="font-medium mb-4 text-gray-700">
                     Farm Location
@@ -456,15 +466,6 @@ export default function AddFarm() {
                         </FormItem>
                       )}
                     />
-                  </div>
-                </div>
-
-                {/* Coffee Land Details */}
-                <div className="mb-6">
-                  <h4 className="font-medium mb-4 text-gray-700">
-                    Coffee Land Details
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="longitude"
@@ -474,6 +475,7 @@ export default function AddFarm() {
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               value={field.value ?? ""}
                               onChange={(e) =>
                                 field.onChange(Number(e.target.value) || 0)
@@ -493,6 +495,7 @@ export default function AddFarm() {
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               value={field.value ?? ""}
                               onChange={(e) =>
                                 field.onChange(Number(e.target.value) || 0)
@@ -523,9 +526,33 @@ export default function AddFarm() {
                       )}
                     />
                   </div>
+                  <div className="mt-6">
+                    <FormField
+                      control={form.control}
+                      name="polygon_coords"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Farm Boundary Map</FormLabel>
+                          <FormControl>
+                            <CropFieldManager
+                              onPolygonChange={field.onChange}
+                              initialPolygons={field.value || []}
+                              center={
+                                latitude !== 0 && longitude !== 0
+                                  ? { lat: latitude, lng: longitude }
+                                  : undefined
+                              }
+                              farmName={
+                                form.getValues("farm_name") || "New Farm"
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
-
-                {/* Crop Environment */}
                 <div className="mb-6">
                   <h4 className="font-medium mb-4 text-gray-700">
                     Crop environment
@@ -573,7 +600,6 @@ export default function AddFarm() {
                   </div>
                 </div>
 
-                {/* Crop Capacity */}
                 <div className="mb-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
@@ -587,7 +613,7 @@ export default function AddFarm() {
                               type="number"
                               value={field.value ?? ""}
                               onChange={(e) =>
-                                field.onChange(Number(e.target.value) || 1)
+                                field.onChange(Number(e.target.value) || 0)
                               }
                             />
                           </FormControl>
@@ -606,7 +632,7 @@ export default function AddFarm() {
                               type="number"
                               value={field.value ?? ""}
                               onChange={(e) =>
-                                field.onChange(Number(e.target.value) || 1)
+                                field.onChange(Number(e.target.value) || 0)
                               }
                             />
                           </FormControl>
@@ -625,7 +651,7 @@ export default function AddFarm() {
                               type="number"
                               value={field.value ?? ""}
                               onChange={(e) =>
-                                field.onChange(Number(e.target.value) || 1)
+                                field.onChange(Number(e.target.value) || 0)
                               }
                             />
                           </FormControl>
@@ -636,7 +662,6 @@ export default function AddFarm() {
                   </div>
                 </div>
 
-                {/* Tree Information */}
                 <div className="mb-6">
                   <h4 className="font-medium mb-4 text-gray-700">
                     Tree information
@@ -735,7 +760,6 @@ export default function AddFarm() {
                 </div>
               </div>
 
-              {/* Navigation Buttons */}
               <div className="flex justify-end mb-8">
                 <Button type="submit" disabled={isSubmitting} className="my-4">
                   {isSubmitting
@@ -743,8 +767,8 @@ export default function AddFarm() {
                       ? "Updating..."
                       : "Adding..."
                     : isEditMode
-                    ? "Update Farm"
-                    : "Add Farm"}
+                      ? "Update Farm"
+                      : "Add Farm"}
                 </Button>
               </div>
             </form>

@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Calendar,
   ShoppingBag,
@@ -19,6 +19,7 @@ import {
   MapPin,
   Hand,
   Heart,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { apiService } from "@/services/apiService";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -165,15 +174,21 @@ interface PaginationData {
   total_pages: number;
 }
 
+interface FilterState {
+  status?: string;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export default function OrdersPage() {
-  const { user,loading } = useAuth();
+  const { user, loading } = useAuth();
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
   const [sampleRequests, setSampleRequests] = useState<SampleRequest[] | null>(
-    null
+    null,
   );
-  const [reviewType, setReviewType] = useState<string | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [activePagination, setActivePagination] = useState<PaginationData>({
@@ -230,6 +245,7 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<string>("current");
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [reviewType, setReviewType] = useState<string | null>(null);
   const [fetchedTabs, setFetchedTabs] = useState<{
     current: boolean;
     historical: boolean;
@@ -243,215 +259,273 @@ export default function OrdersPage() {
     bids: false,
     favorites: false,
   });
+  const [filters, setFilters] = useState<{
+    current: FilterState;
+    historical: FilterState;
+    sample: FilterState;
+    bids: FilterState;
+    favorites: FilterState;
+  }>({
+    current: {},
+    historical: {},
+    sample: {},
+    bids: {},
+    favorites: {},
+  });
 
   const { successMessage, errorMessage } = useNotification();
 
-  useEffect(() => {
-    const fetchActiveOrders = async () => {
-      setActiveLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/orders/active-orders?page=${activeCurrentPage}&limit=${
-            activePagination.limit
-          }&search=${encodeURIComponent(activeSearchTerm)}`
-        );
-        if (response.success) {
-          setActiveOrders(response.data.orders || []);
-          setActivePagination(
-            response.data.pagination || {
-              page: 1,
-              limit: 10,
-              total: 0,
-              total_pages: 0,
-            }
-          );
-          setFetchedTabs((prev) => ({ ...prev, current: true }));
-        } else {
-          setActiveError("Failed to fetch active orders");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setActiveError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setActiveLoading(false);
-      }
-    };
+  const fetchActiveOrders = useCallback(async () => {
+    setActiveLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: activeCurrentPage.toString(),
+        limit: activePagination.limit.toString(),
+        search: encodeURIComponent(activeSearchTerm),
+        ...(filters.current.status && { status: filters.current.status }),
+        ...(filters.current.coffeeVariety && {
+          coffee_variety: filters.current.coffeeVariety,
+        }),
+        ...(filters.current.dateFrom && {
+          date_from: filters.current.dateFrom,
+        }),
+        ...(filters.current.dateTo && { date_to: filters.current.dateTo }),
+      }).toString();
 
-    if (activeTab === "current" ) {
+      const response: any = await apiService().get(
+        `/orders/active-orders?${filterParams}`,
+      );
+      if (response.success) {
+        setActiveOrders(response.data.orders || []);
+        setActivePagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            total: 0,
+            total_pages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, current: true }));
+      } else {
+        setActiveError("Failed to fetch active orders");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setActiveError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setActiveLoading(false);
+    }
+  }, [activeCurrentPage, activeSearchTerm, filters.current]);
+
+  const fetchHistoricalOrders = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: historyCurrentPage.toString(),
+        limit: historyPagination.limit.toString(),
+        search: encodeURIComponent(historySearchTerm),
+        ...(filters.historical.status && { status: filters.historical.status }),
+        ...(filters.historical.coffeeVariety && {
+          coffee_variety: filters.historical.coffeeVariety,
+        }),
+        ...(filters.historical.dateFrom && {
+          date_from: filters.historical.dateFrom,
+        }),
+        ...(filters.historical.dateTo && {
+          date_to: filters.historical.dateTo,
+        }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/orders/order-history?${filterParams}`,
+      );
+      if (response.success) {
+        setHistoricalOrders(response.data.orders || []);
+        setHistoryPagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            total: 0,
+            total_pages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, historical: true }));
+      } else {
+        setHistoryError("Failed to fetch order history");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setHistoryError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [historyCurrentPage, historySearchTerm, filters.historical]);
+
+  const fetchSampleRequests = useCallback(async () => {
+    setSampleLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: sampleCurrentPage.toString(),
+        limit: samplePagination.limit.toString(),
+        search: encodeURIComponent(sampleSearchTerm),
+        ...(filters.sample.status && {
+          delivery_status: filters.sample.status,
+        }),
+        ...(filters.sample.coffeeVariety && {
+          coffee_variety: filters.sample.coffeeVariety,
+        }),
+        ...(filters.sample.dateFrom && { date_from: filters.sample.dateFrom }),
+        ...(filters.sample.dateTo && { date_to: filters.sample.dateTo }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/buyers/samples/get-sample-requests?${filterParams}`,
+      );
+      if (response.success && response.data) {
+        setSampleRequests(response.data.sample_requests || null);
+        setSamplePagination({
+          page: response.data.pagination.page,
+          limit: response.data.pagination.limit,
+          total: response.data.pagination.total,
+          total_pages: response.data.pagination.total_pages,
+        });
+        setFetchedTabs((prev) => ({ ...prev, sample: true }));
+      } else {
+        setSampleError("Failed to fetch sample requests");
+        setSampleRequests(null);
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setSampleError(errorResponse.error?.message || "An error occurred");
+      setSampleRequests(null);
+      errorMessage(errorResponse);
+    } finally {
+      setSampleLoading(false);
+    }
+  }, [sampleCurrentPage, sampleSearchTerm, filters.sample]);
+
+  const fetchBids = useCallback(async () => {
+    if (loading) return;
+
+    setBidLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: bidCurrentPage.toString(),
+        limit: bidPagination.limit.toString(),
+        search: encodeURIComponent(bidSearchTerm),
+        ...(filters.bids.status && { status: filters.bids.status }),
+        ...(filters.bids.coffeeVariety && {
+          coffee_variety: filters.bids.coffeeVariety,
+        }),
+        ...(filters.bids.dateFrom && { date_from: filters.bids.dateFrom }),
+        ...(filters.bids.dateTo && { date_to: filters.bids.dateTo }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/buyers/bids/get-all-bids?${filterParams}`,
+      );
+      if (response.success) {
+        setBids(response.data.bids || []);
+        setBidPagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            total: 0,
+            total_pages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, bids: true }));
+      } else {
+        setBidError("Failed to fetch bids");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setBidError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setBidLoading(false);
+    }
+  }, [bidCurrentPage, bidSearchTerm, filters.bids, loading]);
+
+  const fetchFavorites = useCallback(async () => {
+    if (!user?.id) {
+      setFavoritesError("User not authenticated");
+      setFavoritesLoading(false);
+      return;
+    }
+
+    setFavoritesLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: favoritesCurrentPage.toString(),
+        limit: favoritesPagination.limit.toString(),
+        search: encodeURIComponent(favoritesSearchTerm),
+        ...(filters.favorites.coffeeVariety && {
+          coffee_variety: filters.favorites.coffeeVariety,
+        }),
+        ...(filters.favorites.dateFrom && {
+          date_from: filters.favorites.dateFrom,
+        }),
+        ...(filters.favorites.dateTo && { date_to: filters.favorites.dateTo }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/buyers/listings/favorites/get-favorite-listings?${filterParams}`,
+      );
+      if (response.success) {
+        setFavorites(response.data.favorites || []);
+        setFavoritesPagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            total: 0,
+            total_pages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, favorites: true }));
+      } else {
+        setFavoritesError("Failed to fetch favorites");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setFavoritesError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setFavoritesLoading(false);
+    }
+  }, [favoritesCurrentPage, favoritesSearchTerm, filters.favorites, user?.id]);
+
+  useEffect(() => {
+    if (activeTab === "current" && !fetchedTabs.current) {
       fetchActiveOrders();
     }
-  }, [activeCurrentPage, activeSearchTerm, activeTab, fetchedTabs.current]);
+  }, [activeTab, fetchActiveOrders, fetchedTabs.current]);
 
   useEffect(() => {
-    const fetchHistoricalOrders = async () => {
-      setHistoryLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/orders/order-history?page=${historyCurrentPage}&limit=${
-            historyPagination.limit
-          }&search=${encodeURIComponent(historySearchTerm)}`
-        );
-        if (response.success) {
-          setHistoricalOrders(response.data.orders || []);
-          setHistoryPagination(
-            response.data.pagination || {
-              page: 1,
-              limit: 10,
-              total: 0,
-              total_pages: 0,
-            }
-          );
-          setFetchedTabs((prev) => ({ ...prev, historical: true }));
-        } else {
-          setHistoryError("Failed to fetch order history");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setHistoryError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setHistoryLoading(false);
-      }
-    };
-
-    if (activeTab === "historical" ) {
+    if (activeTab === "historical" && !fetchedTabs.historical) {
       fetchHistoricalOrders();
     }
-  }, [
-    historyCurrentPage,
-    historySearchTerm,
-    activeTab,
-    fetchedTabs.historical,
-  ]);
+  }, [activeTab, fetchHistoricalOrders, fetchedTabs.historical]);
 
   useEffect(() => {
-    const fetchSampleRequests = async () => {
-      setSampleLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/buyers/samples/get-sample-requests?page=${sampleCurrentPage}&limit=${
-            samplePagination.limit
-          }&search=${encodeURIComponent(sampleSearchTerm)}`
-        );
-        if (response.success && response.data) {
-          setSampleRequests(response.data.sample_requests || null);
-          setSamplePagination({
-            page: response.data.pagination.page,
-            limit: response.data.pagination.limit,
-            total: response.data.pagination.total,
-            total_pages: response.data.pagination.total_pages,
-          });
-          setFetchedTabs((prev) => ({ ...prev, sample: true }));
-        } else {
-          setSampleError("Failed to fetch sample requests");
-          setSampleRequests(null);
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setSampleError(errorResponse.error?.message || "An error occurred");
-        setSampleRequests(null);
-        errorMessage(errorResponse);
-      } finally {
-        setSampleLoading(false);
-      }
-    };
-
-    if (activeTab === "sample" ) {
+    if (activeTab === "sample" && !fetchedTabs.sample) {
       fetchSampleRequests();
     }
-  }, [sampleCurrentPage, sampleSearchTerm, activeTab, fetchedTabs.sample]);
+  }, [activeTab, fetchSampleRequests, fetchedTabs.sample]);
 
   useEffect(() => {
-    const fetchBids = async () => {
-      if (loading) {
-        return;
-      }
-
-      setBidLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/buyers/bids/get-all-bids?page=${bidCurrentPage}&limit=${
-            bidPagination.limit
-          }&search=${encodeURIComponent(bidSearchTerm)}`
-        );
-        if (response.success) {
-          setBids(response.data.bids || []);
-          setBidPagination(
-            response.data.pagination || {
-              page: 1,
-              limit: 10,
-              total: 0,
-              total_pages: 0,
-            }
-          );
-          setFetchedTabs((prev) => ({ ...prev, bids: true }));
-        } else {
-          setBidError("Failed to fetch bids");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setBidError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setBidLoading(false);
-      }
-    };
-
-
-    if (activeTab === "bids") {
+    if (activeTab === "bids" && !fetchedTabs.bids) {
       fetchBids();
     }
-  }, [bidCurrentPage, bidSearchTerm, activeTab, fetchedTabs.bids, user?.id]);
+  }, [activeTab, fetchBids, fetchedTabs.bids]);
 
   useEffect(() => {
-    const fetchFavorites = async () => {
-      if (!user?.id) {
-        setFavoritesError("User not authenticated");
-        setFavoritesLoading(false);
-        return;
-      }
-
-      setFavoritesLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/buyers/listings/favorites/get-favorite-listings?page=${favoritesCurrentPage}&limit=${
-            favoritesPagination.limit
-          }&search=${encodeURIComponent(favoritesSearchTerm)}`
-        );
-        if (response.success) {
-          setFavorites(response.data.favorites || []);
-          setFavoritesPagination(
-            response.data.pagination || {
-              page: 1,
-              limit: 10,
-              total: 0,
-              total_pages: 0,
-            }
-          );
-          setFetchedTabs((prev) => ({ ...prev, favorites: true }));
-        } else {
-          setFavoritesError("Failed to fetch favorites");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setFavoritesError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setFavoritesLoading(false);
-      }
-    };
-
-    if (activeTab === "favorites" ) {
+    if (activeTab === "favorites" && !fetchedTabs.favorites) {
       fetchFavorites();
     }
-  }, [
-    favoritesCurrentPage,
-    favoritesSearchTerm,
-    activeTab,
-    fetchedTabs.favorites,
-    user?.id,
-  ]);
+  }, [activeTab, fetchFavorites, fetchedTabs.favorites]);
 
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
@@ -460,6 +534,16 @@ export default function OrdersPage() {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setExpandedOrderId(null);
+  };
+
+  const handleFilterChange = (tab: string, filter: FilterState) => {
+    setFilters((prev) => ({ ...prev, [tab]: filter }));
+    setFetchedTabs((prev) => ({ ...prev, [tab]: false }));
+    if (tab === "current") setActiveCurrentPage(1);
+    if (tab === "historical") setHistoryCurrentPage(1);
+    if (tab === "sample") setSampleCurrentPage(1);
+    if (tab === "bids") setBidCurrentPage(1);
+    if (tab === "favorites") setFavoritesCurrentPage(1);
   };
 
   const handleActiveSearch = (e: React.FormEvent) => {
@@ -531,10 +615,171 @@ export default function OrdersPage() {
     }
   };
 
-  const openReviewModal = (order: Order, type: string) => { 
+  const openReviewModal = (order: Order, type: string) => {
     setSelectedOrder(order);
     setShowReviewModal(true);
-    setReviewType(type ?? "add");
+    setReviewType(type || "add");
+  };
+
+  const FilterMenu = ({ tab }: { tab: string }) => {
+    const currentFilters = filters[tab as keyof typeof filters];
+    const isSampleTab = tab === "sample";
+    const isFavoritesTab = tab === "favorites";
+
+    // Calculate the number of active filters
+    const filterCount = [
+      currentFilters.status,
+      currentFilters.coffeeVariety,
+      currentFilters.dateFrom,
+      currentFilters.dateTo,
+    ].filter(Boolean).length;
+
+    const statusOptions = isSampleTab
+      ? ["pending", "inprogress", "delivered", "cancelled"]
+      : isFavoritesTab
+        ? []
+        : ["pending", "confirmed", "completed", "cancelled"];
+    const coffeeVarieties = [
+      "Yirgacheffe",
+      "Sidamo",
+      "Guji",
+      "Harrar",
+      "Jimma",
+    ];
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-10 relative">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+            {filterCount > 0 && (
+              <Badge
+                variant="secondary"
+                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white"
+              >
+                {filterCount}
+              </Badge>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-64 p-4">
+          <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {!isFavoritesTab && (
+            <>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Status</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {currentFilters.status || "All Statuses"}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...currentFilters,
+                          status: undefined,
+                        })
+                      }
+                    >
+                      All Statuses
+                    </DropdownMenuItem>
+                    {statusOptions.map((status) => (
+                      <DropdownMenuItem
+                        key={status}
+                        onClick={() =>
+                          handleFilterChange(tab, { ...currentFilters, status })
+                        }
+                      >
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
+          )}
+          <div className="mb-2">
+            <label className="text-sm font-medium">Coffee Variety</label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  {currentFilters.coffeeVariety || "All Varieties"}
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  onClick={() =>
+                    handleFilterChange(tab, {
+                      ...currentFilters,
+                      coffeeVariety: undefined,
+                    })
+                  }
+                >
+                  All Varieties
+                </DropdownMenuItem>
+                {coffeeVarieties.map((variety) => (
+                  <DropdownMenuItem
+                    key={variety}
+                    onClick={() =>
+                      handleFilterChange(tab, {
+                        ...currentFilters,
+                        coffeeVariety: variety,
+                      })
+                    }
+                  >
+                    {variety}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="mb-2">
+            <label className="text-sm font-medium">Date From</label>
+            <Input
+              type="date"
+              value={currentFilters.dateFrom || ""}
+              onChange={(e) =>
+                handleFilterChange(tab, {
+                  ...currentFilters,
+                  dateFrom: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="mb-2">
+            <label className="text-sm font-medium">Date To</label>
+            <Input
+              type="date"
+              value={currentFilters.dateTo || ""}
+              onChange={(e) =>
+                handleFilterChange(tab, {
+                  ...currentFilters,
+                  dateTo: e.target.value,
+                })
+              }
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full mt-2"
+            onClick={() => handleFilterChange(tab, {})}
+          >
+            Clear Filters
+            <X className="h-4 w-4 ml-2" />
+          </Button>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
 
   const renderOrderProgress = (order: Order) => {
@@ -609,8 +854,8 @@ export default function OrdersPage() {
                       step.completed
                         ? "text-foreground"
                         : index === currentStepIndex
-                        ? "text-foreground font-medium"
-                        : "text-muted-foreground"
+                          ? "text-foreground font-medium"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {step.label}
@@ -704,10 +949,10 @@ export default function OrdersPage() {
                   item.delivery_status === "delivered"
                     ? "secondary"
                     : item.delivery_status === "inprogress"
-                    ? "default"
-                    : item.delivery_status === "pending"
-                    ? "warning"
-                    : "destructive"
+                      ? "default"
+                      : item.delivery_status === "pending"
+                        ? "warning"
+                        : "destructive"
                 }
               >
                 {item.delivery_status.charAt(0).toUpperCase() +
@@ -1023,7 +1268,7 @@ export default function OrdersPage() {
               <span>
                 {isBid ? "Bid" : "Ordered"}:{" "}
                 {new Date(
-                  isBid ? (item as Bid).created_at : (item as Order).created_at
+                  isBid ? (item as Bid).created_at : (item as Order).created_at,
                 ).toLocaleDateString()}
               </span>
             </div>
@@ -1066,21 +1311,21 @@ export default function OrdersPage() {
                   "completed"
                     ? "default"
                     : (isBid
-                        ? (item as Bid).status
-                        : (item as Order).status) === "confirmed"
-                    ? "default"
-                    : (isBid
-                        ? (item as Bid).status
-                        : (item as Order).status) === "pending"
-                    ? "warning"
-                    : "outline"
+                          ? (item as Bid).status
+                          : (item as Order).status) === "confirmed"
+                      ? "default"
+                      : (isBid
+                            ? (item as Bid).status
+                            : (item as Order).status) === "pending"
+                        ? "warning"
+                        : "outline"
                 }
               >
                 {(isBid ? (item as Bid).status : (item as Order).status)
                   .charAt(0)
                   .toUpperCase() +
                   (isBid ? (item as Bid).status : (item as Order).status).slice(
-                    1
+                    1,
                   )}
               </Badge>
               <Button
@@ -1199,10 +1444,10 @@ export default function OrdersPage() {
                 )}
                 {tabType === "historical" && (
                   <>
-                    {!(item as Order).reviews? (
+                    {!(item as Order).reviews ? (
                       <Button
                         variant="default"
-                        onClick={() => openReviewModal(item as Order,"")}
+                        onClick={() => openReviewModal(item as Order, "")}
                       >
                         Review Seller
                       </Button>
@@ -1238,10 +1483,10 @@ export default function OrdersPage() {
       tabType === "sample"
         ? "No sample requests found. Check back later or browse the marketplace."
         : tabType === "bids"
-        ? "No bids found. Check back later or browse the marketplace."
-        : tabType === "favorites"
-        ? "No favorited listings found. Browse the marketplace to add your favorite coffees."
-        : "Head to the marketplace to place your first order of premium Ethiopian coffee.";
+          ? "No bids found. Check back later or browse the marketplace."
+          : tabType === "favorites"
+            ? "No favorited listings found. Browse the marketplace to add your favorite coffees."
+            : "Head to the marketplace to place your first order of premium Ethiopian coffee.";
 
     return (
       <Card className="w-full">
@@ -1254,12 +1499,12 @@ export default function OrdersPage() {
             {tabType === "current"
               ? "active orders"
               : tabType === "historical"
-              ? "order history"
-              : tabType === "sample"
-              ? "sample requests"
-              : tabType === "bids"
-              ? "bids"
-              : "favorited listings"}{" "}
+                ? "order history"
+                : tabType === "sample"
+                  ? "sample requests"
+                  : tabType === "bids"
+                    ? "bids"
+                    : "favorited listings"}{" "}
             found
           </h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-md">
@@ -1273,7 +1518,6 @@ export default function OrdersPage() {
     );
   };
 
-  // Skeleton Loader for Sample Requests and Favorites
   const SampleSkeleton = () => (
     <div className="space-y-5 animate-pulse">
       {Array.from({ length: 3 }).map((_, i) => (
@@ -1393,10 +1637,7 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="current" />
               </div>
             </div>
 
@@ -1432,7 +1673,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: activePagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1511,10 +1752,7 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="historical" />
               </div>
             </div>
 
@@ -1550,7 +1788,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: historyPagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1603,9 +1841,9 @@ export default function OrdersPage() {
                     Loading...
                   </div>
                 ) : sampleRequests?.length === 0 ? (
-                  "No past orders"
+                  "No sample requests"
                 ) : (
-                  `${sampleRequests?.length} Past Orders`
+                  `${sampleRequests?.length} Sample Requests`
                 )}
               </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
@@ -1631,10 +1869,7 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="sample" />
               </div>
             </div>
 
@@ -1670,7 +1905,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: samplePagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1721,9 +1956,9 @@ export default function OrdersPage() {
                     Loading...
                   </div>
                 ) : bids?.length === 0 ? (
-                  "No past orders"
+                  "No bids"
                 ) : (
-                  `${bids?.length} Past Orders`
+                  `${bids?.length} Bids`
                 )}
               </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
@@ -1749,10 +1984,7 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="bids" />
               </div>
             </div>
 
@@ -1786,7 +2018,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: bidPagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1835,9 +2067,9 @@ export default function OrdersPage() {
                     Loading...
                   </div>
                 ) : favorites?.length === 0 ? (
-                  "No past orders"
+                  "No favorites"
                 ) : (
-                  `${favorites?.length} Past Orders`
+                  `${favorites?.length} Favorites`
                 )}
               </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
@@ -1863,10 +2095,7 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="favorites" />
               </div>
             </div>
 
@@ -1892,7 +2121,7 @@ export default function OrdersPage() {
                               e.preventDefault();
                               if (favoritesCurrentPage > 1)
                                 setFavoritesCurrentPage(
-                                  favoritesCurrentPage - 1
+                                  favoritesCurrentPage - 1,
                                 );
                             }}
                             className={
@@ -1904,7 +2133,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: favoritesPagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1929,7 +2158,7 @@ export default function OrdersPage() {
                                 favoritesPagination.total_pages
                               )
                                 setFavoritesCurrentPage(
-                                  favoritesCurrentPage + 1
+                                  favoritesCurrentPage + 1,
                                 );
                             }}
                             className={

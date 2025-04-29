@@ -5,6 +5,32 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export type PolygonCoord = {
+  lat: number;
+  lng: number;
+};
+
+export function calculateApproxArea(coords: PolygonCoord[]): number {
+  if (!coords || coords.length < 3) return 0;
+
+  const R = 6371000;
+  let area = 0;
+
+  for (let i = 0; i < coords.length; i++) {
+    const j = (i + 1) % coords.length;
+
+    const lat1 = (coords[i].lat * Math.PI) / 180;
+    const lng1 = (coords[i].lng * Math.PI) / 180;
+    const lat2 = (coords[j].lat * Math.PI) / 180;
+    const lng2 = (coords[j].lng * Math.PI) / 180;
+
+    area += (lng2 - lng1) * (2 + Math.sin(lat1) + Math.sin(lat2));
+  }
+
+  area = Math.abs((area * R * R) / 2);
+  return area / 10000;
+}
+
 export function saveToLocalStorage(key: string, data: any) {
   if (typeof window !== "undefined") {
     localStorage.setItem(key, JSON.stringify(data));

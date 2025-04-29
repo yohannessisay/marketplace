@@ -44,6 +44,16 @@ export const farmDetailsSchema = z
       .number()
       .min(600, "Minimum annual rainfall is 600mm")
       .max(3000, "Maximum annual rainfall is 3000mm"),
+    polygon_coords: z
+      .array(
+        z.array(
+          z.object({
+            lat: z.number().min(-90).max(90),
+            lng: z.number().min(-180).max(180),
+          }),
+        ),
+      )
+      .optional(),
   })
   .refine((data) => data.coffee_area_hectares <= data.total_size_hectares, {
     message: "Coffee area cannot be greater than total farm size",
@@ -60,27 +70,97 @@ export type FarmDetailsFormData = z.infer<typeof farmDetailsSchema>;
 export const coffeeCropsSchema = z.object({
   // Ensure all fields match the form
   farmId: z.string().optional(), // Optional if not always provided
-  coffee_variety: z.string().min(1, "Coffee variety is required").refine(val => !/\d/.test(val), { message: "Coffee variety cannot contain numbers" }),
-  grade: z.string().min(1, "Initial grading is required").refine(val => !/\d/.test(val), { message: "Grade cannot contain numbers" }),
-  bean_type: z.string().min(1, "Bean type is required").refine(val => !/\d/.test(val), { message: "Bean type cannot contain numbers" }),
+  coffee_variety: z
+    .string()
+    .min(1, "Coffee variety is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Coffee variety cannot contain numbers",
+    }),
+  grade: z
+    .string()
+    .min(1, "Initial grading is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Grade cannot contain numbers",
+    }),
+  bean_type: z
+    .string()
+    .min(1, "Bean type is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Bean type cannot contain numbers",
+    }),
   crop_year: z.string().min(1, "Crop year is required"), // likely should allow numbers (years)
-  processing_method: z.string().min(1, "Processing method is required").refine(val => !/\d/.test(val), { message: "Processing method cannot contain numbers" }),
+  processing_method: z
+    .string()
+    .min(1, "Processing method is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Processing method cannot contain numbers",
+    }),
   moisture_percentage: z.number().min(1, "Moisture is required"),
   screen_size: z.number().min(1, "Screen size is required"),
-  drying_method: z.string().min(1, "Drying method is required").refine(val => !/\d/.test(val), { message: "Drying method cannot contain numbers" }),
-  wet_mill: z.string().min(1, "Wet mill is required").refine(val => !/\d/.test(val), { message: "Wet mill cannot contain numbers" }),
-  is_organic: z.string().min(1, "Organic property is required").refine(val => !/\d/.test(val), { message: "Organic property cannot contain numbers" }),
-  cup_taste_acidity: z.string().min(1, "Acidity is required").refine(val => !/\d/.test(val), { message: "Acidity cannot contain numbers" }),
-  cup_taste_body: z.string().min(1, "Body is required").refine(val => !/\d/.test(val), { message: "Body cannot contain numbers" }),
-  cup_taste_sweetness: z.string().min(1, "Sweetness is required").refine(val => !/\d/.test(val), { message: "Sweetness cannot contain numbers" }),
-  cup_taste_aftertaste: z.string().min(1, "Aftertaste is required").refine(val => !/\d/.test(val), { message: "Aftertaste cannot contain numbers" }),
-  cup_taste_balance: z.string().min(1, "Balance is required").refine(val => !/\d/.test(val), { message: "Balance cannot contain numbers" }),
+  drying_method: z
+    .string()
+    .min(1, "Drying method is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Drying method cannot contain numbers",
+    }),
+  wet_mill: z
+    .string()
+    .min(1, "Wet mill is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Wet mill cannot contain numbers",
+    }),
+  is_organic: z
+    .string()
+    .min(1, "Organic property is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Organic property cannot contain numbers",
+    }),
+  cup_taste_acidity: z
+    .string()
+    .min(1, "Acidity is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Acidity cannot contain numbers",
+    }),
+  cup_taste_body: z
+    .string()
+    .min(1, "Body is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Body cannot contain numbers",
+    }),
+  cup_taste_sweetness: z
+    .string()
+    .min(1, "Sweetness is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Sweetness cannot contain numbers",
+    }),
+  cup_taste_aftertaste: z
+    .string()
+    .min(1, "Aftertaste is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Aftertaste cannot contain numbers",
+    }),
+  cup_taste_balance: z
+    .string()
+    .min(1, "Balance is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Balance cannot contain numbers",
+    }),
   quantity_kg: z.number().min(1, "Quantity is required"),
   price_per_kg: z.number().min(1, "Price is required"),
   readiness_date: z.string().min(1, "Readiness date is required"),
   lot_length: z.string().optional(),
-  delivery_type: z.string().min(1, "Delivery type is required").refine(val => !/\d/.test(val), { message: "Delivery type cannot contain numbers" }),
-  shipping_port: z.string().min(1, "Shipping port is required").refine(val => !/\d/.test(val), { message: "Shipping port cannot contain numbers" }),
+  delivery_type: z
+    .string()
+    .min(1, "Delivery type is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Delivery type cannot contain numbers",
+    }),
+  shipping_port: z
+    .string()
+    .min(1, "Shipping port is required")
+    .refine((val) => !/\d/.test(val), {
+      message: "Shipping port cannot contain numbers",
+    }),
 });
 
 export type CoffeeCropsFormData = z.infer<typeof coffeeCropsSchema>;

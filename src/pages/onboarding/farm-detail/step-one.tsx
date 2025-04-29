@@ -1,7 +1,8 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,8 +37,9 @@ import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { FileUpload } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
-import { useNotification } from "@/hooks/useNotification"; 
+import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
+import CropFieldManager from "@/components/CropFieldManager";
 
 export default function StepOne() {
   const navigate = useNavigate();
@@ -48,7 +50,7 @@ export default function StepOne() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
-  const userProfile:any = getFromLocalStorage("userProfile",{}); 
+  const userProfile: any = getFromLocalStorage("userProfile", {});
   const currentUserStage = userProfile?.onboarding_stage;
 
   const form = useForm<FarmDetailsFormData>({
@@ -72,26 +74,35 @@ export default function StepOne() {
       capacity_kg: 0,
       avg_annual_temp: 0,
       annual_rainfall_mm: 0,
+      polygon_coords: [],
     },
   });
 
-  const { reset } = form;
+  const { reset, watch } = form;
 
   useEffect(() => {
     setIsClient(true);
     const savedData = getFromLocalStorage<FarmDetailsFormData>(
       "step-one",
-      {} as FarmDetailsFormData
+      {} as FarmDetailsFormData,
     );
     if (savedData && Object.keys(savedData).length > 0) {
-      reset(savedData);
+      // Ensure polygon_coords is an array of arrays
+      const polygonCoords = Array.isArray(savedData.polygon_coords)
+        ? savedData.polygon_coords
+        : [];
+      reset({ ...savedData, polygon_coords: polygonCoords });
     }
   }, [reset]);
+
   const validateFiles = (): { isValid: boolean; error?: APIErrorResponse } => {
     setGovFileError("");
     setLandFileError("");
 
-    if (govFiles.length === 0&&userProfile.onboarding_stage==="farm_profile") {
+    if (
+      govFiles.length === 0 &&
+      userProfile.onboarding_stage === "farm_profile"
+    ) {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -106,7 +117,10 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    if (landFiles.length === 0&&userProfile.onboarding_stage==="farm_profile") {
+    if (
+      landFiles.length === 0 &&
+      userProfile.onboarding_stage === "farm_profile"
+    ) {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -122,7 +136,9 @@ export default function StepOne() {
     }
 
     // Check file sizes
-    const oversizedGovFiles = govFiles.some(file => file.size > 5 * 1024 * 1024);
+    const oversizedGovFiles = govFiles.some(
+      (file) => file.size > 5 * 1024 * 1024,
+    );
     if (oversizedGovFiles) {
       const error: APIErrorResponse = {
         success: false,
@@ -138,7 +154,9 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    const oversizedLandFiles = landFiles.some(file => file.size > 5 * 1024 * 1024);
+    const oversizedLandFiles = landFiles.some(
+      (file) => file.size > 5 * 1024 * 1024,
+    );
     if (oversizedLandFiles) {
       const error: APIErrorResponse = {
         success: false,
@@ -172,23 +190,29 @@ export default function StepOne() {
 
       for (const key in data) {
         if (Object.prototype.hasOwnProperty.call(data, key)) {
-          formData.append(key, String(data[key as keyof FarmDetailsFormData]));
+          if (key === "polygon_coords") {
+            formData.append(key, JSON.stringify(data.polygon_coords));
+          } else {
+            formData.append(
+              key,
+              String(data[key as keyof FarmDetailsFormData]),
+            );
+          }
         }
       }
 
-      // Append all government files
-      govFiles.forEach(file => {
-        formData.append("files", file);
+      // Append government and land files with distinct field names
+      govFiles.forEach((file, index) => {
+        formData.append(`government_registration_${index}`, file);
       });
 
-      // Append all land files
-      landFiles.forEach(file => {
-        formData.append("files", file);
+      landFiles.forEach((file, index) => {
+        formData.append(`land_rights_${index}`, file);
       });
 
       const isBackButtonClicked = getFromLocalStorage(
         "back-button-clicked",
-        false
+        false,
       );
 
       if (
@@ -201,7 +225,7 @@ export default function StepOne() {
           "/onboarding/seller/farm-details",
           formData,
           true,
-          isAgent === "agent" && farmer ? farmer.id : ""
+          isAgent === "agent" && farmer ? farmer.id : "",
         );
 
         if (response?.success) {
@@ -227,7 +251,7 @@ export default function StepOne() {
             "/sellers/farms/update-farm",
             formData,
             true,
-            isAgent === "agent" && farmer ? farmer.id : ""
+            isAgent === "agent" && farmer ? farmer.id : "",
           );
 
           if (response.success) {
@@ -248,6 +272,10 @@ export default function StepOne() {
       setIsSubmitting(false);
     }
   };
+
+  // Watch latitude and longitude for map centering
+  const latitude = watch("latitude");
+  const longitude = watch("longitude");
 
   if (!isClient) {
     return null;
@@ -298,7 +326,9 @@ export default function StepOne() {
                 </CardContent>
                 <CardFooter>
                   <div className="text-sm text-muted-foreground">
-                    {govFiles.length > 0 ? `${govFiles.length} files selected` : "No files selected"}
+                    {govFiles.length > 0
+                      ? `${govFiles.length} files selected`
+                      : "No files selected"}
                   </div>
                 </CardFooter>
               </Card>
@@ -325,7 +355,9 @@ export default function StepOne() {
                 </CardContent>
                 <CardFooter>
                   <div className="text-sm text-muted-foreground">
-                    {landFiles.length > 0 ? `${landFiles.length} files selected` : "No files selected"}
+                    {landFiles.length > 0
+                      ? `${landFiles.length} files selected`
+                      : "No files selected"}
                   </div>
                 </CardFooter>
               </Card>
@@ -379,7 +411,7 @@ export default function StepOne() {
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <FormControl>
-                        <Input   {...field} disabled />
+                        <Input {...field} disabled />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -406,11 +438,12 @@ export default function StepOne() {
                       <FormLabel>Total farm size (hectar)</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          type="number"
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             const parsedValue =
-                              value === "" ? 1 : Number(value);
+                              value === "" ? 0 : Number(value);
                             field.onChange(parsedValue);
                           }}
                         />
@@ -427,11 +460,12 @@ export default function StepOne() {
                       <FormLabel>Total coffee size (hectar)</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          type="number"
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             const parsedValue =
-                              value === "" ? 1 : Number(value);
+                              value === "" ? 0 : Number(value);
                             field.onChange(parsedValue);
                           }}
                         />
@@ -440,15 +474,6 @@ export default function StepOne() {
                     </FormItem>
                   )}
                 />
-              </div>
-            </div>
-
-            {/* Coffee Land Details */}
-            <div className="mb-6">
-              <h4 className="font-medium mb-4 text-gray-700">
-                Coffee Land Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="longitude"
@@ -457,11 +482,13 @@ export default function StepOne() {
                       <FormLabel>Longitude</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          type="number"
+                          step="any"
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             const parsedValue =
-                              value === "" ? 1 : Number(value);
+                              value === "" ? 0 : Number(value);
                             field.onChange(parsedValue);
                           }}
                         />
@@ -478,11 +505,13 @@ export default function StepOne() {
                       <FormLabel>Latitude</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          type="number"
+                          step="any"
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             const parsedValue =
-                              value === "" ? 1 : Number(value);
+                              value === "" ? 0 : Number(value);
                             field.onChange(parsedValue);
                           }}
                         />
@@ -499,13 +528,38 @@ export default function StepOne() {
                       <FormLabel>Altitude (meters)</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          type="number"
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             const parsedValue =
-                              value === "" ? 1 : Number(value);
+                              value === "" ? 0 : Number(value);
                             field.onChange(parsedValue);
                           }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="mt-6">
+                <FormField
+                  control={form.control}
+                  name="polygon_coords"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Farm Boundary Map</FormLabel>
+                      <FormControl>
+                        <CropFieldManager
+                          onPolygonChange={field.onChange}
+                          initialPolygons={field.value || []}
+                          center={
+                            latitude !== 0 && longitude !== 0
+                              ? { lat: latitude, lng: longitude }
+                              : undefined
+                          }
+                          farmName={form.getValues("farm_name") || "New Farm"}
                         />
                       </FormControl>
                       <FormMessage />
@@ -574,11 +628,12 @@ export default function StepOne() {
                       <FormLabel>Crop Capacity (kg)</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          type="number"
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             const parsedValue =
-                              value === "" ? 1 : Number(value);
+                              value === "" ? 0 : Number(value);
                             field.onChange(parsedValue);
                           }}
                         />
@@ -587,7 +642,6 @@ export default function StepOne() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="avg_annual_temp"
@@ -596,11 +650,12 @@ export default function StepOne() {
                       <FormLabel>Average Annual Temp</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          type="number"
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             const parsedValue =
-                              value === "" ? 1 : Number(value);
+                              value === "" ? 0 : Number(value);
                             field.onChange(parsedValue);
                           }}
                         />
@@ -609,7 +664,6 @@ export default function StepOne() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="annual_rainfall_mm"
@@ -618,11 +672,12 @@ export default function StepOne() {
                       <FormLabel>Annual Rainfall (mm)</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          type="number"
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             const parsedValue =
-                              value === "" ? 1 : Number(value);
+                              value === "" ? 0 : Number(value);
                             field.onChange(parsedValue);
                           }}
                         />
@@ -648,7 +703,7 @@ export default function StepOne() {
                       <FormLabel>Tree Type</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -656,11 +711,11 @@ export default function StepOne() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Shade-grown">
+                          <SelectItem value="shade_grown">
                             Shade-grown
                           </SelectItem>
-                          <SelectItem value="Sun-grown">Sun-grown</SelectItem>
-                          <SelectItem value="Mixed">Mixed</SelectItem>
+                          <SelectItem value="sun_grown">Sun-grown</SelectItem>
+                          <SelectItem value="mixed">Mixed</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -675,7 +730,7 @@ export default function StepOne() {
                       <FormLabel>Tree Variety</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -683,10 +738,10 @@ export default function StepOne() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Heirloom">Heirloom</SelectItem>
-                          <SelectItem value="Typica">Typica</SelectItem>
-                          <SelectItem value="Bourbon">Bourbon</SelectItem>
-                          <SelectItem value="Geisha">Geisha</SelectItem>
+                          <SelectItem value="heirloom">Heirloom</SelectItem>
+                          <SelectItem value="typica">Typica</SelectItem>
+                          <SelectItem value="bourbon">Bourbon</SelectItem>
+                          <SelectItem value="geisha">Geisha</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -710,7 +765,7 @@ export default function StepOne() {
                       <FormLabel>Soil type</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value || ""}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -718,12 +773,12 @@ export default function StepOne() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Volcanic loam">
+                          <SelectItem value="volcanic_loam">
                             Volcanic loam
                           </SelectItem>
-                          <SelectItem value="Clay">Clay</SelectItem>
-                          <SelectItem value="Sandy">Sandy</SelectItem>
-                          <SelectItem value="Silty">Silty</SelectItem>
+                          <SelectItem value="clay">Clay</SelectItem>
+                          <SelectItem value="sandy">Sandy</SelectItem>
+                          <SelectItem value="silty">Silty</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
