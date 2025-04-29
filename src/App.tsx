@@ -9,8 +9,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
-import { initializeApiService } from "./services/apiService";
-import Hero from "./pages/landing/Hero";
+import { initializeApiService } from "./services/apiService"; 
 import OTPInputPage from "./pages/auth/OTP";
 import StepFour from "./pages/onboarding/farm-detail/step-four";
 import StepThree from "./pages/onboarding/farm-detail/step-three";
@@ -30,6 +29,7 @@ import OrdersPage from "./pages/seller/orders";
 import SellerProfilePage from "./pages/seller/SellerProfilePage";
 import { config } from "./lib/config";
 import { getFromLocalStorage } from "./lib/utils";
+import LandingPage from "./pages/landing";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -105,7 +105,7 @@ const RouterContent: React.FC = () => {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<Hero />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/agent/login" element={<AgentLogin />} />
       <Route path="/otp" element={<OTPInputPage />} />

@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  Star,
-  MessageCircle,
-  DollarSign,
-  BarChart2,
+  Star, 
   Search,
   X,
 } from "lucide-react";
