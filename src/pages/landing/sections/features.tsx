@@ -1,6 +1,6 @@
 import { FeatureCard } from "@/components/common/feature-card";
 import { Check, Coffee, Globe, Shield, TrendingUp } from "lucide-react";
- 
+ import  FeatureImg from "../../../assets/feature.jpg";
 export default function Features() {
   return (
     <section id="features" className="py-20 bg-white">
@@ -56,8 +56,8 @@ export default function Features() {
           </div>
           
           <div className="relative overflow-hidden rounded-xl shadow-lg">
-            <div className="aspect-square bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center p-6">
-              <div className="text-amber-700/30 text-xl font-bold">Features Image Placeholder</div>
+            <div className="aspect-square bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center ">
+            <img src={FeatureImg} alt="Hero Image" className="w-full h-full object-cover rounded-md" /> 
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-
+import AboutImg from "../../../assets/about.jpg";
 export default function About() {
   return (
     <section id="about" className="py-20 bg-amber-50">
@@ -8,7 +8,7 @@ export default function About() {
           <div className="relative">
             <div className="aspect-[4/3] rounded-2xl overflow-hidden">
               <div className="w-full h-full bg-amber-200/50 flex items-center justify-center">
-                <div className="text-amber-700/30 text-2xl font-bold">About Image Placeholder</div>
+              <img src={AboutImg} alt="Hero Image" className="w-full h-full object-cover" />
               </div>
             </div>
             

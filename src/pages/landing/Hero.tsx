@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Coffee, ChevronRight } from "lucide-react";
-
+import HeroImg from "../../assets/hero.png"
 export function Hero() {
   return (
     <section className="relative pt-24 md:pt-32 pb-16 md:pb-24 overflow-hidden">
@@ -53,7 +53,8 @@ export function Hero() {
             <div className="relative aspect-square md:aspect-[4/3] bg-amber-200/30 rounded-2xl overflow-hidden">
               {/* SVG Placeholder for hero image */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-amber-700/30 text-6xl font-bold">Hero Image Placeholder</div>
+                <img src={HeroImg} alt="Hero Image" className="w-full h-full object-cover" />
+                <div className="text-amber-700/30 text-6xl font-bold">Bunaa</div>
               </div>
             </div>
             
