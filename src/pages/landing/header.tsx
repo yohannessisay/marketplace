@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
-import { cn } from '@/lib/utils';
-import { Coffee, Menu, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
+import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import Logo from "@/components/layout/Logo";
 
 interface HeaderProps {
   scrolled: boolean;
@@ -15,23 +23,24 @@ export function Header({ scrolled }: HeaderProps) {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
-    <header 
+    <header
       className={cn(
         "fixed top-0 w-full z-50 transition-all duration-300 ease-in-out py-4 px-12",
-        scrolled ? "bg-background/80 backdrop-blur-md shadow-md" : "bg-transparent"
+        scrolled
+          ? "bg-background/80 backdrop-blur-md shadow-md"
+          : "bg-transparent",
       )}
     >
       <div className="container flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Coffee className="h-8 w-8 text-amber-700" />
-          <span className="text-xl font-bold tracking-tight">AfroValley</span>
+          <Logo />
         </div>
 
         {/* Desktop Navigation */}
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList>
             <NavigationMenuItem>
-              <NavigationMenuLink 
+              <NavigationMenuLink
                 className="px-4 py-2 text-sm font-medium hover:text-amber-700 transition-colors"
                 href="#marketplace"
               >
@@ -39,11 +48,13 @@ export function Header({ scrolled }: HeaderProps) {
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuTrigger className="text-sm font-medium">About</NavigationMenuTrigger>
+              <NavigationMenuTrigger className="text-sm font-medium">
+                About
+              </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid gap-3 p-4 w-[200px]">
                   <li>
-                    <NavigationMenuLink 
+                    <NavigationMenuLink
                       className="block p-2 hover:bg-muted rounded-md text-sm"
                       href="#about"
                     >
@@ -51,7 +62,7 @@ export function Header({ scrolled }: HeaderProps) {
                     </NavigationMenuLink>
                   </li>
                   <li>
-                    <NavigationMenuLink 
+                    <NavigationMenuLink
                       className="block p-2 hover:bg-muted rounded-md text-sm"
                       href="#eudr"
                     >
@@ -62,7 +73,7 @@ export function Header({ scrolled }: HeaderProps) {
               </NavigationMenuContent>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink 
+              <NavigationMenuLink
                 className="px-4 py-2 text-sm font-medium hover:text-amber-700 transition-colors"
                 href="#testimonials"
               >
@@ -70,7 +81,7 @@ export function Header({ scrolled }: HeaderProps) {
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink 
+              <NavigationMenuLink
                 className="px-4 py-2 text-sm font-medium hover:text-amber-700 transition-colors"
                 href="#contact"
               >
@@ -81,15 +92,14 @@ export function Header({ scrolled }: HeaderProps) {
         </NavigationMenu>
 
         <div className="hidden md:flex items-center gap-4">
-          <Button  >
+          <Button>
             <Link to={"/login"}>Log In</Link>
           </Button>
-          
         </div>
 
         {/* Mobile Menu Button */}
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           className="md:hidden"
           onClick={toggleMenu}
@@ -105,43 +115,46 @@ export function Header({ scrolled }: HeaderProps) {
         {isMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-background/95 backdrop-blur-md shadow-md p-4 md:hidden">
             <nav className="flex flex-col space-y-4">
-              <a 
-                href="#marketplace" 
+              <a
+                href="#marketplace"
                 className="px-4 py-2 text-sm font-medium hover:text-amber-700"
                 onClick={toggleMenu}
               >
                 Marketplace
               </a>
-              <a 
-                href="#about" 
+              <a
+                href="#about"
                 className="px-4 py-2 text-sm font-medium hover:text-amber-700"
                 onClick={toggleMenu}
               >
                 Our Story
               </a>
-              <a 
-                href="#eudr" 
+              <a
+                href="#eudr"
                 className="px-4 py-2 text-sm font-medium hover:text-amber-700"
                 onClick={toggleMenu}
               >
                 EUDR Policy
               </a>
-              <a 
-                href="#testimonials" 
+              <a
+                href="#testimonials"
                 className="px-4 py-2 text-sm font-medium hover:text-amber-700"
                 onClick={toggleMenu}
               >
                 Testimonials
               </a>
-              <a 
-                href="#contact" 
+              <a
+                href="#contact"
                 className="px-4 py-2 text-sm font-medium hover:text-amber-700"
                 onClick={toggleMenu}
               >
                 Contact
               </a>
               <div className="flex flex-col space-y-2 pt-2 border-t">
-                <Button variant="outline" className="rounded-full border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white">
+                <Button
+                  variant="outline"
+                  className="rounded-full border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white"
+                >
                   Log In
                 </Button>
                 <Button className="rounded-full bg-amber-700 hover:bg-amber-800">
