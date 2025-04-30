@@ -92,6 +92,7 @@ export default function CropFieldManager({
         <Button
           variant="outline"
           size="sm"
+          type="button"
           onClick={toggleReadOnly}
           className={`${
             isReadOnly
@@ -106,6 +107,7 @@ export default function CropFieldManager({
           <>
             <Button
               size="sm"
+               type="button"
               onClick={handleStartDrawing}
               disabled={polygonsData.length > 0}
             >
@@ -114,6 +116,7 @@ export default function CropFieldManager({
             <Button
               variant="outline"
               size="sm"
+               type="button"
               onClick={handleResetMap}
               className="bg-gray-200 text-gray-800 hover:bg-gray-300 border-none"
             >
@@ -124,6 +127,7 @@ export default function CropFieldManager({
         <Button
           variant="ghost"
           size="sm"
+           type="button"
           onClick={toggleFullScreen}
           className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
         >

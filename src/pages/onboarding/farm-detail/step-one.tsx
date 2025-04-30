@@ -202,12 +202,12 @@ export default function StepOne() {
       }
 
       // Append government and land files with distinct field names
-      govFiles.forEach((file, index) => {
-        formData.append(`government_registration_${index}`, file);
+      govFiles.forEach((file) => {
+        formData.append(`files`, file);
       });
 
-      landFiles.forEach((file, index) => {
-        formData.append(`land_rights_${index}`, file);
+      landFiles.forEach((file) => {
+        formData.append(`files`, file);
       });
 
       const isBackButtonClicked = getFromLocalStorage(

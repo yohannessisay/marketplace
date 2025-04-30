@@ -199,7 +199,7 @@ export const bankInfoSchema = z.object({
       /^[a-zA-Z\s]{2,100}$/,
       "Branch name can only contain letters or spaces",
     ),
-  is_primary: z.boolean({
+  is_primary: z.string({
     required_error: "Please specify if this is the primary account",
   }),
   swift_code: z

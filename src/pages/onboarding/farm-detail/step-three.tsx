@@ -36,7 +36,7 @@ interface BankAccount {
   account_number: string;
   swift_code?: string; // optional field
   branch_name?: string; // optional field
-  is_primary: boolean;
+  is_primary: string;
   created_at: string;
   updated_at: string;
 }
@@ -234,7 +234,7 @@ export default function StepThree() {
                           <FormControl>
                             <RadioGroup
                               onValueChange={field.onChange}
-                              defaultValue={field.value}
+                              defaultValue={String(field.value)}
                               className="flex gap-4 space-y-1"
                             >
                               <FormItem className="flex items-center space-x-3 space-y-0">
