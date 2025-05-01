@@ -44,16 +44,14 @@ export const farmDetailsSchema = z
       .number()
       .min(600, "Minimum annual rainfall is 600mm")
       .max(3000, "Maximum annual rainfall is 3000mm"),
-    polygon_coords: z
-      .array(
-        z.array(
-          z.object({
-            lat: z.number().min(-90).max(90),
-            lng: z.number().min(-180).max(180),
-          }),
-        ),
-      )
-      .optional(),
+    polygon_coords: z.array(
+      z.array(
+        z.object({
+          lat: z.number().min(-90).max(90),
+          lng: z.number().min(-180).max(180),
+        }),
+      ),
+    ),
   })
   .refine((data) => data.coffee_area_hectares <= data.total_size_hectares, {
     message: "Coffee area cannot be greater than total farm size",
@@ -77,11 +75,9 @@ export const coffeeCropsSchema = z.object({
       message: "Coffee variety cannot contain numbers",
     }),
   grade: z
-    .string()
-    .min(1, "Initial grading is required")
-    .refine((val) => !/\d/.test(val), {
-      message: "Grade cannot contain numbers",
-    }),
+    .number()
+    .min(1, "Grade must be at least 1")
+    .max(6, "Grade must be at most 6"),
   bean_type: z
     .string()
     .min(1, "Bean type is required")

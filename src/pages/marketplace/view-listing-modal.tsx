@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import SampleRequestModal from "./sample-request-modal";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { CoffeeListing, CoffeePhoto } from "@/types/coffee";
 import { useSampleRequest } from "@/hooks/useSampleRequest";
 import { CoffeeImage } from "./coffee-image";
@@ -24,18 +24,20 @@ interface ListingDetailModalProps {
   listing: CoffeeListing;
   onClose: () => void;
   onRequireAuth: () => void;
+  setAuthMessage: (message: string) => void;
 }
 
 export default function ListingDetailModal({
   listing,
   onClose,
   onRequireAuth,
+  setAuthMessage,
 }: ListingDetailModalProps) {
   const [currentPhotoIndex, setCurrentPhotoIndex] = React.useState(0);
   const [showSampleRequestModal, setShowSampleRequestModal] =
     React.useState(false);
   const [isviewLoading, setIsviewLoading] = React.useState(false);
-
+  const navigate = useNavigate();
   const { user } = useAuth();
   const {
     hasSampleRequest,
@@ -66,7 +68,7 @@ export default function ListingDetailModal({
   const prevPhoto = () => {
     const photos = getPhotos(listing);
     setCurrentPhotoIndex(
-      (prevIndex) => (prevIndex - 1 + photos.length) % photos.length
+      (prevIndex) => (prevIndex - 1 + photos.length) % photos.length,
     );
   };
 
@@ -98,11 +100,26 @@ export default function ListingDetailModal({
 
   const handleSampleRequestClick = () => {
     if (!user) {
+      setAuthMessage(
+        "To request a sample for this listing you have to login or signup for an AfroValley account",
+      );
+
       onRequireAuth();
       return;
     }
     if (user.userType === "seller" || sampleLoading || hasSampleRequest) return;
     setShowSampleRequestModal(true);
+  };
+
+  const handleViewListingClick = (path: string) => {
+    if (!user) {
+      setAuthMessage(
+        "To view this listing you have to login or signup for an AfroValley account",
+      );
+      onRequireAuth();
+      return;
+    }
+    navigate(path);
   };
 
   return (
@@ -293,7 +310,7 @@ export default function ListingDetailModal({
                       </div>
                       <Progress
                         value={getCupTastePercentage(
-                          listing.cup_taste_sweetness
+                          listing.cup_taste_sweetness,
                         )}
                         className="h-2"
                       />
@@ -309,7 +326,7 @@ export default function ListingDetailModal({
                       </div>
                       <Progress
                         value={getCupTastePercentage(
-                          listing.cup_taste_aftertaste
+                          listing.cup_taste_aftertaste,
                         )}
                         className="h-2"
                       />
@@ -426,26 +443,25 @@ export default function ListingDetailModal({
                     {user && sampleLoading
                       ? "Checking..."
                       : user && hasSampleRequest
-                      ? "Sample Requested"
-                      : "Request Samples"}
+                        ? "Sample Requested"
+                        : "Request Samples"}
                   </Button>
                 )}
 
                 <Button
-                  onClick={() => setIsviewLoading(true)}
+                  onClick={() => {
+                    handleViewListingClick(`/listing/${listing.id}`);
+                    setIsviewLoading(true);
+                  }}
                   disabled={
-                    !user ||
-                    user.onboarding_stage !== "completed" ||
+                    (user! && user.onboarding_stage !== "completed") ||
                     isviewLoading
                   }
                   className="w-full sm:flex-1 px-4 py-2"
                 >
-                  <Link
-                    to={`/listing/${listing.id}`}
-                    className="w-full sm:flex-1"
-                  >
-                    {isviewLoading ? "Loading..." : "View Listing Details"}
-                  </Link>
+                  {user && isviewLoading
+                    ? "Loading..."
+                    : "View Listing Details"}
                 </Button>
               </div>
             </div>

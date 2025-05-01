@@ -29,8 +29,24 @@ import { SIGNUP_PROFILE_KEY } from "@/types/constants";
 import { saveToLocalStorage } from "@/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
 
-type BuyerFormValues = z.infer<typeof buyerSchema>;
-type SellerFormValues = z.infer<typeof sellerSchema>;
+const enhancedBuyerSchema = buyerSchema.refine(
+  (data) => data.password === data.confirm_password,
+  {
+    message: "Passwords do not match",
+    path: ["confirm_password"],
+  },
+);
+
+const enhancedSellerSchema = sellerSchema.refine(
+  (data) => data.password === data.confirm_password,
+  {
+    message: "Passwords do not match",
+    path: ["confirm_password"],
+  },
+);
+
+type BuyerFormValues = z.infer<typeof enhancedBuyerSchema>;
+type SellerFormValues = z.infer<typeof enhancedSellerSchema>;
 
 export default function SignupPage() {
   const [role, setRole] = useState<"buyer" | "seller">("seller");
@@ -38,7 +54,6 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { successMessage, errorMessage } = useNotification();
 
-  // Add these lines for password visibility toggles
   const [buyerPasswordVisible, setBuyerPasswordVisible] = useState(false);
   const [buyerConfirmPasswordVisible, setBuyerConfirmPasswordVisible] =
     useState(false);
@@ -47,7 +62,7 @@ export default function SignupPage() {
     useState(false);
 
   const buyerForm = useForm<BuyerFormValues>({
-    resolver: zodResolver(buyerSchema),
+    resolver: zodResolver(enhancedBuyerSchema),
     defaultValues: {
       first_name: "",
       last_name: "",
@@ -62,7 +77,7 @@ export default function SignupPage() {
   });
 
   const sellerForm = useForm<SellerFormValues>({
-    resolver: zodResolver(sellerSchema),
+    resolver: zodResolver(enhancedSellerSchema),
     defaultValues: {
       first_name: "",
       last_name: "",
@@ -83,7 +98,7 @@ export default function SignupPage() {
       });
 
       successMessage(
-        "Buyer Registration successful! Please verify your email."
+        "Buyer Registration successful! Please verify your email.",
       );
       saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");
@@ -110,7 +125,7 @@ export default function SignupPage() {
       });
 
       successMessage(
-        "Seller registration successful! Please verify your email."
+        "Seller registration successful! Please verify your email.",
       );
       saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
       navigate("/verification");

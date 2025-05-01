@@ -44,20 +44,39 @@ export default function OTPInputPage() {
   const { successMessage, errorMessage } = useNotification();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Function to start the timer with a given expiration time
+  const startTimer = (expirationTime: number) => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    localStorage.setItem(OTP_TIMER_KEY, expirationTime.toString());
+    setTimer(Math.ceil((expirationTime - Date.now()) / 1000));
+
+    intervalRef.current = setInterval(() => {
+      const remainingTimeMs = expirationTime - Date.now();
+      if (remainingTimeMs <= 0) {
+        setTimer(0);
+        localStorage.removeItem(OTP_TIMER_KEY);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      } else {
+        setTimer(Math.ceil(remainingTimeMs / 1000));
+      }
+    }, 1000);
+  };
+
+  // Initial timer setup
   useEffect(() => {
     const email = getFromLocalStorage(SIGNUP_PROFILE_KEY, null);
     if (!email) {
       navigate("/login");
+      return;
     }
-  }, [navigate]);
 
-  useEffect(() => {
     const savedExpiration = localStorage.getItem(OTP_TIMER_KEY);
     let expirationTime: number;
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
 
     if (savedExpiration) {
       expirationTime = parseInt(savedExpiration, 10);
@@ -65,37 +84,22 @@ export default function OTPInputPage() {
       const remainingTimeMs = expirationTime - currentTime;
 
       if (remainingTimeMs > 0) {
-        setTimer(Math.ceil(remainingTimeMs / 1000));
+        startTimer(expirationTime);
       } else {
         setTimer(0);
         localStorage.removeItem(OTP_TIMER_KEY);
-        return;
       }
     } else {
       expirationTime = Date.now() + 60 * 1000;
-      localStorage.setItem(OTP_TIMER_KEY, expirationTime.toString());
-      setTimer(60);
+      startTimer(expirationTime);
     }
-
-    intervalRef.current = setInterval(() => {
-      const newRemainingTimeMs = expirationTime - Date.now();
-      if (newRemainingTimeMs <= 0) {
-        setTimer(0);
-        localStorage.removeItem(OTP_TIMER_KEY);
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
-      } else {
-        setTimer(Math.ceil(newRemainingTimeMs / 1000));
-      }
-    }, 1000);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, []);
+  }, [navigate]);
 
   const onSubmit = async (data: OTPValidationType) => {
     try {
@@ -135,7 +139,7 @@ export default function OTPInputPage() {
   };
 
   const requestNewOTP = async () => {
-    if (isRequestingOTP) return;
+    if (isRequestingOTP || timer > 0) return;
     setIsRequestingOTP(true);
 
     try {
@@ -154,8 +158,7 @@ export default function OTPInputPage() {
 
       successMessage("New OTP sent to your email!");
       const expirationTime = Date.now() + 60 * 1000;
-      localStorage.setItem(OTP_TIMER_KEY, expirationTime.toString());
-      setTimer(60);
+      startTimer(expirationTime); // Start the timer immediately
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
       errorMessage(errorResponse);
@@ -241,7 +244,9 @@ export default function OTPInputPage() {
                 >
                   {timer > 0
                     ? `Request New OTP in ${timer}s`
-                    : "Request New OTP"}
+                    : isRequestingOTP
+                      ? "Requesting..."
+                      : "Request New OTP"}
                 </Button>
               </div>
             </form>

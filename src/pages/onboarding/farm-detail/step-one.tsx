@@ -87,17 +87,58 @@ export default function StepOne() {
       {} as FarmDetailsFormData,
     );
     if (savedData && Object.keys(savedData).length > 0) {
-      // Ensure polygon_coords is an array of arrays
       const polygonCoords = Array.isArray(savedData.polygon_coords)
         ? savedData.polygon_coords
         : [];
       reset({ ...savedData, polygon_coords: polygonCoords });
     }
+
+    // Load saved file paths from localStorage
+    const savedGovFiles = getFromLocalStorage<string[]>("gov-files", []);
+    const savedLandFiles = getFromLocalStorage<string[]>("land-files", []);
+
+    // Reconstruct File objects from paths (if possible)
+    const reconstructFiles = async (filePaths: string[]): Promise<File[]> => {
+      const files: File[] = [];
+      for (const path of filePaths) {
+        try {
+          const response = await fetch(path);
+          if (!response.ok) throw new Error(`Failed to fetch ${path}`);
+          const blob = await response.blob();
+          const fileName = path.split("/").pop() || `file_${Date.now()}`;
+          files.push(new File([blob], fileName, { type: blob.type }));
+        } catch (err) {
+          console.error(`Error reconstructing file from ${path}:`, err);
+        }
+      }
+      return files;
+    };
+
+    Promise.all([
+      reconstructFiles(savedGovFiles).then((files) => setGovFiles(files)),
+      reconstructFiles(savedLandFiles).then((files) => setLandFiles(files)),
+    ]).catch((err) => console.error("Error loading saved files:", err));
   }, [reset]);
 
   const validateFiles = (): { isValid: boolean; error?: APIErrorResponse } => {
     setGovFileError("");
     setLandFileError("");
+
+    // Check if polygon_coords is empty
+    const polygonCoords = form.getValues("polygon_coords");
+    if (!polygonCoords || polygonCoords.length === 0) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Farm boundary map is required",
+          details: "Please draw the farm boundary on the map",
+          code: 400,
+          hint: "Use the map interface to outline your farm's boundaries",
+        },
+      };
+      errorMessage(error);
+      return { isValid: false, error };
+    }
 
     if (
       govFiles.length === 0 &&
@@ -135,7 +176,6 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    // Check file sizes
     const oversizedGovFiles = govFiles.some(
       (file) => file.size > 5 * 1024 * 1024,
     );
@@ -209,6 +249,11 @@ export default function StepOne() {
       landFiles.forEach((file) => {
         formData.append(`files`, file);
       });
+
+      const govFilePaths = govFiles.map((file) => URL.createObjectURL(file));
+      const landFilePaths = landFiles.map((file) => URL.createObjectURL(file));
+      saveToLocalStorage("gov-files", govFilePaths);
+      saveToLocalStorage("land-files", landFilePaths);
 
       const isBackButtonClicked = getFromLocalStorage(
         "back-button-clicked",
@@ -316,6 +361,10 @@ export default function StepOne() {
                     onFilesSelected={(files) => {
                       setGovFiles(files);
                       setGovFileError("");
+                      const filePaths = files.map((file) =>
+                        URL.createObjectURL(file),
+                      );
+                      saveToLocalStorage("gov-files", filePaths);
                     }}
                     maxFiles={5}
                     maxSizeMB={5}
@@ -345,6 +394,11 @@ export default function StepOne() {
                     onFilesSelected={(files) => {
                       setLandFiles(files);
                       setLandFileError("");
+                      // Save file paths to localStorage
+                      const filePaths = files.map((file) =>
+                        URL.createObjectURL(file),
+                      );
+                      saveToLocalStorage("land-files", filePaths);
                     }}
                     maxFiles={5}
                     maxSizeMB={5}

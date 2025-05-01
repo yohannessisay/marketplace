@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Search, Coffee } from "lucide-react"; 
+import { Search, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,7 @@ export default function CoffeeMarketplace() {
   });
   const [isLoading, setIsLoading] = React.useState(true);
   const [authMessage, setAuthMessage] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null); 
+  const [error, setError] = React.useState<string | null>(null);
   const [selectedListing, setSelectedListing] =
     React.useState<CoffeeListing | null>(null);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = React.useState(false);
@@ -298,9 +298,8 @@ export default function CoffeeMarketplace() {
     }
   };
 
-  const onRequireAuth = (message: string) => {
+  const onRequireAuth = () => {
     setIsSignUpModalOpen(true);
-    setAuthMessage(message);
   };
 
   if (authLoading) {
@@ -320,289 +319,307 @@ export default function CoffeeMarketplace() {
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col min-h-screen bg-primary/5 p-8 pt-20">
+      <div className="flex flex-col min-h-screen bg-primary/5 p-1 pt-20">
         <Header />
         <main className="flex-grow container mx-auto px-4 py-6">
-  <div className="mb-6">
-    <h2 className="text-3xl font-bold text-slate-800">Coffee Marketplace</h2>
-    <p className="text-slate-600 mt-2">
-      Discover premium coffee directly from African farmers
-    </p>
-  </div>
-
-  <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
-    {/* Filters Sidebar */}
-    <Card>
-      <CardContent className="pt-6 space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="region">Region</Label>
-          <Select
-            value={filters.region}
-            onValueChange={(value) => handleFilterChange("region", value)}
-          >
-            <SelectTrigger id="region" className="w-full">
-              <SelectValue placeholder="All Regions" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Regions</SelectItem>
-              {regions.map((region) => (
-                <SelectItem key={region} value={region}>
-                  {region}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="variety">Coffee Variety</Label>
-          <Select
-            value={filters.variety}
-            onValueChange={(value) => handleFilterChange("variety", value)}
-          >
-            <SelectTrigger id="variety" className="w-full">
-              <SelectValue placeholder="All Varieties" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Varieties</SelectItem>
-              {varieties.map((variety) => (
-                <SelectItem key={variety} value={variety}>
-                  {variety}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="processing">Processing Method</Label>
-          <Select
-            value={filters.processing_method}
-            onValueChange={(value) =>
-              handleFilterChange("processing_method", value)
-            }
-          >
-            <SelectTrigger id="processing" className="w-full">
-              <SelectValue placeholder="All Methods" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Methods</SelectItem>
-              {processingMethods.map((method) => (
-                <SelectItem key={method} value={method}>
-                  {method}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="organic">Organic</Label>
-          <Select
-            value={filters.is_organic}
-            onValueChange={(value) => handleFilterChange("is_organic", value)}
-          >
-            <SelectTrigger id="organic" className="w-full">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="true">Organic</SelectItem>
-              <SelectItem value="false">Non-Organic</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="min-price">Min Price ($/kg)</Label>
-          <Input
-            id="min-price"
-            type="number"
-            placeholder="Min"
-            value={filters.min_price}
-            onChange={(e) => handleFilterChange("min_price", e.target.value)}
-            min={0}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="max-price">Max Price ($/kg)</Label>
-          <Input
-            id="max-price"
-            type="number"
-            placeholder="Max"
-            value={filters.max_price}
-            onChange={(e) => handleFilterChange("max_price", e.target.value)}
-            min={0}
-          />
-        </div>
-
-        <Button onClick={resetFilters} variant="outline" className="w-full">
-          Clear Filters
-        </Button>
-      </CardContent>
-    </Card>
-
-    {/* Listings & Search */}
-    <div className="space-y-6">
-      <form onSubmit={handleSearchSubmit} className="relative bg-white">
-        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-slate-400" />
-        </div>
-        <Input
-          type="text"
-          placeholder="Search for coffee variety, farm name or region..."
-          className="pl-9"
-          value={searchQuery}
-          onChange={handleSearchChange}
-        />
-      </form>
-
-      {error && (
-        <Card className="bg-red-50 border-red-200">
-          <CardContent className="pt-6">
-            <p className="text-red-700">
-              Error: {error}. Please try again or refresh the page.
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold text-slate-800">
+              Coffee Marketplace
+            </h2>
+            <p className="text-slate-600 mt-2">
+              Discover premium coffee directly from African farmers
             </p>
-          </CardContent>
-        </Card>
-      )}
-
-      <div>
-        {isLoading ? (
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-            <p className="text-slate-600">Loading listings...</p>
           </div>
-        ) : (
-          <p className="text-slate-600">
-            {listings.length} {listings.length === 1 ? "listing" : "listings"} found
-          </p>
-        )}
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, index) => (
-              <LoadingCard key={index} />
-            ))
-          : listings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                isFavorited={favoriteState[listing.id]?.isFavorited ?? false}
-                isFavoriteLoading={favoriteLoading[listing.id] ?? false}
-                onCardClick={() => setSelectedListing(listing)}
-                onFavoriteToggle={() => {
-                  if (favoriteLoading[listing.id]) return;
-                  if (favoriteState[listing.id]?.isFavorited) {
-                    removeFavorite(listing.id);
-                  } else {
-                    addFavorite(listing.id);
-                  }
-                }}
-                onRequireAuth={() =>
-                  onRequireAuth(
-                    "To mark this listing as favorite you have to login or signup for an AfroValley account"
-                  )
-                }
-              />
-            ))}
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
+            {/* Filters Sidebar */}
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="region">Region</Label>
+                  <Select
+                    value={filters.region}
+                    onValueChange={(value) =>
+                      handleFilterChange("region", value)
+                    }
+                  >
+                    <SelectTrigger id="region" className="w-full">
+                      <SelectValue placeholder="All Regions" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Regions</SelectItem>
+                      {regions.map((region) => (
+                        <SelectItem key={region} value={region}>
+                          {region}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-      {listings.length > 0 && totalPages > 1 && (
-        <Pagination className="mt-6">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                className={
-                  currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                }
-              />
-            </PaginationItem>
-            {Array.from({ length: totalPages }).map((_, index) => (
-              <PaginationItem key={index}>
-                <PaginationLink
-                  onClick={() => handlePageChange(index + 1)}
-                  isActive={currentPage === index + 1}
+                <div className="space-y-2">
+                  <Label htmlFor="variety">Coffee Variety</Label>
+                  <Select
+                    value={filters.variety}
+                    onValueChange={(value) =>
+                      handleFilterChange("variety", value)
+                    }
+                  >
+                    <SelectTrigger id="variety" className="w-full">
+                      <SelectValue placeholder="All Varieties" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Varieties</SelectItem>
+                      {varieties.map((variety) => (
+                        <SelectItem key={variety} value={variety}>
+                          {variety}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="processing">Processing Method</Label>
+                  <Select
+                    value={filters.processing_method}
+                    onValueChange={(value) =>
+                      handleFilterChange("processing_method", value)
+                    }
+                  >
+                    <SelectTrigger id="processing" className="w-full">
+                      <SelectValue placeholder="All Methods" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Methods</SelectItem>
+                      {processingMethods.map((method) => (
+                        <SelectItem key={method} value={method}>
+                          {method}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="organic">Organic</Label>
+                  <Select
+                    value={filters.is_organic}
+                    onValueChange={(value) =>
+                      handleFilterChange("is_organic", value)
+                    }
+                  >
+                    <SelectTrigger id="organic" className="w-full">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="true">Organic</SelectItem>
+                      <SelectItem value="false">Non-Organic</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="min-price">Min Price ($/kg)</Label>
+                  <Input
+                    id="min-price"
+                    type="number"
+                    placeholder="Min"
+                    value={filters.min_price}
+                    onChange={(e) =>
+                      handleFilterChange("min_price", e.target.value)
+                    }
+                    min={0}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="max-price">Max Price ($/kg)</Label>
+                  <Input
+                    id="max-price"
+                    type="number"
+                    placeholder="Max"
+                    value={filters.max_price}
+                    onChange={(e) =>
+                      handleFilterChange("max_price", e.target.value)
+                    }
+                    min={0}
+                  />
+                </div>
+
+                <Button
+                  onClick={resetFilters}
+                  variant="outline"
+                  className="w-full"
                 >
-                  {index + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                onClick={() =>
-                  handlePageChange(Math.min(totalPages, currentPage + 1))
-                }
-                className={
-                  currentPage === totalPages
-                    ? "pointer-events-none opacity-50"
-                    : ""
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+                  Clear Filters
+                </Button>
+              </CardContent>
+            </Card>
 
-      {listings.length === 0 && !isLoading && !error && (
-        <Card className="p-8 text-center mt-8">
-          <CardContent className="pt-6 flex flex-col items-center">
-            <Coffee className="h-12 w-12 text-slate-400 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-700 mb-2">
-              {hasSearchOrFilters
-                ? "No listings match your criteria"
-                : "No coffee listings available"}
-            </h3>
-            <p className="text-slate-500 mb-4">
-              {hasSearchOrFilters
-                ? "Try adjusting your search or filters to find more listings."
-                : "Check back later for new coffee listings."}
-            </p>
-            {hasSearchOrFilters ? (
-              <Button
-                onClick={resetFilters}
-                variant="default"
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                Clear All Filters
-              </Button>
-            ) : (
-              <Button
-                onClick={() => fetchListings()}
-                variant="default"
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                Refresh
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  </div>
+            {/* Listings & Search */}
+            <div className="space-y-6">
+              <form onSubmit={handleSearchSubmit} className="relative bg-white">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-slate-400" />
+                </div>
+                <Input
+                  type="text"
+                  placeholder="Search for coffee variety, farm name or region..."
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
+              </form>
 
-  {/* Modals */}
-  {selectedListing && (
-    <ListingDetailModal
-      listing={selectedListing}
-      onClose={() => setSelectedListing(null)}
-      onRequireAuth={() =>
-        onRequireAuth(
-          "To request a sample for this listing you have to login or signup for an AfroValley account"
-        )
-      }
-    />
-  )}
-  <SignUpPromptModal
-    open={isSignUpModalOpen}
-    onClose={() => setIsSignUpModalOpen(false)}
-    message={authMessage}
-  />
-</main>
+              {error && (
+                <Card className="bg-red-50 border-red-200">
+                  <CardContent className="pt-6">
+                    <p className="text-red-700">
+                      Error: {error}. Please try again or refresh the page.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
+              <div>
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    <p className="text-slate-600">Loading listings...</p>
+                  </div>
+                ) : (
+                  <p className="text-slate-600">
+                    {listings.length}{" "}
+                    {listings.length === 1 ? "listing" : "listings"} found
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {isLoading
+                  ? Array.from({ length: 6 }).map((_, index) => (
+                      <LoadingCard key={index} />
+                    ))
+                  : listings.map((listing) => (
+                      <ListingCard
+                        key={listing.id}
+                        listing={listing}
+                        isFavorited={
+                          favoriteState[listing.id]?.isFavorited ?? false
+                        }
+                        isFavoriteLoading={favoriteLoading[listing.id] ?? false}
+                        onCardClick={() => setSelectedListing(listing)}
+                        onFavoriteToggle={() => {
+                          if (favoriteLoading[listing.id]) return;
+                          if (favoriteState[listing.id]?.isFavorited) {
+                            removeFavorite(listing.id);
+                          } else {
+                            addFavorite(listing.id);
+                          }
+                        }}
+                        onRequireAuth={onRequireAuth}
+                        setAuthMessage={setAuthMessage}
+                      />
+                    ))}
+              </div>
+
+              {listings.length > 0 && totalPages > 1 && (
+                <Pagination className="mt-6">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          handlePageChange(Math.max(1, currentPage - 1))
+                        }
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }).map((_, index) => (
+                      <PaginationItem key={index}>
+                        <PaginationLink
+                          onClick={() => handlePageChange(index + 1)}
+                          isActive={currentPage === index + 1}
+                        >
+                          {index + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          handlePageChange(
+                            Math.min(totalPages, currentPage + 1),
+                          )
+                        }
+                        className={
+                          currentPage === totalPages
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+
+              {listings.length === 0 && !isLoading && !error && (
+                <Card className="p-8 text-center mt-8">
+                  <CardContent className="pt-6 flex flex-col items-center">
+                    <Coffee className="h-12 w-12 text-slate-400 mb-4" />
+                    <h3 className="text-xl font-semibold text-slate-700 mb-2">
+                      {hasSearchOrFilters
+                        ? "No listings match your criteria"
+                        : "No coffee listings available"}
+                    </h3>
+                    <p className="text-slate-500 mb-4">
+                      {hasSearchOrFilters
+                        ? "Try adjusting your search or filters to find more listings."
+                        : "Check back later for new coffee listings."}
+                    </p>
+                    {hasSearchOrFilters ? (
+                      <Button
+                        onClick={resetFilters}
+                        variant="default"
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        Clear All Filters
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => fetchListings()}
+                        variant="default"
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        Refresh
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Modals */}
+          {selectedListing && (
+            <ListingDetailModal
+              listing={selectedListing}
+              onClose={() => setSelectedListing(null)}
+              onRequireAuth={onRequireAuth}
+              setAuthMessage={setAuthMessage}
+            />
+          )}
+          <SignUpPromptModal
+            open={isSignUpModalOpen}
+            onClose={() => setIsSignUpModalOpen(false)}
+            message={authMessage}
+          />
+        </main>
       </div>
     </ErrorBoundary>
   );

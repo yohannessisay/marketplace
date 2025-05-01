@@ -15,6 +15,7 @@ interface ListingCardProps {
   onCardClick: () => void;
   onFavoriteToggle: () => Promise<void> | void;
   onRequireAuth: () => void;
+  setAuthMessage: (message: string) => void;
 }
 
 export function ListingCard({
@@ -24,17 +25,23 @@ export function ListingCard({
   onCardClick,
   onFavoriteToggle,
   onRequireAuth,
+  setAuthMessage,
 }: ListingCardProps) {
   const { user } = useAuth();
   const [optimisticFavorited, setOptimisticFavorited] = useState(isFavorited);
 
   const getPrimaryPhotoUrl = (): string => {
-    const primaryPhoto = listing?.coffee_photo.find((photo) => photo.is_primary);
+    const primaryPhoto = listing?.coffee_photo.find(
+      (photo) => photo.is_primary,
+    );
     return primaryPhoto ? primaryPhoto.photo_url : "/placeholder.svg";
   };
 
   const handleFavoriteClick = async () => {
     if (!user) {
+      setAuthMessage(
+        "To favorite this listing you have to login or signup for an AfroValley account",
+      );
       onRequireAuth();
       return;
     }
@@ -80,7 +87,9 @@ export function ListingCard({
             </span>
           </div>
         </div>
-        <p className="text-slate-600 text-sm mb-2">{listing?.farm?.farm_name}</p>
+        <p className="text-slate-600 text-sm mb-2">
+          {listing?.farm?.farm_name}
+        </p>
         <div className="flex items-center text-slate-500 text-sm mb-4">
           <Map className="h-4 w-4 mr-1" />
           <span>

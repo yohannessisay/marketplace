@@ -89,7 +89,7 @@ export default function AddCrop() {
     defaultValues: {
       farmId: "",
       coffee_variety: "",
-      grade: "",
+      grade: 1,
       bean_type: "",
       crop_year: "",
       processing_method: "",
@@ -112,7 +112,7 @@ export default function AddCrop() {
     },
   });
 
-  useEffect(() => { 
+  useEffect(() => {
     const fetchFarms = async () => {
       setIsLoadingFarms(true);
       try {
@@ -124,20 +124,20 @@ export default function AddCrop() {
 
         const response: any = await apiService().get(
           "/sellers/farms/get-farms",
-          farmerId
+          farmerId,
         );
         if (response.success) {
           const fetchedFarms: Farm[] = response.data.farms || [];
           setFarms(() => {
-            return fetchedFarms
+            return fetchedFarms;
           });
           if (fetchedFarms.length === 0) {
             setFarmError(
-              "No farms found. Please add a farm first to create a crop listing."
+              "No farms found. Please add a farm first to create a crop listing.",
             );
           } else if (farmIdFromQuery && !id) {
             const selectedFarm = fetchedFarms.find(
-              (farm: Farm) => farm.id === farmIdFromQuery
+              (farm: Farm) => farm.id === farmIdFromQuery,
             );
             if (selectedFarm) {
               form.setValue("farmId", farmIdFromQuery, {
@@ -147,7 +147,7 @@ export default function AddCrop() {
             } else {
               console.error("[AddCrop] No farm found for ID:", farmIdFromQuery);
               setFarmError(
-                "The farm ID provided in the URL is invalid. Please select a valid farm."
+                "The farm ID provided in the URL is invalid. Please select a valid farm.",
               );
             }
           }
@@ -168,7 +168,6 @@ export default function AddCrop() {
   const populateForm = async (listingId: string) => {
     setIsLoadingListing(true);
     try {
-
       if (!loading) {
         return;
       }
@@ -178,16 +177,24 @@ export default function AddCrop() {
 
       const response: any = await apiService().get(
         `/sellers/listings/get-listing?listingId=${listingId}`,
-        farmerId
+        farmerId,
       );
 
       if (response.success) {
         const listing = response.data.listing;
 
+        let gradeValue = 2;
+        if (listing.grade && listing.grade.startsWith("Grade ")) {
+          const parsedGrade = Number(listing.grade.replace("Grade ", ""));
+          if (!isNaN(parsedGrade) && parsedGrade >= 1 && parsedGrade <= 6) {
+            gradeValue = parsedGrade;
+          }
+        }
+
         form.reset({
           farmId: listing.farm.farm_id || "",
           coffee_variety: listing.coffee_variety || "",
-          grade: listing.grade || "",
+          grade: gradeValue,
           bean_type: listing.bean_type || "",
           crop_year: listing.crop_year || "",
           processing_method: listing.processing_method || "",
@@ -221,17 +228,21 @@ export default function AddCrop() {
                   photo.photo_url.split("/").pop() || `photo_${photo.id}`;
                 return Object.assign(
                   new File([blob], fileName, { type: blob.type }),
-                  { id: photo.id, url: photo.photo_url }
+                  {
+                    id: photo.id,
+                    url: photo.photo_url,
+                  },
                 );
               } catch (err) {
                 console.error(`Error fetching photo ${photo.photo_url}:`, err);
                 return null;
               }
-            })
-          ); 
-          setPhotos(photosTemp);
+            }),
+          );
+          setPhotos(
+            photosTemp.filter((photo): photo is FileWithId => photo !== null),
+          );
         }
-
 
         if (Array.isArray(listing.discounts)) {
           setDiscounts(
@@ -239,7 +250,7 @@ export default function AddCrop() {
               minimum_quantity_kg: Number(d.minimum_quantity_kg) || 1,
               discount_percentage: Number(d.discount_percentage) || 1,
               id: d.id || Math.random().toString(36).substring(2),
-            }))
+            })),
           );
         }
       } else {
@@ -254,10 +265,7 @@ export default function AddCrop() {
   };
 
   useEffect(() => {
- 
-    
     if (id) {
-     
       setIsEditMode(true);
       populateForm(id);
     }
@@ -269,7 +277,7 @@ export default function AddCrop() {
       ...selectedPhotos.map((p) =>
         Object.assign(p, {
           id: Math.random().toString(36).substring(2),
-        })
+        }),
       ),
     ]);
   };
@@ -294,10 +302,10 @@ export default function AddCrop() {
   const handleDiscountChange = (
     id: string,
     field: "minimum_quantity_kg" | "discount_percentage",
-    value: number
+    value: number,
   ) => {
     setDiscounts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
     );
   };
 
@@ -306,9 +314,17 @@ export default function AddCrop() {
     try {
       const formData = new FormData();
 
-      for (const key in data) {
-        if (Object.prototype.hasOwnProperty.call(data, key)) {
-          formData.append(key, String(data[key as keyof CoffeeCropsFormData]));
+      const transformedData = {
+        ...data,
+        grade: `Grade ${data.grade}`,
+      };
+
+      for (const key in transformedData) {
+        if (Object.prototype.hasOwnProperty.call(transformedData, key)) {
+          formData.append(
+            key,
+            String(transformedData[key as keyof CoffeeCropsFormData]),
+          );
         }
       }
 
@@ -322,7 +338,7 @@ export default function AddCrop() {
 
       formData.append(
         "discounts",
-        JSON.stringify(discounts.map(({ ...rest }) => rest))
+        JSON.stringify(discounts.map(({ ...rest }) => rest)),
       );
 
       formData.append("farm_id", data.farmId!);
@@ -332,7 +348,7 @@ export default function AddCrop() {
         await apiService().patchFormData(
           "/sellers/listings/update-listing",
           formData,
-          true
+          true,
         );
         successMessage("Listing updated successfully!");
         navigation(`/manage-listing/${id}`);
@@ -340,7 +356,7 @@ export default function AddCrop() {
         const response: any = await apiService().postFormData(
           "/sellers/listings/create-listing",
           formData,
-          true
+          true,
         );
         successMessage("Listing created successfully!");
         navigation(`/manage-listing/${response?.data.coffee_listing.id}`);
@@ -398,8 +414,8 @@ export default function AddCrop() {
                                   isLoadingFarms
                                     ? "Loading farms..."
                                     : farms.length === 0
-                                    ? "No farms available"
-                                    : "Select a farm"
+                                      ? "No farms available"
+                                      : "Select a farm"
                                 }
                               />
                             </SelectTrigger>
@@ -500,7 +516,19 @@ export default function AddCrop() {
                           <FormItem>
                             <FormLabel>Initial grading</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Input
+                                type="number"
+                                min={1}
+                                max={6}
+                                value={field.value ?? ""}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value);
+                                  if (value >= 1 && value <= 6) {
+                                    field.onChange(value);
+                                  }
+                                }}
+                                onBlur={field.onBlur}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -978,7 +1006,7 @@ export default function AddCrop() {
                                   handleDiscountChange(
                                     discount.id,
                                     "minimum_quantity_kg",
-                                    Number(e.target.value) || 1
+                                    Number(e.target.value) || 1,
                                   )
                                 }
                               />
@@ -997,7 +1025,7 @@ export default function AddCrop() {
                                   handleDiscountChange(
                                     discount.id,
                                     "discount_percentage",
-                                    inputValue > max ? max : inputValue
+                                    inputValue > max ? max : inputValue,
                                   );
                                 }}
                               />
@@ -1130,14 +1158,18 @@ export default function AddCrop() {
               )}
               {/* Navigation Buttons */}
               <div className="flex justify-end mb-8">
-                <Button type="submit" disabled={isSubmitting||(farms&&farms.length<1)} className="my-4">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || (farms && farms.length < 1)}
+                  className="my-4"
+                >
                   {isSubmitting
                     ? isEditMode
                       ? "Updating..."
                       : "Adding..."
                     : isEditMode
-                    ? "Update Listing"
-                    : "Add Crop Listing"}
+                      ? "Update Listing"
+                      : "Add Crop Listing"}
                 </Button>
               </div>
             </form>
