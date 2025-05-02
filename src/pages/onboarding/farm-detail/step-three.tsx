@@ -77,8 +77,24 @@ export default function StepThree() {
     setIsClient(true);
     if (user && user.onboarding_stage !== "completed") {
       fetchBankAccount();
+
+      const backButtonClicked = getFromLocalStorage("back-button-clicked", {});
+      if (backButtonClicked === "true") {
+        const savedData: any = getFromLocalStorage("step-three", {});
+        if (savedData) {
+          form.reset({
+            account_holder_name: savedData.account_holder_name || "",
+            bank_name: savedData.bank_name || "",
+            account_number: savedData.account_number || "",
+            branch_name: savedData.branch_name || "",
+            is_primary: savedData.is_primary || "yes",
+            swift_code: savedData.swift_code || "",
+          });
+        }
+        localStorage.removeItem("back-button-clicked");
+      }
     }
-  }, [user]);
+  }, [user, form]);
 
   const onSubmit = async (data: BankInfoFormData) => {
     try {

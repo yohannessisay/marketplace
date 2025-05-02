@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Search, Coffee } from "lucide-react";
+import { Search, Coffee, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Header from "@/components/layout/header";
 import {
   Pagination,
@@ -30,14 +31,6 @@ import { CoffeeListing, FilterState } from "@/types/types";
 import { LoadingCard } from "./marketplace-skeleton";
 import { ListingCard } from "./ListingCard";
 
-const regions = [
-  "Yirgacheffe",
-  "Sidamo",
-  "Kafa",
-  "Limu",
-  "Gedeo",
-  "Kilimanjaro",
-];
 const varieties = [
   "Arabica",
   "Robusta",
@@ -55,7 +48,6 @@ export default function CoffeeMarketplace() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filters, setFilters] = React.useState<FilterState>({
-    region: "",
     variety: "",
     processing_method: "",
     is_organic: "",
@@ -65,6 +57,7 @@ export default function CoffeeMarketplace() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [authMessage, setAuthMessage] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
+  const [priceError, setPriceError] = React.useState<string | null>(null);
   const [selectedListing, setSelectedListing] =
     React.useState<CoffeeListing | null>(null);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = React.useState(false);
@@ -125,8 +118,6 @@ export default function CoffeeMarketplace() {
         page: currentPage.toString(),
         limit: "10",
         ...(searchQuery && { search: searchQuery }),
-        ...(filters.region &&
-          filters.region !== "all" && { region: filters.region }),
         ...(filters.variety &&
           filters.variety !== "all" && { variety: filters.variety }),
         ...(filters.processing_method &&
@@ -197,6 +188,19 @@ export default function CoffeeMarketplace() {
   };
 
   const handleFilterChange = (name: keyof FilterState, value: string) => {
+    setPriceError(null);
+
+    if (name === "min_price" || name === "max_price") {
+      const newFilters = { ...filters, [name]: value };
+      const minPrice = parseFloat(newFilters.min_price);
+      const maxPrice = parseFloat(newFilters.max_price);
+
+      if (!isNaN(minPrice) && !isNaN(maxPrice) && maxPrice < minPrice) {
+        setPriceError("Maximum price cannot be lower than minimum price");
+        return;
+      }
+    }
+
     setFilters({
       ...filters,
       [name]: value,
@@ -206,7 +210,6 @@ export default function CoffeeMarketplace() {
 
   const resetFilters = () => {
     setFilters({
-      region: "",
       variety: "",
       processing_method: "",
       is_organic: "",
@@ -214,6 +217,7 @@ export default function CoffeeMarketplace() {
       max_price: "",
     });
     setSearchQuery("");
+    setPriceError(null);
     setCurrentPage(1);
   };
 
@@ -336,28 +340,6 @@ export default function CoffeeMarketplace() {
             <Card>
               <CardContent className="pt-6 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="region">Region</Label>
-                  <Select
-                    value={filters.region}
-                    onValueChange={(value) =>
-                      handleFilterChange("region", value)
-                    }
-                  >
-                    <SelectTrigger id="region" className="w-full">
-                      <SelectValue placeholder="All Regions" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Regions</SelectItem>
-                      {regions.map((region) => (
-                        <SelectItem key={region} value={region}>
-                          {region}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="variety">Coffee Variety</Label>
                   <Select
                     value={filters.variety}
@@ -448,6 +430,21 @@ export default function CoffeeMarketplace() {
                   />
                 </div>
 
+                {priceError && (
+                  <Alert
+                    variant="destructive"
+                    className="bg-red-50 border-red-200 rounded-lg mt-4"
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle className="text-red-800 font-semibold">
+                      Invalid Price Range
+                    </AlertTitle>
+                    <AlertDescription className="text-red-700">
+                      {priceError}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <Button
                   onClick={resetFilters}
                   variant="outline"
@@ -466,7 +463,7 @@ export default function CoffeeMarketplace() {
                 </div>
                 <Input
                   type="text"
-                  placeholder="Search for coffee variety, farm name or region..."
+                  placeholder="Search for coffee variety, farm name ..."
                   className="pl-9"
                   value={searchQuery}
                   onChange={handleSearchChange}
@@ -474,13 +471,20 @@ export default function CoffeeMarketplace() {
               </form>
 
               {error && (
-                <Card className="bg-red-50 border-red-200">
-                  <CardContent className="pt-6">
-                    <p className="text-red-700">
-                      Error: {error}. Please try again or refresh the page.
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="flex justify-center">
+                  <Alert
+                    variant="destructive"
+                    className="bg-red-50 border-red-200 rounded-lg max-w-md w-full"
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle className="text-red-800 font-semibold">
+                      Error
+                    </AlertTitle>
+                    <AlertDescription className="text-red-700">
+                      {error}. Please try again or refresh the page.
+                    </AlertDescription>
+                  </Alert>
+                </div>
               )}
 
               <div>
@@ -569,38 +573,36 @@ export default function CoffeeMarketplace() {
               )}
 
               {listings.length === 0 && !isLoading && !error && (
-                <Card className="p-8 text-center mt-8">
-                  <CardContent className="pt-6 flex flex-col items-center">
-                    <Coffee className="h-12 w-12 text-slate-400 mb-4" />
-                    <h3 className="text-xl font-semibold text-slate-700 mb-2">
+                <div className="flex justify-center">
+                  <Alert className="mt-8 bg-white border-slate-200 rounded-lg max-w-md w-full">
+                    <Coffee className="h-6 w-6 text-slate-400" />
+                    <AlertTitle className="text-xl font-semibold text-slate-700">
                       {hasSearchOrFilters
                         ? "No listings match your criteria"
                         : "No coffee listings available"}
-                    </h3>
-                    <p className="text-slate-500 mb-4">
+                    </AlertTitle>
+                    <AlertDescription className="text-slate-500 mt-2">
                       {hasSearchOrFilters
                         ? "Try adjusting your search or filters to find more listings."
                         : "Check back later for new coffee listings."}
-                    </p>
-                    {hasSearchOrFilters ? (
-                      <Button
-                        onClick={resetFilters}
-                        variant="default"
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        Clear All Filters
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => fetchListings()}
-                        variant="default"
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        Refresh
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
+                    </AlertDescription>
+                    <div className="mt-4">
+                      {hasSearchOrFilters ? (
+                        <Button onClick={resetFilters} variant="default">
+                          Clear All Filters
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => fetchListings()}
+                          variant="default"
+                          className="bg-emerald-600 hover:bg-emerald-700"
+                        >
+                          Refresh
+                        </Button>
+                      )}
+                    </div>
+                  </Alert>
+                </div>
               )}
             </div>
           </div>
@@ -645,24 +647,26 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <Card className="p-8 text-center mt-8">
-          <CardContent className="pt-6 flex flex-col items-center">
-            <Coffee className="h-12 w-12 text-slate-400 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-700 mb-2">
+        <div className="flex justify-center mt-8">
+          <Alert className="bg-white border-slate-200 rounded-lg max-w-md w-full">
+            <AlertCircle className="h-6 w-6 text-red-400" />
+            <AlertTitle className="text-xl font-semibold text-slate-700">
               Something went wrong
-            </h3>
-            <p className="text-slate-500 mb-4">
+            </AlertTitle>
+            <AlertDescription className="text-slate-500 mt-2">
               {this.state.errorMessage || "An unexpected error occurred."}
-            </p>
-            <Button
-              onClick={() => window.location.reload()}
-              variant="default"
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              Refresh Page
-            </Button>
-          </CardContent>
-        </Card>
+            </AlertDescription>
+            <div className="mt-4">
+              <Button
+                onClick={() => window.location.reload()}
+                variant="default"
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                Refresh Page
+              </Button>
+            </div>
+          </Alert>
+        </div>
       );
     }
     return this.props.children;

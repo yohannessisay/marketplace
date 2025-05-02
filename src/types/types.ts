@@ -109,7 +109,6 @@ export interface ApiResponse {
 }
 
 export interface FilterState {
-  region: string;
   variety: string;
   processing_method: string;
   is_organic: string;

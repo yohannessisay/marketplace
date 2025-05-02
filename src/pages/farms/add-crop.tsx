@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus, X } from "lucide-react";
+import { Plus, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,6 +48,7 @@ import { APIErrorResponse } from "@/types/api";
 import { AddCropSkeletonForm } from "./SkeletonForm";
 import { useAuth } from "@/hooks/useAuth";
 import { getFromLocalStorage } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface FileWithId extends File {
   id: string;
@@ -80,6 +81,9 @@ export default function AddCrop() {
   >([]);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farmError, setFarmError] = useState<string | null>(null);
+  const [discountErrors, setDiscountErrors] = useState<{
+    [key: string]: string;
+  }>({});
   const { user, loading } = useAuth();
   const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const isLoading = isLoadingFarms || isLoadingListing;
@@ -109,6 +113,7 @@ export default function AddCrop() {
       lot_length: "",
       delivery_type: "",
       shipping_port: "",
+      discounts: [],
     },
   });
 
@@ -163,12 +168,12 @@ export default function AddCrop() {
     };
 
     fetchFarms();
-  }, [loading]);
+  }, [loading, farmIdFromQuery, form, id]);
 
   const populateForm = async (listingId: string) => {
     setIsLoadingListing(true);
     try {
-      if (!loading) {
+      if (loading) {
         return;
       }
 
@@ -214,6 +219,11 @@ export default function AddCrop() {
           lot_length: listing.lot_length || "",
           delivery_type: listing.delivery_type || "",
           shipping_port: listing.shipping_port || "",
+          discounts:
+            listing.discounts?.map((d: any) => ({
+              minimum_quantity_kg: Number(d.minimum_quantity_kg) || 1,
+              discount_percentage: Number(d.discount_percentage) || 1,
+            })) || [],
         });
 
         if (listing.photos?.length > 0) {
@@ -269,21 +279,22 @@ export default function AddCrop() {
       setIsEditMode(true);
       populateForm(id);
     }
-  }, []);
+  }, [id, loading, user, farmerProfile]);
 
   const handlePhotosSelected = (selectedPhotos: File[]) => {
-    setPhotos((prev) => [
-      ...prev,
-      ...selectedPhotos.map((p) =>
-        Object.assign(p, {
-          id: Math.random().toString(36).substring(2),
-        }),
-      ),
-    ]);
+    // Create new FileWithId objects for incoming files
+    const newPhotos: FileWithId[] = selectedPhotos.map((file) =>
+      Object.assign(file, {
+        id: Math.random().toString(36).substring(2),
+      }),
+    );
+
+    // Update photos state with the new list, replacing the old one
+    setPhotos(newPhotos);
   };
 
   const handleAddDiscount = () => {
-    if (discounts.length < 1) {
+    if (discounts.length < 5) {
       setDiscounts((prev) => [
         ...prev,
         {
@@ -297,6 +308,56 @@ export default function AddCrop() {
 
   const handleRemoveDiscount = (id: string) => {
     setDiscounts((prev) => prev.filter((d) => d.id !== id));
+    setDiscountErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[id];
+      return newErrors;
+    });
+  };
+
+  const validateDiscount = (
+    id: string,
+    field: "minimum_quantity_kg" | "discount_percentage",
+    value: number,
+    allDiscounts: typeof discounts,
+  ) => {
+    const errors: { [key: string]: string } = { ...discountErrors };
+    const quantityKg = form.getValues().quantity_kg;
+    const pricePerKg = form.getValues().price_per_kg;
+
+    if (field === "minimum_quantity_kg") {
+      if (value < 1) {
+        errors[id] = "Minimum quantity must be at least 1 kg";
+      } else if (value > quantityKg) {
+        errors[id] =
+          `Minimum quantity cannot exceed total quantity (${quantityKg} kg)`;
+      } else {
+        const otherQuantities = allDiscounts
+          .filter((d) => d.id !== id)
+          .map((d) => d.minimum_quantity_kg);
+        if (otherQuantities.includes(value)) {
+          errors[id] = "Each discount must have a unique minimum quantity";
+        } else {
+          delete errors[id];
+        }
+      }
+    } else if (field === "discount_percentage") {
+      if (value < 1) {
+        errors[id] = "Discount percentage must be at least 1%";
+      } else if (value > 99) {
+        errors[id] = "Discount percentage cannot exceed 99%";
+      } else {
+        const discountedPrice = pricePerKg * (1 - value / 100);
+        if (discountedPrice <= 0) {
+          errors[id] = "Discounted price must be greater than 0";
+        } else {
+          delete errors[id];
+        }
+      }
+    }
+
+    setDiscountErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleDiscountChange = (
@@ -304,23 +365,74 @@ export default function AddCrop() {
     field: "minimum_quantity_kg" | "discount_percentage",
     value: number,
   ) => {
-    setDiscounts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
+    const newValue = Math.max(
+      1,
+      Math.min(value, field === "minimum_quantity_kg" ? 999999 : 99),
+    );
+    const updatedDiscounts = discounts.map((d) =>
+      d.id === id ? { ...d, [field]: newValue } : d,
+    );
+    setDiscounts(updatedDiscounts);
+
+    validateDiscount(id, field, newValue, updatedDiscounts);
+
+    // Update form value for discounts
+    form.setValue(
+      "discounts",
+      updatedDiscounts.map(({ minimum_quantity_kg, discount_percentage }) => ({
+        minimum_quantity_kg,
+        discount_percentage,
+      })),
+      { shouldValidate: true },
     );
   };
 
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
+      // Validate discounts
+      discounts.forEach((discount) => {
+        validateDiscount(
+          discount.id,
+          "minimum_quantity_kg",
+          discount.minimum_quantity_kg,
+          discounts,
+        );
+        validateDiscount(
+          discount.id,
+          "discount_percentage",
+          discount.discount_percentage,
+          discounts,
+        );
+      });
+
+      if (Object.keys(discountErrors).length > 0) {
+        errorMessage({
+          message: "Please fix discount errors before submitting.",
+        });
+        return;
+      }
+
       const formData = new FormData();
 
       const transformedData = {
         ...data,
         grade: `Grade ${data.grade}`,
+        discounts: discounts.map(
+          ({ minimum_quantity_kg, discount_percentage }) => ({
+            minimum_quantity_kg,
+            discount_percentage,
+          }),
+        ),
       };
 
       for (const key in transformedData) {
-        if (Object.prototype.hasOwnProperty.call(transformedData, key)) {
+        if (key === "discounts") {
+          formData.append(
+            "discounts",
+            JSON.stringify(transformedData.discounts),
+          );
+        } else if (Object.prototype.hasOwnProperty.call(transformedData, key)) {
           formData.append(
             key,
             String(transformedData[key as keyof CoffeeCropsFormData]),
@@ -335,11 +447,6 @@ export default function AddCrop() {
       photos.forEach((photo) => {
         formData.append("files", photo);
       });
-
-      formData.append(
-        "discounts",
-        JSON.stringify(discounts.map(({ ...rest }) => rest)),
-      );
 
       formData.append("farm_id", data.farmId!);
 
@@ -430,17 +537,26 @@ export default function AddCrop() {
                           </SelectContent>
                         </Select>
                         {farmError && (
-                          <p className="text-sm text-red-600">
-                            {farmError}{" "}
-                            {farmError.includes("No farms found") && (
-                              <a
-                                href="/add-farm"
-                                className="text-blue-600 underline"
-                              >
-                                Add a farm
-                              </a>
-                            )}
-                          </p>
+                          <Alert
+                            variant="destructive"
+                            className="bg-red-50 border-red-200 rounded-lg mt-2"
+                          >
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle className="text-red-800 font-semibold">
+                              Farm Error
+                            </AlertTitle>
+                            <AlertDescription className="text-red-700">
+                              {farmError}{" "}
+                              {farmError.includes("No farms found") && (
+                                <a
+                                  href="/add-farm"
+                                  className="text-blue-600 underline"
+                                >
+                                  Add a farm
+                                </a>
+                              )}
+                            </AlertDescription>
+                          </Alert>
                         )}
                         <FormMessage />
                       </FormItem>
@@ -942,9 +1058,19 @@ export default function AddCrop() {
                                 type="number"
                                 {...field}
                                 value={field.value}
-                                onChange={(e) =>
-                                  field.onChange(Number(e.target.value) || 1)
-                                }
+                                onChange={(e) => {
+                                  const value = Number(e.target.value) || 1;
+                                  field.onChange(value);
+                                  // Revalidate discounts when quantity changes
+                                  discounts.forEach((discount) => {
+                                    validateDiscount(
+                                      discount.id,
+                                      "minimum_quantity_kg",
+                                      discount.minimum_quantity_kg,
+                                      discounts,
+                                    );
+                                  });
+                                }}
                               />
                             </FormControl>
                             <FormMessage />
@@ -962,9 +1088,19 @@ export default function AddCrop() {
                                 type="number"
                                 {...field}
                                 value={field.value}
-                                onChange={(e) =>
-                                  field.onChange(Number(e.target.value) || 1)
-                                }
+                                onChange={(e) => {
+                                  const value = Number(e.target.value) || 1;
+                                  field.onChange(value);
+                                  // Revalidate discounts when price changes
+                                  discounts.forEach((discount) => {
+                                    validateDiscount(
+                                      discount.id,
+                                      "discount_percentage",
+                                      discount.discount_percentage,
+                                      discounts,
+                                    );
+                                  });
+                                }}
                               />
                             </FormControl>
                             <FormMessage />
@@ -990,72 +1126,81 @@ export default function AddCrop() {
                     <div className="mb-4">
                       <h4 className="text-base font-medium mb-2">Discounts</h4>
                       {discounts.length > 0 && (
-                        <div className="space-y-2">
+                        <div className="space-y-4">
                           {discounts.map((discount) => (
-                            <div
-                              key={discount.id}
-                              className="flex items-center gap-2"
-                            >
-                              <Input
-                                type="number"
-                                min={1}
-                                className="w-40"
-                                placeholder="Min. quantity (kg)"
-                                value={discount.minimum_quantity_kg}
-                                onChange={(e) =>
-                                  handleDiscountChange(
-                                    discount.id,
-                                    "minimum_quantity_kg",
-                                    Number(e.target.value) || 1,
-                                  )
-                                }
-                              />
-                              <span className="mx-2">kg</span>
-                              <Input
-                                type="number"
-                                min={1}
-                                disabled={form.getValues().quantity_kg === 0}
-                                className="w-32"
-                                placeholder="Discount (%)"
-                                value={discount.discount_percentage}
-                                onChange={(e) => {
-                                  const inputValue =
-                                    Number(e.target.value) || 1;
-                                  const max = form.getValues().quantity_kg;
-                                  handleDiscountChange(
-                                    discount.id,
-                                    "discount_percentage",
-                                    inputValue > max ? max : inputValue,
-                                  );
-                                }}
-                              />
-                              <span className="mx-2">%</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  handleRemoveDiscount(discount.id)
-                                }
-                                className="text-red-500"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                            <div key={discount.id} className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  className="w-40"
+                                  placeholder="Min. quantity (kg)"
+                                  value={discount.minimum_quantity_kg}
+                                  onChange={(e) =>
+                                    handleDiscountChange(
+                                      discount.id,
+                                      "minimum_quantity_kg",
+                                      Number(e.target.value) || 1,
+                                    )
+                                  }
+                                />
+                                <span className="mx-2">kg</span>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={99}
+                                  className="w-32"
+                                  placeholder="Discount (%)"
+                                  value={discount.discount_percentage}
+                                  onChange={(e) =>
+                                    handleDiscountChange(
+                                      discount.id,
+                                      "discount_percentage",
+                                      Number(e.target.value) || 1,
+                                    )
+                                  }
+                                />
+                                <span className="mx-2">%</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    handleRemoveDiscount(discount.id)
+                                  }
+                                  className="text-red-500"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              {discountErrors[discount.id] && (
+                                <Alert
+                                  variant="destructive"
+                                  className="bg-red-50 border-red-200 rounded-lg"
+                                >
+                                  <AlertCircle className="h-4 w-4" />
+                                  <AlertTitle className="text-red-800 font-semibold">
+                                    Discount Error
+                                  </AlertTitle>
+                                  <AlertDescription className="text-red-700">
+                                    {discountErrors[discount.id]}
+                                  </AlertDescription>
+                                </Alert>
+                              )}
                             </div>
                           ))}
                         </div>
                       )}
-                      {discounts.length < 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                          onClick={handleAddDiscount}
-                        >
-                          <Plus className="h-4 w-4" />
-                          <span>Add discount</span>
-                        </Button>
-                      )}
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
+                        onClick={handleAddDiscount}
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add discount</span>
+                      </Button>
                     </div>
                   </div>
 
@@ -1160,7 +1305,11 @@ export default function AddCrop() {
               <div className="flex justify-end mb-8">
                 <Button
                   type="submit"
-                  disabled={isSubmitting || (farms && farms.length < 1)}
+                  disabled={
+                    isSubmitting ||
+                    (farms && farms.length < 1) ||
+                    Object.keys(discountErrors).length > 0
+                  }
                   className="my-4"
                 >
                   {isSubmitting

@@ -73,6 +73,7 @@ interface Farm {
   created_at: string;
   created_by_agent_id: string | null;
 }
+
 interface FileWithId extends File {
   id: string;
   url?: string;
@@ -121,14 +122,17 @@ export default function StepTwo() {
   });
 
   const handlePhotosSelected = (selectedPhotos: File[]) => {
-    setPhotos((prev) => [
-      ...prev,
-      ...selectedPhotos.map((p) =>
-        Object.assign(p, {
-          id: Math.random().toString(36).substring(2),
-        }),
-      ),
-    ]);
+    // Create new FileWithId objects for incoming files
+    const newPhotos: FileWithId[] = selectedPhotos.map((file) =>
+      Object.assign(file, {
+        id: Math.random().toString(36).substring(2),
+      }),
+    );
+
+    // Update photos state with the new list, replacing the old one
+    setPhotos(newPhotos);
+
+    // Update form state if needed (not required here unless form tracks photos)
   };
 
   const handleAddDiscount = () => {
@@ -160,7 +164,6 @@ export default function StepTwo() {
 
   const fetchFirstFarm = async () => {
     try {
-      // Wait for user data to be available
       if (!user) {
         return;
       }
@@ -180,11 +183,10 @@ export default function StepTwo() {
 
   useEffect(() => {
     setIsClient(true);
-    // Only fetch farm data when user data is available
     if (user) {
       fetchFirstFarm();
     }
-  }, [user]); // Add user as a dependency
+  }, [user]);
 
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
@@ -209,7 +211,6 @@ export default function StepTwo() {
         formData.append("farm_id", farm?.id);
       }
 
-      // Append discounts as a JSON string
       if (discounts.length > 0) {
         const formattedDiscounts = discounts.map((discount) => ({
           minimum_quantity_kg: discount.minimum_quantity_kg,
@@ -271,7 +272,7 @@ export default function StepTwo() {
   };
 
   if (!isClient) {
-    return null; // Prevent hydration errors
+    return null;
   }
 
   return (
@@ -356,7 +357,6 @@ export default function StepTwo() {
               </p>
             </div>
 
-            {/* Step 2: Check and edit coffee crop information */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold mb-2">
                 Check and edit coffee crop information
@@ -366,7 +366,6 @@ export default function StepTwo() {
                 price to help buyers assess availability and cost
               </p>
 
-              {/* Coffee basic info */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <FormField
                   control={form.control}
@@ -467,7 +466,6 @@ export default function StepTwo() {
                 />
               </div>
 
-              {/* Crop specification */}
               <h3 className="text-lg font-medium mb-4">Crop specification</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <FormField
@@ -579,9 +577,8 @@ export default function StepTwo() {
                 />
               </div>
 
-              {/* Cup taste */}
               <h3 className="text-lg font-medium mb-4">Cup taste</h3>
-              <div className="grid  grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <FormField
                   control={form.control}
                   name="cup_taste_acidity"
@@ -701,7 +698,6 @@ export default function StepTwo() {
                 />
               </div>
 
-              {/* Coffee crop photos */}
               <h3 className="text-lg font-medium mb-4">Coffee crop photos</h3>
               <p className="text-sm text-gray-600 mb-4">
                 Upload high-quality images of your coffee crop to create a clear
@@ -732,7 +728,6 @@ export default function StepTwo() {
               </Card>
             </div>
 
-            {/* Set the price and discounts */}
             <div className="mb-8">
               <h3 className="text-lg font-medium mb-2">
                 Set the price and discounts
@@ -797,7 +792,6 @@ export default function StepTwo() {
                 />
               </div>
 
-              {/* Discounts section */}
               <div className="mb-4">
                 <h4 className="text-base font-medium mb-2">Discounts</h4>
                 {discounts.length > 0 && (
@@ -867,7 +861,6 @@ export default function StepTwo() {
               </div>
             </div>
 
-            {/* Readiness and Delivery Details */}
             <div className="mb-8">
               <h3 className="text-lg font-medium mb-2">
                 Readiness and Delivery Details
@@ -955,7 +948,6 @@ export default function StepTwo() {
               </div>
             </div>
 
-            {/* Navigation Buttons */}
             <div className="flex justify-between mb-8">
               <Button type="button" variant="outline" onClick={goBack}>
                 Back

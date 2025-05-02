@@ -64,10 +64,8 @@ export const farmDetailsSchema = z
 
 export type FarmDetailsFormData = z.infer<typeof farmDetailsSchema>;
 
-// Step 2: Coffee Crops Schema - Updated to match the provided component
 export const coffeeCropsSchema = z.object({
-  // Ensure all fields match the form
-  farmId: z.string().optional(), // Optional if not always provided
+  farmId: z.string().optional(),
   coffee_variety: z
     .string()
     .min(1, "Coffee variety is required")
@@ -84,14 +82,17 @@ export const coffeeCropsSchema = z.object({
     .refine((val) => !/\d/.test(val), {
       message: "Bean type cannot contain numbers",
     }),
-  crop_year: z.string().min(1, "Crop year is required"), // likely should allow numbers (years)
+  crop_year: z.string().min(1, "Crop year is required"),
   processing_method: z
     .string()
     .min(1, "Processing method is required")
     .refine((val) => !/\d/.test(val), {
       message: "Processing method cannot contain numbers",
     }),
-  moisture_percentage: z.number().min(1, "Moisture is required"),
+  moisture_percentage: z
+    .number()
+    .min(1, "Moisture must be at least 1%")
+    .max(100, "Moisture cannot exceed 100%"),
   screen_size: z.number().min(1, "Screen size is required"),
   drying_method: z
     .string()
@@ -157,6 +158,29 @@ export const coffeeCropsSchema = z.object({
     .refine((val) => !/\d/.test(val), {
       message: "Shipping port cannot contain numbers",
     }),
+  discounts: z
+    .array(
+      z.object({
+        minimum_quantity_kg: z
+          .number()
+          .min(1, "Minimum quantity must be at least 1 kg")
+          .max(999999, "Minimum quantity is too large"),
+        discount_percentage: z
+          .number()
+          .min(1, "Discount percentage must be at least 1%")
+          .max(99, "Discount percentage cannot exceed 99%"),
+      }),
+    )
+    .refine(
+      (discounts) => {
+        const quantities = discounts.map((d) => d.minimum_quantity_kg);
+        return new Set(quantities).size === quantities.length;
+      },
+      {
+        message: "Each discount must have a unique minimum quantity",
+      },
+    )
+    .optional(),
 });
 
 export type CoffeeCropsFormData = z.infer<typeof coffeeCropsSchema>;
