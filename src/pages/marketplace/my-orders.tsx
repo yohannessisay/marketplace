@@ -2,30 +2,10 @@
 
 import type React from "react";
 import { useState, useEffect, useCallback } from "react";
-import {
-  Calendar,
-  ShoppingBag,
-  Clock,
-  Info,
-  ChevronDown,
-  Filter,
-  User,
-  CheckCircle,
-  Circle,
-  AlertCircle,
-  Search,
-  Coffee,
-  File,
-  MapPin,
-  Hand,
-  Heart,
-  X,
-} from "lucide-react";
+import { ShoppingBag, Clock, Search, File, Hand, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -35,193 +15,29 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { apiService } from "@/services/apiService";
-import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import { ReviewModal } from "./review-modal";
-
-enum SampleRequestDeliveryStatus {
-  PENDING = "pending",
-  INPROGRESS = "inprogress",
-  DELIVERED = "delivered",
-  CANCELLED = "cancelled",
-  ACCEPTED = "accepted",
-}
-
-enum OrderBidStatus {
-  PENDING = "pending",
-  ACCEPTED = "accepted",
-  REJECTED = "rejected",
-  EXPIRED = "expired",
-}
-
-interface Seller {
-  first_name?: string;
-  last_name?: string;
-}
-
-interface Listing {
-  id: string;
-  coffee_variety?: string;
-  farm_name?: string;
-  region?: string;
-  processing_method?: string;
-  bean_type?: string;
-  price_per_kg?: number;
-  seller: any;
-  cup_score?: string;
-  is_organic?: boolean;
-  quantity_kg?: number;
-  farm?: {
-    farm_id: string;
-    farm_name: string;
-    region: string | null;
-    country: string;
-  };
-}
-
-interface Order {
-  id: string;
-  order_id: string;
-  buyer_id: string;
-  seller_id: string;
-  listing_id: string;
-  quantity_kg: number;
-  unit_price: number;
-  total_amount: number;
-  contract_signed: boolean;
-  coffee_processing_completed: boolean;
-  coffee_ready_for_shipment: boolean;
-  pre_shipment_sample_approved: boolean;
-  pre_shipment_sample_ready: boolean;
-  container_loaded: boolean;
-  container_on_board: boolean;
-  cancelled_reason: string | null;
-  cancelled_by: string | null;
-  ship_zipcode: string;
-  ship_adrs: string;
-  ship_instructions: string;
-  status: string;
-  created_at: string;
-  updated_at: string | null;
-  created_by_agent_id: string | null;
-  listing?: Listing;
-  seller_name?: string;
-  buyer_name?: string;
-  reviews: any;
-}
-
-interface SampleRequest {
-  id: string;
-  weight: number;
-  phone: string | null;
-  delivery_address: string;
-  delivery_status: string;
-  expires_at: string;
-  created_at: string;
-  updated_at: string | null;
-  coffee_listing: {
-    id: string;
-    coffee_variety: string;
-    bean_type: string;
-    is_organic: boolean;
-    quantity_kg: number;
-    price_per_kg: number;
-    readiness_date: string;
-    listing_status: string;
-  };
-  farm: {
-    id: string;
-    farm_name: string;
-    region: string;
-    country: string;
-    altitude_meters: number;
-  };
-  seller: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    telegram: string | null;
-  };
-}
-
-interface Bid {
-  id: string;
-  listing_id: string;
-  seller_id: string;
-  buyer_id: string;
-  quantity_kg: number;
-  unit_price: number;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  expires_at: string;
-  updated_at: string | null;
-  listing?: Listing;
-  seller?: Seller;
-}
-
-interface Favorite {
-  id: string;
-  listing_id: string;
-  seller: any;
-  buyer_id: string;
-  created_at: string;
-  listing: Listing;
-}
-
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  total_pages: number;
-}
-
-interface OrderFilterState {
-  status?: string;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  contractSigned?: boolean;
-  coffeeProcessingCompleted?: boolean;
-  coffeeReadyForShipment?: boolean;
-  preShipmentSampleApproved?: boolean;
-  containerLoaded?: boolean;
-  containerOnBoard?: boolean;
-  delivered?: boolean;
-}
-
-interface SampleFilterState {
-  status?: SampleRequestDeliveryStatus;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-interface BidFilterState {
-  status?: OrderBidStatus;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-interface FavoriteFilterState {
-  listingStatus?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
+import {
+  Bid,
+  BidFilterState,
+  Favorite,
+  FavoriteFilterState,
+  Order,
+  OrderFilterState,
+  PaginationData,
+  SampleFilterState,
+  SampleRequest,
+} from "@/types/orders";
+import { LoadingSkeleton } from "./my-orders/loading-skeleton";
+import { EmptyState } from "./my-orders/empty-state";
+import { OrderItem } from "./my-orders/order-item";
+import { FavoriteItem } from "./my-orders/favorite-item";
+import { SampleRequestItem } from "./my-orders/sample-request-item";
+import { FilterMenu } from "./my-orders/filter";
 
 export default function OrdersPage() {
   const { user, loading } = useAuth();
@@ -229,7 +45,7 @@ export default function OrdersPage() {
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
   const [sampleRequests, setSampleRequests] = useState<SampleRequest[] | null>(
-    null,
+    null
   );
   const [bids, setBids] = useState<Bid[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
@@ -359,7 +175,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/orders/active-orders?${filterParams}`,
+        `/orders/active-orders?${filterParams}`
       );
       if (response.success) {
         setActiveOrders(response.data.orders || []);
@@ -369,7 +185,7 @@ export default function OrdersPage() {
             limit: 10,
             total: 0,
             total_pages: 0,
-          },
+          }
         );
         setFetchedTabs((prev) => ({ ...prev, current: true }));
       } else {
@@ -428,7 +244,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/orders/order-history?${filterParams}`,
+        `/orders/order-history?${filterParams}`
       );
       if (response.success) {
         setHistoricalOrders(response.data.orders || []);
@@ -438,7 +254,7 @@ export default function OrdersPage() {
             limit: 10,
             total: 0,
             total_pages: 0,
-          },
+          }
         );
         setFetchedTabs((prev) => ({ ...prev, historical: true }));
       } else {
@@ -471,7 +287,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/buyers/samples/get-sample-requests?${filterParams}`,
+        `/buyers/samples/get-sample-requests?${filterParams}`
       );
       if (response.success && response.data) {
         setSampleRequests(response.data.sample_requests || null);
@@ -514,7 +330,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/buyers/bids/get-all-bids?${filterParams}`,
+        `/buyers/bids/get-all-bids?${filterParams}`
       );
       if (response.success) {
         setBids(response.data.bids || []);
@@ -524,7 +340,7 @@ export default function OrdersPage() {
             limit: 10,
             total: 0,
             total_pages: 0,
-          },
+          }
         );
         setFetchedTabs((prev) => ({ ...prev, bids: true }));
       } else {
@@ -562,7 +378,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/buyers/listings/favorites/get-favorite-listings?${filterParams}`,
+        `/buyers/listings/favorites/get-favorite-listings?${filterParams}`
       );
       if (response.success) {
         setFavorites(response.data.favorites || []);
@@ -572,7 +388,7 @@ export default function OrdersPage() {
             limit: 10,
             total: 0,
             total_pages: 0,
-          },
+          }
         );
         setFetchedTabs((prev) => ({ ...prev, favorites: true }));
       } else {
@@ -632,7 +448,7 @@ export default function OrdersPage() {
       | OrderFilterState
       | SampleFilterState
       | BidFilterState
-      | FavoriteFilterState,
+      | FavoriteFilterState
   ) => {
     setFilters((prev) => ({ ...prev, [tab]: filter }));
     setFetchedTabs((prev) => ({ ...prev, [tab]: false }));
@@ -723,1342 +539,6 @@ export default function OrdersPage() {
     setReviewType(type || "add");
   };
 
-  const FilterMenu = ({ tab }: { tab: string }) => {
-    const currentFilters = filters[tab as keyof typeof filters];
-    const isOrderTab = tab === "current" || tab === "historical";
-    const isSampleTab = tab === "sample";
-    const isBidsTab = tab === "bids";
-    const isFavoritesTab = tab === "favorites";
-
-    const filterCount = Object.values(currentFilters).filter(
-      (value) => value !== undefined && value !== "",
-    ).length;
-
-    const statusOptions = isSampleTab
-      ? Object.values(SampleRequestDeliveryStatus)
-      : isBidsTab
-        ? Object.values(OrderBidStatus)
-        : isOrderTab
-          ? ["pending", "completed", "cancelled"]
-          : [];
-    const coffeeVarieties = [
-      "Yirgacheffe",
-      "Sidamo",
-      "Guji",
-      "Harrar",
-      "Jimma",
-    ];
-    const listingStatusOptions = ["active", "inactive"];
-    const booleanOptions = ["true", "false"];
-
-    const getFilterStateWithoutStatus = () => {
-      if (isOrderTab) {
-        const { status, ...rest } = currentFilters as OrderFilterState;
-        return rest;
-      } else if (isSampleTab) {
-        const { status, ...rest } = currentFilters as SampleFilterState;
-        return rest;
-      } else if (isBidsTab) {
-        const { status, ...rest } = currentFilters as BidFilterState;
-        return rest;
-      }
-      return currentFilters;
-    };
-
-    const getFilterStateWithoutCoffeeVariety = () => {
-      if (isOrderTab) {
-        const { coffeeVariety, ...rest } = currentFilters as OrderFilterState;
-        return rest;
-      } else if (isSampleTab) {
-        const { coffeeVariety, ...rest } = currentFilters as SampleFilterState;
-        return rest;
-      } else if (isBidsTab) {
-        const { coffeeVariety, ...rest } = currentFilters as BidFilterState;
-        return rest;
-      }
-      return currentFilters;
-    };
-
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-10 relative">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-            {filterCount > 0 && (
-              <Badge
-                variant="secondary"
-                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white"
-              >
-                {filterCount}
-              </Badge>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-64 p-4">
-          <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {statusOptions.length > 0 && (
-            <div className="mb-2">
-              <label className="text-sm font-medium">Status</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(isOrderTab &&
-                      (currentFilters as OrderFilterState).status) ||
-                      (isSampleTab &&
-                        (currentFilters as SampleFilterState).status) ||
-                      (isBidsTab &&
-                        (currentFilters as BidFilterState).status) ||
-                      "All Statuses"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, getFilterStateWithoutStatus())
-                    }
-                  >
-                    All Statuses
-                  </DropdownMenuItem>
-                  {statusOptions.map((status) => (
-                    <DropdownMenuItem
-                      key={status}
-                      onClick={() =>
-                        handleFilterChange(tab, { ...currentFilters, status })
-                      }
-                    >
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-          {(isOrderTab || isSampleTab || isBidsTab) && (
-            <div className="mb-2">
-              <label className="text-sm font-medium">Coffee Variety</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(isOrderTab &&
-                      (currentFilters as OrderFilterState).coffeeVariety) ||
-                      (isSampleTab &&
-                        (currentFilters as SampleFilterState).coffeeVariety) ||
-                      (isBidsTab &&
-                        (currentFilters as BidFilterState).coffeeVariety) ||
-                      "All Varieties"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(
-                        tab,
-                        getFilterStateWithoutCoffeeVariety(),
-                      )
-                    }
-                  >
-                    All Varieties
-                  </DropdownMenuItem>
-                  {coffeeVarieties.map((variety) => (
-                    <DropdownMenuItem
-                      key={variety}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...currentFilters,
-                          coffeeVariety: variety,
-                        })
-                      }
-                    >
-                      {variety}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-          {isFavoritesTab && (
-            <div className="mb-2">
-              <label className="text-sm font-medium">Listing Status</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(currentFilters as FavoriteFilterState).listingStatus ||
-                      "All Statuses"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...(currentFilters as FavoriteFilterState),
-                        listingStatus: undefined,
-                      })
-                    }
-                  >
-                    All Statuses
-                  </DropdownMenuItem>
-                  {listingStatusOptions.map((status) => (
-                    <DropdownMenuItem
-                      key={status}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as FavoriteFilterState),
-                          listingStatus: status,
-                        })
-                      }
-                    >
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-          {isOrderTab && (
-            <>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Contract Signed</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState).contractSigned ===
-                      undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).contractSigned?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          contractSigned: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            contractSigned: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">
-                  Processing Completed
-                </label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState)
-                        .coffeeProcessingCompleted === undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).coffeeProcessingCompleted?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          coffeeProcessingCompleted: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            coffeeProcessingCompleted: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">
-                  Ready for Shipment
-                </label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState)
-                        .coffeeReadyForShipment === undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).coffeeReadyForShipment?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          coffeeReadyForShipment: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            coffeeReadyForShipment: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Sample Approved</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState)
-                        .preShipmentSampleApproved === undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).preShipmentSampleApproved?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          preShipmentSampleApproved: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            preShipmentSampleApproved: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Container Loaded</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState).containerLoaded ===
-                      undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).containerLoaded?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          containerLoaded: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            containerLoaded: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Shipped</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState).containerOnBoard ===
-                      undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).containerOnBoard?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          containerOnBoard: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            containerOnBoard: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Delivered</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState).delivered ===
-                      undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).delivered?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          delivered: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            delivered: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </>
-          )}
-          <div className="mb-2">
-            <label className="text-sm font-medium">Date From</label>
-            <Input
-              type="date"
-              value={
-                (isOrderTab && (currentFilters as OrderFilterState).dateFrom) ||
-                (isSampleTab &&
-                  (currentFilters as SampleFilterState).dateFrom) ||
-                (isBidsTab && (currentFilters as BidFilterState).dateFrom) ||
-                (isFavoritesTab &&
-                  (currentFilters as FavoriteFilterState).dateFrom) ||
-                ""
-              }
-              onChange={(e) =>
-                handleFilterChange(tab, {
-                  ...currentFilters,
-                  dateFrom: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="mb-2">
-            <label className="text-sm font-medium">Date To</label>
-            <Input
-              type="date"
-              value={
-                (isOrderTab && (currentFilters as OrderFilterState).dateTo) ||
-                (isSampleTab && (currentFilters as SampleFilterState).dateTo) ||
-                (isBidsTab && (currentFilters as BidFilterState).dateTo) ||
-                (isFavoritesTab &&
-                  (currentFilters as FavoriteFilterState).dateTo) ||
-                ""
-              }
-              onChange={(e) =>
-                handleFilterChange(tab, {
-                  ...currentFilters,
-                  dateTo: e.target.value,
-                })
-              }
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full mt-2"
-            onClick={() => handleFilterChange(tab, {})}
-          >
-            Clear Filters
-            <X className="h-4 w-4 ml-2" />
-          </Button>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  };
-
-  const renderOrderProgress = (order: Order) => {
-    const steps = [
-      { key: "order_placed", label: "Order Placed", completed: true },
-      {
-        key: "contract_signed",
-        label: "Contract Signed",
-        completed: order.contract_signed,
-      },
-      {
-        key: "coffee_processing_completed",
-        label: "Processing Completed",
-        completed: order.coffee_processing_completed,
-      },
-      {
-        key: "coffee_ready_for_shipment",
-        label: "Ready for Shipment",
-        completed: order.coffee_ready_for_shipment,
-      },
-      {
-        key: "pre_shipment_sample_approved",
-        label: "Sample Approved",
-        completed: order.pre_shipment_sample_approved,
-      },
-      {
-        key: "container_loaded",
-        label: "Container Loaded",
-        completed: order.container_loaded,
-      },
-      {
-        key: "container_on_board",
-        label: "Shipped",
-        completed: order.container_on_board,
-      },
-      {
-        key: "delivered",
-        label: "Delivered",
-        completed: order.status === "completed",
-      },
-    ];
-
-    const currentStepIndex = steps.findIndex((step) => !step.completed);
-
-    return (
-      <Card className="mt-6">
-        <CardContent className="pt-6">
-          <h4 className="text-sm font-semibold mb-4">Order Progress</h4>
-          <div className="space-y-4">
-            {steps.map((step, index) => {
-              let statusClass = "";
-              let StatusIcon = Circle;
-
-              if (step.completed) {
-                statusClass = "text-green-600";
-                StatusIcon = CheckCircle;
-              } else if (index === currentStepIndex) {
-                statusClass = "text-primary";
-                StatusIcon = AlertCircle;
-              } else {
-                statusClass = "text-muted-foreground/30";
-                StatusIcon = Circle;
-              }
-
-              return (
-                <div key={step.key} className="flex items-center">
-                  <div className={`${statusClass}`}>
-                    <StatusIcon className="h-5 w-5" />
-                  </div>
-                  <div
-                    className={`ml-3 ${
-                      step.completed
-                        ? "text-foreground"
-                        : index === currentStepIndex
-                          ? "text-foreground font-medium"
-                          : "text-muted-foreground"
-                    }`}
-                  >
-                    {step.label}
-                  </div>
-                  {step.completed && index < steps.length - 1 && (
-                    <div className="ml-auto text-xs text-green-600 font-medium">
-                      Completed
-                    </div>
-                  )}
-                  {!step.completed && index === currentStepIndex && (
-                    <div className="ml-auto text-xs text-primary font-medium">
-                      In Progress
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const SampleRequestItem = ({ item }: { item: SampleRequest }) => {
-    const isExpanded = expandedOrderId === item.id;
-
-    return (
-      <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
-        <CardContent className="p-5">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center mb-2">
-                <h3 className="font-bold text-lg">
-                  {item.coffee_listing?.coffee_variety || "Unknown Coffee"}
-                </h3>
-                {item.coffee_listing?.listing_status === "active" && (
-                  <Badge
-                    variant="outline"
-                    className="ml-2 bg-green-500 text-white border-0"
-                  >
-                    Active Listing
-                  </Badge>
-                )}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {item.farm?.farm_name || "Unknown Farm"}
-                {item.farm?.region ? `, ${item.farm.region}` : ""}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-bold text-lg">
-                {item.weight.toFixed(2)} kg
-              </div>
-              <div className="text-sm text-muted-foreground">Sample Weight</div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              <span>
-                Requested: {new Date(item.created_at).toLocaleDateString()}
-              </span>
-            </div>
-            <div className="flex items-center">
-              <MapPin className="h-4 w-4 mr-1" />
-              <span>{item.delivery_address || "Unknown Address"}</span>
-            </div>
-          </div>
-
-          <Separator className="my-3" />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <User className="h-4 w-4 mr-1 text-muted-foreground" />
-              <span className="text-sm font-medium">
-                {item.seller?.first_name || "Unknown"}{" "}
-                {item.seller?.last_name || ""}
-              </span>
-              {item.seller && (
-                <Link
-                  to={`/sellers/${item.seller.id}`}
-                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
-                >
-                  View Seller
-                </Link>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  item.delivery_status === "delivered"
-                    ? "secondary"
-                    : item.delivery_status === "inprogress"
-                      ? "default"
-                      : item.delivery_status === "pending"
-                        ? "warning"
-                        : "destructive"
-                }
-              >
-                {item.delivery_status.charAt(0).toUpperCase() +
-                  item.delivery_status.slice(1)}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => toggleOrderExpansion(item.id)}
-              >
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    isExpanded ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
-            </div>
-          </div>
-
-          {isExpanded && (
-            <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">
-                    Sample Request Details
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Request ID:</span>
-                      <span className="font-medium">{item.id}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Coffee Variety:
-                      </span>
-                      <span className="font-medium">
-                        {item.coffee_listing?.coffee_variety || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Weight:</span>
-                      <span className="font-medium">
-                        {item.weight.toFixed(2)} kg
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Expires At:</span>
-                      <span className="font-medium">
-                        {new Date(item.expires_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">
-                    Seller & Delivery
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Seller:</span>
-                      <span className="font-medium">
-                        {item.seller?.first_name || "N/A"}{" "}
-                        {item.seller?.last_name || ""}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Email:</span>
-                      <span className="font-medium">
-                        {item.seller?.email || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span className="font-medium">{item.phone || "N/A"}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Address:</span>
-                      <span className="font-medium">
-                        {item.delivery_address || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end space-x-3">
-                <Link to={`/listing/${item.coffee_listing.id}`}>
-                  <Button variant="outline">View Listing</Button>
-                </Link>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const FavoriteItem = ({ item }: { item: Favorite }) => {
-    const isExpanded = expandedOrderId === item.id;
-
-    return (
-      <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
-        <CardContent className="p-5">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center mb-2">
-                <h3 className="font-bold text-lg">
-                  {item.listing?.coffee_variety || "Unknown Coffee"}
-                </h3>
-                {item.listing?.is_organic && (
-                  <Badge
-                    variant="outline"
-                    className="ml-2 bg-green-500 text-white border-0"
-                  >
-                    Organic
-                  </Badge>
-                )}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {item.listing?.farm?.farm_name || "Unknown Farm"}
-                {item.listing?.farm?.region
-                  ? `, ${item.listing.farm.region}`
-                  : ""}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-bold text-lg text-green-600">
-                ${item.listing?.price_per_kg?.toFixed(2) || "N/A"}/kg
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {item.listing?.quantity_kg?.toLocaleString() || "0"} kg
-                available
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              <span>
-                Favorited: {new Date(item.created_at).toLocaleDateString()}
-              </span>
-            </div>
-            <div className="flex items-center">
-              <Coffee className="h-4 w-4 mr-1" />
-              <span>{item.listing?.bean_type || "Unknown"}</span>
-            </div>
-          </div>
-
-          <Separator className="my-3" />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <User className="h-4 w-4 mr-1 text-muted-foreground" />
-              <span className="text-sm font-medium">
-                {item.listing.seller?.first_name || "Unknown"}{" "}
-                {item.listing.seller?.last_name || ""}
-              </span>
-              {item.seller && (
-                <Link
-                  to={`/sellers/${item.seller.first_name?.toLowerCase()}-${item.seller.last_name?.toLowerCase()}`}
-                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
-                >
-                  View Seller
-                </Link>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => toggleOrderExpansion(item.id)}
-            >
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-200 ${
-                  isExpanded ? "rotate-180" : ""
-                }`}
-              />
-            </Button>
-          </div>
-
-          {isExpanded && (
-            <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">
-                    Listing Details
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Listing ID:</span>
-                      <span className="font-medium">{item.listing_id}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Coffee Variety:
-                      </span>
-                      <span className="font-medium">
-                        {item.listing?.coffee_variety || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Processing Method:
-                      </span>
-                      <span className="font-medium">
-                        {item.listing?.processing_method || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Cup Score:</span>
-                      <span className="font-medium">
-                        {item.listing?.cup_score || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Farm Details</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Farm:</span>
-                      <span className="font-medium">
-                        {item.listing?.farm?.farm_name || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Region:</span>
-                      <span className="font-medium">
-                        {item.listing?.farm?.region || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Country:</span>
-                      <span className="font-medium">
-                        {item.listing?.farm?.country || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end space-x-3">
-                <Link to={`/listing/${item.listing_id}`}>
-                  <Button variant="outline">View Listing</Button>
-                </Link>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const OrderItem = ({
-    item,
-    tabType,
-  }: {
-    item: Order | Bid;
-    tabType: string;
-  }) => {
-    const isOrderTab = tabType === "current" || tabType === "historical";
-    const isBid = tabType === "bids";
-    const isExpanded = expandedOrderId === item.id;
-
-    const listing: Listing | undefined = isBid
-      ? (item as Bid).listing
-      : (item as Order).listing;
-
-    return (
-      <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
-        <CardContent className="p-5">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center mb-2">
-                <h3 className="font-bold text-lg">
-                  {isBid
-                    ? listing?.coffee_variety || "Unknown Coffee"
-                    : (item as Order).order_id || "Unknown Order"}
-                </h3>
-                {(listing?.is_organic ||
-                  (item as Order).listing?.is_organic) && (
-                  <Badge
-                    variant="outline"
-                    className="ml-2 bg-green-500 text-white border-0"
-                  >
-                    Organic
-                  </Badge>
-                )}
-              </div>
-              {isBid && (
-                <div className="text-sm text-muted-foreground">
-                  {listing?.farm?.farm_name || "Unknown Farm"}
-                  {listing?.farm?.region ? `, ${listing.farm.region}` : ""}
-                </div>
-              )}
-            </div>
-            <div className="text-right">
-              <div className="font-bold text-lg text-green-600">
-                $
-                {isOrderTab
-                  ? (item as Order).unit_price?.toFixed(2)
-                  : (item as Bid).unit_price?.toFixed(2)}
-                /kg
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {isOrderTab
-                  ? `${(item as Order).quantity_kg.toLocaleString()} kg`
-                  : `${(item as Bid).quantity_kg.toLocaleString()} kg`}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              <span>
-                {isBid ? "Bid" : "Ordered"}:{" "}
-                {new Date(
-                  isBid ? (item as Bid).created_at : (item as Order).created_at,
-                ).toLocaleDateString()}
-              </span>
-            </div>
-            {isBid && (
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
-                <span>
-                  Expires:{" "}
-                  {new Date((item as Bid).expires_at).toLocaleDateString()}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <Separator className="my-3" />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <User className="h-4 w-4 mr-1 text-muted-foreground" />
-              <span className="text-sm font-medium">
-                {(isBid
-                  ? (item as Bid).seller?.first_name
-                  : (item as Order).seller_name) || "Unknown"}{" "}
-              </span>
-              {(isBid ? (item as Bid).seller : (item as Order)) && (
-                <Link
-                  to={`/sellers/${
-                    isBid ? (item as Bid).seller_id : (item as Order).seller_id
-                  }`}
-                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
-                >
-                  View Seller
-                </Link>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  (isBid ? (item as Bid).status : (item as Order).status) ===
-                  "completed"
-                    ? "default"
-                    : (isBid
-                          ? (item as Bid).status
-                          : (item as Order).status) === "confirmed"
-                      ? "default"
-                      : (isBid
-                            ? (item as Bid).status
-                            : (item as Order).status) === "pending"
-                        ? "warning"
-                        : "outline"
-                }
-              >
-                {(isBid ? (item as Bid).status : (item as Order).status)
-                  .charAt(0)
-                  .toUpperCase() +
-                  (isBid ? (item as Bid).status : (item as Order).status).slice(
-                    1,
-                  )}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => toggleOrderExpansion(item.id)}
-              >
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    isExpanded ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
-            </div>
-          </div>
-
-          {isExpanded && (
-            <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">
-                    {isBid ? "Bid Details" : "Order Details"}
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {isBid ? "Bid ID" : "Order ID"}:
-                      </span>
-                      <span className="font-medium">
-                        {isBid ? item.id : (item as Order).order_id}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Unit Price:</span>
-                      <span className="font-medium">
-                        $
-                        {(isBid
-                          ? (item as Bid).unit_price
-                          : (item as Order).unit_price
-                        ).toFixed(2)}
-                        /kg
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Quantity:</span>
-                      <span className="font-medium">
-                        {(isBid
-                          ? (item as Bid).quantity_kg
-                          : (item as Order).quantity_kg
-                        ).toLocaleString()}{" "}
-                        kg
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Total Amount:
-                      </span>
-                      <span className="font-bold text-green-600">
-                        $
-                        {(isBid
-                          ? (item as Bid).total_amount
-                          : (item as Order).total_amount
-                        ).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {isOrderTab && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2">
-                      Shipping Information
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Address:</span>
-                        <span className="font-medium">
-                          {(item as Order).ship_adrs || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Zip Code:</span>
-                        <span className="font-medium">
-                          {(item as Order).ship_zipcode || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Instructions:
-                        </span>
-                        <span className="font-medium">
-                          {(item as Order).ship_instructions || "None"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {isOrderTab && renderOrderProgress(item as Order)}
-
-              <div className="mt-4 flex justify-end space-x-3">
-                {tabType === "current" && (
-                  <>
-                    <Button
-                      variant="destructive"
-                      onClick={() => deleteOrder(item.id)}
-                      disabled={activeLoading}
-                    >
-                      Cancel Order
-                    </Button>
-                    <Link to={`/listing/${item.listing_id}`}>
-                      <Button variant="outline">View Detail</Button>
-                    </Link>
-                  </>
-                )}
-                {tabType === "historical" && (
-                  <>
-                    {!(item as Order).reviews ? (
-                      <Button
-                        variant="default"
-                        onClick={() => openReviewModal(item as Order, "")}
-                      >
-                        Review Seller
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="secondary"
-                        onClick={() => openReviewModal(item as Order, "view")}
-                      >
-                        View Review
-                      </Button>
-                    )}
-                  </>
-                )}
-                {isBid && (
-                  <Link to={`/listing/${item.listing_id}`}>
-                    <Button variant="outline">View Listing</Button>
-                  </Link>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="flex items-center text-slate-500 text-sm mb-2">
-            <Coffee className="h-4 w-4 mr-1" />
-            <span>{listing?.bean_type || "Unknown"}</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const EmptyState = ({ tabType }: { tabType: string }) => {
-    const message =
-      tabType === "sample"
-        ? "No sample requests found. Check back later or browse the marketplace."
-        : tabType === "bids"
-          ? "No bids found. Check back later or browse the marketplace."
-          : tabType === "favorites"
-            ? "No favorited listings found. Browse the marketplace to add your favorite coffees."
-            : "Head to the marketplace to place your first order of premium Ethiopian coffee.";
-
-    return (
-      <Card className="w-full">
-        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-          <div className="rounded-full bg-muted p-3">
-            <Info className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-medium">
-            No{" "}
-            {tabType === "current"
-              ? "active orders"
-              : tabType === "historical"
-                ? "order history"
-                : tabType === "sample"
-                  ? "sample requests"
-                  : tabType === "bids"
-                    ? "bids"
-                    : "favorited listings"}{" "}
-            found
-          </h3>
-          <p className="mt-2 text-sm text-muted-foreground max-w-md">
-            {message}
-          </p>
-          <Link to="/market-place">
-            <Button className="mt-6">Browse Marketplace</Button>
-          </Link>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const SampleSkeleton = () => (
-    <div className="space-y-5 animate-pulse">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Card key={i} className="mb-4">
-          <CardContent className="p-5">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="h-6 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </div>
-              <div className="text-right">
-                <div className="h-6 bg-gray-200 rounded w-16"></div>
-                <div className="h-4 bg-gray-200 rounded w-24 mt-1"></div>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center mt-2 gap-3">
-              <div className="h-4 bg-gray-200 rounded w-32"></div>
-              <div className="h-4 bg-gray-200 rounded w-32"></div>
-            </div>
-            <Separator className="my-3" />
-            <div className="flex items-center justify-between">
-              <div className="h-4 bg-gray-200 rounded w-40"></div>
-              <div className="flex items-center gap-2">
-                <div className="h-6 bg-gray-200 rounded w-16"></div>
-                <div className="h-6 bg-gray-200 rounded w-6"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-
   return (
     <div className="min-h-screen pt-20 bg-primary/5 p-8">
       <Header />
@@ -2145,13 +625,17 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <FilterMenu tab="current" />
+                <FilterMenu
+                  tab="current"
+                  handleFilterChange={handleFilterChange}
+                  filters={filters}
+                />
               </div>
             </div>
 
             <div className="space-y-5">
               {activeLoading ? (
-                <SampleSkeleton />
+                <LoadingSkeleton />
               ) : activeError ? (
                 <Card className="p-6 text-center text-red-500">
                   {activeError}
@@ -2159,7 +643,16 @@ export default function OrdersPage() {
               ) : activeOrders.length > 0 ? (
                 <>
                   {activeOrders.map((item) => (
-                    <OrderItem key={item.id} item={item} tabType="current" />
+                    <OrderItem
+                      key={item.id}
+                      item={item}
+                      tabType="current"
+                      expandedOrderId={expandedOrderId ?? ""}
+                      toggleOrderExpansion={toggleOrderExpansion}
+                      deleteOrder={deleteOrder}
+                      activeLoading={activeLoading}
+                      openReviewModal={openReviewModal}
+                    />
                   ))}
                   {activePagination.total_pages > 1 && (
                     <Pagination className="mt-6">
@@ -2181,7 +674,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: activePagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -2260,13 +753,17 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <FilterMenu tab="historical" />
+                <FilterMenu
+                  tab="historical"
+                  handleFilterChange={handleFilterChange}
+                  filters={filters}
+                />
               </div>
             </div>
 
             <div className="space-y-5">
               {historyLoading ? (
-                <SampleSkeleton />
+                <LoadingSkeleton />
               ) : historyError ? (
                 <Card className="p-6 text-center text-red-500">
                   {historyError}
@@ -2274,7 +771,16 @@ export default function OrdersPage() {
               ) : historicalOrders.length > 0 ? (
                 <>
                   {historicalOrders.map((item) => (
-                    <OrderItem key={item.id} item={item} tabType="historical" />
+                    <OrderItem
+                      key={item.id}
+                      item={item}
+                      tabType="historical"
+                      expandedOrderId={expandedOrderId ?? ""}
+                      toggleOrderExpansion={toggleOrderExpansion}
+                      deleteOrder={deleteOrder}
+                      activeLoading={activeLoading}
+                      openReviewModal={openReviewModal}
+                    />
                   ))}
                   {historyPagination.total_pages > 1 && (
                     <Pagination className="mt-6">
@@ -2296,7 +802,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: historyPagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -2377,13 +883,17 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <FilterMenu tab="sample" />
+                <FilterMenu
+                  tab="sample"
+                  handleFilterChange={handleFilterChange}
+                  filters={filters}
+                />
               </div>
             </div>
 
             <div className="space-y-5">
               {sampleLoading ? (
-                <SampleSkeleton />
+                <LoadingSkeleton />
               ) : sampleError ? (
                 <Card className="p-6 text-center text-red-500">
                   {sampleError}
@@ -2391,7 +901,12 @@ export default function OrdersPage() {
               ) : sampleRequests && sampleRequests.length > 0 ? (
                 <>
                   {sampleRequests.map((item) => (
-                    <SampleRequestItem key={item.id} item={item} />
+                    <SampleRequestItem
+                      key={item.id}
+                      item={item}
+                      expandedOrderId={expandedOrderId ?? ""}
+                      toggleOrderExpansion={toggleOrderExpansion}
+                    />
                   ))}
                   {samplePagination.total_pages > 1 && (
                     <Pagination className="mt-6">
@@ -2413,7 +928,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: samplePagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -2492,19 +1007,32 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <FilterMenu tab="bids" />
+                <FilterMenu
+                  tab="bids"
+                  handleFilterChange={handleFilterChange}
+                  filters={filters}
+                />
               </div>
             </div>
 
             <div className="space-y-5">
               {bidLoading ? (
-                <SampleSkeleton />
+                <LoadingSkeleton />
               ) : bidError ? (
                 <Card className="p-6 text-center text-red-500">{bidError}</Card>
               ) : bids.length > 0 ? (
                 <>
                   {bids.map((item) => (
-                    <OrderItem key={item.id} item={item} tabType="bids" />
+                    <OrderItem
+                      key={item.id}
+                      item={item}
+                      tabType="bids"
+                      expandedOrderId={expandedOrderId ?? ""}
+                      toggleOrderExpansion={toggleOrderExpansion}
+                      deleteOrder={deleteOrder}
+                      activeLoading={activeLoading}
+                      openReviewModal={openReviewModal}
+                    />
                   ))}
                   {bidPagination.total_pages > 1 && (
                     <Pagination className="mt-6">
@@ -2526,7 +1054,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: bidPagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -2603,13 +1131,17 @@ export default function OrdersPage() {
                     Search
                   </Button>
                 </form>
-                <FilterMenu tab="favorites" />
+                <FilterMenu
+                  tab="favorites"
+                  handleFilterChange={handleFilterChange}
+                  filters={filters}
+                />
               </div>
             </div>
 
             <div className="space-y-5">
               {favoritesLoading ? (
-                <SampleSkeleton />
+                <LoadingSkeleton />
               ) : favoritesError ? (
                 <Card className="p-6 text-center text-red-500">
                   {favoritesError}
@@ -2617,7 +1149,12 @@ export default function OrdersPage() {
               ) : favorites.length > 0 ? (
                 <>
                   {favorites.map((item) => (
-                    <FavoriteItem key={item.id} item={item} />
+                    <FavoriteItem
+                      key={item.id}
+                      item={item}
+                      expandedOrderId={expandedOrderId ?? ""}
+                      toggleOrderExpansion={toggleOrderExpansion}
+                    />
                   ))}
                   {favoritesPagination.total_pages > 1 && (
                     <Pagination className="mt-6">
@@ -2629,7 +1166,7 @@ export default function OrdersPage() {
                               e.preventDefault();
                               if (favoritesCurrentPage > 1)
                                 setFavoritesCurrentPage(
-                                  favoritesCurrentPage - 1,
+                                  favoritesCurrentPage - 1
                                 );
                             }}
                             className={
@@ -2641,7 +1178,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: favoritesPagination.total_pages },
-                          (_, i) => i + 1,
+                          (_, i) => i + 1
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -2666,7 +1203,7 @@ export default function OrdersPage() {
                                 favoritesPagination.total_pages
                               )
                                 setFavoritesCurrentPage(
-                                  favoritesCurrentPage + 1,
+                                  favoritesCurrentPage + 1
                                 );
                             }}
                             className={
