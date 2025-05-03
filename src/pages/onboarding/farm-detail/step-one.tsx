@@ -40,6 +40,7 @@ import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import CropFieldManager from "@/components/CropFieldManager";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function StepOne() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export default function StepOne() {
   const [landFileError, setLandFileError] = useState<string>("");
   const userProfile: any = getFromLocalStorage("userProfile", {});
   const currentUserStage = userProfile?.onboarding_stage;
-
+  const { user, loading } = useAuth();
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
@@ -84,7 +85,7 @@ export default function StepOne() {
     setIsClient(true);
     const savedData = getFromLocalStorage<FarmDetailsFormData>(
       "step-one",
-      {} as FarmDetailsFormData,
+      {} as FarmDetailsFormData
     );
     if (savedData && Object.keys(savedData).length > 0) {
       const polygonCoords = Array.isArray(savedData.polygon_coords)
@@ -177,7 +178,7 @@ export default function StepOne() {
     }
 
     const oversizedGovFiles = govFiles.some(
-      (file) => file.size > 5 * 1024 * 1024,
+      (file) => file.size > 5 * 1024 * 1024
     );
     if (oversizedGovFiles) {
       const error: APIErrorResponse = {
@@ -195,7 +196,7 @@ export default function StepOne() {
     }
 
     const oversizedLandFiles = landFiles.some(
-      (file) => file.size > 5 * 1024 * 1024,
+      (file) => file.size > 5 * 1024 * 1024
     );
     if (oversizedLandFiles) {
       const error: APIErrorResponse = {
@@ -235,7 +236,7 @@ export default function StepOne() {
           } else {
             formData.append(
               key,
-              String(data[key as keyof FarmDetailsFormData]),
+              String(data[key as keyof FarmDetailsFormData])
             );
           }
         }
@@ -257,7 +258,7 @@ export default function StepOne() {
 
       const isBackButtonClicked = getFromLocalStorage(
         "back-button-clicked",
-        false,
+        false
       );
 
       if (
@@ -270,7 +271,7 @@ export default function StepOne() {
           "/onboarding/seller/farm-details",
           formData,
           true,
-          isAgent === "agent" && farmer ? farmer.id : "",
+          isAgent === "agent" && farmer ? farmer.id : ""
         );
 
         if (response?.success) {
@@ -296,7 +297,7 @@ export default function StepOne() {
             "/sellers/farms/update-farm",
             formData,
             true,
-            isAgent === "agent" && farmer ? farmer.id : "",
+            isAgent === "agent" && farmer ? farmer.id : ""
           );
 
           if (response.success) {
@@ -317,7 +318,38 @@ export default function StepOne() {
       setIsSubmitting(false);
     }
   };
+  useEffect(() => {
+    const fetchFirstFarm = async () => {
+      try {
+        if (!loading) {
+          return;
+        }
 
+        const farmerId =
+          user?.userType === "agent" ? userProfile?.id : undefined;
+
+        const response: any = await apiService().get(
+          "/onboarding/seller/get-first-farm",
+          farmerId
+        );
+
+        if (response.success) {
+          form.reset({
+            ...response.data.farm,
+            polygon_coords: response.data.farm.polygon_coords || [],
+          });
+          saveToLocalStorage("farm-id", response.data.farm.id);
+        } else {
+          errorMessage(response.error as APIErrorResponse);
+        }
+      } catch (error: any) {
+        errorMessage(error as APIErrorResponse);
+      }
+    };
+    if (currentUserStage !== "farm_profile") {
+      fetchFirstFarm();
+    }
+  }, []);
   // Watch latitude and longitude for map centering
   const latitude = watch("latitude");
   const longitude = watch("longitude");
@@ -362,7 +394,7 @@ export default function StepOne() {
                       setGovFiles(files);
                       setGovFileError("");
                       const filePaths = files.map((file) =>
-                        URL.createObjectURL(file),
+                        URL.createObjectURL(file)
                       );
                       saveToLocalStorage("gov-files", filePaths);
                     }}
@@ -396,7 +428,7 @@ export default function StepOne() {
                       setLandFileError("");
                       // Save file paths to localStorage
                       const filePaths = files.map((file) =>
-                        URL.createObjectURL(file),
+                        URL.createObjectURL(file)
                       );
                       saveToLocalStorage("land-files", filePaths);
                     }}
@@ -489,7 +521,7 @@ export default function StepOne() {
                   name="total_size_hectares"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Total farm size (hectar)</FormLabel>
+                      <FormLabel>Total farm size (hectare)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -768,7 +800,7 @@ export default function StepOne() {
                           <SelectItem value="shade_grown">
                             Shade-grown
                           </SelectItem>
-                          <SelectItem value="sun_grown">Sun-grown</SelectItem>
+                          <SelectItem value="sun grown">Sun-grown</SelectItem>
                           <SelectItem value="mixed">Mixed</SelectItem>
                         </SelectContent>
                       </Select>
@@ -827,12 +859,10 @@ export default function StepOne() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="volcanic_loam">
-                            Volcanic loam
+                          <SelectItem value="dark_soil">
+                            Forest (Dark) Soil
                           </SelectItem>
-                          <SelectItem value="clay">Clay</SelectItem>
-                          <SelectItem value="sandy">Sandy</SelectItem>
-                          <SelectItem value="silty">Silty</SelectItem>
+                          <SelectItem value="sand_soil ">Sand Soil </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
