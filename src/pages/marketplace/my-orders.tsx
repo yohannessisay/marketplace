@@ -51,6 +51,21 @@ import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import { ReviewModal } from "./review-modal";
 
+enum SampleRequestDeliveryStatus {
+  PENDING = "pending",
+  INPROGRESS = "inprogress",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
+  ACCEPTED = "accepted",
+}
+
+enum OrderBidStatus {
+  PENDING = "pending",
+  ACCEPTED = "accepted",
+  REJECTED = "rejected",
+  EXPIRED = "expired",
+}
+
 interface Seller {
   first_name?: string;
   last_name?: string;
@@ -174,9 +189,36 @@ interface PaginationData {
   total_pages: number;
 }
 
-interface FilterState {
+interface OrderFilterState {
   status?: string;
   coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  contractSigned?: boolean;
+  coffeeProcessingCompleted?: boolean;
+  coffeeReadyForShipment?: boolean;
+  preShipmentSampleApproved?: boolean;
+  containerLoaded?: boolean;
+  containerOnBoard?: boolean;
+  delivered?: boolean;
+}
+
+interface SampleFilterState {
+  status?: SampleRequestDeliveryStatus;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+interface BidFilterState {
+  status?: OrderBidStatus;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+interface FavoriteFilterState {
+  listingStatus?: string;
   dateFrom?: string;
   dateTo?: string;
 }
@@ -260,11 +302,11 @@ export default function OrdersPage() {
     favorites: false,
   });
   const [filters, setFilters] = useState<{
-    current: FilterState;
-    historical: FilterState;
-    sample: FilterState;
-    bids: FilterState;
-    favorites: FilterState;
+    current: OrderFilterState;
+    historical: OrderFilterState;
+    sample: SampleFilterState;
+    bids: BidFilterState;
+    favorites: FavoriteFilterState;
   }>({
     current: {},
     historical: {},
@@ -290,6 +332,30 @@ export default function OrdersPage() {
           date_from: filters.current.dateFrom,
         }),
         ...(filters.current.dateTo && { date_to: filters.current.dateTo }),
+        ...(filters.current.contractSigned !== undefined && {
+          contract_signed: filters.current.contractSigned.toString(),
+        }),
+        ...(filters.current.coffeeProcessingCompleted !== undefined && {
+          coffee_processing_completed:
+            filters.current.coffeeProcessingCompleted.toString(),
+        }),
+        ...(filters.current.coffeeReadyForShipment !== undefined && {
+          coffee_ready_for_shipment:
+            filters.current.coffeeReadyForShipment.toString(),
+        }),
+        ...(filters.current.preShipmentSampleApproved !== undefined && {
+          pre_shipment_sample_approved:
+            filters.current.preShipmentSampleApproved.toString(),
+        }),
+        ...(filters.current.containerLoaded !== undefined && {
+          container_loaded: filters.current.containerLoaded.toString(),
+        }),
+        ...(filters.current.containerOnBoard !== undefined && {
+          container_on_board: filters.current.containerOnBoard.toString(),
+        }),
+        ...(filters.current.delivered !== undefined && {
+          delivered: filters.current.delivered.toString(),
+        }),
       }).toString();
 
       const response: any = await apiService().get(
@@ -334,6 +400,30 @@ export default function OrdersPage() {
         }),
         ...(filters.historical.dateTo && {
           date_to: filters.historical.dateTo,
+        }),
+        ...(filters.historical.contractSigned !== undefined && {
+          contract_signed: filters.historical.contractSigned.toString(),
+        }),
+        ...(filters.historical.coffeeProcessingCompleted !== undefined && {
+          coffee_processing_completed:
+            filters.historical.coffeeProcessingCompleted.toString(),
+        }),
+        ...(filters.historical.coffeeReadyForShipment !== undefined && {
+          coffee_ready_for_shipment:
+            filters.historical.coffeeReadyForShipment.toString(),
+        }),
+        ...(filters.historical.preShipmentSampleApproved !== undefined && {
+          pre_shipment_sample_approved:
+            filters.historical.preShipmentSampleApproved.toString(),
+        }),
+        ...(filters.historical.containerLoaded !== undefined && {
+          container_loaded: filters.historical.containerLoaded.toString(),
+        }),
+        ...(filters.historical.containerOnBoard !== undefined && {
+          container_on_board: filters.historical.containerOnBoard.toString(),
+        }),
+        ...(filters.historical.delivered !== undefined && {
+          delivered: filters.historical.delivered.toString(),
         }),
       }).toString();
 
@@ -462,8 +552,8 @@ export default function OrdersPage() {
         page: favoritesCurrentPage.toString(),
         limit: favoritesPagination.limit.toString(),
         search: encodeURIComponent(favoritesSearchTerm),
-        ...(filters.favorites.coffeeVariety && {
-          coffee_variety: filters.favorites.coffeeVariety,
+        ...(filters.favorites.listingStatus && {
+          listing_status: filters.favorites.listingStatus,
         }),
         ...(filters.favorites.dateFrom && {
           date_from: filters.favorites.dateFrom,
@@ -536,7 +626,14 @@ export default function OrdersPage() {
     setExpandedOrderId(null);
   };
 
-  const handleFilterChange = (tab: string, filter: FilterState) => {
+  const handleFilterChange = (
+    tab: string,
+    filter:
+      | OrderFilterState
+      | SampleFilterState
+      | BidFilterState
+      | FavoriteFilterState,
+  ) => {
     setFilters((prev) => ({ ...prev, [tab]: filter }));
     setFetchedTabs((prev) => ({ ...prev, [tab]: false }));
     if (tab === "current") setActiveCurrentPage(1);
@@ -550,30 +647,35 @@ export default function OrdersPage() {
     e.preventDefault();
     setActiveCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, current: false }));
+    fetchActiveOrders();
   };
 
   const handleHistorySearch = (e: React.FormEvent) => {
     e.preventDefault();
     setHistoryCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, historical: false }));
+    fetchHistoricalOrders();
   };
 
   const handleSampleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSampleCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, sample: false }));
+    fetchSampleRequests();
   };
 
   const handleBidSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setBidCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, bids: false }));
+    fetchBids();
   };
 
   const handleFavoritesSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setFavoritesCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, favorites: false }));
+    fetchFavorites();
   };
 
   const deleteOrder = async (orderId: string) => {
@@ -623,22 +725,22 @@ export default function OrdersPage() {
 
   const FilterMenu = ({ tab }: { tab: string }) => {
     const currentFilters = filters[tab as keyof typeof filters];
+    const isOrderTab = tab === "current" || tab === "historical";
     const isSampleTab = tab === "sample";
+    const isBidsTab = tab === "bids";
     const isFavoritesTab = tab === "favorites";
 
-    // Calculate the number of active filters
-    const filterCount = [
-      currentFilters.status,
-      currentFilters.coffeeVariety,
-      currentFilters.dateFrom,
-      currentFilters.dateTo,
-    ].filter(Boolean).length;
+    const filterCount = Object.values(currentFilters).filter(
+      (value) => value !== undefined && value !== "",
+    ).length;
 
     const statusOptions = isSampleTab
-      ? ["pending", "inprogress", "delivered", "cancelled"]
-      : isFavoritesTab
-        ? []
-        : ["pending", "confirmed", "completed", "cancelled"];
+      ? Object.values(SampleRequestDeliveryStatus)
+      : isBidsTab
+        ? Object.values(OrderBidStatus)
+        : isOrderTab
+          ? ["pending", "completed", "cancelled"]
+          : [];
     const coffeeVarieties = [
       "Yirgacheffe",
       "Sidamo",
@@ -646,6 +748,36 @@ export default function OrdersPage() {
       "Harrar",
       "Jimma",
     ];
+    const listingStatusOptions = ["active", "inactive"];
+    const booleanOptions = ["true", "false"];
+
+    const getFilterStateWithoutStatus = () => {
+      if (isOrderTab) {
+        const { status, ...rest } = currentFilters as OrderFilterState;
+        return rest;
+      } else if (isSampleTab) {
+        const { status, ...rest } = currentFilters as SampleFilterState;
+        return rest;
+      } else if (isBidsTab) {
+        const { status, ...rest } = currentFilters as BidFilterState;
+        return rest;
+      }
+      return currentFilters;
+    };
+
+    const getFilterStateWithoutCoffeeVariety = () => {
+      if (isOrderTab) {
+        const { coffeeVariety, ...rest } = currentFilters as OrderFilterState;
+        return rest;
+      } else if (isSampleTab) {
+        const { coffeeVariety, ...rest } = currentFilters as SampleFilterState;
+        return rest;
+      } else if (isBidsTab) {
+        const { coffeeVariety, ...rest } = currentFilters as BidFilterState;
+        return rest;
+      }
+      return currentFilters;
+    };
 
     return (
       <DropdownMenu>
@@ -666,17 +798,143 @@ export default function OrdersPage() {
         <DropdownMenuContent className="w-64 p-4">
           <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {!isFavoritesTab && (
+          {statusOptions.length > 0 && (
+            <div className="mb-2">
+              <label className="text-sm font-medium">Status</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {(isOrderTab &&
+                      (currentFilters as OrderFilterState).status) ||
+                      (isSampleTab &&
+                        (currentFilters as SampleFilterState).status) ||
+                      (isBidsTab &&
+                        (currentFilters as BidFilterState).status) ||
+                      "All Statuses"}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleFilterChange(tab, getFilterStateWithoutStatus())
+                    }
+                  >
+                    All Statuses
+                  </DropdownMenuItem>
+                  {statusOptions.map((status) => (
+                    <DropdownMenuItem
+                      key={status}
+                      onClick={() =>
+                        handleFilterChange(tab, { ...currentFilters, status })
+                      }
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          {(isOrderTab || isSampleTab || isBidsTab) && (
+            <div className="mb-2">
+              <label className="text-sm font-medium">Coffee Variety</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {(isOrderTab &&
+                      (currentFilters as OrderFilterState).coffeeVariety) ||
+                      (isSampleTab &&
+                        (currentFilters as SampleFilterState).coffeeVariety) ||
+                      (isBidsTab &&
+                        (currentFilters as BidFilterState).coffeeVariety) ||
+                      "All Varieties"}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleFilterChange(
+                        tab,
+                        getFilterStateWithoutCoffeeVariety(),
+                      )
+                    }
+                  >
+                    All Varieties
+                  </DropdownMenuItem>
+                  {coffeeVarieties.map((variety) => (
+                    <DropdownMenuItem
+                      key={variety}
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...currentFilters,
+                          coffeeVariety: variety,
+                        })
+                      }
+                    >
+                      {variety}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          {isFavoritesTab && (
+            <div className="mb-2">
+              <label className="text-sm font-medium">Listing Status</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {(currentFilters as FavoriteFilterState).listingStatus ||
+                      "All Statuses"}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleFilterChange(tab, {
+                        ...(currentFilters as FavoriteFilterState),
+                        listingStatus: undefined,
+                      })
+                    }
+                  >
+                    All Statuses
+                  </DropdownMenuItem>
+                  {listingStatusOptions.map((status) => (
+                    <DropdownMenuItem
+                      key={status}
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as FavoriteFilterState),
+                          listingStatus: status,
+                        })
+                      }
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          {isOrderTab && (
             <>
               <div className="mb-2">
-                <label className="text-sm font-medium">Status</label>
+                <label className="text-sm font-medium">Contract Signed</label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
                       className="w-full justify-between"
                     >
-                      {currentFilters.status || "All Statuses"}
+                      {(currentFilters as OrderFilterState).contractSigned ===
+                      undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).contractSigned?.toString() ?? "Any")}
                       <ChevronDown className="h-4 w-4 ml-2" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -684,21 +942,292 @@ export default function OrdersPage() {
                     <DropdownMenuItem
                       onClick={() =>
                         handleFilterChange(tab, {
-                          ...currentFilters,
-                          status: undefined,
+                          ...(currentFilters as OrderFilterState),
+                          contractSigned: undefined,
                         })
                       }
                     >
-                      All Statuses
+                      Any
                     </DropdownMenuItem>
-                    {statusOptions.map((status) => (
+                    {booleanOptions.map((value) => (
                       <DropdownMenuItem
-                        key={status}
+                        key={value}
                         onClick={() =>
-                          handleFilterChange(tab, { ...currentFilters, status })
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            contractSigned: value === "true",
+                          })
                         }
                       >
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">
+                  Processing Completed
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState)
+                        .coffeeProcessingCompleted === undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).coffeeProcessingCompleted?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          coffeeProcessingCompleted: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            coffeeProcessingCompleted: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">
+                  Ready for Shipment
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState)
+                        .coffeeReadyForShipment === undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).coffeeReadyForShipment?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          coffeeReadyForShipment: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            coffeeReadyForShipment: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Sample Approved</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState)
+                        .preShipmentSampleApproved === undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).preShipmentSampleApproved?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          preShipmentSampleApproved: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            preShipmentSampleApproved: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Container Loaded</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState).containerLoaded ===
+                      undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).containerLoaded?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          containerLoaded: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            containerLoaded: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Shipped</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState).containerOnBoard ===
+                      undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).containerOnBoard?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          containerOnBoard: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            containerOnBoard: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Delivered</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState).delivered ===
+                      undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).delivered?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          delivered: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            delivered: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -707,46 +1236,18 @@ export default function OrdersPage() {
             </>
           )}
           <div className="mb-2">
-            <label className="text-sm font-medium">Coffee Variety</label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
-                  {currentFilters.coffeeVariety || "All Varieties"}
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem
-                  onClick={() =>
-                    handleFilterChange(tab, {
-                      ...currentFilters,
-                      coffeeVariety: undefined,
-                    })
-                  }
-                >
-                  All Varieties
-                </DropdownMenuItem>
-                {coffeeVarieties.map((variety) => (
-                  <DropdownMenuItem
-                    key={variety}
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...currentFilters,
-                        coffeeVariety: variety,
-                      })
-                    }
-                  >
-                    {variety}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          <div className="mb-2">
             <label className="text-sm font-medium">Date From</label>
             <Input
               type="date"
-              value={currentFilters.dateFrom || ""}
+              value={
+                (isOrderTab && (currentFilters as OrderFilterState).dateFrom) ||
+                (isSampleTab &&
+                  (currentFilters as SampleFilterState).dateFrom) ||
+                (isBidsTab && (currentFilters as BidFilterState).dateFrom) ||
+                (isFavoritesTab &&
+                  (currentFilters as FavoriteFilterState).dateFrom) ||
+                ""
+              }
               onChange={(e) =>
                 handleFilterChange(tab, {
                   ...currentFilters,
@@ -759,7 +1260,14 @@ export default function OrdersPage() {
             <label className="text-sm font-medium">Date To</label>
             <Input
               type="date"
-              value={currentFilters.dateTo || ""}
+              value={
+                (isOrderTab && (currentFilters as OrderFilterState).dateTo) ||
+                (isSampleTab && (currentFilters as SampleFilterState).dateTo) ||
+                (isBidsTab && (currentFilters as BidFilterState).dateTo) ||
+                (isFavoritesTab &&
+                  (currentFilters as FavoriteFilterState).dateTo) ||
+                ""
+              }
               onChange={(e) =>
                 handleFilterChange(tab, {
                   ...currentFilters,
@@ -1622,10 +2130,10 @@ export default function OrdersPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search orders..."
+                      placeholder="Search orders with order id..."
                       value={activeSearchTerm}
                       onChange={(e) => setActiveSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button
@@ -1737,10 +2245,10 @@ export default function OrdersPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search history..."
+                      placeholder="Search order history with order id..."
                       value={historySearchTerm}
                       onChange={(e) => setHistorySearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button
@@ -1854,10 +2362,10 @@ export default function OrdersPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search sample requests..."
+                      placeholder="Search sample requests with coffee variety, or farm name..."
                       value={sampleSearchTerm}
                       onChange={(e) => setSampleSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button
@@ -1969,10 +2477,10 @@ export default function OrdersPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search bids..."
+                      placeholder="Search bids with coffee variety, or farm name..."
                       value={bidSearchTerm}
                       onChange={(e) => setBidSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button
@@ -2080,10 +2588,10 @@ export default function OrdersPage() {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search favorites..."
+                      placeholder="Search favorites with coffee variety, farm name..."
                       value={favoritesSearchTerm}
                       onChange={(e) => setFavoritesSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button

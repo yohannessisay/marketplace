@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Calendar,
   ShoppingBag,
@@ -18,6 +18,7 @@ import {
   File,
   MapPin,
   Hand,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,7 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Pagination,
   PaginationContent,
@@ -42,17 +42,24 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { apiService } from "@/services/apiService";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  SkeletonBidsTable,
+  SkeletonOrdersTable,
+  SkeletonSampleRequestsTable,
+} from "./skeletons";
 
 interface Seller {
   first_name?: string;
@@ -80,7 +87,7 @@ interface Listing {
 interface Order {
   id: string;
   order_id: string;
-  buyer_name:string;
+  buyer_name: string;
   buyer_id: string;
   seller_id: string;
   listing_id: string;
@@ -161,145 +168,55 @@ interface PaginationData {
   totalPages: number;
 }
 
-const SkeletonOrdersTable = () => (
-  <Card>
-    <CardContent className="p-6">
-      <div className="space-y-4">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="border rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <Skeleton className="h-6 w-32 mb-2" />
-                <Skeleton className="h-4 w-48" />
-              </div>
-              <div className="text-right">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3 mt-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-            <Separator className="my-3" />
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-4 w-32" />
-              <div className="flex gap-2">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-6 w-10" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </CardContent>
-  </Card>
-);
+enum SampleRequestDeliveryStatus {
+  PENDING = "pending",
+  INPROGRESS = "inprogress",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
+  ACCEPTED = "accepted",
+}
 
-const SkeletonSampleRequestsTable = () => (
-  <Card>
-    <CardContent className="p-6">
-      <div className="space-y-4">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="border rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <Skeleton className="h-6 w-32 mb-2" />
-                <Skeleton className="h-4 w-48" />
-              </div>
-              <div className="text-right">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3 mt-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-            <Separator className="my-3" />
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-4 w-32" />
-              <div className="flex gap-2">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-6 w-10" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </CardContent>
-  </Card>
-);
+enum OrderBidStatus {
+  PENDING = "pending",
+  ACCEPTED = "accepted",
+  REJECTED = "rejected",
+  EXPIRED = "expired",
+}
 
-const SkeletonBidsTable = () => (
-  <Card>
-    <CardContent className="p-6">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>
-              <Skeleton className="h-5 w-24" />
-            </TableHead>
-            <TableHead>
-              <Skeleton className="h-5 w-32" />
-            </TableHead>
-            <TableHead>
-              <Skeleton className="h-5 w-24" />
-            </TableHead>
-            <TableHead>
-              <Skeleton className="h-5 w-20" />
-            </TableHead>
-            <TableHead>
-              <Skeleton className="h-5 w-20" />
-            </TableHead>
-            <TableHead>
-              <Skeleton className="h-5 w-24" />
-            </TableHead>
-            <TableHead>
-              <Skeleton className="h-5 w-20" />
-            </TableHead>
-            <TableHead>
-              <Skeleton className="h-5 w-28" />
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <TableRow key={index}>
-              <TableCell>
-                <Skeleton className="h-5 w-32" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-5 w-48" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-5 w-32" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-5 w-16" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-5 w-16" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-5 w-24" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-5 w-20" />
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Skeleton className="h-9 w-20" />
-                  <Skeleton className="h-9 w-20" />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </CardContent>
-  </Card>
-);
+interface OrderFilterState {
+  status?: string;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  contractSigned?: boolean;
+  coffeeProcessingCompleted?: boolean;
+  coffeeReadyForShipment?: boolean;
+  preShipmentSampleApproved?: boolean;
+  containerLoaded?: boolean;
+  containerOnBoard?: boolean;
+  delivered?: boolean;
+}
+
+interface SampleFilterState {
+  status?: SampleRequestDeliveryStatus;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+interface BidFilterState {
+  status?: OrderBidStatus;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+interface FavoriteFilterState {
+  listingStatus?: string;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
 
 export default function OrdersPage({ fmrId }: { fmrId?: string }) {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
@@ -355,150 +272,234 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     sample: boolean;
     bids: boolean;
   }>({ current: false, historical: false, sample: false, bids: false });
+  const [filters, setFilters] = useState<{
+    current: OrderFilterState;
+    historical: OrderFilterState;
+    sample: SampleFilterState;
+    bids: BidFilterState;
+    favorites: FavoriteFilterState;
+  }>({
+    current: { status: "", coffeeVariety: "" },
+    historical: { status: "", coffeeVariety: "" },
+    sample: { status: undefined, coffeeVariety: "" },
+    bids: { status: undefined, coffeeVariety: "" },
+    favorites: { coffeeVariety: "" },
+  });
 
   const { successMessage, errorMessage } = useNotification();
 
-  // Fetch active orders
-  useEffect(() => {
-    const fetchActiveOrders = async () => {
-      setActiveLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/orders/active-orders?page=${activeCurrentPage}&limit=${
-            activePagination.limit
-          }&search=${encodeURIComponent(activeSearchTerm)}`,
-        );
-        if (response.success) {
-          setActiveOrders(response.data.orders);
-          setActivePagination(response.data.pagination);
-          setFetchedTabs((prev) => ({ ...prev, current: true }));
-        } else {
-          setActiveError("Failed to fetch active orders");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setActiveError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setActiveLoading(false);
-      }
-    };
-
-    if (activeTab === "current" && !fetchedTabs.current) {
-      fetchActiveOrders();
-    }
-  }, [activeCurrentPage, activeSearchTerm, activeTab, fetchedTabs.current]);
-
-  // Fetch historical orders
-  useEffect(() => {
-    const fetchHistoricalOrders = async () => {
-      setHistoryLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/orders/order-history?page=${historyCurrentPage}&limit=${
-            historyPagination.limit
-          }&search=${encodeURIComponent(historySearchTerm)}`,
-        );
-        if (response.success) {
-          setHistoricalOrders(response.data.orders);
-          setHistoryPagination(response.data.pagination);
-          setFetchedTabs((prev) => ({ ...prev, historical: true }));
-        } else {
-          setHistoryError("Failed to fetch order history");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setHistoryError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setHistoryLoading(false);
-      }
-    };
-
-    if (activeTab === "historical" && !fetchedTabs.historical) {
-      fetchHistoricalOrders();
-    }
-  }, [
-    historyCurrentPage,
-    historySearchTerm,
-    activeTab,
-    fetchedTabs.historical,
-  ]);
-
-  // Fetch sample requests
-  useEffect(() => {
-    const fetchSampleRequests = async () => {
-      setSampleLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/sellers/samples/get-sample-requests?page=${sampleCurrentPage}&limit=${
-            samplePagination.limit
-          }&search=${encodeURIComponent(sampleSearchTerm)}`,
-        );
-        if (response.success) {
-          setSampleRequests(response.data.sampleRequests);
-          setSamplePagination(response.data.pagination);
-          setFetchedTabs((prev) => ({ ...prev, sample: true }));
-        } else {
-          setSampleError("Failed to fetch sample requests");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setSampleError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setSampleLoading(false);
-      }
-    };
-
-    if (activeTab === "sample" && !fetchedTabs.sample) {
-      fetchSampleRequests();
-    }
-  }, [sampleCurrentPage, sampleSearchTerm, activeTab, fetchedTabs.sample]);
-
-  // Fetch seller bids
-  useEffect(() => {
-    const fetchSellerBids = async () => {
-      setBidsLoading(true);
-      try {
-        const response: any = await apiService().get(
-          `/sellers/listings/bids/get-bids?page=${bidsCurrentPage}&limit=${
-            bidsPagination.limit
-          }&search=${encodeURIComponent(bidsSearchTerm)}`,
-        );
-        if (response.success) {
-          setBids(response.data.bids);
-          setBidsPagination(response.data.pagination);
-          setFetchedTabs((prev) => ({ ...prev, bids: true }));
-        } else {
-          setBidsError("Failed to fetch bids");
-        }
-      } catch (err: unknown) {
-        const errorResponse = err as APIErrorResponse;
-        setBidsError(errorResponse.error?.message || "An error occurred");
-        errorMessage(errorResponse);
-      } finally {
-        setBidsLoading(false);
-      }
-    };
-
-    if (activeTab === "bids" && !fetchedTabs.bids) {
-      fetchSellerBids();
-    }
-  }, [bidsCurrentPage, bidsSearchTerm, activeTab, fetchedTabs.bids]);
-
-  // Fetch data after bid actions
-  const fetchData = async () => {
-    setBidsLoading(true);
+  const fetchActiveOrders = useCallback(async () => {
+    setActiveLoading(true);
     try {
+      const filterParams = new URLSearchParams({
+        page: activeCurrentPage.toString(),
+        limit: activePagination.limit.toString(),
+        search: encodeURIComponent(activeSearchTerm),
+        ...(filters!.current.status && { status: filters!.current.status }),
+        ...(filters!.current.coffeeVariety && {
+          coffee_variety: filters!.current.coffeeVariety,
+        }),
+        ...(filters!.current.dateFrom && {
+          date_from: filters!.current.dateFrom,
+        }),
+        ...(filters!.current.dateTo && { date_to: filters!.current.dateTo }),
+        ...(filters!.current.contractSigned !== undefined && {
+          contract_signed: filters!.current.contractSigned.toString(),
+        }),
+        ...(filters!.current.coffeeProcessingCompleted !== undefined && {
+          coffee_processing_completed:
+            filters!.current.coffeeProcessingCompleted.toString(),
+        }),
+        ...(filters!.current.coffeeReadyForShipment !== undefined && {
+          coffee_ready_for_shipment:
+            filters!.current.coffeeReadyForShipment.toString(),
+        }),
+        ...(filters!.current.preShipmentSampleApproved !== undefined && {
+          pre_shipment_sample_approved:
+            filters!.current.preShipmentSampleApproved.toString(),
+        }),
+        ...(filters!.current.containerLoaded !== undefined && {
+          container_loaded: filters!.current.containerLoaded.toString(),
+        }),
+        ...(filters!.current.containerOnBoard !== undefined && {
+          container_on_board: filters!.current.containerOnBoard.toString(),
+        }),
+        ...(filters!.current.delivered !== undefined && {
+          delivered: filters!.current.delivered.toString(),
+        }),
+      }).toString();
+
       const response: any = await apiService().get(
-        `/sellers/listings/bids/get-bids?page=${bidsCurrentPage}&limit=${
-          bidsPagination.limit
-        }&search=${encodeURIComponent(bidsSearchTerm)}`,
+        `/orders/active-orders?${filterParams}`,
       );
       if (response.success) {
-        setBids(response.data.bids);
-        setBidsPagination(response.data.pagination);
+        setActiveOrders(response.data.orders || []);
+        setActivePagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            totalItems: 0,
+            totalPages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, current: true }));
+      } else {
+        setActiveError("Failed to fetch active orders");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setActiveError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setActiveLoading(false);
+    }
+  }, [activeCurrentPage, activeSearchTerm, filters!.current]);
+
+  const fetchHistoricalOrders = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: historyCurrentPage.toString(),
+        limit: historyPagination.limit.toString(),
+        search: encodeURIComponent(historySearchTerm),
+        ...(filters!.historical.status && {
+          status: filters!.historical.status,
+        }),
+        ...(filters!.historical.coffeeVariety && {
+          coffee_variety: filters!.historical.coffeeVariety,
+        }),
+        ...(filters!.historical.dateFrom && {
+          date_from: filters!.historical.dateFrom,
+        }),
+        ...(filters!.historical.dateTo && {
+          date_to: filters!.historical.dateTo,
+        }),
+        ...(filters!.historical.contractSigned !== undefined && {
+          contract_signed: filters!.historical.contractSigned.toString(),
+        }),
+        ...(filters!.historical.coffeeProcessingCompleted !== undefined && {
+          coffee_processing_completed:
+            filters!.historical.coffeeProcessingCompleted.toString(),
+        }),
+        ...(filters!.historical.coffeeReadyForShipment !== undefined && {
+          coffee_ready_for_shipment:
+            filters!.historical.coffeeReadyForShipment.toString(),
+        }),
+        ...(filters!.historical.preShipmentSampleApproved !== undefined && {
+          pre_shipment_sample_approved:
+            filters!.historical.preShipmentSampleApproved.toString(),
+        }),
+        ...(filters!.historical.containerLoaded !== undefined && {
+          container_loaded: filters!.historical.containerLoaded.toString(),
+        }),
+        ...(filters!.historical.containerOnBoard !== undefined && {
+          container_on_board: filters!.historical.containerOnBoard.toString(),
+        }),
+        ...(filters!.historical.delivered !== undefined && {
+          delivered: filters!.historical.delivered.toString(),
+        }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/orders/order-history?${filterParams}`,
+      );
+      if (response.success) {
+        setHistoricalOrders(response.data.orders || []);
+        setHistoryPagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            totalItems: 0,
+            totalPages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, historical: true }));
+      } else {
+        setHistoryError("Failed to fetch order history");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setHistoryError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [historyCurrentPage, historySearchTerm, filters!.historical]);
+
+  const fetchSampleRequests = useCallback(async () => {
+    setSampleLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: sampleCurrentPage.toString(),
+        limit: samplePagination.limit.toString(),
+        search: encodeURIComponent(sampleSearchTerm),
+        ...(filters!.sample.status && {
+          delivery_status: filters!.sample.status,
+        }),
+        ...(filters!.sample.coffeeVariety && {
+          coffee_variety: filters!.sample.coffeeVariety,
+        }),
+        ...(filters!.sample.dateFrom && {
+          date_from: filters!.sample.dateFrom,
+        }),
+        ...(filters!.sample.dateTo && { date_to: filters!.sample.dateTo }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/sellers/samples/get-sample-requests?${filterParams}`,
+      );
+      if (response.success) {
+        setSampleRequests(response.data.sampleRequests || []);
+        setSamplePagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            totalItems: 0,
+            totalPages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, sample: true }));
+      } else {
+        setSampleError("Failed to fetch sample requests");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setSampleError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setSampleLoading(false);
+    }
+  }, [sampleCurrentPage, sampleSearchTerm, filters!.sample]);
+
+  const fetchSellerBids = useCallback(async () => {
+    setBidsLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: bidsCurrentPage.toString(),
+        limit: bidsPagination.limit.toString(),
+        search: encodeURIComponent(bidsSearchTerm),
+        ...(filters!.bids.status && { status: filters!.bids.status }),
+        ...(filters!.bids.coffeeVariety && {
+          coffee_variety: filters!.bids.coffeeVariety,
+        }),
+        ...(filters!.bids.dateFrom && { date_from: filters!.bids.dateFrom }),
+        ...(filters!.bids.dateTo && { date_to: filters!.bids.dateTo }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/sellers/listings/bids/get-bids?${filterParams}`,
+      );
+      if (response.success) {
+        setBids(response.data.bids || []);
+        setBidsPagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            totalItems: 0,
+            totalPages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, bids: true }));
       } else {
         setBidsError("Failed to fetch bids");
       }
@@ -509,9 +510,48 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     } finally {
       setBidsLoading(false);
     }
-  };
+  }, [bidsCurrentPage, bidsSearchTerm, filters!.bids]);
 
-  // Accept a bid
+  const fetchData = useCallback(async () => {
+    setBidsLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: bidsCurrentPage.toString(),
+        limit: bidsPagination.limit.toString(),
+        search: encodeURIComponent(bidsSearchTerm),
+        ...(filters!.bids.status && { status: filters!.bids.status }),
+        ...(filters!.bids.coffeeVariety && {
+          coffee_variety: filters!.bids.coffeeVariety,
+        }),
+        ...(filters!.bids.dateFrom && { date_from: filters!.bids.dateFrom }),
+        ...(filters!.bids.dateTo && { date_to: filters!.bids.dateTo }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/sellers/listings/bids/get-bids?${filterParams}`,
+      );
+      if (response.success) {
+        setBids(response.data.bids || []);
+        setBidsPagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            totalItems: 0,
+            totalPages: 0,
+          },
+        );
+      } else {
+        setBidsError("Failed to fetch bids");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setBidsError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setBidsLoading(false);
+    }
+  }, [bidsCurrentPage, bidsSearchTerm, filters!.bids]);
+
   const acceptBid = async (bidId: string) => {
     try {
       setGeneralLoading(true);
@@ -529,7 +569,6 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     }
   };
 
-  // Reject a bid
   const rejectBid = async (bidId: string) => {
     try {
       setGeneralLoading(true);
@@ -547,84 +586,662 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     }
   };
 
+  useEffect(() => {
+    if (activeTab === "current" && !fetchedTabs.current) {
+      fetchActiveOrders();
+    }
+  }, [activeTab, fetchActiveOrders, fetchedTabs.current]);
+
+  useEffect(() => {
+    if (activeTab === "historical" && !fetchedTabs.historical) {
+      fetchHistoricalOrders();
+    }
+  }, [activeTab, fetchHistoricalOrders, fetchedTabs.historical]);
+
+  useEffect(() => {
+    if (activeTab === "sample" && !fetchedTabs.sample) {
+      fetchSampleRequests();
+    }
+  }, [activeTab, fetchSampleRequests, fetchedTabs.sample]);
+
+  useEffect(() => {
+    if (activeTab === "bids" && !fetchedTabs.bids) {
+      fetchSellerBids();
+    }
+  }, [activeTab, fetchSellerBids, fetchedTabs.bids]);
+
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
-  // Handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setExpandedOrderId(null);
   };
 
-  // Handle search for active orders
+  const handleFilterChange = (
+    tab: string,
+    filter: OrderFilterState | SampleFilterState | BidFilterState,
+  ) => {
+    setFilters((prev) => ({ ...prev, [tab]: filter }));
+    setFetchedTabs((prev) => ({ ...prev, [tab]: false }));
+    if (tab === "current") setActiveCurrentPage(1);
+    if (tab === "historical") setHistoryCurrentPage(1);
+    if (tab === "sample") setSampleCurrentPage(1);
+    if (tab === "bids") setBidsCurrentPage(1);
+  };
+
   const handleActiveSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setActiveCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, current: false }));
+    fetchActiveOrders();
   };
 
-  // Handle search for historical orders
   const handleHistorySearch = (e: React.FormEvent) => {
     e.preventDefault();
     setHistoryCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, historical: false }));
+    fetchHistoricalOrders();
   };
 
-  // Handle search for sample requests
   const handleSampleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSampleCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, sample: false }));
+    fetchSampleRequests();
   };
 
-  // Handle search for bids
   const handleBidsSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setBidsCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, bids: false }));
+    fetchSellerBids();
   };
 
-  // const deleteOrder = async (orderId: string) => {
-  //   if (!orderId) {
-  //     errorMessage({
-  //       success: false,
-  //       error: {
-  //         message: "Invalid order ID",
-  //         details: "No order ID provided",
-  //         code: 400,
-  //       },
-  //     });
-  //     return;
-  //   }
+  const FilterMenu = ({ tab }: { tab: string }) => {
+    const currentFilters = filters[tab as keyof typeof filters];
+    const isOrderTab = tab === "current" || tab === "historical";
+    const isSampleTab = tab === "sample";
+    const isBidsTab = tab === "bids";
+    const isFavoritesTab = tab === "favorites";
 
-  //   try {
-  //     await apiService().post(`/orders/cancel-order?orderId=${orderId}`, {});
-  //     setActiveOrders((prev) => prev.filter((order) => order.id !== orderId));
-  //     setActivePagination((prev) => {
-  //       const newTotalItems = Math.max(0, prev.totalItems - 1);
-  //       const newTotalPages = Math.ceil(newTotalItems / prev.limit);
-  //       return {
-  //         ...prev,
-  //         totalItems: newTotalItems,
-  //         totalPages: newTotalPages,
-  //         page:
-  //           activeCurrentPage > newTotalPages && newTotalPages > 0
-  //             ? newTotalPages
-  //             : prev.page,
-  //       };
-  //     });
-  //     if (expandedOrderId === orderId) {
-  //       setExpandedOrderId(null);
-  //     }
-  //     successMessage("Order cancelled successfully");
-  //   } catch (error: unknown) {
-  //     const errorResponse = error as APIErrorResponse;
-  //     errorMessage(errorResponse);
-  //   }
-  // };
+    const filterCount = Object.values(currentFilters).filter(
+      (value) => value !== undefined && value !== "",
+    ).length;
 
-  // Render order status progress
+    const statusOptions = isSampleTab
+      ? Object.values(SampleRequestDeliveryStatus)
+      : isBidsTab
+        ? Object.values(OrderBidStatus)
+        : isOrderTab
+          ? ["pending", "completed", "cancelled"]
+          : [];
+    const coffeeVarieties = [
+      "Yirgacheffe",
+      "Sidamo",
+      "Guji",
+      "Harrar",
+      "Jimma",
+    ];
+    const listingStatusOptions = ["active", "inactive"];
+    const booleanOptions = ["true", "false"];
+
+    const getFilterStateWithoutStatus = () => {
+      if (isOrderTab) {
+        const { status, ...rest } = currentFilters as OrderFilterState;
+        return rest;
+      } else if (isSampleTab) {
+        const { status, ...rest } = currentFilters as SampleFilterState;
+        return rest;
+      } else if (isBidsTab) {
+        const { status, ...rest } = currentFilters as BidFilterState;
+        return rest;
+      }
+      return currentFilters;
+    };
+
+    const getFilterStateWithoutCoffeeVariety = () => {
+      if (isOrderTab) {
+        const { coffeeVariety, ...rest } = currentFilters as OrderFilterState;
+        return rest;
+      } else if (isSampleTab) {
+        const { coffeeVariety, ...rest } = currentFilters as SampleFilterState;
+        return rest;
+      } else if (isBidsTab) {
+        const { coffeeVariety, ...rest } = currentFilters as BidFilterState;
+        return rest;
+      } else if (isFavoritesTab) {
+        const { coffeeVariety, ...rest } =
+          currentFilters as FavoriteFilterState;
+        return rest;
+      }
+      return currentFilters;
+    };
+
+    const getFilterStateWithoutListingStatus = () => {
+      if (isFavoritesTab) {
+        const { listingStatus, ...rest } =
+          currentFilters as FavoriteFilterState;
+        return rest;
+      }
+      return currentFilters;
+    };
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-10 relative">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+            {filterCount > 0 && (
+              <Badge
+                variant="secondary"
+                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center rounded-full bg-primary text-white"
+              >
+                {filterCount}
+              </Badge>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-64 p-4">
+          <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {statusOptions.length > 0 && (
+            <div className="mb-2">
+              <label className="text-sm font-medium">Status</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {(isOrderTab &&
+                      (currentFilters as OrderFilterState).status) ||
+                      (isSampleTab &&
+                        (currentFilters as SampleFilterState).status) ||
+                      (isBidsTab &&
+                        (currentFilters as BidFilterState).status) ||
+                      "All Statuses"}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleFilterChange(tab, getFilterStateWithoutStatus())
+                    }
+                  >
+                    All Statuses
+                  </DropdownMenuItem>
+                  {statusOptions.map((status) => (
+                    <DropdownMenuItem
+                      key={status}
+                      onClick={() =>
+                        handleFilterChange(tab, { ...currentFilters, status })
+                      }
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          {(isOrderTab || isSampleTab || isBidsTab || isFavoritesTab) && (
+            <div className="mb-2">
+              <label className="text-sm font-medium">Coffee Variety</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {(isOrderTab &&
+                      (currentFilters as OrderFilterState).coffeeVariety) ||
+                      (isSampleTab &&
+                        (currentFilters as SampleFilterState).coffeeVariety) ||
+                      (isBidsTab &&
+                        (currentFilters as BidFilterState).coffeeVariety) ||
+                      (isFavoritesTab &&
+                        (currentFilters as FavoriteFilterState)
+                          .coffeeVariety) ||
+                      "All Varieties"}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleFilterChange(
+                        tab,
+                        getFilterStateWithoutCoffeeVariety(),
+                      )
+                    }
+                  >
+                    All Varieties
+                  </DropdownMenuItem>
+                  {coffeeVarieties.map((variety) => (
+                    <DropdownMenuItem
+                      key={variety}
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...currentFilters,
+                          coffeeVariety: variety,
+                        })
+                      }
+                    >
+                      {variety}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          {isFavoritesTab && (
+            <div className="mb-2">
+              <label className="text-sm font-medium">Listing Status</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {(currentFilters as FavoriteFilterState).listingStatus ||
+                      "All Statuses"}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleFilterChange(
+                        tab,
+                        getFilterStateWithoutListingStatus(),
+                      )
+                    }
+                  >
+                    All Statuses
+                  </DropdownMenuItem>
+                  {listingStatusOptions.map((status) => (
+                    <DropdownMenuItem
+                      key={status}
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as FavoriteFilterState),
+                          listingStatus: status,
+                        })
+                      }
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          {isOrderTab && (
+            <>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Contract Signed</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState).contractSigned ===
+                      undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).contractSigned?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          contractSigned: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            contractSigned: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">
+                  Processing Completed
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState)
+                        .coffeeProcessingCompleted === undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).coffeeProcessingCompleted?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          coffeeProcessingCompleted: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            coffeeProcessingCompleted: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">
+                  Ready for Shipment
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState)
+                        .coffeeReadyForShipment === undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).coffeeReadyForShipment?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          coffeeReadyForShipment: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            coffeeReadyForShipment: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Sample Approved</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState)
+                        .preShipmentSampleApproved === undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).preShipmentSampleApproved?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          preShipmentSampleApproved: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            preShipmentSampleApproved: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Container Loaded</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState).containerLoaded ===
+                      undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).containerLoaded?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          containerLoaded: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            containerLoaded: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Shipped</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState).containerOnBoard ===
+                      undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).containerOnBoard?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          containerOnBoard: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            containerOnBoard: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mb-2">
+                <label className="text-sm font-medium">Delivered</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {(currentFilters as OrderFilterState).delivered ===
+                      undefined
+                        ? "Any"
+                        : ((
+                            currentFilters as OrderFilterState
+                          ).delivered?.toString() ?? "Any")}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...(currentFilters as OrderFilterState),
+                          delivered: undefined,
+                        })
+                      }
+                    >
+                      Any
+                    </DropdownMenuItem>
+                    {booleanOptions.map((value) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() =>
+                          handleFilterChange(tab, {
+                            ...(currentFilters as OrderFilterState),
+                            delivered: value === "true",
+                          })
+                        }
+                      >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
+          )}
+          <div className="mb-2">
+            <label className="text-sm font-medium">Date From</label>
+            <Input
+              type="date"
+              value={
+                (isOrderTab && (currentFilters as OrderFilterState).dateFrom) ||
+                (isSampleTab &&
+                  (currentFilters as SampleFilterState).dateFrom) ||
+                (isBidsTab && (currentFilters as BidFilterState).dateFrom) ||
+                (isFavoritesTab &&
+                  (currentFilters as FavoriteFilterState).dateFrom) ||
+                ""
+              }
+              onChange={(e) =>
+                handleFilterChange(tab, {
+                  ...currentFilters,
+                  dateFrom: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="mb-2">
+            <label className="text-sm font-medium">Date To</label>
+            <Input
+              type="date"
+              value={
+                (isOrderTab && (currentFilters as OrderFilterState).dateTo) ||
+                (isSampleTab && (currentFilters as SampleFilterState).dateTo) ||
+                (isBidsTab && (currentFilters as BidFilterState).dateTo) ||
+                (isFavoritesTab &&
+                  (currentFilters as FavoriteFilterState).dateTo) ||
+                ""
+              }
+              onChange={(e) =>
+                handleFilterChange(tab, {
+                  ...currentFilters,
+                  dateTo: e.target.value,
+                })
+              }
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full mt-2"
+            onClick={() => handleFilterChange(tab, {})}
+          >
+            Clear Filters
+            <X className="h-4 w-4 ml-2" />
+          </Button>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
   const renderOrderProgress = (order: Order) => {
     const steps = [
       { key: "order_placed", label: "Order Placed", completed: true },
@@ -716,8 +1333,209 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                 </div>
               );
             })}
-          
           </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const OrderItem = ({ item, tabType }: { item: Order; tabType: string }) => {
+    const isExpanded = expandedOrderId === item.id;
+    const listing: Listing | undefined = item.listing;
+
+    return (
+      <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
+        <CardContent className="p-5">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="flex items-center mb-2">
+                <h3 className="font-bold text-lg">
+                  {item.order_id || "Unknown Order"}
+                </h3>
+                {listing?.is_organic && (
+                  <Badge
+                    variant="outline"
+                    className="ml-2 bg-green-500 text-white border-0"
+                  >
+                    Organic
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="font-bold text-lg text-green-600">
+                ${item.unit_price?.toFixed(2)}/kg
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {item.quantity_kg.toLocaleString()} kg
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              <span>
+                Ordered: {new Date(item.created_at).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-1 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {item.buyer_name || "Unknown"}{" "}
+              </span>
+              {item.seller && (
+                <Link
+                  to={`/sellers/${item.seller.first_name?.toLowerCase()}-${item.seller.last_name?.toLowerCase()}`}
+                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
+                >
+                  View Seller
+                </Link>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={
+                  item.status === "completed"
+                    ? "default"
+                    : item.status === "confirmed"
+                      ? "default"
+                      : item.status === "pending"
+                        ? "warning"
+                        : "outline"
+                }
+              >
+                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => toggleOrderExpansion(item.id)}
+              >
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+            </div>
+          </div>
+
+          {isExpanded && (
+            <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Order Details</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Order ID:</span>
+                      <span className="font-medium">
+                        {item.order_id || item.id}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Unit Price:</span>
+                      <span className="font-medium">
+                        ${item.unit_price.toFixed(2)}/kg
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Quantity:</span>
+                      <span className="font-medium">
+                        {item.quantity_kg.toLocaleString()} kg
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Total Amount:
+                      </span>
+                      <span className="font-bold text-green-600">
+                        ${item.total_amount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">
+                    Shipping Information
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Address:</span>
+                      <span className="font-medium">
+                        {item.ship_adrs || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Zip Code:</span>
+                      <span className="font-medium">
+                        {item.ship_zipcode || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Instructions:
+                      </span>
+                      <span className="font-medium">
+                        {item.ship_instructions || "None"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {tabType === "current" && renderOrderProgress(item)}
+            </div>
+          )}
+
+          <div className="flex items-center text-slate-500 text-sm mb-2">
+            <Coffee className="h-4 w-4 mr-1" />
+            <span>{listing?.bean_type || "Unknown"}</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const EmptyState = ({ tabType }: { tabType: string }) => {
+    const message =
+      tabType === "sample"
+        ? "No sample requests found. Check back later or browse the marketplace."
+        : tabType === "bids"
+          ? "No bids found. Check back later or list more coffee in the marketplace."
+          : "Head to the marketplace to place your first order of premium Ethiopian coffee.";
+
+    return (
+      <Card className="w-full">
+        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+          <div className="rounded-full bg-muted p-3">
+            <Info className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="mt-4 text-lg font-medium">
+            No{" "}
+            {tabType === "current"
+              ? "active orders"
+              : tabType === "historical"
+                ? "order history"
+                : tabType === "sample"
+                  ? "sample requests"
+                  : "bids"}{" "}
+            found
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground max-w-md">
+            {message}
+          </p>
+          <Link to="/market-place">
+            <Button className="mt-6 bg-green-600 hover:bg-green-700">
+              Browse Marketplace
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     );
@@ -960,228 +1778,6 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     );
   };
 
-  // Order Item Component
-  const OrderItem = ({ item, tabType }: { item: Order; tabType: string }) => {
-    // const isOrderTab = tabType === "current" || tabType === "historical";
-    const isExpanded = expandedOrderId === item.id;
-    const listing: Listing | undefined = item.listing;
-
-    return (
-      <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
-        <CardContent className="p-5">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center mb-2">
-                <h3 className="font-bold text-lg">
-                  {item.order_id || "Unknown Order"}
-                </h3>
-                {listing?.is_organic && (
-                  <Badge
-                    variant="outline"
-                    className="ml-2 bg-green-500 text-white border-0"
-                  >
-                    Organic
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-bold text-lg text-green-600">
-                ${item.unit_price?.toFixed(2)}/kg
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {item.quantity_kg.toLocaleString()} kg
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center mt-2 text-sm text-muted-foreground gap-3">
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              <span>
-                Ordered: {new Date(item.created_at).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-
-          <Separator className="my-3" />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <User className="h-4 w-4 mr-1 text-muted-foreground" />
-              <span className="text-sm font-medium">
-                {item.buyer_name || "Unknown"}{" "} 
-              </span>
-              {item.seller && (
-                <Link
-                  to={`/sellers/${item.seller.first_name?.toLowerCase()}-${item.seller.last_name?.toLowerCase()}`}
-                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
-                >
-                  View Seller
-                </Link>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  item.status === "completed"
-                    ? "default"
-                    : item.status === "confirmed"
-                      ? "default"
-                      : item.status === "pending"
-                        ? "warning"
-                        : "outline"
-                }
-              >
-                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => toggleOrderExpansion(item.id)}
-              >
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    isExpanded ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
-            </div>
-          </div>
-
-          {isExpanded && (
-            <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Order Details</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Order ID:</span>
-                      <span className="font-medium">
-                        {item.order_id || item.id}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Unit Price:</span>
-                      <span className="font-medium">
-                        ${item.unit_price.toFixed(2)}/kg
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Quantity:</span>
-                      <span className="font-medium">
-                        {item.quantity_kg.toLocaleString()} kg
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Total Amount:
-                      </span>
-                      <span className="font-bold text-green-600">
-                        ${item.total_amount.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">
-                    Shipping Information
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Address:</span>
-                      <span className="font-medium">
-                        {item.ship_adrs || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Zip Code:</span>
-                      <span className="font-medium">
-                        {item.ship_zipcode || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Instructions:
-                      </span>
-                      <span className="font-medium">
-                        {item.ship_instructions || "None"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {tabType === "current" && renderOrderProgress(item)}
-              {/*
-              <div className="mt-4 flex justify-end space-x-3">
-                {tabType === "current" && (
-                  <>
-                    <Button
-                      variant="destructive"
-                      onClick={() => deleteOrder(item.id)}
-                      disabled={activeLoading || generalLoading}
-                    >
-                      Cancel Order
-                    </Button>
-                    <Link to={`/listing/${item.listing_id}`}>
-                      <Button variant="outline">View Detail</Button>
-                    </Link>
-                  </>
-                )}
-              </div> */}
-            </div>
-          )}
-
-          <div className="flex items-center text-slate-500 text-sm mb-2">
-            <Coffee className="h-4 w-4 mr-1" />
-            <span>{listing?.bean_type || "Unknown"}</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  // Empty state component
-  const EmptyState = ({ tabType }: { tabType: string }) => {
-    const message =
-      tabType === "sample"
-        ? "No sample requests found. Check back later or browse the marketplace."
-        : tabType === "bids"
-          ? "No bids found. Check back later or list more coffee in the marketplace."
-          : "Head to the marketplace to place your first order of premium Ethiopian coffee.";
-
-    return (
-      <Card className="w-full">
-        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-          <div className="rounded-full bg-muted p-3">
-            <Info className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-medium">
-            No{" "}
-            {tabType === "current"
-              ? "active orders"
-              : tabType === "historical"
-                ? "order history"
-                : tabType === "sample"
-                  ? "sample requests"
-                  : "bids"}{" "}
-            found
-          </h3>
-          <p className="mt-2 text-sm text-muted-foreground max-w-md">
-            {message}
-          </p>
-          <Link to="/market-place">
-            <Button className="mt-6 bg-green-600 hover:bg-green-700">
-              Browse Marketplace
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
-    );
-  };
-
   return (
     <div className="min-h-screen pt-20 bg-primary/5 p-8">
       <Header />
@@ -1241,10 +1837,10 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search orders..."
+                      placeholder="Search orders with order id e.g. AV-G1WKYIQN..."
                       value={activeSearchTerm}
                       onChange={(e) => setActiveSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button
@@ -1256,10 +1852,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="current" />
               </div>
             </div>
 
@@ -1352,10 +1945,10 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search history..."
+                      placeholder="Search history with order id e.g. AV-G1WKYIQN..."
                       value={historySearchTerm}
                       onChange={(e) => setHistorySearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button
@@ -1367,10 +1960,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="historical" />
               </div>
             </div>
 
@@ -1464,10 +2054,10 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search sample requests..."
+                      placeholder="Search sample requests with coffee variety..."
                       value={sampleSearchTerm}
                       onChange={(e) => setSampleSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button
@@ -1479,10 +2069,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="sample" />
               </div>
             </div>
 
@@ -1573,10 +2160,10 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="Search bids..."
+                      placeholder="Search bids with coffee variety..."
                       value={bidsSearchTerm}
                       onChange={(e) => setBidsSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="w-full md:w-[500px] pl-8"
                     />
                   </div>
                   <Button
@@ -1588,10 +2175,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                     Search
                   </Button>
                 </form>
-                <Button variant="outline" size="sm" className="h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <FilterMenu tab="bids" />
               </div>
             </div>
 
@@ -1644,7 +2228,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                                     to={`/buyers/${bid.buyer_id}`}
                                     className="text-green-600 hover:text-green-700"
                                   >
-                                    {bid.buyer.first_name || "Unknowns"}{" "}
+                                    {bid.buyer.first_name || "Unknown"}{" "}
                                     {bid.buyer.last_name || ""}
                                   </Link>
                                 ) : (

@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  Star, 
-  Search,
-  X,
-} from "lucide-react";
+import { Star, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -308,7 +306,7 @@ function PhotoGallery({
       });
 
       setPhotos(
-        (prev) => prev?.filter((photo) => photo.id !== photoId) || null
+        (prev) => prev?.filter((photo) => photo.id !== photoId) || null,
       );
 
       if (
@@ -391,13 +389,14 @@ function PhotoGallery({
 export default function CoffeeListingSellerView() {
   const [activeTab, setActiveTab] = useState("overview");
   const [activeMessageThread, setActiveMessageThread] = useState<string | null>(
-    null
+    null,
   );
   const [messageFilter, setMessageFilter] = useState("all");
   const [listing, setListing] = useState<Listing | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
   const [messageThreads, setMessageThreads] = useState<MessageThreadType[]>([]);
   const [isFetching, setIsFetching] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
   const [generalLoading, setGeneralLoading] = useState(false);
   const { errorMessage, successMessage } = useNotification();
 
@@ -406,109 +405,109 @@ export default function CoffeeListingSellerView() {
   const id = params.id as string | undefined;
   const { user } = useAuth();
   const senderId = getUserId();
+  const farmerProfile: any = useMemo(
+    () => getFromLocalStorage("farmer-profile", {}),
+    [],
+  );
 
   let fmrId = null;
   if (user && user.userType === "agent") {
-    const farmer: any = getFromLocalStorage("farmer-profile", {});
-    fmrId = farmer ? farmer.id : undefined;
+    fmrId = farmerProfile ? farmerProfile.id : undefined;
   }
 
   const fetchData = useCallback(async () => {
-    if (!id || !senderId || !isFetching) return;
-  
+    if (!id || !senderId || hasFetched) return;
+
     if (!user) {
       return;
     }
-    if (user && user.userType === "agent" && fmrId===null) {
-     
-      
+    if (user && user.userType === "agent" && fmrId === null) {
       return;
-    }else{
-      try {
-        setIsFetching(true);
-     
-        const listingResponse: any = await apiService().get(
-          `/sellers/listings/get-listing?listingId=${id}`,
-          fmrId
-        );
-        setListing(listingResponse.data.listing);
-  
-        const bidsResponse: any = await apiService().get(
-          `/sellers/listings/bids/get-bids?listingId=${id}`,
-          fmrId
-        );
-        setBids(bidsResponse.data.bids || []);
-  
-        const messagesResponse: any = await apiService().get(
-          id
-            ? `/chats/listing-messages?listingId=${id}`
-            : `/chats/listing-messages`,
-          fmrId
-        );
-        const groupedThreads: { [key: string]: MessageThreadType } = {};
-        messagesResponse.data.messages.forEach((msg: Message) => {
-          const otherPartyId =
-            msg.sender.id === senderId ? msg.recipient.id : msg.sender.id;
-          const threadId = `${otherPartyId}-${msg.listingId || "no-listing"}`;
-  
-          if (!groupedThreads[threadId]) {
-            const otherParty =
-              msg.sender.id === senderId ? msg.recipient : msg.sender;
-            const isOtherPartyBuyer = otherParty.userType === "buyer";
-  
-            groupedThreads[threadId] = {
-              id: threadId,
-              buyerName: otherParty.name,
-              buyerCompany: isOtherPartyBuyer ? otherParty.company_name : null,
-              buyerAvatar: otherParty.avatar_url_csv,
-              unread: 0,
-              lastMessageTime: msg.createdAt,
-              messages: [],
-            };
-          }
-  
-          groupedThreads[threadId].messages.push({
-            id: msg.id,
-            sender: msg.sender,
-            recipient: msg.recipient,
-            recipientType: msg.recipientType,
-            message: msg.message,
-            listingId: msg.listingId,
-            createdAt: msg.createdAt,
-          });
-  
-          if (
-            new Date(msg.createdAt) >
-            new Date(groupedThreads[threadId].lastMessageTime)
-          ) {
-            groupedThreads[threadId].lastMessageTime = msg.createdAt;
-          }
-        });
-  
-        const threadsArray = Object.values(groupedThreads)
-          .map((thread) => ({
-            ...thread,
-            messages: thread.messages.sort(
-              (a, b) =>
-                new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            ),
-          }))
-          .sort(
-            (a, b) =>
-              new Date(b.lastMessageTime).getTime() -
-              new Date(a.lastMessageTime).getTime()
-          );
-  
-        setMessageThreads(threadsArray);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        errorMessage(error as APIErrorResponse);
-      } finally {
-        setIsFetching(false);
-      }
     }
+    try {
+      setIsFetching(true);
 
-  }, [id, senderId, isFetching, fmrId, errorMessage]);
+      const listingResponse: any = await apiService().get(
+        `/sellers/listings/get-listing?listingId=${id}`,
+        fmrId,
+      );
+      setListing(listingResponse.data.listing);
+
+      const bidsResponse: any = await apiService().get(
+        `/sellers/listings/bids/get-bids?listingId=${id}`,
+        fmrId,
+      );
+      setBids(bidsResponse.data.bids || []);
+
+      const messagesResponse: any = await apiService().get(
+        id
+          ? `/chats/listing-messages?listingId=${id}`
+          : `/chats/listing-messages`,
+        fmrId,
+      );
+      const groupedThreads: { [key: string]: MessageThreadType } = {};
+      messagesResponse.data.messages.forEach((msg: Message) => {
+        const otherPartyId =
+          msg.sender.id === senderId ? msg.recipient.id : msg.sender.id;
+        const threadId = `${otherPartyId}-${msg.listingId || "no-listing"}`;
+
+        if (!groupedThreads[threadId]) {
+          const otherParty =
+            msg.sender.id === senderId ? msg.recipient : msg.sender;
+          const isOtherPartyBuyer = otherParty.userType === "buyer";
+
+          groupedThreads[threadId] = {
+            id: threadId,
+            buyerName: otherParty.name,
+            buyerCompany: isOtherPartyBuyer ? otherParty.company_name : null,
+            buyerAvatar: otherParty.avatar_url_csv,
+            unread: 0,
+            lastMessageTime: msg.createdAt,
+            messages: [],
+          };
+        }
+
+        groupedThreads[threadId].messages.push({
+          id: msg.id,
+          sender: msg.sender,
+          recipient: msg.recipient,
+          recipientType: msg.recipientType,
+          message: msg.message,
+          listingId: msg.listingId,
+          createdAt: msg.createdAt,
+        });
+
+        if (
+          new Date(msg.createdAt) >
+          new Date(groupedThreads[threadId].lastMessageTime)
+        ) {
+          groupedThreads[threadId].lastMessageTime = msg.createdAt;
+        }
+      });
+
+      const threadsArray = Object.values(groupedThreads)
+        .map((thread) => ({
+          ...thread,
+          messages: thread.messages.sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+          ),
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.lastMessageTime).getTime() -
+            new Date(a.lastMessageTime).getTime(),
+        );
+
+      setMessageThreads(threadsArray);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      errorMessage(error as APIErrorResponse);
+    } finally {
+      setIsFetching(false);
+      setHasFetched(true);
+    }
+  }, [id, senderId, fmrId, errorMessage, user, farmerProfile, hasFetched]);
 
   useEffect(() => {
     fetchData();
@@ -519,10 +518,10 @@ export default function CoffeeListingSellerView() {
       setGeneralLoading(true);
       await apiService().post(
         `/sellers/listings/bids/accept-bid?bidId=${bidId}`,
-        fmrId ? fmrId : ""
+        fmrId ? fmrId : "",
       );
       successMessage("Bid accepted successfully, and order is placed");
-      fetchData();
+      setHasFetched(false); // Allow refetch after accepting bid
     } catch (error: any) {
       console.error("Error accepting bid:", error);
       errorMessage(error as APIErrorResponse);
@@ -536,10 +535,10 @@ export default function CoffeeListingSellerView() {
       setGeneralLoading(true);
       await apiService().post(
         `/sellers/listings/bids/reject-bid?bidId=${bidId}`,
-        fmrId ? fmrId : ""
+        fmrId ? fmrId : "",
       );
       successMessage("Bid rejected successfully");
-      fetchData();
+      setHasFetched(false); // Allow refetch after rejecting bid
     } catch (error: any) {
       console.error("Error rejecting bid:", error);
       errorMessage(error as APIErrorResponse);
@@ -557,7 +556,7 @@ export default function CoffeeListingSellerView() {
 
   const totalUnreadMessages = messageThreads.reduce(
     (sum, thread) => sum + thread.unread,
-    0
+    0,
   );
 
   const listingStats = {
@@ -806,8 +805,8 @@ export default function CoffeeListingSellerView() {
                                       bid.status === "accepted"
                                         ? "default"
                                         : bid.status === "rejected"
-                                        ? "destructive"
-                                        : "default"
+                                          ? "destructive"
+                                          : "default"
                                     }
                                     className="ml-5"
                                   >
@@ -816,7 +815,7 @@ export default function CoffeeListingSellerView() {
                                 </div>
                                 <p className="text-sm text-gray-500">
                                   {new Date(
-                                    bid.created_at
+                                    bid.created_at,
                                   ).toLocaleDateString()}{" "}
                                   • {bid.quantity_kg} kg Okta
                                 </p>
@@ -885,7 +884,7 @@ export default function CoffeeListingSellerView() {
                               <div className="text-right">
                                 <p className="text-xs text-gray-500">
                                   {new Date(
-                                    thread.lastMessageTime
+                                    thread.lastMessageTime,
                                   ).toLocaleTimeString()}
                                 </p>
                                 <Button
@@ -973,55 +972,6 @@ export default function CoffeeListingSellerView() {
                       </Link>
                     </CardContent>
                   </Card>
-                  {/* <div className="grid grid-cols-1 gap-4">
-                    <div className="p-4 bg-white rounded-lg shadow-sm border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <BarChart2 size={18} className="text-emerald-600" />
-                          <div>
-                            <p className="text-sm text-gray-500">Total Views</p>
-                            <p className="text-lg font-medium text-gray-900">
-                              {listingStats.views}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-emerald-600">+12%</p>
-                      </div>
-                    </div>
-                    <div className="p-4 bg-white rounded-lg shadow-sm border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <MessageCircle
-                            size={18}
-                            className="text-emerald-600"
-                          />
-                          <div>
-                            <p className="text-sm text-gray-500">Inquiries</p>
-                            <p className="text-lg font-medium text-gray-900">
-                              {listingStats.inquiries}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-emerald-600">+8%</p>
-                      </div>
-                    </div>
-                    <div className="p-4 bg-white rounded-lg shadow-sm border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <DollarSign size={18} className="text-emerald-600" />
-                          <div>
-                            <p className="text-sm text-gray-500">
-                              Total Revenue
-                            </p>
-                            <p className="text-lg font-medium text-gray-900">
-                              ${listingStats.totalRevenue?.toFixed(2)}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-red-600">-5%</p>
-                      </div>
-                    </div>
-                  </div> */}
                 </div>
               </div>
             )}
@@ -1220,8 +1170,8 @@ export default function CoffeeListingSellerView() {
                                   bid.status === "accepted"
                                     ? "default"
                                     : bid.status === "rejected"
-                                    ? "destructive"
-                                    : "default"
+                                      ? "destructive"
+                                      : "default"
                                 }
                               >
                                 {bid.status}
