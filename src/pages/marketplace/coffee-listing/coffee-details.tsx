@@ -42,7 +42,7 @@ export function CoffeeDetails({
   >([]);
   const orderStatus = useOrderStatus(demoOrderStatus);
   const { errorMessage } = useNotification();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const handleFetchMessages = async () => {
     if (!listing || !listing.id || !user) return;
@@ -308,9 +308,8 @@ export function CoffeeDetails({
                 className="ml-3"
                 disabled={
                   chatMessage === "" ||
-                  !user ||
-                  user?.onboarding_stage !== "completed" ||
-                  (user?.userType !== "seller" &&
+                  (loading && user?.onboarding_stage !== "completed") ||
+                  (loading &&user?.userType !== "seller" &&
                     user?.verification_status === "pending")
                 }
               >

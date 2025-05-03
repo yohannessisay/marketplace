@@ -112,7 +112,7 @@ export default function SellerProfilePage() {
     setError(null);
 
     try {
-      const [sellerResponse, farmsResponse, listingsResponse, reviewsResponse] =
+      const [sellerResponse, farmsResponse, listingsResponse, reviewsResponse]:any =
         await Promise.all([
           apiService().getWithoutAuth(
             `/sellers/profile/get-profile-details?sellerId=${sellerId}`,

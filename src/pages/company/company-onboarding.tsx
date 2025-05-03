@@ -99,7 +99,7 @@ export default function CompanyVerification() {
             {/* Step 1 */}
             <Card className="max-w-2xl mx-auto">
                   <CardHeader>
-                    <CardTitle>Upload grading report</CardTitle>
+                    <CardTitle>Upload Company Profile Picture</CardTitle>
                     <CardDescription>
                       Upload an image. Drag and drop or
                       click to select a file.
@@ -258,7 +258,7 @@ export default function CompanyVerification() {
                 className="bg-green-600 hover:bg-green-700 text-white"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Submitting..." : "Send"}
+                {isSubmitting ? "Submitting..." : "Save"}
               </Button>
             </div>
           </form>
