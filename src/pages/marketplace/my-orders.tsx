@@ -45,7 +45,7 @@ export default function OrdersPage() {
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
   const [sampleRequests, setSampleRequests] = useState<SampleRequest[] | null>(
-    null
+    null,
   );
   const [bids, setBids] = useState<Bid[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
@@ -131,7 +131,7 @@ export default function OrdersPage() {
     favorites: {},
   });
 
-  const { successMessage, errorMessage } = useNotification();
+  const { errorMessage } = useNotification();
 
   const fetchActiveOrders = useCallback(async () => {
     setActiveLoading(true);
@@ -175,7 +175,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/orders/active-orders?${filterParams}`
+        `/orders/active-orders?${filterParams}`,
       );
       if (response.success) {
         setActiveOrders(response.data.orders || []);
@@ -185,7 +185,7 @@ export default function OrdersPage() {
             limit: 10,
             total: 0,
             total_pages: 0,
-          }
+          },
         );
         setFetchedTabs((prev) => ({ ...prev, current: true }));
       } else {
@@ -244,7 +244,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/orders/order-history?${filterParams}`
+        `/orders/order-history?${filterParams}`,
       );
       if (response.success) {
         setHistoricalOrders(response.data.orders || []);
@@ -254,7 +254,7 @@ export default function OrdersPage() {
             limit: 10,
             total: 0,
             total_pages: 0,
-          }
+          },
         );
         setFetchedTabs((prev) => ({ ...prev, historical: true }));
       } else {
@@ -287,7 +287,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/buyers/samples/get-sample-requests?${filterParams}`
+        `/buyers/samples/get-sample-requests?${filterParams}`,
       );
       if (response.success && response.data) {
         setSampleRequests(response.data.sample_requests || null);
@@ -330,7 +330,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/buyers/bids/get-all-bids?${filterParams}`
+        `/buyers/bids/get-all-bids?${filterParams}`,
       );
       if (response.success) {
         setBids(response.data.bids || []);
@@ -340,7 +340,7 @@ export default function OrdersPage() {
             limit: 10,
             total: 0,
             total_pages: 0,
-          }
+          },
         );
         setFetchedTabs((prev) => ({ ...prev, bids: true }));
       } else {
@@ -378,7 +378,7 @@ export default function OrdersPage() {
       }).toString();
 
       const response: any = await apiService().get(
-        `/buyers/listings/favorites/get-favorite-listings?${filterParams}`
+        `/buyers/listings/favorites/get-favorite-listings?${filterParams}`,
       );
       if (response.success) {
         setFavorites(response.data.favorites || []);
@@ -388,7 +388,7 @@ export default function OrdersPage() {
             limit: 10,
             total: 0,
             total_pages: 0,
-          }
+          },
         );
         setFetchedTabs((prev) => ({ ...prev, favorites: true }));
       } else {
@@ -448,7 +448,7 @@ export default function OrdersPage() {
       | OrderFilterState
       | SampleFilterState
       | BidFilterState
-      | FavoriteFilterState
+      | FavoriteFilterState,
   ) => {
     setFilters((prev) => ({ ...prev, [tab]: filter }));
     setFetchedTabs((prev) => ({ ...prev, [tab]: false }));
@@ -492,45 +492,6 @@ export default function OrdersPage() {
     setFavoritesCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, favorites: false }));
     fetchFavorites();
-  };
-
-  const deleteOrder = async (orderId: string) => {
-    if (!orderId) {
-      errorMessage({
-        success: false,
-        error: {
-          message: "Invalid order ID",
-          details: "No order ID provided",
-          code: 400,
-        },
-      });
-      return;
-    }
-
-    try {
-      await apiService().post(`/orders/cancel-order?orderId=${orderId}`, {});
-      setActiveOrders((prev) => prev.filter((order) => order.id !== orderId));
-      setActivePagination((prev) => {
-        const newTotalItems = Math.max(0, prev.total - 1);
-        const newTotalPages = Math.ceil(newTotalItems / prev.limit);
-        return {
-          ...prev,
-          total: newTotalItems,
-          total_pages: newTotalPages,
-          page:
-            activeCurrentPage > newTotalPages && newTotalPages > 0
-              ? newTotalPages
-              : prev.page,
-        };
-      });
-      if (expandedOrderId === orderId) {
-        setExpandedOrderId(null);
-      }
-      successMessage("Order cancelled successfully");
-    } catch (error: unknown) {
-      const errorResponse = error as APIErrorResponse;
-      errorMessage(errorResponse);
-    }
   };
 
   const openReviewModal = (order: Order, type: string) => {
@@ -649,7 +610,6 @@ export default function OrdersPage() {
                       tabType="current"
                       expandedOrderId={expandedOrderId ?? ""}
                       toggleOrderExpansion={toggleOrderExpansion}
-                      deleteOrder={deleteOrder}
                       activeLoading={activeLoading}
                       openReviewModal={openReviewModal}
                     />
@@ -674,7 +634,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: activePagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -777,7 +737,6 @@ export default function OrdersPage() {
                       tabType="historical"
                       expandedOrderId={expandedOrderId ?? ""}
                       toggleOrderExpansion={toggleOrderExpansion}
-                      deleteOrder={deleteOrder}
                       activeLoading={activeLoading}
                       openReviewModal={openReviewModal}
                     />
@@ -802,7 +761,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: historyPagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -928,7 +887,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: samplePagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1029,7 +988,6 @@ export default function OrdersPage() {
                       tabType="bids"
                       expandedOrderId={expandedOrderId ?? ""}
                       toggleOrderExpansion={toggleOrderExpansion}
-                      deleteOrder={deleteOrder}
                       activeLoading={activeLoading}
                       openReviewModal={openReviewModal}
                     />
@@ -1054,7 +1012,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: bidPagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1166,7 +1124,7 @@ export default function OrdersPage() {
                               e.preventDefault();
                               if (favoritesCurrentPage > 1)
                                 setFavoritesCurrentPage(
-                                  favoritesCurrentPage - 1
+                                  favoritesCurrentPage - 1,
                                 );
                             }}
                             className={
@@ -1178,7 +1136,7 @@ export default function OrdersPage() {
                         </PaginationItem>
                         {Array.from(
                           { length: favoritesPagination.total_pages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
@@ -1203,7 +1161,7 @@ export default function OrdersPage() {
                                 favoritesPagination.total_pages
                               )
                                 setFavoritesCurrentPage(
-                                  favoritesCurrentPage + 1
+                                  favoritesCurrentPage + 1,
                                 );
                             }}
                             className={
