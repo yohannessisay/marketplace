@@ -318,6 +318,7 @@ export default function StepOne() {
       setIsSubmitting(false);
     }
   };
+  
   useEffect(() => {
     const fetchFirstFarm = async () => {
       try {
@@ -350,6 +351,8 @@ export default function StepOne() {
       fetchFirstFarm();
     }
   }, []);
+
+
   // Watch latitude and longitude for map centering
   const latitude = watch("latitude");
   const longitude = watch("longitude");

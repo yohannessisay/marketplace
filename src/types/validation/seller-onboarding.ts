@@ -185,13 +185,11 @@ export const coffeeCropsSchema = z.object({
 
 export type CoffeeCropsFormData = z.infer<typeof coffeeCropsSchema>;
 
-// Step 3: Bank Information Schema
-const nameRegex = /^[a-zA-Z]{2,50}$/;
+// Step 3: Bank Information Schema 
 const accountHolderNameValidation = z
   .string()
   .min(2, "Account holder name must be at least 2 characters")
-  .max(50, "Account holder name cannot exceed 50 characters")
-  .regex(nameRegex, "Account holder name can only contain letters");
+  .max(50, "Account holder name cannot exceed 50 characters");
 
 export const bankInfoSchema = z.object({
   account_holder_name: accountHolderNameValidation,
@@ -199,10 +197,7 @@ export const bankInfoSchema = z.object({
     .string()
     .min(2, "Bank name must be at least 2 characters")
     .max(100, "Bank name cannot exceed 100 characters")
-    .regex(
-      /^[a-zA-Z\s-]{2,100}$/,
-      "Bank name can only contain letters, spaces, or hyphens",
-    ),
+ ,
   account_number: z
     .string()
     .min(8, "Account number must be at least 8 digits")
@@ -224,10 +219,7 @@ export const bankInfoSchema = z.object({
   }),
   swift_code: z
     .string()
-    .regex(
-      /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
-      "Invalid SWIFT code (must be 8 or 11 characters, e.g., ABCDUS33 or ABCDUS33XXX)",
-    ),
+    .min(8, "Account number must be at least 8 digits"),
 });
 
 export type BankInfoFormData = z.infer<typeof bankInfoSchema>;

@@ -86,10 +86,13 @@ export default function StepTwo() {
   const [files, setFiles] = useState<File[]>([]);
   const [photos, setPhotos] = useState<FileWithId[]>([]);
   const [farm, setFarm] = useState<Farm>();
+
   const [discounts, setDiscounts] = useState<
     { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
   >([]);
-  const { user, setUser } = useAuth();
+  const { user, setUser, loading } = useAuth();
+  const userProfile: any = getFromLocalStorage("userProfile", {});
+  const currentUserStage = userProfile?.onboarding_stage;
   const { successMessage, errorMessage } = useNotification();
   const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const form = useForm<CoffeeCropsFormData>({
@@ -176,6 +179,7 @@ export default function StepTwo() {
         farmerId
       );
       setFarm(response.data.farm);
+      saveToLocalStorage("farm-id", response.data.farm.id);
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
     }
@@ -245,9 +249,10 @@ export default function StepTwo() {
         successMessage("Crop information saved successfully");
         navigation("/onboarding/step-three");
       } else {
-        const existingFarmId = getFromLocalStorage("farm-id", "");
+        const existingListingId= getFromLocalStorage("crop-id", "");
+        formData.append("listingId", existingListingId);
+        const existingFarmId= getFromLocalStorage("farm-id", "");
         formData.append("farmId", existingFarmId);
-
         await apiService().patchFormData(
           "/sellers/listings/update-listing",
           formData,
@@ -265,7 +270,29 @@ export default function StepTwo() {
       setIsSubmitting(false);
     }
   };
+  useEffect(() => {
+    const populateForm = async () => {
+      try {
+        if (!loading) {
+          return;
+        }
 
+        const result = getFromLocalStorage("step-two", {});
+
+        if (result) {
+          form.reset({
+            ...result,
+          });
+
+        }
+      } catch (error: any) {
+        errorMessage(error as APIErrorResponse);
+      }
+    };
+    if (currentUserStage !== "crop_to_sell") {
+      populateForm();
+    }
+  }, []);
   const goBack = () => {
     navigation("/onboarding/step-one");
     localStorage.setItem("back-button-clicked", "true");
@@ -388,6 +415,7 @@ export default function StepTwo() {
                       <FormLabel>Initial grading</FormLabel>
                       <FormControl>
                         <Input
+                        type="number"
                           {...field}
                           onChange={(e) => {
                             const value = e.target.value;
@@ -960,11 +988,7 @@ export default function StepTwo() {
               <Button type="button" variant="outline" onClick={goBack}>
                 Back
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting || !form.formState.isValid}
-                className="my-4"
-              >
+              <Button type="submit" disabled={isSubmitting} className="my-4">
                 {isSubmitting ? "Saving..." : "Save and continue"}
               </Button>
             </div>
