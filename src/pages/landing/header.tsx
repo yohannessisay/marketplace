@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import Logo from "@/components/layout/Logo";
+import { useAuth } from "@/hooks/useAuth";
 
 interface HeaderProps {
   scrolled: boolean;
@@ -19,8 +22,15 @@ interface HeaderProps {
 
 export function Header({ scrolled }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  const { user } = useAuth();
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const buttonText = user ? "Dashboard" : "Log In";
+  const buttonLink = user
+    ? user.userType === "farmer"
+      ? "/seller-dashboard"
+      : "/market-place"
+    : "/login";
 
   return (
     <header
@@ -91,9 +101,10 @@ export function Header({ scrolled }: HeaderProps) {
           </NavigationMenuList>
         </NavigationMenu>
 
+        {/* Desktop Button */}
         <div className="hidden md:flex items-center gap-4">
           <Button>
-            <Link to={"/login"}>Log In</Link>
+            <Link to={buttonLink}>{buttonText}</Link>
           </Button>
         </div>
 
@@ -155,7 +166,7 @@ export function Header({ scrolled }: HeaderProps) {
                   variant="outline"
                   className="rounded-full border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white"
                 >
-                  Log In
+                  <Link to={buttonLink}>{buttonText}</Link>
                 </Button>
                 <Button className="rounded-full bg-amber-700 hover:bg-amber-800">
                   Get Started
