@@ -6,7 +6,7 @@ build_app:
   image: node:20
   stage: build
   script:
-    - npm install
+    - npm install --legacy-peer-deps
     - npm run build
   artifacts:
     paths:
