@@ -22,7 +22,7 @@ const AddPhotoIcon = () => (
 );
 
 const ProfilePhotoPage = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [ , setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
