@@ -81,9 +81,9 @@ export default function EditProfile() {
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialData, setInitialData] = useState<ProfileInfoFormData | null>(
-    null
+    null,
   );
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const { successMessage, errorMessage } = useNotification();
 
@@ -107,7 +107,7 @@ export default function EditProfile() {
 
       const response: any = await apiService().get(
         "/onboarding/seller/get-profile",
-        farmerId
+        farmerId,
       );
       if (response.success && response.data) {
         const { profile } = response.data;
@@ -126,7 +126,7 @@ export default function EditProfile() {
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
     }
-  }, [form, errorMessage, initialData]);
+  }, [form, errorMessage, initialData, user, farmerProfile]);
 
   const handleFilesSelected = (selectedFiles: File[]) => {
     const file = selectedFiles[0];
@@ -196,14 +196,27 @@ export default function EditProfile() {
       const farmerId =
         user.userType === "agent" ? farmerProfile?.id : undefined;
 
-      await apiService().patchFormData(
+      const response: any = await apiService().patchFormData(
         "/sellers/profile/update-profile",
         formData,
         true,
-        farmerId
+        farmerId,
       );
 
-      // Update initialData and reset form to new values
+      if (response.success && response.data) {
+        const updatedUser = {
+          ...user,
+          telegram: fieldsToSend.telegram || user.telegram || "",
+          about_me: fieldsToSend.about_me || user.about_me || "",
+          address: fieldsToSend.address || user.address || "",
+          avatar_url:
+            files.length > 0
+              ? response.data.avatar_url || profileImage || user.avatar_url
+              : user.avatar_url || "",
+        };
+        setUser(updatedUser);
+      }
+
       const updatedData: ProfileInfoFormData = {
         telegram: fieldsToSend.telegram || "",
         about_me: fieldsToSend.about_me || "",
@@ -213,7 +226,7 @@ export default function EditProfile() {
       };
       setInitialData(updatedData);
       form.reset(updatedData);
-      setFiles([]); // Clear files to prevent re-upload
+      setFiles([]);
       successMessage("Profile updated successfully!");
       navigation("/seller-dashboard");
     } catch (error: any) {
@@ -278,7 +291,7 @@ export default function EditProfile() {
                             accept="image/*"
                             onChange={(e) => {
                               const selectedFiles = Array.from(
-                                e.target.files || []
+                                e.target.files || [],
                               );
                               handleFilesSelected(selectedFiles);
                             }}
@@ -290,7 +303,9 @@ export default function EditProfile() {
                           Your profile is on verification stage
                         </h3>
                         <Progress
-                          value={user?.verification_status === "pending" ? 50 : 100  }
+                          value={
+                            user?.verification_status === "pending" ? 50 : 100
+                          }
                           className="h-2"
                         />
                         <p className="text-xs text-muted-foreground mt-2">

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,7 +109,7 @@ export default function CropFieldManager({
           <>
             <Button
               size="sm"
-               type="button"
+              type="button"
               onClick={handleStartDrawing}
               disabled={polygonsData.length > 0}
             >
@@ -116,7 +118,7 @@ export default function CropFieldManager({
             <Button
               variant="outline"
               size="sm"
-               type="button"
+              type="button"
               onClick={handleResetMap}
               className="bg-gray-200 text-gray-800 hover:bg-gray-300 border-none"
             >
@@ -127,7 +129,7 @@ export default function CropFieldManager({
         <Button
           variant="ghost"
           size="sm"
-           type="button"
+          type="button"
           onClick={toggleFullScreen}
           className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
         >
@@ -155,6 +157,7 @@ export default function CropFieldManager({
               {renderControlBar()}
             </div>
           )}
+
           <GoogleMaps
             ref={mapRef}
             apiKey={GOOGLE_MAPS_API_KEY}

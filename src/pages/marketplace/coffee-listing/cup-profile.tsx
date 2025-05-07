@@ -14,8 +14,8 @@ export function CupProfile({ listing }: CupProfileProps) {
           <Award size={24} className="text-yellow-600" />
         </div>
         <div>
-          <div className="text-xl font-bold">{listing?.cup_taste_balance}</div>
-          <div className="text-xs text-muted-foreground">Cup Score</div>
+          <div className="text-xl font-bold">Cup Profile</div>
+          <div className="text-xs text-muted-foreground">Taste & Aroma</div>
         </div>
       </div>
 
@@ -29,7 +29,7 @@ export function CupProfile({ listing }: CupProfileProps) {
             className="bg-yellow-100 text-yellow-800 border-0"
           >
             <Star size={16} className="mr-1 text-yellow-500 fill-current" />
-            {listing?.grade}
+            {listing?.grade || "Not graded"}
           </Badge>
         </div>
 
@@ -38,58 +38,46 @@ export function CupProfile({ listing }: CupProfileProps) {
             <div className="w-3 h-3 rounded-full bg-red-400"></div>
           </div>
           <div>
-            <h4 className="text-sm font-medium">Acidity</h4>
-            <p className="text-sm text-muted-foreground">
-              {listing?.cup_taste_acidity}
-            </p>
+            <h4 className="text-sm font-medium">Aroma</h4>
+            <div className="flex flex-wrap gap-2">
+              {listing?.cup_aroma && listing.cup_aroma.length > 0 ? (
+                listing.cup_aroma.map((aroma, index) => (
+                  <Badge
+                    key={`aroma-${index}`}
+                    variant="default"
+                    className="text-sm"
+                  >
+                    {aroma}
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No aroma data</p>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-start space-x-3">
+        <div className="flex items-start space-x-3 col-span-2">
           <div className="mt-1">
             <div className="w-3 h-3 rounded-full bg-blue-400"></div>
           </div>
           <div>
-            <h4 className="text-sm font-medium">Body</h4>
-            <p className="text-sm text-muted-foreground">
-              {listing?.cup_taste_body}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-3">
-          <div className="mt-1">
-            <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium">Sweetness</h4>
-            <p className="text-sm text-muted-foreground">
-              {listing?.cup_taste_sweetness}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-3">
-          <div className="mt-1">
-            <div className="w-3 h-3 rounded-full bg-purple-400"></div>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium">Aftertaste</h4>
-            <p className="text-sm text-muted-foreground">
-              {listing?.cup_taste_aftertaste}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-3">
-          <div className="mt-1">
-            <div className="w-3 h-3 rounded-full bg-violet-400"></div>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium">Balance</h4>
-            <p className="text-sm text-muted-foreground">
-              {listing?.cup_taste_balance}
-            </p>
+            <h4 className="text-sm font-medium">Taste Profile</h4>
+            <div className="flex flex-wrap gap-2">
+              {listing?.cup_taste && listing.cup_taste.length > 0 ? (
+                listing.cup_taste.map((taste, index) => (
+                  <Badge
+                    key={`taste-${index}`}
+                    variant="default"
+                    className="text-sm"
+                  >
+                    {taste}
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No taste data</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

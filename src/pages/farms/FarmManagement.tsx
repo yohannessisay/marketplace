@@ -14,6 +14,10 @@ import {
   Coffee,
   Search,
   Banknote,
+  FileSearch,
+  CheckCircle2,
+  PauseCircle,
+  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +60,7 @@ interface CoffeeListing {
   is_organic: boolean;
   grade?: string | null;
   readiness_date?: string | null;
+  kyc_status: "pending" | "approved" | "rejected";
 }
 
 interface Bank {
@@ -391,7 +396,7 @@ const FarmManagement: React.FC = () => {
                         disabled={farm.verification_status === "rejected"}
                       >
                         <Link
-                          to={`/edit-farm/${farm.id}`}
+                          to={`/manage-farm/${farm.id}`}
                           className="w-full flex items-center justify-center group"
                         >
                           <span>Manage Farm</span>
@@ -489,7 +494,48 @@ const FarmManagement: React.FC = () => {
                             {listing.coffee_variety}
                           </CardTitle>
                         </div>
-                        <StatusBadge status={listing.listing_status} />
+                        <div className="flex flex-col items-end gap-1">
+                          {/* Listing Status Badge */}
+                          <Badge
+                            variant={
+                              listing.listing_status === "active"
+                                ? "default"
+                                : "warning"
+                            }
+                            className="text-xs"
+                          >
+                            {listing.listing_status === "active" ? (
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                            ) : (
+                              <PauseCircle className="h-3 w-3 mr-1" />
+                            )}
+                            {listing.listing_status.charAt(0).toUpperCase() +
+                              listing.listing_status.slice(1)}
+                          </Badge>
+
+                          {/* KYC Status Badge */}
+                          <Badge
+                            variant={
+                              listing.kyc_status === "approved"
+                                ? "default"
+                                : listing.kyc_status === "rejected"
+                                  ? "destructive"
+                                  : "warning"
+                            }
+                            className="text-xs"
+                          >
+                            {listing.kyc_status === "approved" ? (
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                            ) : listing.kyc_status === "rejected" ? (
+                              <XCircle className="h-3 w-3 mr-1" />
+                            ) : (
+                              <Clock className="h-3 w-3 mr-1" />
+                            )}
+                            KYC:{" "}
+                            {listing.kyc_status.charAt(0).toUpperCase() +
+                              listing.kyc_status.slice(1)}
+                          </Badge>
+                        </div>
                       </div>
                     </CardHeader>
 
@@ -530,6 +576,20 @@ const FarmManagement: React.FC = () => {
                         )}
                       </div>
 
+                      {/* Status-specific alerts */}
+                      {listing.listing_status === "inactive" && (
+                        <Alert
+                          variant="default"
+                          className="mt-4 bg-slate-50 border-slate-200 text-slate-800"
+                        >
+                          <AlertDescription className="flex items-center text-sm">
+                            <PauseCircle className="h-4 w-4 mr-2 text-slate-500" />
+                            This listing is currently inactive and not visible
+                            to buyers.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       {listing.listing_status === "pending" && (
                         <Alert
                           variant="default"
@@ -538,6 +598,28 @@ const FarmManagement: React.FC = () => {
                           <AlertDescription className="flex items-center text-sm">
                             <Clock className="h-4 w-4 mr-2 text-amber-500" />
                             Your listing is pending approval.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {listing.kyc_status === "pending" && (
+                        <Alert
+                          variant="default"
+                          className="mt-4 bg-blue-50 border-blue-200 text-blue-800"
+                        >
+                          <AlertDescription className="flex items-center text-sm">
+                            <FileSearch className="h-4 w-4 mr-2 text-blue-500" />
+                            KYC verification is in progress for this listing.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {listing.kyc_status === "rejected" && (
+                        <Alert variant="destructive" className="mt-4">
+                          <AlertDescription className="flex items-center text-sm">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            KYC verification failed. Please update your
+                            documents.
                           </AlertDescription>
                         </Alert>
                       )}
@@ -654,7 +736,7 @@ const FarmManagement: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="profile">
-            <EditProfile></EditProfile>
+            <EditProfile />
           </TabsContent>
         </Tabs>
       </div>

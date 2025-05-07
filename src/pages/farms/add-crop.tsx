@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus, X, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +49,7 @@ import { AddCropSkeletonForm } from "./SkeletonForm";
 import { useAuth } from "@/hooks/useAuth";
 import { getFromLocalStorage } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FileWithId extends File {
   id: string;
@@ -65,7 +66,7 @@ interface Farm {
 
 export default function AddCrop() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams<{ id?: string }>();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const farmIdFromQuery: string | null = queryParams.get("farmId");
@@ -76,19 +77,10 @@ export default function AddCrop() {
   const [files, setFiles] = useState<File[]>([]);
   const [photos, setPhotos] = useState<FileWithId[]>([]);
   const { successMessage, errorMessage } = useNotification();
-  const [discounts, setDiscounts] = useState<
-    { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
-  >([]);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farmError, setFarmError] = useState<string | null>(null);
-  const [discountErrors, setDiscountErrors] = useState<{
-    [key: string]: string;
-  }>({});
   const { user, loading } = useAuth();
-  const farmerProfile: any = useMemo(
-    () => getFromLocalStorage("farmer-profile", {}),
-    [],
-  );
+  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
   const isLoading = isLoadingFarms || isLoadingListing;
   const [hasFetched, setHasFetched] = useState(false);
 
@@ -97,28 +89,25 @@ export default function AddCrop() {
     defaultValues: {
       farmId: "",
       coffee_variety: "",
-      grade: 1,
+      grade: "",
       bean_type: "",
       crop_year: "",
       processing_method: "",
       moisture_percentage: 0,
-      screen_size: 0,
+      screen_size: "",
       drying_method: "",
       wet_mill: "",
       is_organic: "",
-      cup_taste_acidity: "",
-      cup_taste_body: "",
-      cup_taste_sweetness: "",
-      cup_taste_aftertaste: "",
-      cup_taste_balance: "",
+      cup_aroma: [],
+      cup_taste: [],
       quantity_kg: 0,
       price_per_kg: 0,
       readiness_date: "",
       lot_length: "",
       delivery_type: "",
       shipping_port: "",
-      discounts: [],
     },
+    mode: "onChange",
   });
 
   useEffect(() => {
@@ -170,42 +159,30 @@ export default function AddCrop() {
           );
           if (listingResponse.success) {
             const listing = listingResponse.data.listing;
-            let gradeValue = 2;
-            if (listing.grade && listing.grade.startsWith("Grade ")) {
-              const parsedGrade = Number(listing.grade.replace("Grade ", ""));
-              if (!isNaN(parsedGrade) && parsedGrade >= 1 && parsedGrade <= 6) {
-                gradeValue = parsedGrade;
-              }
-            }
-
             form.reset({
               farmId: listing.farm.farm_id || "",
               coffee_variety: listing.coffee_variety || "",
-              grade: gradeValue,
+              grade: listing.grade || "",
               bean_type: listing.bean_type || "",
               crop_year: listing.crop_year || "",
               processing_method: listing.processing_method || "",
-              moisture_percentage: listing.moisture_percentage || 1,
-              screen_size: Number(listing.screen_size) || 1,
+              moisture_percentage: listing.moisture_percentage || 0,
+              screen_size: listing.screen_size || "",
               drying_method: listing.drying_method || "",
               wet_mill: listing.wet_mill || "",
-              is_organic: listing.is_organic ? "true" : "false",
-              cup_taste_acidity: listing.cup_taste_acidity || "",
-              cup_taste_body: listing.cup_taste_body || "",
-              cup_taste_sweetness: listing.cup_taste_sweetness || "",
-              cup_taste_aftertaste: listing.cup_taste_aftertaste || "",
-              cup_taste_balance: listing.cup_taste_balance || "",
+              is_organic: listing.is_organic ? "yes" : "no",
+              cup_aroma: Array.isArray(listing.cup_aroma)
+                ? listing.cup_aroma
+                : [],
+              cup_taste: Array.isArray(listing.cup_taste)
+                ? listing.cup_taste
+                : [],
               quantity_kg: listing.quantity_kg || 1,
-              price_per_kg: listing.price_per_kg || 1,
+              price_per_kg: listing.price_per_kg || 0,
               readiness_date: listing.readiness_date || "",
               lot_length: listing.lot_length || "",
               delivery_type: listing.delivery_type || "",
               shipping_port: listing.shipping_port || "",
-              discounts:
-                listing.discounts?.map((d: any) => ({
-                  minimum_quantity_kg: Number(d.minimum_quantity_kg) || 1,
-                  discount_percentage: Number(d.discount_percentage) || 1,
-                })) || [],
             });
 
             if (listing.photos?.length > 0) {
@@ -237,16 +214,6 @@ export default function AddCrop() {
                 ),
               );
             }
-
-            if (Array.isArray(listing.discounts)) {
-              setDiscounts(
-                listing.discounts.map((d: any) => ({
-                  minimum_quantity_kg: Number(d.minimum_quantity_kg) || 1,
-                  discount_percentage: Number(d.discount_percentage) || 1,
-                  id: d.id || Math.random().toString(36).substring(2),
-                })),
-              );
-            }
           } else {
             throw new Error(
               listingResponse.message || "Failed to fetch listing",
@@ -267,7 +234,17 @@ export default function AddCrop() {
     };
 
     fetchInitialData();
-  }, [loading, id, farmIdFromQuery, user, farmerProfile, form, navigate]);
+  }, [
+    loading,
+    id,
+    farmIdFromQuery,
+    user,
+    farmerProfile,
+    form,
+    navigate,
+    errorMessage,
+    hasFetched,
+  ]);
 
   const handlePhotosSelected = (selectedPhotos: File[]) => {
     const newPhotos: FileWithId[] = selectedPhotos.map((file) =>
@@ -276,142 +253,19 @@ export default function AddCrop() {
     setPhotos(newPhotos);
   };
 
-  const handleAddDiscount = () => {
-    if (discounts.length < 5) {
-      setDiscounts((prev) => [
-        ...prev,
-        {
-          minimum_quantity_kg: 1,
-          discount_percentage: 1,
-          id: Math.random().toString(36).substring(2),
-        },
-      ]);
-    }
-  };
-
-  const handleRemoveDiscount = (id: string) => {
-    setDiscounts((prev) => prev.filter((d) => d.id !== id));
-    setDiscountErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[id];
-      return newErrors;
-    });
-  };
-
-  const validateDiscount = (
-    id: string,
-    field: "minimum_quantity_kg" | "discount_percentage",
-    value: number,
-    allDiscounts: typeof discounts,
-  ) => {
-    const errors: { [key: string]: string } = { ...discountErrors };
-    const quantityKg = form.getValues().quantity_kg;
-    const pricePerKg = form.getValues().price_per_kg;
-
-    if (field === "minimum_quantity_kg") {
-      if (value < 1) {
-        errors[id] = "Minimum quantity must be at least 1 kg";
-      } else if (value > quantityKg) {
-        errors[id] =
-          `Minimum quantity cannot exceed total quantity (${quantityKg} kg)`;
-      } else {
-        const otherQuantities = allDiscounts
-          .filter((d) => d.id !== id)
-          .map((d) => d.minimum_quantity_kg);
-        if (otherQuantities.includes(value)) {
-          errors[id] = "Each discount must have a unique minimum quantity";
-        } else {
-          delete errors[id];
-        }
-      }
-    } else if (field === "discount_percentage") {
-      if (value < 1) {
-        errors[id] = "Discount percentage must be at least 1%";
-      } else if (value > 99) {
-        errors[id] = "Discount percentage cannot exceed 99%";
-      } else {
-        const discountedPrice = pricePerKg * (1 - value / 100);
-        if (discountedPrice <= 0) {
-          errors[id] = "Discounted price must be greater than 0";
-        } else {
-          delete errors[id];
-        }
-      }
-    }
-
-    setDiscountErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleDiscountChange = (
-    id: string,
-    field: "minimum_quantity_kg" | "discount_percentage",
-    value: number,
-  ) => {
-    const newValue = Math.max(
-      1,
-      Math.min(value, field === "minimum_quantity_kg" ? 999999 : 99),
-    );
-    const updatedDiscounts = discounts.map((d) =>
-      d.id === id ? { ...d, [field]: newValue } : d,
-    );
-    setDiscounts(updatedDiscounts);
-
-    validateDiscount(id, field, newValue, updatedDiscounts);
-
-    form.setValue(
-      "discounts",
-      updatedDiscounts.map(({ minimum_quantity_kg, discount_percentage }) => ({
-        minimum_quantity_kg,
-        discount_percentage,
-      })),
-      { shouldValidate: true },
-    );
-  };
-
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
-      discounts.forEach((discount) => {
-        validateDiscount(
-          discount.id,
-          "minimum_quantity_kg",
-          discount.minimum_quantity_kg,
-          discounts,
-        );
-        validateDiscount(
-          discount.id,
-          "discount_percentage",
-          discount.discount_percentage,
-          discounts,
-        );
-      });
-
-      if (Object.keys(discountErrors).length > 0) {
-        errorMessage({
-          message: "Please fix discount errors before submitting.",
-        });
-        return;
-      }
-
       const formData = new FormData();
       const transformedData = {
         ...data,
-        grade: `Grade ${data.grade}`,
-        discounts: discounts.map(
-          ({ minimum_quantity_kg, discount_percentage }) => ({
-            minimum_quantity_kg,
-            discount_percentage,
-          }),
-        ),
+        cup_aroma: data.cup_aroma || [],
+        cup_taste: data.cup_taste || [],
       };
 
       for (const key in transformedData) {
-        if (key === "discounts") {
-          formData.append(
-            "discounts",
-            JSON.stringify(transformedData.discounts),
-          );
+        if (key === "cup_aroma" || key === "cup_taste") {
+          formData.append(key, JSON.stringify(transformedData[key]));
         } else if (Object.prototype.hasOwnProperty.call(transformedData, key)) {
           formData.append(
             key,
@@ -450,6 +304,64 @@ export default function AddCrop() {
     }
   };
 
+  const gradeOptions = ["1", "2", "3", "4", "5", "UG"];
+  const screenSizeOptions = [
+    "Screen 20 (>8.0mm)",
+    "Screen 19 (7.5-8.0mm)",
+    "Screen 18 (7.1-7.5mm)",
+    "Screen 17 (6.7-7.1mm)",
+    "Screen 16 (6.3-6.7mm)",
+    "Screen 15 (6.0-6.3mm)",
+    "Screen 14 (5.6-6.0mm)",
+    "Screen 13 (5.0-5.6mm)",
+    "Screen 12 (4.8-5.0mm)",
+    "Screen 11 (4.4-4.8mm)",
+    "Screen 10 (4.0-4.4mm)",
+    "Screen 9 (3.6-4.0mm)",
+    "Screen 8 (3.2-3.6mm)",
+  ];
+  const processingMethodOptions = ["Washed", "Natural", "Honey Processed"];
+  const cupAromaOptions = [
+    "Flowery",
+    "Nutty",
+    "Smoky",
+    "Herby",
+    "Fruity",
+    "Chocolatey",
+    "Spicy",
+    "Caramelly",
+    "Carboney",
+    "Berry-like",
+    "Floral",
+    "Winery",
+    "Fragrant",
+    "Citrus",
+    "Alliaceous",
+    "Leguminous",
+    "Nut-like",
+    "Malt-like",
+    "Candy-like",
+    "Syrup-like",
+    "Chocolate-like",
+    "Vanilla-like",
+    "Turpeny",
+    "Medicinal",
+    "Warming",
+    "Pungent",
+    "Ashy",
+  ];
+  const cupTasteOptions = ["Bitter", "Sweet", "Salty", "Acidic", "Sour"];
+
+  const aromaColumns: Array<Array<string>> = [];
+  for (let i = 0; i < cupAromaOptions.length; i += 3) {
+    aromaColumns.push(cupAromaOptions.slice(i, i + 3));
+  }
+
+  const tasteColumns: Array<Array<string>> = [];
+  for (let i = 0; i < cupTasteOptions.length; i += 3) {
+    tasteColumns.push(cupTasteOptions.slice(i, i + 3));
+  }
+
   return (
     <div className="min-h-screen bg-primary/5 pt-20">
       <Header />
@@ -479,12 +391,12 @@ export default function AddCrop() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Farm</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                        disabled={isLoadingFarms || farms.length === 0}
-                      >
-                        <FormControl>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                          disabled={isLoadingFarms || farms.length === 0}
+                        >
                           <SelectTrigger className="w-full">
                             <SelectValue
                               placeholder={
@@ -496,16 +408,16 @@ export default function AddCrop() {
                               }
                             />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {farms.map((farm) => (
-                            <SelectItem key={farm.id} value={farm.id}>
-                              {farm.farm_name} ({farm.region || "N/A"},{" "}
-                              {farm.country})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          <SelectContent>
+                            {farms.map((farm) => (
+                              <SelectItem key={farm.id} value={farm.id}>
+                                {farm.farm_name} ({farm.region || "N/A"},{" "}
+                                {farm.country})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
                       {farmError && (
                         <Alert
                           variant="destructive"
@@ -596,19 +508,21 @@ export default function AddCrop() {
                           <FormItem>
                             <FormLabel>Initial grading</FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                min={1}
-                                max={6}
-                                value={field.value ?? ""}
-                                onChange={(e) => {
-                                  const value = Number(e.target.value);
-                                  if (value >= 1 && value <= 6) {
-                                    field.onChange(value);
-                                  }
-                                }}
-                                onBlur={field.onBlur}
-                              />
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ""}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select grade" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {gradeOptions.map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                      Grade {option}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -620,22 +534,21 @@ export default function AddCrop() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Bean type</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value)}
-                              value={field.value || ""}
-                              disabled={isLoadingFarms}
-                            >
-                              <FormControl>
+                            <FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ""}
+                              >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select bean type" />
                                 </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Green beans">
-                                  Green beans
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                                <SelectContent>
+                                  <SelectItem value="Green beans">
+                                    Green beans
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -657,9 +570,7 @@ export default function AddCrop() {
                               <PopoverContent className="w-auto p-0">
                                 <div className="p-3">
                                   <Select
-                                    onValueChange={(value) =>
-                                      field.onChange(value)
-                                    }
+                                    onValueChange={field.onChange}
                                     value={field.value}
                                   >
                                     <SelectTrigger className="w-70">
@@ -687,6 +598,33 @@ export default function AddCrop() {
                           </FormItem>
                         )}
                       />
+                      <FormField
+                        control={form.control}
+                        name="processing_method"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Processing Method</FormLabel>
+                            <FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ""}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select processing method" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {processingMethodOptions.map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                      {option}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
 
                     <h3 className="text-lg font-medium mb-4">
@@ -699,33 +637,19 @@ export default function AddCrop() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Is Organic?</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value)}
-                              value={field.value || ""}
-                              disabled={isLoadingFarms}
-                            >
-                              <FormControl>
+                            <FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ""}
+                              >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select organic status" />
                                 </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="true">Yes</SelectItem>
-                                <SelectItem value="false">No</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="processing_method"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Processing Method</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
+                                <SelectContent>
+                                  <SelectItem value="yes">Yes</SelectItem>
+                                  <SelectItem value="no">No</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -740,10 +664,10 @@ export default function AddCrop() {
                             <FormControl>
                               <Input
                                 type="number"
-                                {...field}
+                                min={0}
                                 value={field.value}
                                 onChange={(e) =>
-                                  field.onChange(Number(e.target.value) || 1)
+                                  field.onChange(Number(e.target.value) || 0)
                                 }
                               />
                             </FormControl>
@@ -758,17 +682,21 @@ export default function AddCrop() {
                           <FormItem>
                             <FormLabel>Screen Size</FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                value={field.value ?? ""}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  const parsedValue =
-                                    value === "" ? 1 : Number(value);
-                                  field.onChange(parsedValue);
-                                }}
-                                onBlur={field.onBlur}
-                              />
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ""}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select screen size" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {screenSizeOptions.map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                      {option}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -802,125 +730,94 @@ export default function AddCrop() {
                       />
                     </div>
 
-                    <h3 className="text-lg font-medium mb-4">Cup taste</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <h3 className="text-lg font-medium mb-4">Cup Aroma</h3>
+                    <div className="mb-8">
                       <FormField
                         control={form.control}
-                        name="cup_taste_acidity"
+                        name="cup_aroma"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Acidity</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value)}
-                              value={field.value || ""}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select acidity" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Delicate">
-                                  Delicate
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <div className="flex flex-wrap gap-4">
+                                {aromaColumns.map((column, colIndex) => (
+                                  <div
+                                    key={colIndex}
+                                    className="flex flex-col gap-2 min-w-[150px]"
+                                  >
+                                    {column.map((aroma) => (
+                                      <div
+                                        key={aroma}
+                                        className="flex items-center space-x-2"
+                                      >
+                                        <Checkbox
+                                          id={aroma}
+                                          checked={
+                                            field.value?.includes(aroma) ||
+                                            false
+                                          }
+                                          onCheckedChange={(checked) => {
+                                            const newValue = checked
+                                              ? [...(field.value || []), aroma]
+                                              : (field.value || []).filter(
+                                                  (v) => v !== aroma,
+                                                );
+                                            field.onChange(newValue);
+                                          }}
+                                        />
+                                        <label htmlFor={aroma}>{aroma}</label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    <h3 className="text-lg font-medium mb-4">Cup Taste</h3>
+                    <div className="mb-8">
                       <FormField
                         control={form.control}
-                        name="cup_taste_body"
+                        name="cup_taste"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Body</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value)}
-                              value={field.value || ""}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select body" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Heavy">Heavy</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="cup_taste_sweetness"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Sweetness</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value)}
-                              value={field.value || ""}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select sweetness" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Honey-like">
-                                  Honey-like
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="cup_taste_aftertaste"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Aftertaste</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value)}
-                              value={field.value || ""}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select aftertaste" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Long-lasting">
-                                  Long-lasting
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="cup_taste_balance"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Balance</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value)}
-                              value={field.value || ""}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select balance" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Complex">Complex</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <div className="flex flex-wrap gap-4">
+                                {tasteColumns.map((column, colIndex) => (
+                                  <div
+                                    key={colIndex}
+                                    className="flex flex-col gap-2 min-w-[150px]"
+                                  >
+                                    {column.map((taste) => (
+                                      <div
+                                        key={taste}
+                                        className="flex items-center space-x-2"
+                                      >
+                                        <Checkbox
+                                          id={taste}
+                                          checked={
+                                            field.value?.includes(taste) ||
+                                            false
+                                          }
+                                          onCheckedChange={(checked) => {
+                                            const newValue = checked
+                                              ? [...(field.value || []), taste]
+                                              : (field.value || []).filter(
+                                                  (v) => v !== taste,
+                                                );
+                                            field.onChange(newValue);
+                                          }}
+                                        />
+                                        <label htmlFor={taste}>{taste}</label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -958,12 +855,9 @@ export default function AddCrop() {
                   </div>
 
                   <div className="mb-8">
-                    <h3 className="text-lg font-medium mb-2">
-                      Set the price and discounts
-                    </h3>
+                    <h3 className="text-lg font-medium mb-2">Set the price</h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      Provide details on crop variety, quality, quantity, and
-                      base price.
+                      Provide details on crop quantity and base price.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                       <FormField
@@ -975,61 +869,45 @@ export default function AddCrop() {
                             <FormControl>
                               <Input
                                 type="number"
-                                {...field}
+                                min={1}
                                 value={field.value}
-                                onChange={(e) => {
-                                  const value = Number(e.target.value) || 1;
-                                  field.onChange(value);
-                                  discounts.forEach((discount) => {
-                                    validateDiscount(
-                                      discount.id,
-                                      "minimum_quantity_kg",
-                                      discount.minimum_quantity_kg,
-                                      discounts,
-                                    );
-                                  });
-                                }}
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value) || 1)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <div className="flex flex-col items-center justify-center gap-1 w-full">
-                        <FormField
-                          control={form.control}
-                          name="price_per_kg"
-                          render={({ field }) => (
-                            <FormItem className="w-full max-w-xs">
-                              <FormLabel className="text-center block w-full">
-                                Community Base Price per kg
-                              </FormLabel>
-                              <div className="flex items-center justify-center gap-2">
-                                <span className="text-gray-600">$</span>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    value={field.value}
-                                    onChange={(e) => {
-                                      const value = Number(e.target.value) || 1;
-                                      field.onChange(value);
-                                      discounts.forEach((discount) => {
-                                        validateDiscount(
-                                          discount.id,
-                                          "discount_percentage",
-                                          discount.discount_percentage,
-                                          discounts,
-                                        );
-                                      });
-                                    }}
-                                  />
-                                </FormControl>
+                      <FormField
+                        control={form.control}
+                        name="price_per_kg"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Community Base Price per kg (USD)
+                            </FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                  $
+                                </span>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  className="pl-8"
+                                  value={field.value}
+                                  onChange={(e) =>
+                                    field.onChange(Number(e.target.value) || 0)
+                                  }
+                                />
                               </div>
-                              <FormMessage className="text-center" />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <FormField
                         control={form.control}
                         name="shipping_port"
@@ -1043,86 +921,6 @@ export default function AddCrop() {
                           </FormItem>
                         )}
                       />
-                    </div>
-
-                    <div className="mb-4">
-                      <h4 className="text-base font-medium mb-2">Discounts</h4>
-                      {discounts.length > 0 && (
-                        <div className="space-y-4">
-                          {discounts.map((discount) => (
-                            <div key={discount.id} className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  className="w-40"
-                                  placeholder="Min. quantity (kg)"
-                                  value={discount.minimum_quantity_kg}
-                                  onChange={(e) =>
-                                    handleDiscountChange(
-                                      discount.id,
-                                      "minimum_quantity_kg",
-                                      Number(e.target.value) || 1,
-                                    )
-                                  }
-                                />
-                                <span className="mx-2">kg</span>
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  max={99}
-                                  className="w-32"
-                                  placeholder="Discount (%)"
-                                  value={discount.discount_percentage}
-                                  onChange={(e) =>
-                                    handleDiscountChange(
-                                      discount.id,
-                                      "discount_percentage",
-                                      Number(e.target.value) || 1,
-                                    )
-                                  }
-                                />
-                                <span className="mx-2">%</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() =>
-                                    handleRemoveDiscount(discount.id)
-                                  }
-                                  className="text-red-500"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              {discountErrors[discount.id] && (
-                                <Alert
-                                  variant="destructive"
-                                  className="bg-red-50 border-red-200 rounded-lg"
-                                >
-                                  <AlertCircle className="h-4 w-4" />
-                                  <AlertTitle className="text-red-800 font-semibold">
-                                    Discount Error
-                                  </AlertTitle>
-                                  <AlertDescription className="text-red-700">
-                                    {discountErrors[discount.id]}
-                                  </AlertDescription>
-                                </Alert>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                        onClick={handleAddDiscount}
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>Add discount</span>
-                      </Button>
                     </div>
                   </div>
 
@@ -1193,22 +991,21 @@ export default function AddCrop() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Delivery type</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(value)}
-                              value={field.value || ""}
-                              disabled={isLoadingFarms}
-                            >
-                              <FormControl>
+                            <FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ""}
+                              >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select delivery type" />
                                 </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="FOB (Free on Board) - Port of Djibouti">
-                                  FOB (Free on Board) - Port of Djibouti
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                                <SelectContent>
+                                  <SelectItem value="FOB (Free on Board) - Port of Djibouti">
+                                    FOB (Free on Board) - Port of Djibouti
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1221,11 +1018,7 @@ export default function AddCrop() {
               <div className="flex justify-end mb-8">
                 <Button
                   type="submit"
-                  disabled={
-                    isSubmitting ||
-                    farms.length < 1 ||
-                    Object.keys(discountErrors).length > 0
-                  }
+                  disabled={isSubmitting || farms.length < 1}
                   className="my-4"
                 >
                   {isSubmitting

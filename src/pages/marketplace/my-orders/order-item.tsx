@@ -247,7 +247,6 @@ export const OrderItem = ({
                     </Button>
                   ) : (
                     <Button
-                      variant="secondary"
                       onClick={() => openReviewModal(item as Order, "view")}
                     >
                       View Review
