@@ -34,8 +34,8 @@ interface BankAccount {
   bank_name: string;
   account_holder_name: string;
   account_number: string;
-  swift_code?: string; // optional field
-  branch_name?: string; // optional field
+  swift_code?: string;
+  branch_name?: string;
   is_primary: string;
   created_at: string;
   updated_at: string;
@@ -44,7 +44,7 @@ interface BankAccount {
 export default function StepThree() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
-  const [bankAccount, setBankAccount] = useState<BankAccount>();
+  const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const { successMessage, errorMessage } = useNotification();
   const { user, setUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,9 +67,34 @@ export default function StepThree() {
         "/onboarding/seller/get-bank-information",
         user?.userType === "agent" ? user?.id : "",
       );
-      setBankAccount(response.data.bank_account);
+      const bankAccountData = response.data.bank_account;
+      if (bankAccountData) {
+        setBankAccount(bankAccountData);
+      }
     } catch (error: any) {
-      console.error(error.error.message);
+      console.error(
+        (error as APIErrorResponse).error || "Failed to fetch bank account",
+      );
+    }
+  };
+
+  const loadSavedData = () => {
+    const savedData = getFromLocalStorage("step-three", {});
+    if (Object.keys(savedData).length > 0) {
+      const loadedData: BankInfoFormData = {
+        account_holder_name: (savedData as any).account_holder_name || "",
+        bank_name: (savedData as any).bank_name || "",
+        account_number: (savedData as any).account_number || "",
+        branch_name: (savedData as any).branch_name || "",
+        is_primary: (savedData as any).is_primary === "no" ? "no" : "yes",
+        swift_code: (savedData as any).swift_code || "",
+      };
+      form.setValue("account_holder_name", loadedData.account_holder_name);
+      form.setValue("bank_name", loadedData.bank_name);
+      form.setValue("account_number", loadedData.account_number);
+      form.setValue("branch_name", loadedData.branch_name);
+      form.setValue("is_primary", loadedData.is_primary);
+      form.setValue("swift_code", loadedData.swift_code);
     }
   };
 
@@ -77,24 +102,15 @@ export default function StepThree() {
     setIsClient(true);
     if (user && user.onboarding_stage !== "completed") {
       fetchBankAccount();
-
-      const backButtonClicked = getFromLocalStorage("back-button-clicked", {});
-      if (backButtonClicked === "true") {
-        const savedData: any = getFromLocalStorage("step-three", {});
-        if (savedData) {
-          form.reset({
-            account_holder_name: savedData.account_holder_name || "",
-            bank_name: savedData.bank_name || "",
-            account_number: savedData.account_number || "",
-            branch_name: savedData.branch_name || "",
-            is_primary: savedData.is_primary || "yes",
-            swift_code: savedData.swift_code || "",
-          });
-        }
-        localStorage.removeItem("back-button-clicked");
-      }
+      loadSavedData();
     }
-  }, [user, form]);
+  }, [user]);
+
+  useEffect(() => {
+    if (isClient && user && user.onboarding_stage !== "completed") {
+      loadSavedData();
+    }
+  }, [isClient, user]);
 
   const onSubmit = async (data: BankInfoFormData) => {
     try {
@@ -119,29 +135,33 @@ export default function StepThree() {
         saveToLocalStorage("step-three", data);
         saveToLocalStorage("current-step", "avatar_image");
         navigation("/onboarding/step-four");
-        setIsSubmitting(false);
       } else {
+        if (!bankAccount?.id) {
+          throw new Error("Bank account ID is missing");
+        }
         await apiService().patch(
           "/sellers/banks/update-bank-information",
-          { ...data, id: bankAccount?.id },
+          { ...data, id: bankAccount.id },
           isAgent.userType === "agent" && farmer ? farmer.id : "",
         );
-        navigation("/onboarding/step-four");
+        saveToLocalStorage("step-three", data);
         successMessage("Bank account data updated successfully");
+        navigation("/onboarding/step-four");
       }
     } catch (error: any) {
-      setIsSubmitting(false);
       errorMessage(error as APIErrorResponse);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const goBack = () => {
-    localStorage.setItem("back-button-clicked", "true");
+    saveToLocalStorage("back-button-clicked", "true");
     navigation("/onboarding/step-two");
   };
 
   if (!isClient || !user) {
-    return null; // Prevent hydration errors and handle unauthenticated state
+    return null;
   }
 
   return (
@@ -249,9 +269,11 @@ export default function StepThree() {
                           <FormLabel>Is Primary?</FormLabel>
                           <FormControl>
                             <RadioGroup
-                              onValueChange={field.onChange}
-                              defaultValue={String(field.value)}
-                              className="flex gap-4 space-y-1"
+                              onValueChange={(value: "yes" | "no") =>
+                                field.onChange(value)
+                              }
+                              value={field.value}
+                              className="flex flex-row gap-4 space-y-1"
                             >
                               <FormItem className="flex items-center space-x-3 space-y-0">
                                 <FormControl>

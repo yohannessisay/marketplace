@@ -135,6 +135,9 @@ importers:
       '@eslint/js':
         specifier: ^9.21.0
         version: 9.24.0
+      '@types/google.maps':
+        specifier: ^3.58.1
+        version: 3.58.1
       '@types/js-cookie':
         specifier: ^3.0.6
         version: 3.0.6

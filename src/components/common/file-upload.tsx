@@ -1,7 +1,6 @@
 "use client";
 
-import type React from "react";
-import { useState, useRef, type DragEvent, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { FileIcon, X, Upload, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
@@ -32,107 +31,100 @@ export function FileUpload({
 
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
   };
 
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
   };
 
-  const validateFiles = (
-    fileList: File[],
-  ): { valid: File[]; error: string | null } => {
-    const validFiles: File[] = [];
-    let errorMessage: string | null = null;
+  const validateFiles = useCallback(
+    (fileList: File[]): { valid: File[]; error: string | null } => {
+      const validFiles: File[] = [];
+      let errorMessage: string | null = null;
 
-    // Check if adding these files would exceed the max files limit
-    if (files.length + fileList.length > maxFiles) {
-      return {
-        valid: [],
-        error: `You can only upload a maximum of ${maxFiles} files.`,
-      };
-    }
-
-    for (const file of fileList) {
-      // Check file type
-      if (!file.type.match("image.*") && file.type !== "application/pdf") {
-        errorMessage = "Only images and PDF files are allowed.";
-        continue;
+      // Check if adding these files would exceed the max files limit
+      if (files.length + fileList.length > maxFiles) {
+        return {
+          valid: [],
+          error: `You can only upload a maximum of ${maxFiles} files.`,
+        };
       }
 
-      // Check file size
-      if (file.size > maxSizeBytes) {
-        errorMessage = `File size should not exceed ${maxSizeMB}MB.`;
-        continue;
-      }
-
-      validFiles.push(file);
-    }
-
-    return { valid: validFiles, error: errorMessage };
-  };
-
-  const processFiles = async (fileList: FileList | File[]) => {
-    const filesArray = Array.from(fileList);
-    
-    // Check if the files array is empty
-    if (filesArray.length === 0) {
-      setFiles([]);
-      setError(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      return;
-    }
-
-    const { valid, error } = validateFiles(filesArray);
-
-    if (error) {
-      setError(error);
-      return;
-    }
-
-    if (valid.length === 0) {
-      setFiles([]);
-      setError(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      return;
-    }
-
-    const newFilesWithPreview: FileWithPreview[] = await Promise.all(
-      valid.map(async (file) => {
-        let preview = "";
-        let type: "image" | "pdf" = "image";
-
-        if (file.type === "application/pdf") {
-          type = "pdf";
-          preview = URL.createObjectURL(file);
-        } else if (file.type.startsWith("image/")) {
-          type = "image";
-          preview = URL.createObjectURL(file);
+      for (const file of fileList) {
+        // Check file type
+        if (!file.type.match(/^image\//) && file.type !== "application/pdf") {
+          errorMessage =
+            "Only images (JPG, PNG, etc.) and PDF files are allowed.";
+          continue;
         }
 
-        return { file, preview, type };
-      }),
-    );
+        // Check file size
+        if (file.size > maxSizeBytes) {
+          errorMessage = `File size should not exceed ${maxSizeMB}MB.`;
+          continue;
+        }
 
-    const updatedFiles = [...files, ...newFilesWithPreview];
-    setFiles(updatedFiles);
-    setError(null);
+        validFiles.push(file);
+      }
 
-    if (onFilesSelected) {
-      onFilesSelected(updatedFiles.map((f) => f.file));
-    }
-  };
+      return { valid: validFiles, error: errorMessage };
+    },
+    [files.length, maxFiles, maxSizeBytes, maxSizeMB],
+  );
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  const processFiles = useCallback(
+    async (fileList: FileList | File[]) => {
+      const filesArray = Array.from(fileList);
+      const { valid, error } = validateFiles(filesArray);
+
+      if (error) {
+        setError(error);
+        return;
+      }
+
+      if (valid.length === 0) {
+        setError("No valid files selected");
+        return;
+      }
+
+      const newFilesWithPreview: FileWithPreview[] = await Promise.all(
+        valid.map(async (file) => {
+          let preview = "";
+          let type: "image" | "pdf" = "image";
+
+          if (file.type === "application/pdf") {
+            type = "pdf";
+            preview = URL.createObjectURL(file);
+          } else if (file.type.startsWith("image/")) {
+            type = "image";
+            preview = URL.createObjectURL(file);
+          }
+
+          return { file, preview, type };
+        }),
+      );
+
+      const updatedFiles = [...files, ...newFilesWithPreview].slice(
+        0,
+        maxFiles,
+      );
+      setFiles(updatedFiles);
+      setError(null);
+
+      if (onFilesSelected) {
+        onFilesSelected(updatedFiles.map((f) => f.file));
+      }
+    },
+    [files, maxFiles, onFilesSelected, validateFiles],
+  );
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -145,39 +137,34 @@ export function FileUpload({
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processFiles(e.target.files);
+      // Reset the input value to allow selecting the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
   const removeFile = (indexToRemove: number) => {
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
-    
     // Clean up URL objects to prevent memory leaks
     URL.revokeObjectURL(files[indexToRemove].preview);
-    
-    // Reset everything if no files remain
-    if (updatedFiles.length === 0) {
-      setFiles([]);
-      setError(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';  // Reset the file input
-      }
-    } else {
-      setFiles(updatedFiles);
-    }
+
+    setFiles(updatedFiles);
+    setError(null);
 
     if (onFilesSelected) {
       onFilesSelected(updatedFiles.map((f) => f.file));
     }
   };
 
-  // Cleanup URLs when component unmounts
+  // Cleanup URLs when component unmounts or files change
   useEffect(() => {
     return () => {
-      files.forEach(file => {
+      files.forEach((file) => {
         URL.revokeObjectURL(file.preview);
       });
     };
-  }, []);
+  }, [files]);
 
   return (
     <div className={cn("w-full", className)}>
@@ -186,7 +173,7 @@ export function FileUpload({
           "border-2 border-dashed rounded-lg p-6",
           isDragging ? "border-primary bg-primary/5" : "border-gray-300",
           "transition-colors duration-200",
-          "relative"
+          "relative",
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -215,7 +202,7 @@ export function FileUpload({
             <span className="text-gray-500"> or drag and drop</span>
           </div>
           <p className="text-sm text-gray-500">
-            PDF or images up to {maxSizeMB}MB
+            PDF or images up to {maxSizeMB}MB (max {maxFiles} files)
           </p>
         </div>
 
@@ -230,7 +217,7 @@ export function FileUpload({
           <div className="mt-6 space-y-4">
             {files.map((file, index) => (
               <div
-                key={index}
+                key={`${file.file.name}-${index}`}
                 className="flex items-center justify-between rounded-lg border p-4"
               >
                 <div className="flex items-center space-x-4">
@@ -241,10 +228,15 @@ export function FileUpload({
                       src={file.preview}
                       alt="preview"
                       className="h-8 w-8 rounded object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
                     />
                   )}
-                  <div>
-                    <p className="text-sm font-medium">{file.file.name}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {file.file.name}
+                    </p>
                     <p className="text-xs text-gray-500">
                       {(file.file.size / 1024 / 1024).toFixed(2)}MB
                     </p>

@@ -9,7 +9,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
-import { initializeApiService } from "./services/apiService"; 
+import { initializeApiService } from "./services/apiService";
 import OTPInputPage from "./pages/auth/OTP";
 import StepFour from "./pages/onboarding/farm-detail/step-four";
 import StepThree from "./pages/onboarding/farm-detail/step-three";
@@ -30,6 +30,7 @@ import SellerProfilePage from "./pages/seller/SellerProfilePage";
 import { config } from "./lib/config";
 import { getFromLocalStorage } from "./lib/utils";
 import LandingPage from "./pages/landing";
+import FarmSellerView from "./pages/seller/FarmManagementView";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -42,10 +43,10 @@ const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const ChatsPage = lazy(() => import("./pages/chats/ChatsPage"));
 const SettingsPage = lazy(() => import("./pages/buyers/settings/SettingsPage"));
 const FarmProfilePage = lazy(
-  () => import("./pages/farms/farm-profile/FarmProfilePage")
+  () => import("./pages/farms/farm-profile/FarmProfilePage"),
 );
 const CompanyOnboarding = lazy(
-  () => import("./pages/company/company-onboarding")
+  () => import("./pages/company/company-onboarding"),
 );
 
 initializeApiService(config.VITE_API_BASE_URL);
@@ -151,8 +152,13 @@ const RouterContent: React.FC = () => {
         path="/add-farm"
         element={
           <ProtectedRoute>
-            {currentStep === "completed"|| (farmerProfile &&
-              farmerProfile?.onboarding_stage === "completed") ? <AddFarm /> : <Welcome />}
+            {currentStep === "completed" ||
+            (farmerProfile &&
+              farmerProfile?.onboarding_stage === "completed") ? (
+              <AddFarm />
+            ) : (
+              <Welcome />
+            )}
           </ProtectedRoute>
         }
       />
@@ -168,8 +174,13 @@ const RouterContent: React.FC = () => {
         path="/add-crop"
         element={
           <ProtectedRoute>
-            {currentStep === "completed"|| (farmerProfile &&
-              farmerProfile?.onboarding_stage === "completed") ? <AddCrop /> : <Welcome />}
+            {currentStep === "completed" ||
+            (farmerProfile &&
+              farmerProfile?.onboarding_stage === "completed") ? (
+              <AddCrop />
+            ) : (
+              <Welcome />
+            )}
           </ProtectedRoute>
         }
       />
@@ -296,6 +307,14 @@ const RouterContent: React.FC = () => {
         element={
           <ProtectedRoute>
             <CoffeeListingSellerView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manage-farm/:id"
+        element={
+          <ProtectedRoute>
+            <FarmSellerView />
           </ProtectedRoute>
         }
       />

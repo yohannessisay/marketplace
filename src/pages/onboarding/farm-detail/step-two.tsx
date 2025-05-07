@@ -48,6 +48,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Farm {
   id: string;
@@ -100,22 +101,19 @@ export default function StepTwo() {
     defaultValues: {
       farmId: "",
       coffee_variety: "",
-      grade: 0,
+      grade: "",
       bean_type: "",
       crop_year: "",
       processing_method: "",
-      moisture_percentage: 1,
-      screen_size: 10,
+      moisture_percentage: 0,
+      screen_size: "",
       drying_method: "",
       wet_mill: "",
       is_organic: "",
-      cup_taste_acidity: "",
-      cup_taste_body: "",
-      cup_taste_sweetness: "",
-      cup_taste_aftertaste: "",
-      cup_taste_balance: "",
-      quantity_kg: 1,
-      price_per_kg: 5,
+      cup_aroma: [],
+      cup_taste: [],
+      quantity_kg: 0,
+      price_per_kg: 0,
       readiness_date: new Date().toISOString(),
       lot_length: "",
       delivery_type: "",
@@ -125,17 +123,12 @@ export default function StepTwo() {
   });
 
   const handlePhotosSelected = (selectedPhotos: File[]) => {
-    // Create new FileWithId objects for incoming files
     const newPhotos: FileWithId[] = selectedPhotos.map((file) =>
       Object.assign(file, {
         id: Math.random().toString(36).substring(2),
-      })
+      }),
     );
-
-    // Update photos state with the new list, replacing the old one
     setPhotos(newPhotos);
-
-    // Update form state if needed (not required here unless form tracks photos)
   };
 
   const handleAddDiscount = () => {
@@ -158,10 +151,10 @@ export default function StepTwo() {
   const handleDiscountChange = (
     id: string,
     field: "minimum_quantity_kg" | "discount_percentage",
-    value: number
+    value: number,
   ) => {
     setDiscounts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
     );
   };
 
@@ -176,11 +169,15 @@ export default function StepTwo() {
 
       const response: any = await apiService().get(
         "/onboarding/seller/get-first-farm",
-        farmerId
+        farmerId,
       );
-      setFarm(response.data.farm);
-      saveToLocalStorage("farm-id", response.data.farm.id);
+      const fetchedFarm = response.data.farm;
+      setFarm(fetchedFarm);
+      saveToLocalStorage("farm-id", fetchedFarm.id);
+      // Set farmId in the form
+      form.setValue("farmId", fetchedFarm.id);
     } catch (error: any) {
+      console.error("Error fetching farm:", error);
       errorMessage(error as APIErrorResponse);
     }
   };
@@ -192,6 +189,62 @@ export default function StepTwo() {
     }
   }, [user]);
 
+  // Load form data and discounts from localStorage if user is returning from a later step
+  useEffect(() => {
+    const populateForm = async () => {
+      try {
+        // Check if user has progressed past crops_to_sell
+        const laterStages = ["bank_information", "avatar_image", "completed"];
+        if (
+          !loading &&
+          laterStages.includes(currentUserStage) &&
+          currentUserStage !== "crops_to_sell"
+        ) {
+          // Load form data
+          const savedData: any = getFromLocalStorage("step-two", {});
+          if (savedData && Object.keys(savedData).length > 0) {
+            // Ensure cup_aroma and cup_taste are arrays
+            const normalizedData = {
+              ...savedData,
+              cup_aroma: Array.isArray(savedData.cup_aroma)
+                ? savedData.cup_aroma
+                : [],
+              cup_taste: Array.isArray(savedData.cup_taste)
+                ? savedData.cup_taste
+                : [],
+              // Convert readiness_date to ISO string if it's a date string
+              readiness_date: savedData.readiness_date
+                ? new Date(savedData.readiness_date).toISOString()
+                : new Date().toISOString(),
+              // Ensure farmId is set from saved data if available
+              farmId: savedData.farmId || farm?.id || "",
+            };
+            form.reset(normalizedData);
+          }
+
+          // Load discounts
+          const savedDiscounts: any = getFromLocalStorage(
+            "step-two-discounts",
+            [],
+          );
+          if (Array.isArray(savedDiscounts) && savedDiscounts.length > 0) {
+            // Normalize discounts to ensure they have id, minimum_quantity_kg, and discount_percentage
+            const normalizedDiscounts = savedDiscounts.map((discount) => ({
+              id: discount.id || Math.random().toString(36).substring(2),
+              minimum_quantity_kg: Number(discount.minimum_quantity_kg) || 1,
+              discount_percentage: Number(discount.discount_percentage) || 1,
+            }));
+            setDiscounts(normalizedDiscounts);
+          }
+        }
+      } catch (error: any) {
+        console.error("Error loading data from localStorage:", error);
+        errorMessage(error as APIErrorResponse);
+      }
+    };
+    populateForm();
+  }, [loading, currentUserStage, form, farm]);
+
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
@@ -199,7 +252,14 @@ export default function StepTwo() {
 
       for (const key in data) {
         if (Object.prototype.hasOwnProperty.call(data, key)) {
-          formData.append(key, String(data[key as keyof CoffeeCropsFormData]));
+          if (key === "cup_aroma" || key === "cup_taste") {
+            formData.append(key, JSON.stringify(data[key]));
+          } else {
+            formData.append(
+              key,
+              String(data[key as keyof CoffeeCropsFormData]),
+            );
+          }
         }
       }
 
@@ -212,7 +272,7 @@ export default function StepTwo() {
       });
 
       if (farm) {
-        formData.append("farm_id", farm?.id);
+        formData.append("farm_id", farm.id);
       }
 
       if (discounts.length > 0) {
@@ -232,7 +292,7 @@ export default function StepTwo() {
           "/onboarding/seller/coffee-details",
           formData,
           true,
-          user?.userType === "agent" ? user?.id : ""
+          user?.userType === "agent" ? user?.id : "",
         );
 
         saveToLocalStorage("crop-id", response.data?.coffee_listing?.id);
@@ -242,24 +302,27 @@ export default function StepTwo() {
         });
 
         saveToLocalStorage("step-two", data);
+        saveToLocalStorage("step-two-discounts", discounts);
         localStorage.setItem(
           "current-step",
-          JSON.stringify("bank_information")
+          JSON.stringify("bank_information"),
         );
         successMessage("Crop information saved successfully");
         navigation("/onboarding/step-three");
       } else {
-        const existingListingId= getFromLocalStorage("crop-id", "");
+        const existingListingId = getFromLocalStorage("crop-id", "");
         formData.append("listingId", existingListingId);
-        const existingFarmId= getFromLocalStorage("farm-id", "");
+        const existingFarmId = getFromLocalStorage("farm-id", "");
         formData.append("farmId", existingFarmId);
         await apiService().patchFormData(
           "/sellers/listings/update-listing",
           formData,
           true,
-          user?.userType === "agent" ? user?.id : ""
+          user?.userType === "agent" ? user?.id : "",
         );
 
+        saveToLocalStorage("step-two", data);
+        saveToLocalStorage("step-two-discounts", discounts);
         successMessage("Crop data updated successfully");
         navigation("/onboarding/step-three");
       }
@@ -270,36 +333,70 @@ export default function StepTwo() {
       setIsSubmitting(false);
     }
   };
-  useEffect(() => {
-    const populateForm = async () => {
-      try {
-        if (!loading) {
-          return;
-        }
-
-        const result = getFromLocalStorage("step-two", {});
-
-        if (result) {
-          form.reset({
-            ...result,
-          });
-
-        }
-      } catch (error: any) {
-        errorMessage(error as APIErrorResponse);
-      }
-    };
-    if (currentUserStage !== "crop_to_sell") {
-      populateForm();
-    }
-  }, []);
-  const goBack = () => {
-    navigation("/onboarding/step-one");
-    localStorage.setItem("back-button-clicked", "true");
-  };
 
   if (!isClient) {
     return null;
+  }
+
+  const screenSizeOptions = [
+    "Screen 20 (>8.0mm)",
+    "Screen 19 (7.5-8.0mm)",
+    "Screen 18 (7.1-7.5mm)",
+    "Screen 17 (6.7-7.1mm)",
+    "Screen 16 (6.3-6.7mm)",
+    "Screen 15 (6.0-6.3mm)",
+    "Screen 14 (5.6-6.0mm)",
+    "Screen 13 (5.0-5.6mm)",
+    "Screen 12 (4.8-5.0mm)",
+    "Screen 11 (4.4-4.8mm)",
+    "Screen 10 (4.0-4.4mm)",
+    "Screen 9 (3.6-4.0mm)",
+    "Screen 8 (3.2-3.6mm)",
+  ];
+
+  const gradeOptions = ["1", "2", "3", "4", "5", "UG"];
+  const processingMethodOptions = ["Washed", "Natural", "Honey Processed"];
+  const cupAromaOptions = [
+    "Flowery",
+    "Nutty",
+    "Smoky",
+    "Herby",
+    "Fruity",
+    "Chocolatey",
+    "Spicy",
+    "Caramelly",
+    "Carboney",
+    "Berry-like",
+    "Floral",
+    "Winery",
+    "Fragrant",
+    "Citrus",
+    "Alliaceous",
+    "Leguminous",
+    "Nut-like",
+    "Malt-like",
+    "Candy-like",
+    "Syrup-like",
+    "Chocolate-like",
+    "Vanilla-like",
+    "Turpeny",
+    "Medicinal",
+    "Warming",
+    "Pungent",
+    "Ashy",
+  ];
+  const cupTasteOptions = ["Bitter", "Sweet", "Salty", "Acidic", "Sour"];
+
+  // Organize cup aroma options into columns of max 3 items
+  const aromaColumns: Array<Array<string>> = [];
+  for (let i = 0; i < cupAromaOptions.length; i += 3) {
+    aromaColumns.push(cupAromaOptions.slice(i, i + 3));
+  }
+
+  // Organize cup taste options into columns of max 3 items
+  const tasteColumns: Array<Array<string>> = [];
+  for (let i = 0; i < cupTasteOptions.length; i += 3) {
+    tasteColumns.push(cupTasteOptions.slice(i, i + 3));
   }
 
   return (
@@ -342,7 +439,7 @@ export default function StepTwo() {
                         <input
                           type="hidden"
                           {...field}
-                          value={farm?.id || ""}
+                          value={farm?.id || field.value || ""}
                         />
                       </div>
                     </FormControl>
@@ -413,18 +510,23 @@ export default function StepTwo() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Initial grading</FormLabel>
-                      <FormControl>
-                        <Input
-                        type="number"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const parsedValue =
-                              value === "" ? 0 : Number(value);
-                            field.onChange(parsedValue);
-                          }}
-                        />
-                      </FormControl>
+                      <Select
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select grade" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {gradeOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              Grade {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -500,6 +602,33 @@ export default function StepTwo() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="processing_method"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Processing Method</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select processing method" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {processingMethodOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <h3 className="text-lg font-medium mb-4">Crop specification</h3>
@@ -530,19 +659,6 @@ export default function StepTwo() {
                 />
                 <FormField
                   control={form.control}
-                  name="processing_method"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Processing Method</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name="moisture_percentage"
                   render={({ field }) => (
                     <FormItem>
@@ -567,20 +683,23 @@ export default function StepTwo() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Screen Size</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={field.value ?? ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const parsedValue =
-                              value === "" ? 0 : Number(value);
-                            field.onChange(parsedValue);
-                          }}
-                          onBlur={field.onBlur}
-                        />
-                      </FormControl>
+                      <Select
+                        onValueChange={(value) => field.onChange(value)}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select screen size" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {screenSizeOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -613,121 +732,92 @@ export default function StepTwo() {
                 />
               </div>
 
-              <h3 className="text-lg font-medium mb-4">Cup taste</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <h3 className="text-lg font-medium mb-4">Cup Aroma</h3>
+              <div className="mb-8">
                 <FormField
                   control={form.control}
-                  name="cup_taste_acidity"
+                  name="cup_aroma"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Acidity</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select acidity" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Delicate">Delicate</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <div className="flex flex-wrap gap-4">
+                          {aromaColumns.map((column, colIndex) => (
+                            <div
+                              key={colIndex}
+                              className="flex flex-col gap-2 min-w-[150px]"
+                            >
+                              {column.map((aroma) => (
+                                <div
+                                  key={aroma}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={aroma}
+                                    checked={
+                                      field.value?.includes(aroma) || false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const newValue = checked
+                                        ? [...(field.value || []), aroma]
+                                        : (field.value || []).filter(
+                                            (v) => v !== aroma,
+                                          );
+                                      field.onChange(newValue);
+                                    }}
+                                  />
+                                  <label htmlFor={aroma}>{aroma}</label>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <h3 className="text-lg font-medium mb-4">Cup Taste</h3>
+              <div className="mb-8">
                 <FormField
                   control={form.control}
-                  name="cup_taste_body"
+                  name="cup_taste"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Body</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select body" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Heavy">Heavy</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cup_taste_sweetness"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sweetness</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select sweetness" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Honey-like">Honey-like</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cup_taste_aftertaste"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Aftertaste</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select aftertaste" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Long-lasting">
-                            Long-lasting
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cup_taste_balance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Balance</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select balance" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Complex">Complex</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <div className="flex flex-wrap gap-4">
+                          {tasteColumns.map((column, colIndex) => (
+                            <div
+                              key={colIndex}
+                              className="flex flex-col gap-2 min-w-[150px]"
+                            >
+                              {column.map((taste) => (
+                                <div
+                                  key={taste}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <Checkbox
+                                    id={taste}
+                                    checked={
+                                      field.value?.includes(taste) || false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const newValue = checked
+                                        ? [...(field.value || []), taste]
+                                        : (field.value || []).filter(
+                                            (v) => v !== taste,
+                                          );
+                                      field.onChange(newValue);
+                                    }}
+                                  />
+                                  <label htmlFor={taste}>{taste}</label>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -798,16 +888,22 @@ export default function StepTwo() {
                   name="price_per_kg"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Community Base Price per kg</FormLabel>
+                      <FormLabel>Community Base Price per kg (USD)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          value={field.value}
-                          min={0}
-                          onChange={(e) =>
-                            field.onChange(Number(e.target.value) || 0)
-                          }
-                        />
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                            $
+                          </span>
+                          <Input
+                            type="number"
+                            value={field.value}
+                            min={0}
+                            className="pl-8"
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
+                          />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -847,7 +943,7 @@ export default function StepTwo() {
                             handleDiscountChange(
                               discount.id,
                               "minimum_quantity_kg",
-                              Number(e.target.value) || 0
+                              Number(e.target.value) || 0,
                             )
                           }
                         />
@@ -865,7 +961,7 @@ export default function StepTwo() {
                             handleDiscountChange(
                               discount.id,
                               "discount_percentage",
-                              inputValue > max ? max : inputValue
+                              inputValue > max ? max : inputValue,
                             );
                           }}
                         />
@@ -936,6 +1032,9 @@ export default function StepTwo() {
                                 field.onChange(formatted);
                               }
                             }}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
                           />
                         </PopoverContent>
                       </Popover>
@@ -984,10 +1083,7 @@ export default function StepTwo() {
               </div>
             </div>
 
-            <div className="flex justify-between mb-8">
-              <Button type="button" variant="outline" onClick={goBack}>
-                Back
-              </Button>
+            <div className="flex justify-end mb-8">
               <Button type="submit" disabled={isSubmitting} className="my-4">
                 {isSubmitting ? "Saving..." : "Save and continue"}
               </Button>
