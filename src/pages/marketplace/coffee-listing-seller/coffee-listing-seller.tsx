@@ -2,7 +2,16 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Star, Search, X } from "lucide-react";
+import {
+  Star,
+  Search,
+  X,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  CalendarX,
+  PencilLine,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,197 +47,71 @@ import {
   MessageThread as MessageThreadType,
 } from "@/types/coffee-listing";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  Skeleton,
+  SkeletonBids,
+  SkeletonCardContent,
+  SkeletonMessages,
+  SkeletonPhotoGallery,
+  SkeletonStats,
+} from "./skeletons";
+import { RequestEditModal } from "@/components/modals/RequestEditModal";
 
-// Skeleton Component
-function Skeleton({ className }: { className?: string }) {
-  return <div className={`bg-gray-200 animate-pulse rounded ${className}`} />;
-}
-
-function SkeletonPhotoGallery() {
-  return (
-    <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-6">
-      <div className="flex flex-col gap-4 p-4">
-        <Skeleton className="w-full h-64 rounded-lg" />
-      </div>
-      <div className="flex p-2 space-x-2 overflow-x-auto ml-3">
-        {Array(3)
-          .fill(0)
-          .map((_, index) => (
-            <Skeleton key={index} className="w-20 h-20 rounded" />
-          ))}
-      </div>
-    </div>
-  );
-}
-
-function SkeletonCardContent() {
-  return (
-    <div className="p-6 space-y-4">
-      <div className="flex justify-between items-start mb-4">
-        <Skeleton className="h-6 w-1/2" />
-        <Skeleton className="h-6 w-16" />
-      </div>
-      <div className="flex items-baseline mb-6">
-        <Skeleton className="h-8 w-24" />
-      </div>
-      <div className="space-y-4">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <div className="grid grid-cols-2 gap-4">
-          {Array(8)
-            .fill(0)
-            .map((_, index) => (
-              <div key={index}>
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SkeletonBids() {
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-6 w-32" />
-      </CardHeader>
-      <CardContent>
-        <div className="divide-y divide-gray-200">
-          {Array(3)
-            .fill(0)
-            .map((_, index) => (
-              <div key={index} className="py-4 flex justify-between">
-                <div>
-                  <Skeleton className="h-4 w-40 mb-2" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-                <div className="text-right">
-                  <Skeleton className="h-4 w-16 mb-2" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              </div>
-            ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SkeletonMessages() {
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-6 w-32" />
-      </CardHeader>
-      <CardContent>
-        <div className="divide-y divide-gray-200">
-          {Array(3)
-            .fill(0)
-            .map((_, index) => (
-              <div key={index} className="py-4 flex justify-between">
-                <div className="flex">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="ml-3">
-                    <Skeleton className="h-4 w-24 mb-2" />
-                    <Skeleton className="h-4 w-32 mb-1" />
-                    <Skeleton className="h-4 w-48" />
-                  </div>
-                </div>
-                <div className="text-right">
-                  <Skeleton className="h-4 w-16 mb-2" />
-                  <Skeleton className="h-4 w-12" />
-                </div>
-              </div>
-            ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SkeletonStats() {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-32" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Array(6)
-            .fill(0)
-            .map((_, index) => (
-              <div key={index}>
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            ))}
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
-      <div className="grid grid-cols-1 gap-4">
-        {Array(3)
-          .fill(0)
-          .map((_, index) => (
-            <div
-              key={index}
-              className="p-4 bg-white rounded-lg shadow-sm border"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-5 w-5" />
-                  <div>
-                    <Skeleton className="h-4 w-20 mb-2" />
-                    <Skeleton className="h-6 w-16" />
-                  </div>
-                </div>
-                <Skeleton className="h-4 w-12" />
-              </div>
-            </div>
-          ))}
-      </div>
-    </div>
-  );
-}
-
-// Interfaces remain unchanged
 interface Listing {
   id: string;
   coffee_variety: string;
-  bean_type: string;
-  crop_year: string;
+  bean_type: string | null;
+  crop_year: string | null;
   is_organic: boolean;
-  processing_method: string;
-  moisture_percentage: number;
-  screen_size: string;
-  drying_method: string;
-  wet_mill: string;
-  cup_taste_acidity: string;
-  cup_taste_body: string;
-  cup_taste_sweetness: string;
-  cup_taste_aftertaste: string;
-  cup_taste_balance: string;
-  grade: string;
+  processing_method: string | null;
+  moisture_percentage: number | null;
+  screen_size: string | null;
+  drying_method: string | null;
+  wet_mill: string | null;
+  cup_taste: string[] | null;
+  cup_aroma: string[] | null;
+  grade: string | null;
   quantity_kg: number;
   price_per_kg: number;
-  readiness_date: string;
-  lot_length: string;
-  delivery_type: string;
-  shipping_port: string;
+  readiness_date: string | null;
+  lot_length: string | null;
+  delivery_type: string | null;
+  shipping_port: string | null;
   listing_status: string;
   created_at: string;
   updated_at: string | null;
   expires_at: string | null;
   created_by_agent_id: string | null;
+  admin_edit_request_approval_status:
+    | "not_requested"
+    | "requested"
+    | "allowed"
+    | "expired"
+    | "rejected";
+  edit_requested_at: string | null;
+  kyc_status: "pending" | "approved" | "rejected";
   farm: {
     farm_id: string;
     farm_name: string;
-    town_location: string;
-    region: string;
+    town_location: string | null;
+    region: string | null;
     country: string;
-  };
+    total_size_hectares: number | null;
+    coffee_area_hectares: number | null;
+    longitude: number | null;
+    latitude: number | null;
+    altitude_meters: string | null;
+    crop_type: string | null;
+    crop_source: string | null;
+    origin: string | null;
+    capacity_kg: number | null;
+    tree_type: string | null;
+    tree_variety: string | null;
+    soil_type: string | null;
+    avg_annual_temp: number | null;
+    annual_rainfall_mm: number | null;
+    polygon_coords: { lat: number; lng: number }[][] | null;
+  } | null;
   photos: Array<{
     id: string;
     photo_url: string;
@@ -245,8 +128,10 @@ interface Listing {
     updated_at: string | null;
   }>;
   discounts: Array<{
-    minimumQuantity: number;
-    percentage: number;
+    id: string;
+    minimum_quantity_kg: number;
+    discount_percentage: number;
+    created_at: string;
   }>;
 }
 
@@ -398,6 +283,7 @@ export default function CoffeeListingSellerView() {
   const [isFetching, setIsFetching] = useState(true);
   const [hasFetched, setHasFetched] = useState(false);
   const [generalLoading, setGeneralLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { errorMessage, successMessage } = useNotification();
 
   const isMobile = useMobile();
@@ -521,7 +407,7 @@ export default function CoffeeListingSellerView() {
         fmrId ? fmrId : "",
       );
       successMessage("Bid accepted successfully, and order is placed");
-      setHasFetched(false); // Allow refetch after accepting bid
+      setHasFetched(false);
     } catch (error: any) {
       console.error("Error accepting bid:", error);
       errorMessage(error as APIErrorResponse);
@@ -538,7 +424,7 @@ export default function CoffeeListingSellerView() {
         fmrId ? fmrId : "",
       );
       successMessage("Bid rejected successfully");
-      setHasFetched(false); // Allow refetch after rejecting bid
+      setHasFetched(false);
     } catch (error: any) {
       console.error("Error rejecting bid:", error);
       errorMessage(error as APIErrorResponse);
@@ -656,15 +542,17 @@ export default function CoffeeListingSellerView() {
                       <div className="space-y-4 mb-6">
                         <p className="text-gray-700">
                           Premium {listing!.coffee_variety} coffee from{" "}
-                          {listing!.farm.farm_name} in{" "}
-                          {listing!.farm.town_location}, {listing!.farm.region},{" "}
-                          {listing!.farm.country}. This coffee features{" "}
-                          {listing!.cup_taste_acidity.toLowerCase()} acidity,{" "}
-                          {listing!.cup_taste_body.toLowerCase()} body, and{" "}
-                          {listing!.cup_taste_sweetness.toLowerCase()} sweetness
-                          with a {listing!.cup_taste_aftertaste.toLowerCase()}{" "}
-                          aftertaste.
+                          {listing!.farm?.farm_name || "Unknown Farm"} in{" "}
+                          {listing!.farm?.town_location || "Unknown Location"},{" "}
+                          {listing!.farm?.region || "Unknown Region"},{" "}
+                          {listing!.farm?.country || "Unknown Country"}. This
+                          coffee features{" "}
+                          {listing!.cup_taste?.length
+                            ? listing!.cup_taste.join(", ").toLowerCase()
+                            : "balanced flavors"}
+                          .
                         </p>
+
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">
@@ -679,7 +567,7 @@ export default function CoffeeListingSellerView() {
                               Processing
                             </h4>
                             <p className="text-gray-900">
-                              {listing!.processing_method}
+                              {listing!.processing_method || "N/A"}
                             </p>
                           </div>
                           <div>
@@ -687,7 +575,7 @@ export default function CoffeeListingSellerView() {
                               Bean Type
                             </h4>
                             <p className="text-gray-900">
-                              {listing!.bean_type}
+                              {listing!.bean_type || "N/A"}
                             </p>
                           </div>
                           <div>
@@ -695,7 +583,7 @@ export default function CoffeeListingSellerView() {
                               Crop Year
                             </h4>
                             <p className="text-gray-900">
-                              {listing!.crop_year}
+                              {listing!.crop_year || "N/A"}
                             </p>
                           </div>
                           <div>
@@ -711,7 +599,7 @@ export default function CoffeeListingSellerView() {
                               Ready By
                             </h4>
                             <p className="text-gray-900">
-                              {listing!.readiness_date}
+                              {listing!.readiness_date || "N/A"}
                             </p>
                           </div>
                           <div>
@@ -719,7 +607,9 @@ export default function CoffeeListingSellerView() {
                               Moisture
                             </h4>
                             <p className="text-gray-900">
-                              {listing!.moisture_percentage}%
+                              {listing!.moisture_percentage
+                                ? `${listing!.moisture_percentage}%`
+                                : "N/A"}
                             </p>
                           </div>
                           <div>
@@ -727,7 +617,7 @@ export default function CoffeeListingSellerView() {
                               Screen Size
                             </h4>
                             <p className="text-gray-900">
-                              {listing!.screen_size}
+                              {listing!.screen_size || "N/A"}
                             </p>
                           </div>
                           <div>
@@ -735,17 +625,56 @@ export default function CoffeeListingSellerView() {
                               Drying Method
                             </h4>
                             <p className="text-gray-900">
-                              {listing!.drying_method}
+                              {listing!.drying_method || "N/A"}
                             </p>
                           </div>
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">
                               Wet Mill
                             </h4>
-                            <p className="text-gray-900">{listing!.wet_mill}</p>
+                            <p className="text-gray-900">
+                              {listing!.wet_mill || "N/A"}
+                            </p>
                           </div>
+
+                          {listing!.cup_taste!.length > 0 && (
+                            <div className="col-span-2">
+                              <h4 className="text-sm font-medium text-gray-500 mb-2">
+                                Cup Taste Profile
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {listing!.cup_taste!.map((taste, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
+                                  >
+                                    {taste}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {listing!.cup_aroma!.length > 0 && (
+                            <div className="col-span-2">
+                              <h4 className="text-sm font-medium text-gray-500 mb-2">
+                                Cup Aroma Profile
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {listing!.cup_aroma!.map((aroma, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                                  >
+                                    {aroma}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
+
                       {listing!.discounts.length > 0 && (
                         <>
                           <Separator className="my-4" />
@@ -754,16 +683,16 @@ export default function CoffeeListingSellerView() {
                               Volume Discounts
                             </h3>
                             <div className="space-y-2">
-                              {listing!.discounts.map((discount, idx) => (
+                              {listing!.discounts.map((discount) => (
                                 <div
-                                  key={idx}
+                                  key={discount.id}
                                   className="flex justify-between items-center p-2 bg-emerald-50 rounded-md"
                                 >
                                   <span className="text-sm text-gray-700">
-                                    Order {discount.minimumQuantity}+ kg
+                                    Order {discount.minimum_quantity_kg}+ kg
                                   </span>
                                   <span className="text-sm font-medium text-emerald-700">
-                                    {discount.percentage}% off
+                                    {discount.discount_percentage}% off
                                   </span>
                                 </div>
                               ))}
@@ -773,6 +702,7 @@ export default function CoffeeListingSellerView() {
                       )}
                     </CardContent>
                   </Card>
+
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-lg">Recent Bids</CardTitle>
@@ -817,7 +747,7 @@ export default function CoffeeListingSellerView() {
                                   {new Date(
                                     bid.created_at,
                                   ).toLocaleDateString()}{" "}
-                                  • {bid.quantity_kg} kg Okta
+                                  • {bid.quantity_kg} kg
                                 </p>
                               </div>
                               <div className="text-right">
@@ -831,6 +761,7 @@ export default function CoffeeListingSellerView() {
                       </div>
                     </CardContent>
                   </Card>
+
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-lg">Recent Messages</CardTitle>
@@ -905,76 +836,238 @@ export default function CoffeeListingSellerView() {
                     </CardContent>
                   </Card>
                 </div>
+
                 <div className="lg:col-span-1 space-y-6">
                   <Card>
                     <CardHeader>
                       <CardTitle>Listing Info</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">
-                          Status
-                        </h4>
-                        <div className="mt-1 flex items-center">
-                          <Badge
-                            variant={
-                              listing!.listing_status === "pending"
-                                ? "outline"
-                                : "default"
-                            }
-                          >
-                            {listing!.listing_status}
-                          </Badge>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Column 1 */}
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Status
+                            </h4>
+                            <div className="mt-1">
+                              <Badge
+                                variant={
+                                  listing!.listing_status === "active"
+                                    ? "default"
+                                    : "warning"
+                                }
+                                className="text-[14px]"
+                              >
+                                {listing!.listing_status}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              KYC Verification Status
+                            </h4>
+                            <div className="mt-1">
+                              {listing!.kyc_status === "approved" && (
+                                <Badge
+                                  variant="default"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Approved
+                                </Badge>
+                              )}
+                              {listing!.kyc_status === "pending" && (
+                                <Badge
+                                  variant="warning"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <Clock className="h-3.5 w-3.5" />
+                                  Pending
+                                </Badge>
+                              )}
+                              {listing!.kyc_status === "rejected" && (
+                                <Badge
+                                  variant="destructive"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Rejected
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Created On
+                            </h4>
+                            <p className="text-gray-900">
+                              {new Date(
+                                listing!.created_at,
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Farm
+                            </h4>
+                            <p className="text-gray-900">
+                              {listing!.farm?.farm_name || "N/A"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Column 2 */}
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Edit Request
+                            </h4>
+                            <div className="mt-1">
+                              {listing!.admin_edit_request_approval_status ===
+                                "allowed" && (
+                                <Badge className="gap-1 text-[14px]">
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Allowed
+                                </Badge>
+                              )}
+                              {listing!.admin_edit_request_approval_status ===
+                                "requested" && (
+                                <Badge
+                                  variant="warning"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <Clock className="h-3.5 w-3.5" />
+                                  Requested
+                                </Badge>
+                              )}
+                              {listing!.admin_edit_request_approval_status ===
+                                "rejected" && (
+                                <Badge
+                                  variant="destructive"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Rejected
+                                </Badge>
+                              )}
+                              {listing!.admin_edit_request_approval_status ===
+                                "expired" && (
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <CalendarX className="h-3.5 w-3.5" />
+                                  Expired
+                                </Badge>
+                              )}
+                              {listing!.admin_edit_request_approval_status ===
+                                "not_requested" && (
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <PencilLine className="h-3.5 w-3.5" />
+                                  Not Requested
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Ready By
+                            </h4>
+                            <p className="text-gray-900">
+                              {listing!.readiness_date || "N/A"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Quantity
+                            </h4>
+                            <p className="text-gray-900">
+                              {listing!.quantity_kg} kg
+                            </p>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Views
+                            </h4>
+                            <p className="text-gray-900">
+                              {listingStats.views}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">
-                          Created On
-                        </h4>
-                        <p className="text-gray-900">
-                          {new Date(listing!.created_at).toLocaleDateString()}
-                        </p>
+
+                      {/* Full-width action button */}
+                      <div className="mt-6">
+                        {listing!.admin_edit_request_approval_status ===
+                        "allowed" ? (
+                          <Link to={`/edit-crop/${listing!.id}`}>
+                            <Button className="w-full">Edit Listing</Button>
+                          </Link>
+                        ) : listing!.kyc_status === "pending" ? (
+                          <Link to={`/edit-crop/${listing!.id}`}>
+                            <Button className="w-full">Edit Listing</Button>
+                          </Link>
+                        ) : (listing!.kyc_status === "approved" &&
+                            listing!.admin_edit_request_approval_status ===
+                              "requested") ||
+                          listing!.admin_edit_request_approval_status ===
+                            "expired" ||
+                          listing!.admin_edit_request_approval_status ===
+                            "rejected" ? (
+                          <Button className="w-full" disabled>
+                            Edit Requested
+                          </Button>
+                        ) : (
+                          <div className="space-y-4 rounded-lg bg-green-100 p-4 mt-4">
+                            <div className="flex items-start gap-3">
+                              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <h4 className="text-sm font-medium text-green-800">
+                                  KYC Verified
+                                </h4>
+                                <p className="mt-1 text-sm text-green-700">
+                                  Request edit access to modify this verified
+                                  listing.
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              className="w-full"
+                              onClick={() => setIsModalOpen(true)}
+                            >
+                              Request Edit Access
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">
-                          Ready By
-                        </h4>
-                        <p className="text-gray-900">
-                          {listing!.readiness_date}
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">
-                          Quantity Available
-                        </h4>
-                        <p className="text-gray-900">
-                          {listing!.quantity_kg} kg
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">
-                          Farm
-                        </h4>
-                        <p className="text-gray-900">
-                          {listing!.farm.farm_name}
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">
-                          Views
-                        </h4>
-                        <p className="text-gray-900">{listingStats.views}</p>
-                      </div>
-                      <Link to={`/edit-crop/${listing!.id}`}>
-                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 hover:text-white">
-                          Edit Listing
-                        </Button>
-                      </Link>
                     </CardContent>
                   </Card>
                 </div>
               </div>
             )}
+            <RequestEditModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              entityId={id!}
+              entityType="listing"
+              onSubmitSuccess={(status) =>
+                setListing((prev) =>
+                  prev
+                    ? { ...prev, admin_edit_request_approval_status: status }
+                    : null,
+                )
+              }
+            />
           </TabsContent>
           <TabsContent value="messages">
             <Card>
@@ -1132,7 +1225,7 @@ export default function CoffeeListingSellerView() {
                         {bids.length === 0 && (
                           <TableRow>
                             <TableCell
-                              colSpan={6}
+                              colSpan={8}
                               className="text-center text-gray-600 py-5"
                             >
                               No Bids found for this listing
@@ -1149,7 +1242,7 @@ export default function CoffeeListingSellerView() {
                                 </div>
                                 <div>
                                   <span className="font-bold">ID:</span>{" "}
-                                  {bid.buyer_id.slice(0, 18)}.....
+                                  {bid.buyer_id.slice(0, 18)}...
                                 </div>
                               </div>
                             </TableCell>

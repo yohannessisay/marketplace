@@ -30,6 +30,7 @@ import SellerProfilePage from "./pages/seller/SellerProfilePage";
 import { config } from "./lib/config";
 import { getFromLocalStorage } from "./lib/utils";
 import LandingPage from "./pages/landing";
+import FarmSellerView from "./pages/seller/FarmManagementView";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -43,10 +44,10 @@ const ChatsPage = lazy(() => import("./pages/chats/ChatsPage"));
 const AdminIndex = lazy(() => import("./pages/admin/order/index"));
 const SettingsPage = lazy(() => import("./pages/buyers/settings/SettingsPage"));
 const FarmProfilePage = lazy(
-  () => import("./pages/farms/farm-profile/FarmProfilePage")
+  () => import("./pages/farms/farm-profile/FarmProfilePage"),
 );
 const CompanyOnboarding = lazy(
-  () => import("./pages/company/company-onboarding")
+  () => import("./pages/company/company-onboarding"),
 );
 const AdminLogin = lazy(() => import("./pages/auth/admin-login"));
 initializeApiService(config.VITE_API_BASE_URL);
@@ -322,6 +323,14 @@ const RouterContent: React.FC = () => {
         element={
           <ProtectedRoute>
             <CoffeeListingSellerView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manage-farm/:id"
+        element={
+          <ProtectedRoute>
+            <FarmSellerView />
           </ProtectedRoute>
         }
       />

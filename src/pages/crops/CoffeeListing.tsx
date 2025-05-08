@@ -177,7 +177,7 @@ const CoffeeListing: React.FC = () => {
   const [deliveryType, setDeliveryType] = useState('FOB (Free on Board) - Port of Djibouti');
 
   // File uploads
-  const [gradingReport, setGradingReport] = useState<File | null>(null);
+  const [, setGradingReport] = useState<File | null>(null);
   const [photos, setPhotos] = useState<File[]>([]);
 
   const handleGradingReportUpload = (file: File) => {

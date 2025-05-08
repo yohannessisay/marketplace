@@ -16,8 +16,7 @@ const Button: React.FC<ButtonProps> = ({
   type = 'button',
   fullWidth = false,
   onClick,
-  disabled = false,
-  className = '',
+  disabled = false, 
 }) => {
   const baseClasses = 'py-2 px-4 font-medium rounded transition-colors';
   const variantClasses = {

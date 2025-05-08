@@ -78,11 +78,8 @@ export interface CoffeeListing {
   screen_size: string;
   drying_method: string;
   wet_mill: string;
-  cup_taste_acidity: string;
-  cup_taste_body: string;
-  cup_taste_sweetness: string;
-  cup_taste_aftertaste: string;
-  cup_taste_balance: string;
+  cup_taste: string[] | null;
+  cup_aroma: string[] | null;
   grade: string;
   quantity_kg: number;
   price_per_kg: number;

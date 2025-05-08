@@ -689,13 +689,13 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
 
     const getFilterStateWithoutStatus = () => {
       if (isOrderTab) {
-        const { status, ...rest } = currentFilters as OrderFilterState;
+        const { status: _status, ...rest } = currentFilters as OrderFilterState;
         return rest;
       } else if (isSampleTab) {
-        const { status, ...rest } = currentFilters as SampleFilterState;
+        const { status: _status, ...rest } = currentFilters as SampleFilterState;
         return rest;
       } else if (isBidsTab) {
-        const { status, ...rest } = currentFilters as BidFilterState;
+        const { status: _status, ...rest } = currentFilters as BidFilterState;
         return rest;
       }
       return currentFilters;
@@ -703,16 +703,16 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
 
     const getFilterStateWithoutCoffeeVariety = () => {
       if (isOrderTab) {
-        const { coffeeVariety, ...rest } = currentFilters as OrderFilterState;
+        const { coffeeVariety: _coffeeVariety, ...rest } = currentFilters as OrderFilterState;
         return rest;
       } else if (isSampleTab) {
-        const { coffeeVariety, ...rest } = currentFilters as SampleFilterState;
+        const { coffeeVariety: _coffeeVariety, ...rest } = currentFilters as SampleFilterState;
         return rest;
       } else if (isBidsTab) {
-        const { coffeeVariety, ...rest } = currentFilters as BidFilterState;
+        const { coffeeVariety: _coffeeVariety, ...rest } = currentFilters as BidFilterState;
         return rest;
       } else if (isFavoritesTab) {
-        const { coffeeVariety, ...rest } =
+        const { coffeeVariety: _coffeeVariety, ...rest } =
           currentFilters as FavoriteFilterState;
         return rest;
       }
@@ -721,7 +721,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
 
     const getFilterStateWithoutListingStatus = () => {
       if (isFavoritesTab) {
-        const { listingStatus, ...rest } =
+        const { listingStatus: _listingStatus, ...rest } =
           currentFilters as FavoriteFilterState;
         return rest;
       }
@@ -860,7 +860,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                       onClick={() =>
                         handleFilterChange(tab, {
                           ...(currentFilters as FavoriteFilterState),
-                          listingStatus: status,
+                          status: status,
                         })
                       }
                     >

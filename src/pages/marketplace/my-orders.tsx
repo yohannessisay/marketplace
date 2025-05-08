@@ -609,8 +609,7 @@ export default function OrdersPage() {
                       item={item}
                       tabType="current"
                       expandedOrderId={expandedOrderId ?? ""}
-                      toggleOrderExpansion={toggleOrderExpansion}
-                      activeLoading={activeLoading}
+                      toggleOrderExpansion={toggleOrderExpansion} 
                       openReviewModal={openReviewModal}
                     />
                   ))}
@@ -736,8 +735,7 @@ export default function OrdersPage() {
                       item={item}
                       tabType="historical"
                       expandedOrderId={expandedOrderId ?? ""}
-                      toggleOrderExpansion={toggleOrderExpansion}
-                      activeLoading={activeLoading}
+                      toggleOrderExpansion={toggleOrderExpansion} 
                       openReviewModal={openReviewModal}
                     />
                   ))}
@@ -987,8 +985,7 @@ export default function OrdersPage() {
                       item={item}
                       tabType="bids"
                       expandedOrderId={expandedOrderId ?? ""}
-                      toggleOrderExpansion={toggleOrderExpansion}
-                      activeLoading={activeLoading}
+                      toggleOrderExpansion={toggleOrderExpansion} 
                       openReviewModal={openReviewModal}
                     />
                   ))}

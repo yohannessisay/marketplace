@@ -1,0 +1,36 @@
+stages:
+  - build
+  - deploy
+
+build_app:
+  image: node:20
+  stage: build
+  script:
+    - npm install --legacy-peer-deps
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+
+deploy_to_cpanel:
+  image: alpine:latest
+  stage: deploy
+  before_script:
+    - apk add --no-cache lftp
+  script:
+    - |
+      lftp -c "
+        open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_HOST;
+        cd /public_html/directrade;
+        # Remove everything except cgi-bin
+        foreach f in *;
+          if (\"$f\" != \"cgi-bin\") {
+            echo Deleting \$f;
+            rm -r \$f;
+          }
+        end;
+        # Upload from dist
+        mirror -R --verbose dist /public_html/directrade;
+      "
+  only:
+    - dev

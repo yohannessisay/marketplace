@@ -11,15 +11,13 @@ export const OrderItem = ({
   item,
   tabType,
   expandedOrderId,
-  toggleOrderExpansion,
-  activeLoading,
+  toggleOrderExpansion, 
   openReviewModal,
 }: {
   item: Order | Bid;
   tabType: string;
   expandedOrderId: string;
-  toggleOrderExpansion: (id: string) => void;
-  activeLoading: boolean;
+  toggleOrderExpansion: (id: string) => void; 
   openReviewModal: (order: Order, type: string) => void;
 }) => {
   const isOrderTab = tabType === "current" || tabType === "historical";
@@ -247,7 +245,6 @@ export const OrderItem = ({
                     </Button>
                   ) : (
                     <Button
-                      variant="secondary"
                       onClick={() => openReviewModal(item as Order, "view")}
                     >
                       View Review

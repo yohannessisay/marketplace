@@ -20,8 +20,7 @@ const Input: React.FC<InputProps> = ({
   onChange,
   required = false,
   error,
-  name,
-  className = '',
+  name, 
 }) => {
   return (
     <div className="mb-4">
