@@ -36,6 +36,18 @@ export default function CropFieldManager({
   const [isFullScreen, setIsFullScreen] = useState(false);
   const mapRef = useRef<MapRef>(null);
 
+  // Ensure initial polygons are drawn when component mounts in edit mode
+  useEffect(() => {
+    if (initialPolygons.length > 0 && polygonsData.length === 0) {
+      setPolygonsData(initialPolygons);
+      onPolygonChange(initialPolygons);
+      if (mapRef.current) {
+        // Assuming GoogleMaps has a method to set polygons directly
+        mapRef.current.setPolygonsData?.(initialPolygons);
+      }
+    }
+  }, [initialPolygons, onPolygonChange]);
+
   const handlePolygonChange = (data: PolygonCoord[][]) => {
     setPolygonsData(data);
     onPolygonChange(data);
@@ -49,6 +61,9 @@ export default function CropFieldManager({
     console.log("Polygon deleted");
     setPolygonsData([]);
     onPolygonChange([]);
+    if (mapRef.current) {
+      mapRef.current.resetPolygonData([]);
+    }
   };
 
   const handleResetMap = () => {

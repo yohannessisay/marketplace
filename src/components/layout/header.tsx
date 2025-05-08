@@ -334,6 +334,14 @@ export default function Header() {
                           <Receipt className="h-4 w-4 text-green-400" />
                           Orders
                         </Link>
+                        <Link
+                          to="/market-place"
+                          className={linkClasses("/market-place")}
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <LucideShoppingBag className="h-4 w-4 text-green-400" />
+                          Marketplace
+                        </Link>
                       </>
                     )}
 

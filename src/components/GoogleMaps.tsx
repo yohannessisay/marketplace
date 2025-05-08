@@ -29,7 +29,7 @@ export type MapProps = {
   isReadOnly?: boolean;
   polygonsData?: PolygonCoord[][];
   setPolygonsData?: (data: PolygonCoord[][]) => void;
-  options?: any;
+  options?: google.maps.MapOptions;
   center?: { lat: number; lng: number } | null;
   onPolygonComplete?: (coords: PolygonCoord[]) => void;
   onPolygonDelete?: () => void;
@@ -40,6 +40,7 @@ export interface MapRef {
   resetPolygonData: (newPolygonsData: PolygonCoord[][]) => void;
   deleteCurrentShape: () => void;
   enableDrawing: () => void;
+  setPolygonsData: (data: PolygonCoord[][]) => void;
 }
 
 // Custom Marker component
@@ -67,8 +68,36 @@ const containerStyle = {
   height: "100%",
 };
 
-//const libraries: ("drawing" | "places" | "geometry" | "visualization" | "localContext")[] = ["drawing"];
-const libraries = ["drawing"] as any;
+const libraries: "drawing"[] = ["drawing"];
+
+// Calculate the centroid of polygons
+const calculatePolygonCentroid = (
+  polygons: PolygonCoord[][],
+): { lat: number; lng: number } | null => {
+  if (!polygons || polygons.length === 0 || polygons[0].length === 0) {
+    return null;
+  }
+
+  let totalLat = 0;
+  let totalLng = 0;
+  let totalPoints = 0;
+
+  polygons.forEach((polygon) => {
+    polygon.forEach((coord) => {
+      totalLat += coord.lat;
+      totalLng += coord.lng;
+      totalPoints += 1;
+    });
+  });
+
+  if (totalPoints === 0) return null;
+
+  return {
+    lat: totalLat / totalPoints,
+    lng: totalLng / totalPoints,
+  };
+};
+
 const GoogleMaps = forwardRef<MapRef, MapProps>(
   (
     {
@@ -98,9 +127,8 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
     const [drawingManager, setDrawingManager] =
       useState<google.maps.drawing.DrawingManager | null>(null);
     const [polygons, setPolygons] = useState<google.maps.Polygon[]>([]);
-    const [polygonPaths, setPolygonPaths] = useState<PolygonCoord[][]>(
-      parentData || [],
-    );
+    const [polygonPaths, setPolygonPaths] =
+      useState<PolygonCoord[][]>(parentData);
     const [isDrawingMode, setIsDrawingMode] = useState(false);
 
     // Default center location
@@ -122,12 +150,18 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
           }
         : { lat: 0, lng: 0 });
 
-    // Sync with parent data
+    // Sync with parent data and center map on polygons
     useEffect(() => {
       if (JSON.stringify(parentData) !== JSON.stringify(polygonPaths)) {
         setPolygonPaths(parentData);
+        if (map && parentData.length > 0) {
+          const centroid = calculatePolygonCentroid(parentData);
+          if (centroid) {
+            map.setCenter(centroid);
+          }
+        }
       }
-    }, [parentData]);
+    }, [parentData, map]);
 
     // Map reference
     const mapRef = useRef<google.maps.Map | null>(null);
@@ -136,6 +170,14 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
     const onLoad = (map: google.maps.Map) => {
       mapRef.current = map;
       setMap(map);
+
+      // Center map on polygons if they exist
+      if (polygonPaths.length > 0) {
+        const centroid = calculatePolygonCentroid(polygonPaths);
+        if (centroid) {
+          map.setCenter(centroid);
+        }
+      }
     };
 
     const onUnmount = () => {
@@ -213,6 +255,12 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
             if (setParentData) setParentData(newPolygonPaths);
             if (onPolygonComplete) onPolygonComplete(pathArray);
 
+            // Center map on the new polygon
+            const centroid = calculatePolygonCentroid([pathArray]);
+            if (centroid && map) {
+              map.setCenter(centroid);
+            }
+
             // Add event listeners for path changes
             const updatePath = () => {
               const updatedPath: PolygonCoord[] = [];
@@ -226,6 +274,12 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
               const updatedPolygonPaths = [updatedPath];
               setPolygonPaths(updatedPolygonPaths);
               if (setParentData) setParentData(updatedPolygonPaths);
+
+              // Re-center map on edited polygon
+              const centroid = calculatePolygonCentroid([updatedPath]);
+              if (centroid && map) {
+                map.setCenter(centroid);
+              }
             };
 
             window.google.maps.event.addListener(
@@ -309,6 +363,12 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
           const updatedPolygonPaths = [updatedPath];
           setPolygonPaths(updatedPolygonPaths);
           if (setParentData) setParentData(updatedPolygonPaths);
+
+          // Re-center map on edited polygon
+          const centroid = calculatePolygonCentroid([updatedPath]);
+          if (centroid && map) {
+            map.setCenter(centroid);
+          }
         };
 
         const polygonEventPath = polygon.getPath();
@@ -342,6 +402,12 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
         setIsDrawingMode(false);
       }
 
+      // Center map on polygons
+      const centroid = calculatePolygonCentroid(polygonPaths);
+      if (centroid && map) {
+        map.setCenter(centroid);
+      }
+
       // Clean up on unmount
       return () => {
         newPolygons.forEach((polygon) => {
@@ -362,12 +428,24 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
     useImperativeHandle(ref, () => ({
       resetPolygonData: (newPolygonsData: PolygonCoord[][]) => {
         setPolygonPaths(newPolygonsData);
+        if (setParentData) setParentData(newPolygonsData);
+
+        // Center map on new polygons
+        const centroid = calculatePolygonCentroid(newPolygonsData);
+        if (centroid && map) {
+          map.setCenter(centroid);
+        }
       },
       deleteCurrentShape: () => {
         const newPolygonPaths: PolygonCoord[][] = [];
         setPolygonPaths(newPolygonPaths);
         if (setParentData) setParentData(newPolygonPaths);
         if (onPolygonDelete) onPolygonDelete();
+
+        // Reset map center to default
+        if (map) {
+          map.setCenter(defaultCenter);
+        }
       },
       enableDrawing: () => {
         if (drawingManager && !isReadOnly) {
@@ -375,6 +453,16 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
             window.google.maps.drawing.OverlayType.POLYGON,
           );
           setIsDrawingMode(true);
+        }
+      },
+      setPolygonsData: (data: PolygonCoord[][]) => {
+        setPolygonPaths(data);
+        if (setParentData) setParentData(data);
+
+        // Center map on new polygons
+        const centroid = calculatePolygonCentroid(data);
+        if (centroid && map) {
+          map.setCenter(centroid);
         }
       },
     }));
@@ -416,7 +504,7 @@ const GoogleMaps = forwardRef<MapRef, MapProps>(
 
         <div className="relative h-full w-full overflow-hidden rounded-lg shadow-md">
           {isDrawingMode && (
-            <div className="absolute mt-4  top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-md z-10 text-sm text-gray-700">
+            <div className="absolute mt-4 top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-md z-10 text-sm text-gray-700">
               Click on the map to draw a polygon
             </div>
           )}

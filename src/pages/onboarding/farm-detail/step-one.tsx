@@ -60,10 +60,10 @@ export default function StepOne() {
       longitude: undefined,
       latitude: undefined,
       crop_type: "",
-      crop_source: "Jimma, Oromia, Ethiopia",
-      origin: "Gomma, Jimma",
+      crop_source: undefined,
+      origin: undefined,
       tree_type: undefined,
-      tree_variety: "heirloom",
+      tree_variety: undefined,
       soil_type: undefined,
       farm_name: "",
       town_location: "",
@@ -98,6 +98,10 @@ export default function StepOne() {
       setUserProfile(savedProfile);
     } else {
       setUserProfile(null);
+    }
+
+    if (savedProfile?.onboarding_stage === "farm_profile") {
+      localStorage.removeItem("farm-id");
     }
 
     const savedData = getFromLocalStorage<FarmDetailsFormData>(
@@ -270,17 +274,9 @@ export default function StepOne() {
       saveToLocalStorage("gov-files", govFilePaths);
       saveToLocalStorage("land-files", landFilePaths);
 
-      const isBackButtonClicked = getFromLocalStorage(
-        "back-button-clicked",
-        false,
-      );
+      const existingFarmId = getFromLocalStorage("farm-id", "");
 
-      if (
-        (userProfile?.onboarding_stage === "farm_profile" ||
-          isAgent === "agent") &&
-        getFromLocalStorage("current-step", {}) === "farm_profile" &&
-        !isBackButtonClicked
-      ) {
+      if (userProfile?.onboarding_stage === undefined && !existingFarmId) {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/farm-details",
           formData,
@@ -309,7 +305,6 @@ export default function StepOne() {
           errorMessage(response?.error as APIErrorResponse);
         }
       } else {
-        const existingFarmId = getFromLocalStorage("farm-id", "");
         formData.append("farmId", existingFarmId);
 
         const response: any = await apiService().patchFormData(
@@ -353,6 +348,8 @@ export default function StepOne() {
         const farmerId =
           user.userType === "agent" ? userProfile?.id : undefined;
 
+        console.log("fetchFirstFarm: Fetching farm for farmerId", farmerId);
+
         const response: any = await apiService().get(
           "/onboarding/seller/get-first-farm",
           farmerId,
@@ -391,17 +388,28 @@ export default function StepOne() {
           });
           saveToLocalStorage("farm-id", response.data.farm.id);
         } else {
-          errorMessage(response.error as APIErrorResponse);
+          console.log(
+            "fetchFirstFarm: Failed to fetch farm",
+            response.error as APIErrorResponse,
+          );
         }
       } catch (error: any) {
-        errorMessage(error as APIErrorResponse);
+        console.log("fetchFirstFarm: Error", error as APIErrorResponse);
       }
     };
 
-    if (userProfile?.onboarding_stage !== "farm_profile") {
+    const existingFarmId = getFromLocalStorage("farm-id", "");
+    console.log("useEffect: Checking fetch conditions", {
+      onboarding_stage: userProfile?.onboarding_stage,
+      existingFarmId,
+    });
+
+    if (userProfile?.onboarding_stage !== undefined && existingFarmId) {
       fetchFirstFarm();
+    } else {
+      console.log("useEffect: Skipping fetch for first-time user");
     }
-  }, [form, userProfile?.onboarding_stage, user, loading, errorMessage]);
+  }, [form, userProfile?.onboarding_stage, user, loading]);
 
   const latitude = watch("latitude");
   const longitude = watch("longitude");

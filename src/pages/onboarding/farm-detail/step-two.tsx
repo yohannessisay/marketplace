@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -87,15 +87,15 @@ export default function StepTwo() {
   const [files, setFiles] = useState<File[]>([]);
   const [photos, setPhotos] = useState<FileWithId[]>([]);
   const [farm, setFarm] = useState<Farm>();
-
   const [discounts, setDiscounts] = useState<
     { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
   >([]);
   const { user, setUser, loading } = useAuth();
+  const { successMessage, errorMessage } = useNotification();
   const userProfile: any = getFromLocalStorage("userProfile", {});
   const currentUserStage = userProfile?.onboarding_stage;
-  const { successMessage, errorMessage } = useNotification();
   const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
@@ -174,7 +174,6 @@ export default function StepTwo() {
       const fetchedFarm = response.data.farm;
       setFarm(fetchedFarm);
       saveToLocalStorage("farm-id", fetchedFarm.id);
-      // Set farmId in the form
       form.setValue("farmId", fetchedFarm.id);
     } catch (error: any) {
       console.error("Error fetching farm:", error);
@@ -189,21 +188,17 @@ export default function StepTwo() {
     }
   }, [user]);
 
-  // Load form data and discounts from localStorage if user is returning from a later step
   useEffect(() => {
     const populateForm = async () => {
       try {
-        // Check if user has progressed past crops_to_sell
         const laterStages = ["bank_information", "avatar_image", "completed"];
         if (
           !loading &&
           laterStages.includes(currentUserStage) &&
           currentUserStage !== "crops_to_sell"
         ) {
-          // Load form data
           const savedData: any = getFromLocalStorage("step-two", {});
           if (savedData && Object.keys(savedData).length > 0) {
-            // Ensure cup_aroma and cup_taste are arrays
             const normalizedData = {
               ...savedData,
               cup_aroma: Array.isArray(savedData.cup_aroma)
@@ -212,23 +207,19 @@ export default function StepTwo() {
               cup_taste: Array.isArray(savedData.cup_taste)
                 ? savedData.cup_taste
                 : [],
-              // Convert readiness_date to ISO string if it's a date string
               readiness_date: savedData.readiness_date
                 ? new Date(savedData.readiness_date).toISOString()
                 : new Date().toISOString(),
-              // Ensure farmId is set from saved data if available
               farmId: savedData.farmId || farm?.id || "",
             };
             form.reset(normalizedData);
           }
 
-          // Load discounts
           const savedDiscounts: any = getFromLocalStorage(
             "step-two-discounts",
             [],
           );
           if (Array.isArray(savedDiscounts) && savedDiscounts.length > 0) {
-            // Normalize discounts to ensure they have id, minimum_quantity_kg, and discount_percentage
             const normalizedDiscounts = savedDiscounts.map((discount) => ({
               id: discount.id || Math.random().toString(36).substring(2),
               minimum_quantity_kg: Number(discount.minimum_quantity_kg) || 1,
@@ -244,6 +235,21 @@ export default function StepTwo() {
     };
     populateForm();
   }, [loading, currentUserStage, form, farm]);
+
+  const handleBack = () => {
+    const formData = form.getValues();
+    saveToLocalStorage("step-two", formData);
+    saveToLocalStorage("step-two-discounts", discounts);
+
+    saveToLocalStorage("is-back-button-clicked", "true");
+    localStorage.setItem("current-step", JSON.stringify("farm_profile"));
+
+    if (farm?.id) {
+      saveToLocalStorage("farm-id", farm.id);
+    }
+
+    navigation("/onboarding/step-one");
+  };
 
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
@@ -387,13 +393,11 @@ export default function StepTwo() {
   ];
   const cupTasteOptions = ["Bitter", "Sweet", "Salty", "Acidic", "Sour"];
 
-  // Organize cup aroma options into columns of max 3 items
   const aromaColumns: Array<Array<string>> = [];
   for (let i = 0; i < cupAromaOptions.length; i += 3) {
     aromaColumns.push(cupAromaOptions.slice(i, i + 3));
   }
 
-  // Organize cup taste options into columns of max 3 items
   const tasteColumns: Array<Array<string>> = [];
   for (let i = 0; i < cupTasteOptions.length; i += 3) {
     tasteColumns.push(cupTasteOptions.slice(i, i + 3));
@@ -412,7 +416,22 @@ export default function StepTwo() {
             }}
             className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white pt-10"
           >
-            <h2 className="text-center text-2xl">Add Coffee Crop Details</h2>
+            <div className="flex justify-between items-center mb-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBack}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Step 1
+              </Button>
+              <h2 className="text-2xl font-semibold">
+                Add Coffee Crop Details
+              </h2>
+              <div className="w-[100px]"></div> {/* Spacer for alignment */}
+            </div>
+
             <div className="mb-8">
               <h3 className="text-lg font-medium mb-2">Farm Information</h3>
               <p className="text-sm text-gray-600 mb-4">
@@ -1083,7 +1102,16 @@ export default function StepTwo() {
               </div>
             </div>
 
-            <div className="flex justify-end mb-8">
+            <div className="flex justify-between mb-8">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBack}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
               <Button type="submit" disabled={isSubmitting} className="my-4">
                 {isSubmitting ? "Saving..." : "Save and continue"}
               </Button>

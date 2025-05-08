@@ -129,10 +129,14 @@ export function RequestEditModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-center">
             Request Edit Access for{" "}
             {entityType.charAt(0).toUpperCase() + entityType.slice(1)}
           </DialogTitle>
+          <p className="text-xs text-gray-600 text-center">
+            KYC for this {entityType} is completed, you need to create a edit
+            access request to proceed to edit{" "}
+          </p>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div>
