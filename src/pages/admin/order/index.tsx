@@ -424,7 +424,7 @@ export default function AdminPanel() {
 
       {/* Order Details Modal */}
       {selectedOrder && (
-        <OrderDetailsModal order={selectedOrder} open={showDetailsModal} onClose={() => {setShowDetailsModal(false);window.location.reload()}} />
+        <OrderDetailsModal order={selectedOrder} open={showDetailsModal} onClose={() => {setShowDetailsModal(false);}} />
       )}
 
       {/* Update Order Status Modal */}
@@ -432,7 +432,7 @@ export default function AdminPanel() {
         <UpdateOrderStatusModal
           order={selectedOrder}
           open={showUpdateStatusModal}
-          onClose={() => {setShowUpdateStatusModal(false);window.location.reload()}}
+          onClose={() => {setShowUpdateStatusModal(false);}}
         />
       )}
     </div>

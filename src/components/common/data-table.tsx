@@ -1,6 +1,6 @@
 "use client"
 
-import { JSX, useState } from "react"
+import { JSX, useEffect, useState } from "react"
 import { MoreHorizontal, ChevronLeft, ChevronRight, Eye, RefreshCw, Filter, ChevronDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -82,16 +82,28 @@ export function DataTable({
   }
 
   // Handle filter apply
-  const handleApplyFilters = () => {
+//   const handleApplyFilters = () => {
+//     if (onFilterChange) {
+//       onFilterChange({
+//         date: filterDate,
+//         status: filterStatus,
+//         buyer: filterBuyer,
+//         seller: filterSeller,
+//       })
+//     }
+//   }
+
+  useEffect(() => {
     if (onFilterChange) {
       onFilterChange({
         date: filterDate,
         status: filterStatus,
         buyer: filterBuyer,
         seller: filterSeller,
-      })
+      });
     }
-  }
+  }, [filterDate, filterStatus, filterBuyer, filterSeller]);
+ 
 
   // Generate pagination items
   const generatePaginationItems = () => {
@@ -218,13 +230,13 @@ export function DataTable({
               </div>
 
               {/* Status Filter */}
-              <div className="space-y-2">
+              <div className="space-y-2 w-full">
                 <label className="text-sm font-medium">Status</label>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent >
                     <SelectItem value="all">All Statuses</SelectItem>
                     {filterOptions?.statuses?.map((status) => (
                       <SelectItem key={status.value} value={status.value}>
@@ -239,7 +251,7 @@ export function DataTable({
               <div className="space-y-2">
                 <label className="text-sm font-medium">Buyer</label>
                 <Select value={filterBuyer} onValueChange={setFilterBuyer}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select buyer" />
                   </SelectTrigger>
                   <SelectContent>
@@ -257,7 +269,7 @@ export function DataTable({
               <div className="space-y-2">
                 <label className="text-sm font-medium">Seller</label>
                 <Select value={filterSeller} onValueChange={setFilterSeller}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select seller" />
                   </SelectTrigger>
                   <SelectContent>
@@ -276,9 +288,9 @@ export function DataTable({
               <Button variant="outline" onClick={handleResetFilters}>
                 Reset Filters
               </Button>
-              <Button onClick={handleApplyFilters} className="bg-emerald-600 hover:bg-emerald-700">
+              {/* <Button onClick={handleApplyFilters} className="bg-emerald-600 hover:bg-emerald-700">
                 Apply Filters
-              </Button>
+              </Button> */}
             </div>
           </AccordionContent>
         </AccordionItem>
