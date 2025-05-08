@@ -138,7 +138,7 @@ export default function FarmSellerView() {
   const { user } = useAuth();
   const senderId = getUserId();
   const farmerProfile: any = useMemo(
-    () => getFromLocalStorage("farmer-profile", {}),
+    () => getFromLocalStorage("farmerProfile", {}),
     [],
   );
 
@@ -149,13 +149,6 @@ export default function FarmSellerView() {
 
   const fetchData = useCallback(async () => {
     if (!farmId || !senderId || hasFetched) return;
-
-    if (!user) {
-      errorMessage({
-        error: { message: "Authentication required" },
-      });
-      return;
-    }
     if (user && user.userType === "agent" && fmrId === null) {
       errorMessage({
         error: { message: "Agent must specify a farmer profile" },

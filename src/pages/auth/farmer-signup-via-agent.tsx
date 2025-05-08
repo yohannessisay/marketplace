@@ -49,7 +49,7 @@ export default function FarmerSignupViaAgentPage() {
       );
       successMessage("Farmer Registered successfully");
       saveToLocalStorage("current-step", "farm_profile");
-      saveToLocalStorage("farmer-profile", {
+      saveToLocalStorage("farmerProfile", {
         id: response.data.userId,
         email: response.data.email,
       });

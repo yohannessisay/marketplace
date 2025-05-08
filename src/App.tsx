@@ -103,7 +103,7 @@ const RouterContent: React.FC = () => {
   const { user } = useAuth();
   const currentStep = user?.onboarding_stage;
   const userType = user?.userType;
-  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
   return (
     <Routes>
       {/* Public Routes */}

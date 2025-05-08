@@ -34,7 +34,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FileUpload } from "@/components/common/file-upload";
+import { FileUpload, FileWithPreview } from "@/components/common/file-upload";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
@@ -50,11 +50,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { getFromLocalStorage } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-
-interface FileWithId extends File {
-  id: string;
-  url?: string;
-}
 
 interface Farm {
   id: string;
@@ -74,13 +69,15 @@ export default function AddCrop() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingFarms, setIsLoadingFarms] = useState(true);
   const [isLoadingListing, setIsLoadingListing] = useState(!!id);
-  const [files, setFiles] = useState<File[]>([]);
-  const [photos, setPhotos] = useState<FileWithId[]>([]);
+  const [gradingReports, setGradingReports] = useState<FileWithPreview[]>([]);
+  const [photos, setPhotos] = useState<FileWithPreview[]>([]);
+  const [gradingReportError, setGradingReportError] = useState<string>("");
+  const [photoError, setPhotoError] = useState<string>("");
   const { successMessage, errorMessage } = useNotification();
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farmError, setFarmError] = useState<string | null>(null);
   const { user, loading } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
   const isLoading = isLoadingFarms || isLoadingListing;
   const [hasFetched, setHasFetched] = useState(false);
 
@@ -109,6 +106,8 @@ export default function AddCrop() {
     },
     mode: "onChange",
   });
+
+  const { trigger } = form;
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -185,8 +184,9 @@ export default function AddCrop() {
               shipping_port: listing.shipping_port || "",
             });
 
+            // Fetch photos
             if (listing.photos?.length > 0) {
-              const photosTemp: FileWithId[] = await Promise.all(
+              const photosTemp: FileWithPreview[] = await Promise.all(
                 listing.photos.map(async (photo: any) => {
                   try {
                     const res = await fetch(photo.photo_url);
@@ -195,10 +195,13 @@ export default function AddCrop() {
                     const blob = await res.blob();
                     const fileName =
                       photo.photo_url.split("/").pop() || `photo_${photo.id}`;
-                    return Object.assign(
-                      new File([blob], fileName, { type: blob.type }),
-                      { id: photo.id, url: photo.photo_url },
-                    );
+                    const file = new File([blob], fileName, {
+                      type: blob.type,
+                    });
+                    const preview = URL.createObjectURL(file);
+                    const type =
+                      file.type === "application/pdf" ? "pdf" : "image";
+                    return { file, preview, type };
                   } catch (err) {
                     console.error(
                       `Error fetching photo ${photo.photo_url}:`,
@@ -210,7 +213,44 @@ export default function AddCrop() {
               );
               setPhotos(
                 photosTemp.filter(
-                  (photo): photo is FileWithId => photo !== null,
+                  (photo): photo is FileWithPreview => photo !== null,
+                ),
+              );
+            }
+
+            // Fetch grading reports
+            if (listing.documents?.length > 0) {
+              const gradingReportsTemp: FileWithPreview[] = await Promise.all(
+                listing.documents
+                  .filter((doc: any) => doc.doc_type === "grading_report")
+                  .map(async (doc: any) => {
+                    try {
+                      const res = await fetch(doc.doc_url);
+                      if (!res.ok)
+                        throw new Error(`Failed to fetch ${doc.doc_url}`);
+                      const blob = await res.blob();
+                      const fileName =
+                        doc.doc_url.split("/").pop() ||
+                        `grading_report_${doc.id}`;
+                      const file = new File([blob], fileName, {
+                        type: blob.type,
+                      });
+                      const preview = URL.createObjectURL(file);
+                      const type =
+                        file.type === "application/pdf" ? "pdf" : "image";
+                      return { file, preview, type };
+                    } catch (err) {
+                      console.error(
+                        `Error fetching grading report ${doc.doc_url}:`,
+                        err,
+                      );
+                      return null;
+                    }
+                  }),
+              );
+              setGradingReports(
+                gradingReportsTemp.filter(
+                  (report): report is FileWithPreview => report !== null,
                 ),
               );
             }
@@ -246,16 +286,114 @@ export default function AddCrop() {
     hasFetched,
   ]);
 
-  const handlePhotosSelected = (selectedPhotos: File[]) => {
-    const newPhotos: FileWithId[] = selectedPhotos.map((file) =>
-      Object.assign(file, { id: Math.random().toString(36).substring(2) }),
+  const validateFiles = (): { isValid: boolean; error?: APIErrorResponse } => {
+    setGradingReportError("");
+    setPhotoError("");
+
+    if (gradingReports.length === 0) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Grading report is required",
+          details: "Please upload at least one grading report",
+          code: 400,
+          hint: "The file must be in PDF, JPG, or PNG format",
+        },
+      };
+      setGradingReportError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    if (photos.length === 0) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Crop photos are required",
+          details: "Please upload at least one photo",
+          code: 400,
+          hint: "The file must be in JPG or PNG format",
+        },
+      };
+      setPhotoError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    const oversizedGradingReports = gradingReports.some(
+      (file) => file.file.size > 5 * 1024 * 1024,
     );
+    if (oversizedGradingReports) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Grading report exceeds 5MB",
+          details: "Each file size must be less than 5MB",
+          code: 413,
+          hint: "Compress the file or upload a smaller version",
+        },
+      };
+      setGradingReportError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    const oversizedPhotos = photos.some(
+      (file) => file.file.size > 5 * 1024 * 1024,
+    );
+    if (oversizedPhotos) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Photo exceeds 5MB",
+          details: "Each file size must be less than 5MB",
+          code: 413,
+          hint: "Compress the file or upload a smaller version",
+        },
+      };
+      setPhotoError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    return { isValid: true };
+  };
+
+  const handleGradingReportsSelected = (selectedFiles: File[]) => {
+    const newFiles: FileWithPreview[] = selectedFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      type: file.type === "application/pdf" ? "pdf" : "image",
+    }));
+    setGradingReports(newFiles);
+    setGradingReportError("");
+  };
+
+  const handlePhotosSelected = (selectedPhotos: File[]) => {
+    const newPhotos: FileWithPreview[] = selectedPhotos.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      type: file.type === "application/pdf" ? "pdf" : "image",
+    }));
     setPhotos(newPhotos);
+    setPhotoError("");
   };
 
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
+      const isValid = await trigger();
+      if (!isValid) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      const fileValidation = validateFiles();
+      if (!fileValidation.isValid) {
+        setIsSubmitting(false);
+        return;
+      }
+
       const formData = new FormData();
       const transformedData = {
         ...data,
@@ -274,8 +412,8 @@ export default function AddCrop() {
         }
       }
 
-      files.forEach((file) => formData.append("files", file));
-      photos.forEach((photo) => formData.append("files", photo));
+      gradingReports.forEach((file) => formData.append("files", file.file));
+      photos.forEach((photo) => formData.append("files", photo.file));
       formData.append("farm_id", data.farmId!);
 
       if (isEditMode && id) {
@@ -451,24 +589,29 @@ export default function AddCrop() {
                   <div className="mb-8">
                     <Card className="max-w-2xl mx-auto">
                       <CardHeader>
-                        <CardTitle>Upload grading report</CardTitle>
+                        <CardTitle>Upload Grading Report</CardTitle>
                         <CardDescription>
-                          Upload a single PDF document or image. Drag and drop
-                          or click to select a file.
+                          Upload PDF documents or images (Max 5 files, 5MB each)
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <FileUpload
-                          onFilesSelected={(files) => setFiles(files)}
+                          onFilesSelected={handleGradingReportsSelected}
                           maxFiles={5}
                           maxSizeMB={5}
+                          initialFiles={gradingReports}
                         />
+                        {gradingReportError && (
+                          <p className="text-red-500 text-sm mt-2">
+                            {gradingReportError}
+                          </p>
+                        )}
                       </CardContent>
-                      <CardFooter className="flex justify-between">
+                      <CardFooter>
                         <div className="text-sm text-muted-foreground">
-                          {files.length > 0
-                            ? files.length + " files selected"
-                            : "No file selected"}
+                          {gradingReports.length > 0
+                            ? `${gradingReports.length} files selected`
+                            : "No files selected"}
                         </div>
                       </CardFooter>
                     </Card>
@@ -828,13 +971,14 @@ export default function AddCrop() {
                       Coffee crop photos
                     </h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      Upload high-quality images of your coffee crop.
+                      Upload high-quality images of your coffee crop (Max 6
+                      files, 5MB each).
                     </p>
                     <Card className="max-w-2xl mx-auto">
                       <CardHeader>
                         <CardTitle>Coffee crop photos</CardTitle>
                         <CardDescription>
-                          Upload images. Drag and drop or click to select files.
+                          Upload images (Max 6 files, 5MB each)
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -842,13 +986,19 @@ export default function AddCrop() {
                           onFilesSelected={handlePhotosSelected}
                           maxFiles={6}
                           maxSizeMB={5}
+                          initialFiles={photos}
                         />
+                        {photoError && (
+                          <p className="text-red-500 text-sm mt-2">
+                            {photoError}
+                          </p>
+                        )}
                       </CardContent>
-                      <CardFooter className="flex justify-between">
+                      <CardFooter>
                         <div className="text-sm text-muted-foreground">
                           {photos.length > 0
-                            ? `${photos.length} photo(s) selected`
-                            : "No photos selected"}
+                            ? `${photos.length} files selected`
+                            : "No files selected"}
                         </div>
                       </CardFooter>
                     </Card>

@@ -16,6 +16,7 @@ export type FileUploadProps = {
   maxFiles?: number;
   maxSizeMB?: number;
   className?: string;
+  initialFiles?: FileWithPreview[];
 };
 
 export function FileUpload({
@@ -23,8 +24,9 @@ export function FileUpload({
   maxFiles = 5,
   maxSizeMB = 5,
   className,
+  initialFiles = [],
 }: FileUploadProps) {
-  const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [files, setFiles] = useState<FileWithPreview[]>(initialFiles);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,7 +50,6 @@ export function FileUpload({
       const validFiles: File[] = [];
       let errorMessage: string | null = null;
 
-      // Check if adding these files would exceed the max files limit
       if (files.length + fileList.length > maxFiles) {
         return {
           valid: [],
@@ -57,14 +58,12 @@ export function FileUpload({
       }
 
       for (const file of fileList) {
-        // Check file type
         if (!file.type.match(/^image\//) && file.type !== "application/pdf") {
           errorMessage =
             "Only images (JPG, PNG, etc.) and PDF files are allowed.";
           continue;
         }
 
-        // Check file size
         if (file.size > maxSizeBytes) {
           errorMessage = `File size should not exceed ${maxSizeMB}MB.`;
           continue;
@@ -137,7 +136,6 @@ export function FileUpload({
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processFiles(e.target.files);
-      // Reset the input value to allow selecting the same file again
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -146,7 +144,6 @@ export function FileUpload({
 
   const removeFile = (indexToRemove: number) => {
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
-    // Clean up URL objects to prevent memory leaks
     URL.revokeObjectURL(files[indexToRemove].preview);
 
     setFiles(updatedFiles);
@@ -157,7 +154,12 @@ export function FileUpload({
     }
   };
 
-  // Cleanup URLs when component unmounts or files change
+  // Trim file name to 40 characters
+  const trimFileName = (name: string, maxLength: number = 40): string => {
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength - 3) + "...";
+  };
+
   useEffect(() => {
     return () => {
       files.forEach((file) => {
@@ -188,23 +190,25 @@ export function FileUpload({
           multiple={maxFiles > 1}
         />
 
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <Upload className="h-10 w-10 text-gray-400" />
-          <div className="text-center">
-            <Button
-              type="button"
-              variant="outline"
-              className="text-primary hover:text-primary/80"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Click to upload
-            </Button>
-            <span className="text-gray-500"> or drag and drop</span>
+        {files.length === 0 && (
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <Upload className="h-10 w-10 text-gray-400" />
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="outline"
+                className="text-primary hover:text-primary/80"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Click to upload
+              </Button>
+              <span className="text-gray-500"> or drag and drop</span>
+            </div>
+            <p className="text-sm text-gray-500">
+              PDF or images up to {maxSizeMB}MB (max {maxFiles} files)
+            </p>
           </div>
-          <p className="text-sm text-gray-500">
-            PDF or images up to {maxSizeMB}MB (max {maxFiles} files)
-          </p>
-        </div>
+        )}
 
         {error && (
           <div className="mt-4 flex items-center gap-2 text-destructive">
@@ -214,7 +218,7 @@ export function FileUpload({
         )}
 
         {files.length > 0 && (
-          <div className="mt-6 space-y-4">
+          <div className={cn("mt-6 space-y-4", files.length === 0 && "mt-0")}>
             {files.map((file, index) => (
               <div
                 key={`${file.file.name}-${index}`}
@@ -235,7 +239,7 @@ export function FileUpload({
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {file.file.name}
+                      {trimFileName(file.file.name)}
                     </p>
                     <p className="text-xs text-gray-500">
                       {(file.file.size / 1024 / 1024).toFixed(2)}MB
@@ -253,6 +257,16 @@ export function FileUpload({
                 </Button>
               </div>
             ))}
+            {files.length < maxFiles && (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Add More Files
+              </Button>
+            )}
           </div>
         )}
       </div>

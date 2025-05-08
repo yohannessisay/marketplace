@@ -112,6 +112,12 @@ interface Order {
   created_by_agent_id: string | null;
   listing?: Listing;
   seller?: Seller;
+  buyer?: buyer;
+}
+
+interface buyer {
+  first_name: string;
+  last_name: string;
 }
 
 interface SampleRequest {
@@ -692,7 +698,8 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
         const { status: _status, ...rest } = currentFilters as OrderFilterState;
         return rest;
       } else if (isSampleTab) {
-        const { status: _status, ...rest } = currentFilters as SampleFilterState;
+        const { status: _status, ...rest } =
+          currentFilters as SampleFilterState;
         return rest;
       } else if (isBidsTab) {
         const { status: _status, ...rest } = currentFilters as BidFilterState;
@@ -703,13 +710,16 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
 
     const getFilterStateWithoutCoffeeVariety = () => {
       if (isOrderTab) {
-        const { coffeeVariety: _coffeeVariety, ...rest } = currentFilters as OrderFilterState;
+        const { coffeeVariety: _coffeeVariety, ...rest } =
+          currentFilters as OrderFilterState;
         return rest;
       } else if (isSampleTab) {
-        const { coffeeVariety: _coffeeVariety, ...rest } = currentFilters as SampleFilterState;
+        const { coffeeVariety: _coffeeVariety, ...rest } =
+          currentFilters as SampleFilterState;
         return rest;
       } else if (isBidsTab) {
-        const { coffeeVariety: _coffeeVariety, ...rest } = currentFilters as BidFilterState;
+        const { coffeeVariety: _coffeeVariety, ...rest } =
+          currentFilters as BidFilterState;
         return rest;
       } else if (isFavoritesTab) {
         const { coffeeVariety: _coffeeVariety, ...rest } =
@@ -1386,16 +1396,9 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
             <div className="flex items-center">
               <User className="h-4 w-4 mr-1 text-muted-foreground" />
               <span className="text-sm font-medium">
-                {item.buyer_name || "Unknown"}{" "}
+                {item.buyer?.first_name || "Unknown"}{" "}
+                {item.buyer?.last_name || ""}
               </span>
-              {item.seller && (
-                <Link
-                  to={`/sellers/${item.seller.first_name?.toLowerCase()}-${item.seller.last_name?.toLowerCase()}`}
-                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
-                >
-                  View Seller
-                </Link>
-              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -1622,14 +1625,6 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                 {item.buyer?.first_name || "Unknown"}{" "}
                 {item.buyer?.last_name || ""}
               </span>
-              {item.buyer && (
-                <Link
-                  to={`/buyers/${item.buyer_id}`}
-                  className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
-                >
-                  View Buyer
-                </Link>
-              )}
             </div>
             <div className="flex items-center gap-2">
               <Badge

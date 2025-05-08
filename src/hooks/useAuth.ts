@@ -1,4 +1,4 @@
-import { getFromLocalStorage } from '@/lib/utils';
+import { getFromLocalStorage } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
@@ -41,34 +41,39 @@ export const useAuth = (): AuthState => {
 
       const accessToken = Cookies.get(ACCESS_TOKEN_KEY);
       const refreshToken = Cookies.get(REFRESH_TOKEN_KEY);
-      const storedProfile = getFromLocalStorage(USER_PROFILE_KEY,{});
-      let userProfile: UserProfile | null = null;
-  
+      const storedProfile = getFromLocalStorage(USER_PROFILE_KEY, null);
+
+      if (
+        storedProfile &&
+        (storedProfile as UserProfile).userType === "agent"
+      ) {
+        if (accessToken) {
+          setAuthState({
+            isAuthenticated: true,
+            user: storedProfile as UserProfile,
+            loading: false,
+            setUser: authState.setUser,
+          });
+          return;
+        }
+      }
 
       if (storedProfile) {
-    
-      
         try {
-          userProfile = storedProfile as UserProfile;
-        
-          
-          if (
-            userProfile
-          ) {
+          const userProfile = storedProfile as UserProfile;
+          if (userProfile) {
             if (accessToken) {
-            
               setAuthState({
                 isAuthenticated: true,
                 user: userProfile,
                 loading: false,
                 setUser: authState.setUser,
               });
-              return ;
+              return;
             }
           } else {
             console.warn("Invalid userProfile in localStorage, clearing...");
             localStorage.removeItem(USER_PROFILE_KEY);
-            return 0;
           }
         } catch (error) {
           console.error(
@@ -82,12 +87,13 @@ export const useAuth = (): AuthState => {
       if (accessToken) {
         try {
           const response: any = await apiService().get("/users/profile");
-          let user: UserProfile;
           if (response.success && response.data) {
+            let user: UserProfile;
             if (response.data.agent) {
-              user={...response.data,user:response.data.agent}
+              user = { ...response.data, user: response.data.agent };
+            } else {
+              user = response.data;
             }
-           user=response.data;
             localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(user));
             setAuthState({
               isAuthenticated: true,
@@ -139,23 +145,15 @@ export const useAuth = (): AuthState => {
                   setUser: authState.setUser,
                 });
                 return;
-              } else {
-                console.error(
-                  "Refresh token response not successful:",
-                  refreshResponse,
-                );
               }
             } catch (refreshError) {
-              console.error(
-                "Failed to refresh token:",
-                (refreshError as APIErrorResponse).error?.message ||
-                  refreshError,
-              );
+              console.error("Failed to refresh token:", refreshError);
             }
           }
         }
       }
 
+      // Clear auth if all else fails
       localStorage.removeItem(USER_PROFILE_KEY);
       Cookies.remove(ACCESS_TOKEN_KEY);
       Cookies.remove(REFRESH_TOKEN_KEY);

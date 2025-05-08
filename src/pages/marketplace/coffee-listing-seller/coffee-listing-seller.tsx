@@ -292,7 +292,7 @@ export default function CoffeeListingSellerView() {
   const { user } = useAuth();
   const senderId = getUserId();
   const farmerProfile: any = useMemo(
-    () => getFromLocalStorage("farmer-profile", {}),
+    () => getFromLocalStorage("farmerProfile", {}),
     [],
   );
 

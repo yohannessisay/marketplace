@@ -82,7 +82,7 @@ export default function FarmersTable() {
 
     if (response && response.success) {
       const farmerInfo = response.data.farmer;
-      saveToLocalStorage("farmer-profile", farmerInfo);
+      saveToLocalStorage("farmerProfile", farmerInfo);
 
       switch (farmerInfo.onboarding_stage) {
         case "not_started":

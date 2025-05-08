@@ -47,8 +47,11 @@ export default function StepFour() {
   const [profileInfo, setProfileInfo] = useState<ProfileInfo | undefined>();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
-  const { user, setUser } = useAuth();
+  const { user, setUser, isAuthenticated } = useAuth();
   const { successMessage, errorMessage } = useNotification();
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+
+  console.log("Auth State:", { user, isAuthenticated, farmerProfile });
 
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
@@ -61,9 +64,10 @@ export default function StepFour() {
 
   const fetchProfileInfo = async () => {
     try {
+      console.log("Fetching profile info for:", { user, farmerProfile });
       const response: any = await apiService().get(
         "/onboarding/seller/get-profile",
-        user?.userType === "agent" ? user?.id : "",
+        user?.userType === "agent" ? farmerProfile?.id : "",
       );
       setProfileInfo(response.data.profile);
       form.reset({
@@ -76,14 +80,47 @@ export default function StepFour() {
         localStorage.setItem("profile-image", response.data.profile.avatar_url);
       }
     } catch (error: any) {
+      console.error("Failed to fetch profile info:", error);
       errorMessage(error as APIErrorResponse);
+    }
+  };
+
+  const loadSavedData = () => {
+    const savedData = getFromLocalStorage("step-four", {});
+    if (Object.keys(savedData).length > 0) {
+      const loadedData: ProfileInfoFormData = {
+        telegram: (savedData as any).telegram || "",
+        about_me: (savedData as any).about_me || "",
+        address: (savedData as any).address || "",
+      };
+      form.setValue("telegram", loadedData.telegram);
+      form.setValue("about_me", loadedData.about_me);
+      form.setValue("address", loadedData.address);
+      const savedImage = localStorage.getItem("profile-image");
+      if (savedImage) {
+        setProfileImage(savedImage);
+      }
     }
   };
 
   useEffect(() => {
     setIsClient(true);
-    fetchProfileInfo();
-  }, [form]);
+    if (user) {
+      const isBackButtonClicked =
+        getFromLocalStorage("back-button-clicked", {}) === "true";
+      const effectiveOnboardingStage =
+        user.userType === "agent" && farmerProfile?.id
+          ? farmerProfile.onboarding_stage
+          : user.onboarding_stage;
+
+      if (effectiveOnboardingStage === "completed" && isBackButtonClicked) {
+        fetchProfileInfo();
+      }
+      loadSavedData();
+    } else {
+      console.warn("No user found in auth context");
+    }
+  }, [user, form]);
 
   const handleFilesSelected = (selectedFiles: File[]) => {
     const file = selectedFiles[0];
@@ -102,7 +139,6 @@ export default function StepFour() {
   const onSubmit = async (data: ProfileInfoFormData) => {
     try {
       setIsSubmitting(true);
-      const farmer: any = getFromLocalStorage("farmer-profile", {});
 
       if (
         user?.onboarding_stage === "avatar_image" ||
@@ -125,7 +161,7 @@ export default function StepFour() {
           "/onboarding/seller/profile",
           formData,
           true,
-          user?.userType === "agent" && farmer ? farmer.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
         removeFromLocalStorage("step-one");
@@ -164,13 +200,14 @@ export default function StepFour() {
           "/sellers/profile/update-profile",
           formData,
           true,
-          user?.userType === "agent" && farmer ? farmer.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
         successMessage("Profile data updated successfully");
         navigation("/seller-dashboard");
       }
     } catch (error: any) {
+      console.error("Submission error:", error);
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsSubmitting(false);

@@ -26,7 +26,7 @@ import {
   farmDetailsSchema,
   type FarmDetailsFormData,
 } from "@/types/validation/seller-onboarding";
-import { FileUpload } from "@/components/common/file-upload";
+import { FileUpload, FileWithPreview } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
@@ -51,12 +51,12 @@ export default function AddFarm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [govRegFiles, setGovRegFiles] = useState<File[]>([]);
-  const [landRightsFiles, setLandRightsFiles] = useState<File[]>([]);
+  const [govRegFiles, setGovRegFiles] = useState<FileWithPreview[]>([]);
+  const [landRightsFiles, setLandRightsFiles] = useState<FileWithPreview[]>([]);
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
   const { user } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
 
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
@@ -182,8 +182,8 @@ export default function AddFarm() {
         });
 
         if (farm.kyc_documents?.length > 0) {
-          const govRegFilesTemp: File[] = [];
-          const landRightsFilesTemp: File[] = [];
+          const govRegFilesTemp: FileWithPreview[] = [];
+          const landRightsFilesTemp: FileWithPreview[] = [];
 
           await Promise.all(
             farm.kyc_documents.map(async (doc: any) => {
@@ -193,15 +193,20 @@ export default function AddFarm() {
                 const blob = await res.blob();
                 const fileName =
                   doc.doc_url.split("/").pop() || `document_${doc.id}`;
-                const file = Object.assign(
-                  new File([blob], fileName, { type: blob.type }),
-                  { id: doc.id || Math.random().toString(36).substring(2) },
-                );
+                const file = new File([blob], fileName, { type: blob.type });
+                const preview = URL.createObjectURL(file);
+                const type = file.type === "application/pdf" ? "pdf" : "image";
+
+                const fileWithPreview: FileWithPreview = {
+                  file,
+                  preview,
+                  type,
+                };
 
                 if (doc.doc_type === "government_registration") {
-                  govRegFilesTemp.push(file);
+                  govRegFilesTemp.push(fileWithPreview);
                 } else if (doc.doc_type === "land_rights") {
-                  landRightsFilesTemp.push(file);
+                  landRightsFilesTemp.push(fileWithPreview);
                 }
               } catch (err) {
                 console.error(
@@ -267,7 +272,7 @@ export default function AddFarm() {
     }
 
     const oversizedGovFiles = govRegFiles.some(
-      (file) => file.size > 5 * 1024 * 1024,
+      (file) => file.file.size > 5 * 1024 * 1024,
     );
     if (oversizedGovFiles) {
       const error: APIErrorResponse = {
@@ -285,7 +290,7 @@ export default function AddFarm() {
     }
 
     const oversizedLandFiles = landRightsFiles.some(
-      (file) => file.size > 5 * 1024 * 1024,
+      (file) => file.file.size > 5 * 1024 * 1024,
     );
     if (oversizedLandFiles) {
       const error: APIErrorResponse = {
@@ -349,17 +354,15 @@ export default function AddFarm() {
       }
 
       govRegFiles.forEach((file) => {
-        formData.append(`files`, file);
+        formData.append(`files`, file.file);
       });
 
       landRightsFiles.forEach((file) => {
-        formData.append(`files`, file);
+        formData.append(`files`, file.file);
       });
 
-      const govFilePaths = govRegFiles.map((file) => URL.createObjectURL(file));
-      const landFilePaths = landRightsFiles.map((file) =>
-        URL.createObjectURL(file),
-      );
+      const govFilePaths = govRegFiles.map((file) => file.preview);
+      const landFilePaths = landRightsFiles.map((file) => file.preview);
       saveToLocalStorage("gov-files", govFilePaths);
       saveToLocalStorage("land-files", landFilePaths);
 
@@ -449,7 +452,16 @@ export default function AddFarm() {
                     <CardContent>
                       <FileUpload
                         onFilesSelected={(files) => {
-                          setGovRegFiles(files);
+                          setGovRegFiles(
+                            files.map((file) => ({
+                              file,
+                              preview: URL.createObjectURL(file),
+                              type:
+                                file.type === "application/pdf"
+                                  ? "pdf"
+                                  : "image",
+                            })),
+                          );
                           setGovFileError("");
                           const filePaths = files.map((file) =>
                             URL.createObjectURL(file),
@@ -458,6 +470,7 @@ export default function AddFarm() {
                         }}
                         maxFiles={5}
                         maxSizeMB={5}
+                        initialFiles={govRegFiles}
                       />
                       {govFileError && (
                         <p className="text-red-500 text-sm mt-2">
@@ -484,7 +497,16 @@ export default function AddFarm() {
                     <CardContent>
                       <FileUpload
                         onFilesSelected={(files) => {
-                          setLandRightsFiles(files);
+                          setLandRightsFiles(
+                            files.map((file) => ({
+                              file,
+                              preview: URL.createObjectURL(file),
+                              type:
+                                file.type === "application/pdf"
+                                  ? "pdf"
+                                  : "image",
+                            })),
+                          );
                           setLandFileError("");
                           const filePaths = files.map((file) =>
                             URL.createObjectURL(file),
@@ -493,6 +515,7 @@ export default function AddFarm() {
                         }}
                         maxFiles={5}
                         maxSizeMB={5}
+                        initialFiles={landRightsFiles}
                       />
                       {landFileError && (
                         <p className="text-red-500 text-sm mt-2">
