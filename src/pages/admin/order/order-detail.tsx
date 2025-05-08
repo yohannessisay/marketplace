@@ -60,7 +60,7 @@ export function OrderDetailsModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[900px] h-[90%] overflow-y-scroll">
         <DialogHeader>
           <DialogTitle className="text-xl">Order Details</DialogTitle>
           <DialogDescription>Complete information about order {order.order_id}</DialogDescription>

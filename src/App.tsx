@@ -9,7 +9,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
-import { initializeApiService } from "./services/apiService"; 
+import { initializeApiService } from "./services/apiService";
 import OTPInputPage from "./pages/auth/OTP";
 import StepFour from "./pages/onboarding/farm-detail/step-four";
 import StepThree from "./pages/onboarding/farm-detail/step-three";
@@ -40,6 +40,7 @@ const FarmManagement = lazy(() => import("./pages/farms/FarmManagement"));
 const FarmDetails = lazy(() => import("./pages/farms/FarmDetails"));
 const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const ChatsPage = lazy(() => import("./pages/chats/ChatsPage"));
+const AdminIndex = lazy(() => import("./pages/admin/order/index"));
 const SettingsPage = lazy(() => import("./pages/buyers/settings/SettingsPage"));
 const FarmProfilePage = lazy(
   () => import("./pages/farms/farm-profile/FarmProfilePage")
@@ -47,7 +48,7 @@ const FarmProfilePage = lazy(
 const CompanyOnboarding = lazy(
   () => import("./pages/company/company-onboarding")
 );
-
+const AdminLogin = lazy(() => import("./pages/auth/admin-login"));
 initializeApiService(config.VITE_API_BASE_URL);
 initializeChatService(config.VITE_SOCKET_URL);
 
@@ -108,8 +109,10 @@ const RouterContent: React.FC = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/agent/login" element={<AgentLogin />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/otp" element={<OTPInputPage />} />
       <Route path="/registration" element={<Signup />} />
+
       <Route path="/verification" element={<VerifyEmail />} />
       <Route path="/first-time-user" element={<CreatePassword />} />
       <Route path="/market-place" element={<CoffeeMarketplace />} />
@@ -127,6 +130,19 @@ const RouterContent: React.FC = () => {
               <Welcome />
             ) : (
               <FarmManagement />
+            )}
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/home"
+        element={
+          <ProtectedRoute>
+            {userType === "admin" ? (
+              <AdminIndex />
+            ) : (
+              <Navigate to="/market-place" replace />
             )}
           </ProtectedRoute>
         }
@@ -151,8 +167,13 @@ const RouterContent: React.FC = () => {
         path="/add-farm"
         element={
           <ProtectedRoute>
-            {currentStep === "completed"|| (farmerProfile &&
-              farmerProfile?.onboarding_stage === "completed") ? <AddFarm /> : <Welcome />}
+            {currentStep === "completed" ||
+            (farmerProfile &&
+              farmerProfile?.onboarding_stage === "completed") ? (
+              <AddFarm />
+            ) : (
+              <Welcome />
+            )}
           </ProtectedRoute>
         }
       />
@@ -168,8 +189,13 @@ const RouterContent: React.FC = () => {
         path="/add-crop"
         element={
           <ProtectedRoute>
-            {currentStep === "completed"|| (farmerProfile &&
-              farmerProfile?.onboarding_stage === "completed") ? <AddCrop /> : <Welcome />}
+            {currentStep === "completed" ||
+            (farmerProfile &&
+              farmerProfile?.onboarding_stage === "completed") ? (
+              <AddCrop />
+            ) : (
+              <Welcome />
+            )}
           </ProtectedRoute>
         }
       />

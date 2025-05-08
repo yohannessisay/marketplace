@@ -301,13 +301,13 @@ export default function AdminPanel() {
 
         <div className="flex-1 overflow-auto py-2">
           <nav className="grid gap-1 px-2">
-            <Link
+            {/* <Link
               to="#"
               className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
             >
               <BarChart3 className="h-5 w-5" />
               <span>Dashboard</span>
-            </Link>
+            </Link> */}
             <Link
               to="#"
               className="flex items-center gap-3 rounded-md bg-emerald-50 px-3 py-2 text-emerald-600 font-medium"
@@ -315,7 +315,7 @@ export default function AdminPanel() {
               <ShoppingCart className="h-5 w-5" />
               <span>Order Management</span>
             </Link>
-            <Link
+            {/* <Link
               to="#"
               className="flex items-center gap-3 rounded-md px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
             >
@@ -335,7 +335,7 @@ export default function AdminPanel() {
             >
               <Settings className="h-5 w-5" />
               <span>Settings</span>
-            </Link>
+            </Link> */}
           </nav>
         </div>
       </div>
@@ -359,14 +359,14 @@ export default function AdminPanel() {
             <span className="sr-only">Toggle Menu</span>
           </Button>
 
-          <div className="relative w-full max-w-md">
+          {/* <div className="relative w-full max-w-md">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
             <Input
               type="search"
               placeholder="Search orders..."
               className="w-full bg-white pl-8 focus-visible:ring-emerald-500"
             />
-          </div>
+          </div> */}
 
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="icon" className="text-gray-500">
@@ -424,7 +424,7 @@ export default function AdminPanel() {
 
       {/* Order Details Modal */}
       {selectedOrder && (
-        <OrderDetailsModal order={selectedOrder} open={showDetailsModal} onClose={() => setShowDetailsModal(false)} />
+        <OrderDetailsModal order={selectedOrder} open={showDetailsModal} onClose={() => {setShowDetailsModal(false);window.location.reload()}} />
       )}
 
       {/* Update Order Status Modal */}
@@ -432,7 +432,7 @@ export default function AdminPanel() {
         <UpdateOrderStatusModal
           order={selectedOrder}
           open={showUpdateStatusModal}
-          onClose={() => setShowUpdateStatusModal(false)}
+          onClose={() => {setShowUpdateStatusModal(false);window.location.reload()}}
         />
       )}
     </div>
