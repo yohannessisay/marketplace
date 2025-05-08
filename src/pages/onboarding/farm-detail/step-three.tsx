@@ -48,6 +48,7 @@ export default function StepThree() {
   const { successMessage, errorMessage } = useNotification();
   const { user, setUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
 
   const form = useForm<BankInfoFormData>({
     resolver: zodResolver(bankInfoSchema),
@@ -65,11 +66,24 @@ export default function StepThree() {
     try {
       const response: any = await apiService().get(
         "/onboarding/seller/get-bank-information",
-        user?.userType === "agent" ? user?.id : "",
+        user?.userType === "agent" ? farmerProfile?.id : "",
       );
       const bankAccountData = response.data.bank_account;
       if (bankAccountData) {
         setBankAccount(bankAccountData);
+        // Populate form with fetched data
+        form.setValue(
+          "account_holder_name",
+          bankAccountData.account_holder_name || "",
+        );
+        form.setValue("bank_name", bankAccountData.bank_name || "");
+        form.setValue("account_number", bankAccountData.account_number || "");
+        form.setValue("branch_name", bankAccountData.branch_name || "");
+        form.setValue(
+          "is_primary",
+          bankAccountData.is_primary === "no" ? "no" : "yes",
+        );
+        form.setValue("swift_code", bankAccountData.swift_code || "");
       }
     } catch (error: any) {
       console.error(
@@ -100,14 +114,27 @@ export default function StepThree() {
 
   useEffect(() => {
     setIsClient(true);
-    if (user && user.onboarding_stage !== "completed") {
-      fetchBankAccount();
+    if (user) {
+      const isBackButtonClicked =
+        getFromLocalStorage("back-button-clicked", {}) === "true";
+      const laterStages = ["avatar_image", "completed"];
+      const effectiveOnboardingStage =
+        user.userType === "agent" && farmerProfile?.id
+          ? farmerProfile.onboarding_stage
+          : user.onboarding_stage;
+
+      if (
+        laterStages.includes(effectiveOnboardingStage) &&
+        isBackButtonClicked
+      ) {
+        fetchBankAccount();
+      }
       loadSavedData();
     }
   }, [user]);
 
   useEffect(() => {
-    if (isClient && user && user.onboarding_stage !== "completed") {
+    if (isClient && user) {
       loadSavedData();
     }
   }, [isClient, user]);
@@ -115,21 +142,14 @@ export default function StepThree() {
   const onSubmit = async (data: BankInfoFormData) => {
     try {
       setIsSubmitting(true);
-      const isAgent: any = getFromLocalStorage("userProfile", {});
-      const farmer: any = getFromLocalStorage("farmer-profile", {});
-      const currentStep: any = getFromLocalStorage("current-step", "");
+      const currentStep: any = getFromLocalStorage("current-step", {});
 
-      if (user?.userType !== "agent" && currentStep === "bank_information") {
+      if (currentStep === "bank_information") {
         await apiService().post(
           "/onboarding/seller/bank-information",
           data,
-          isAgent.userType === "agent" && farmer ? farmer.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
-
-        setUser({
-          ...user!,
-          onboarding_stage: "avatar_image",
-        });
 
         successMessage("Bank details saved successfully!");
         saveToLocalStorage("step-three", data);
@@ -142,7 +162,7 @@ export default function StepThree() {
         await apiService().patch(
           "/sellers/banks/update-bank-information",
           { ...data, id: bankAccount.id },
-          isAgent.userType === "agent" && farmer ? farmer.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
         saveToLocalStorage("step-three", data);
         successMessage("Bank account data updated successfully");

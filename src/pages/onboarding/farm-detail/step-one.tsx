@@ -31,7 +31,11 @@ import {
   farmDetailsSchema,
   type FarmDetailsFormData,
 } from "@/types/validation/seller-onboarding";
-import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
+import {
+  saveToLocalStorage,
+  getFromLocalStorage,
+  removeFromLocalStorage,
+} from "@/lib/utils";
 import { FileUpload } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
@@ -51,30 +55,38 @@ export default function StepOne() {
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const { user, loading } = useAuth();
+  const { user, loading, setUser } = useAuth();
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
 
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
-      region: undefined,
-      longitude: undefined,
-      latitude: undefined,
-      crop_type: "",
-      crop_source: undefined,
-      origin: undefined,
-      tree_type: undefined,
-      tree_variety: undefined,
-      soil_type: undefined,
-      farm_name: "",
-      town_location: "",
+      region: "Oromia",
+      longitude: 39.04987986271199,
+      latitude: 7.958638844001975,
+      crop_type: "coffee",
+      crop_source: "Jimma, Oromia, Ethiopia",
+      origin: "Mana, Jimma",
+      tree_type: "sun_grown",
+      tree_variety: "typica",
+      soil_type: "Forest (Dark) Soil",
+      farm_name: "EEEE farm",
+      town_location: "Ethiopia",
       country: "Ethiopia",
-      total_size_hectares: 0,
-      coffee_area_hectares: 0,
-      altitude_meters: undefined,
-      capacity_kg: 0,
-      avg_annual_temp: 0,
-      annual_rainfall_mm: 0,
-      polygon_coords: [],
+      total_size_hectares: 10000,
+      coffee_area_hectares: 1000,
+      altitude_meters: "Above 2200",
+      capacity_kg: 2000,
+      avg_annual_temp: 30,
+      annual_rainfall_mm: 1600,
+      polygon_coords: [
+        [
+          { lat: 7.979121318188337, lng: 38.948210551887044 },
+          { lat: 7.946820143512986, lng: 38.933447673469075 },
+          { lat: 7.943419871801804, lng: 38.970183208137044 },
+          { lat: 7.969941243508924, lng: 38.982886150031575 },
+        ],
+      ],
     },
   });
 
@@ -113,25 +125,32 @@ export default function StepOne() {
         ...savedData,
         polygon_coords: Array.isArray(savedData.polygon_coords)
           ? savedData.polygon_coords
-          : [],
+          : [
+              [
+                { lat: 7.979121318188337, lng: 38.948210551887044 },
+                { lat: 7.946820143512986, lng: 38.933447673469075 },
+                { lat: 7.943419871801804, lng: 38.970183208137044 },
+                { lat: 7.969941243508924, lng: 38.982886150031575 },
+              ],
+            ],
         region: savedData.region || "Oromia",
         crop_source: savedData.crop_source || "Jimma, Oromia, Ethiopia",
-        origin: savedData.origin || "Gomma, Jimma",
+        origin: savedData.origin || "Mana, Jimma",
         soil_type: savedData.soil_type || "Forest (Dark) Soil",
         altitude_meters: savedData.altitude_meters || "Above 2200",
-        crop_type: savedData.crop_type || "Coffee",
-        tree_type: savedData.tree_type || "shade_grown",
-        tree_variety: savedData.tree_variety || "heirloom",
-        farm_name: savedData.farm_name || "New Farm",
-        town_location: savedData.town_location || "Unknown",
+        crop_type: savedData.crop_type || "coffee",
+        tree_type: savedData.tree_type || "sun_grown",
+        tree_variety: savedData.tree_variety || "typica",
+        farm_name: savedData.farm_name || "EEEE farm",
+        town_location: savedData.town_location || "Ethiopia",
         country: savedData.country || "Ethiopia",
-        total_size_hectares: savedData.total_size_hectares || 0.1,
-        coffee_area_hectares: savedData.coffee_area_hectares || 0.1,
-        capacity_kg: savedData.capacity_kg || 1,
-        avg_annual_temp: savedData.avg_annual_temp || 15,
-        annual_rainfall_mm: savedData.annual_rainfall_mm || 600,
-        latitude: savedData.latitude || undefined,
-        longitude: savedData.longitude || undefined,
+        total_size_hectares: savedData.total_size_hectares || 10000,
+        coffee_area_hectares: savedData.coffee_area_hectares || 1000,
+        capacity_kg: savedData.capacity_kg || 2000,
+        avg_annual_temp: savedData.avg_annual_temp || 30,
+        annual_rainfall_mm: savedData.annual_rainfall_mm || 1600,
+        latitude: savedData.latitude || 7.958638844001975,
+        longitude: savedData.longitude || 39.04987986271199,
       });
     }
   }, [reset]);
@@ -244,8 +263,6 @@ export default function StepOne() {
         return;
       }
 
-      const isAgent = userProfile?.userType;
-      const farmer: any = getFromLocalStorage("farmer-profile", {});
       const formData = new FormData();
 
       for (const key in data) {
@@ -281,7 +298,7 @@ export default function StepOne() {
           "/onboarding/seller/farm-details",
           formData,
           true,
-          isAgent === "agent" && farmer ? farmer.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
         if (response?.success) {
@@ -290,8 +307,7 @@ export default function StepOne() {
               ...userProfile,
               onboarding_stage: "crops_to_sell",
             };
-            setUserProfile(updatedProfile);
-            saveToLocalStorage("userProfile", updatedProfile);
+            setUser(updatedProfile);
           }
           saveToLocalStorage("step-one", data);
           if (response.data?.farm?.id) {
@@ -311,7 +327,7 @@ export default function StepOne() {
           "/sellers/farms/update-farm",
           formData,
           true,
-          isAgent === "agent" && farmer ? farmer.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
         if (response.success) {
@@ -320,10 +336,11 @@ export default function StepOne() {
               ...userProfile,
               onboarding_stage: "crops_to_sell",
             };
-            setUserProfile(updatedProfile);
-            saveToLocalStorage("userProfile", updatedProfile);
+            setUser(updatedProfile);
           }
+          removeFromLocalStorage("current-step");
           saveToLocalStorage("is-back-button-clicked", "false");
+          saveToLocalStorage("current-step", "crops_to_sell");
           navigate("/onboarding/step-two");
           successMessage("Farm data updated successfully!");
         } else {
@@ -347,9 +364,6 @@ export default function StepOne() {
 
         const farmerId =
           user.userType === "agent" ? userProfile?.id : undefined;
-
-        console.log("fetchFirstFarm: Fetching farm for farmerId", farmerId);
-
         const response: any = await apiService().get(
           "/onboarding/seller/get-first-farm",
           farmerId,
@@ -361,30 +375,28 @@ export default function StepOne() {
             polygon_coords: Array.isArray(response.data.farm.polygon_coords)
               ? response.data.farm.polygon_coords
               : [],
-            region: response.data.farm.region || "Oromia",
-            crop_source:
-              response.data.farm.crop_source || "Jimma, Oromia, Ethiopia",
-            origin: response.data.farm.origin || "Gomma, Jimma",
-            soil_type: response.data.farm.soil_type || "Forest (Dark) Soil",
+            region: response.data.farm.region,
+            crop_source: response.data.farm.crop_source,
+            origin: response.data.farm.origin,
+            soil_type: response.data.farm.soil_type,
             altitude_meters: response.data.farm.altitude_meters
               ? response.data.farm.altitude_meters >= 2200
                 ? "Above 2200"
                 : "Below 2200"
-              : "Above 2200",
-            crop_type: response.data.farm.crop_type || "Coffee",
-            tree_type: response.data.farm.tree_type || "shade_grown",
-            tree_variety: response.data.farm.tree_variety || "heirloom",
-            farm_name: response.data.farm.farm_name || "New Farm",
-            town_location: response.data.farm.town_location || "Unknown",
-            country: response.data.farm.country || "Ethiopia",
-            total_size_hectares: response.data.farm.total_size_hectares || 0.1,
-            coffee_area_hectares:
-              response.data.farm.coffee_area_hectares || 0.1,
-            capacity_kg: response.data.farm.capacity_kg || 1,
-            avg_annual_temp: response.data.farm.avg_annual_temp || 15,
-            annual_rainfall_mm: response.data.farm.annual_rainfall_mm || 600,
-            latitude: response.data.farm.latitude || undefined,
-            longitude: response.data.farm.longitude || undefined,
+              : null,
+            crop_type: response.data.farm.crop_type,
+            tree_type: response.data.farm.tree_type,
+            tree_variety: response.data.farm.tree_variety,
+            farm_name: response.data.farm.farm_name,
+            town_location: response.data.farm.town_location,
+            country: response.data.farm.country,
+            total_size_hectares: response.data.farm.total_size_hectares,
+            coffee_area_hectares: response.data.farm.coffee_area_hectares,
+            capacity_kg: response.data.farm.capacity_kg,
+            avg_annual_temp: response.data.farm.avg_annual_temp,
+            annual_rainfall_mm: response.data.farm.annual_rainfall_mm,
+            latitude: response.data.farm.latitude,
+            longitude: response.data.farm.longitude,
           });
           saveToLocalStorage("farm-id", response.data.farm.id);
         } else {
@@ -399,10 +411,6 @@ export default function StepOne() {
     };
 
     const existingFarmId = getFromLocalStorage("farm-id", "");
-    console.log("useEffect: Checking fetch conditions", {
-      onboarding_stage: userProfile?.onboarding_stage,
-      existingFarmId,
-    });
 
     if (userProfile?.onboarding_stage !== undefined && existingFarmId) {
       fetchFirstFarm();
@@ -563,6 +571,7 @@ export default function StepOne() {
                       <FormLabel>Region</FormLabel>
                       <Select
                         onValueChange={field.onChange}
+                        defaultValue="Oromia"
                         value={field.value}
                       >
                         <FormControl>
@@ -631,6 +640,7 @@ export default function StepOne() {
                       <FormLabel>Altitude</FormLabel>
                       <Select
                         onValueChange={field.onChange}
+                        defaultValue="Above 2200"
                         value={field.value}
                       >
                         <FormControl>
@@ -668,9 +678,12 @@ export default function StepOne() {
                           initialLocation={
                             latitude && longitude
                               ? { lat: latitude, lng: longitude }
-                              : undefined
+                              : {
+                                  lat: 7.958638844001975,
+                                  lng: 39.04987986271199,
+                                }
                           }
-                          farmName={form.getValues("farm_name") || "New Farm"}
+                          farmName={form.getValues("farm_name") || "EEEE farm"}
                         />
                       </FormControl>
                       <FormMessage />
@@ -692,9 +705,12 @@ export default function StepOne() {
                           center={
                             latitude && longitude
                               ? { lat: latitude, lng: longitude }
-                              : undefined
+                              : {
+                                  lat: 7.958638844001975,
+                                  lng: 39.04987986271199,
+                                }
                           }
-                          farmName={form.getValues("farm_name") || "New Farm"}
+                          farmName={form.getValues("farm_name") || "EEEE farm"}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500" />
@@ -727,7 +743,11 @@ export default function StepOne() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Crop Source</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue="Jimma, Oromia, Ethiopia"
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select crop source" />
@@ -758,7 +778,11 @@ export default function StepOne() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Origin</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue="Mana, Jimma"
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select origin" />
@@ -873,7 +897,11 @@ export default function StepOne() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tree Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue="sun_grown"
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select tree type" />
@@ -895,7 +923,11 @@ export default function StepOne() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tree Variety</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue="typica"
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select tree variety" />
@@ -926,7 +958,11 @@ export default function StepOne() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Soil Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue="Forest (Dark) Soil"
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select soil type" />

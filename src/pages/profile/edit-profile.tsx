@@ -84,7 +84,7 @@ export default function EditProfile() {
     null,
   );
   const { user, setUser } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
   const { successMessage, errorMessage } = useNotification();
 
   const form = useForm<ProfileInfoFormData>({

@@ -128,7 +128,7 @@ const FarmManagement: React.FC = () => {
   const user: any = getFromLocalStorage("userProfile", {});
   let fmrId = null;
   if (user && user.userType === "agent") {
-    const farmer: any = getFromLocalStorage("farmer-profile", {});
+    const farmer: any = getFromLocalStorage("farmerProfile", {});
     fmrId = farmer ? farmer.id : null;
   }
 

@@ -82,12 +82,12 @@ export default function EditBank() {
   const navigation = useNavigate();
   const { id } = useParams();
   const [isClient, setIsClient] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const [initialData, setInitialData] = useState<BankInfoFormData | null>(null);
   const { successMessage, errorMessage } = useNotification();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
   const form = useForm<BankInfoFormData>({
     resolver: zodResolver(bankInfoSchema),
     defaultValues: {
@@ -100,11 +100,6 @@ export default function EditBank() {
     },
   });
 
- 
-
-   
- 
-
   useEffect(() => {
     setIsClient(true);
     const fetchBankData = async () => {
@@ -112,14 +107,14 @@ export default function EditBank() {
         setIsLoading(true);
         if (!user) {
           return;
-        } 
-  
+        }
+
         const farmerId =
           user.userType === "agent" ? farmerProfile?.id : undefined;
-  
+
         const response: any = await apiService().get(
           `/sellers/banks/get-bank-information?bankId=${id}`,
-          farmerId
+          farmerId,
         );
         const bankData: BankInfoFormData = {
           account_holder_name:
@@ -149,16 +144,20 @@ export default function EditBank() {
       setIsSubmitting(true);
       if (!user) {
         return;
-      } 
+      }
 
       const farmerId =
         user.userType === "agent" ? farmerProfile?.id : undefined;
 
-      await apiService().patch("/sellers/banks/update-bank-information", {
-        ...data,
-        id: id,
-        is_primary: data.is_primary === "yes",
-      },farmerId);
+      await apiService().patch(
+        "/sellers/banks/update-bank-information",
+        {
+          ...data,
+          id: id,
+          is_primary: data.is_primary === "yes",
+        },
+        farmerId,
+      );
       const updatedData: BankInfoFormData = {
         account_holder_name: data.account_holder_name || "",
         bank_name: data.bank_name || "",
@@ -168,7 +167,7 @@ export default function EditBank() {
         is_primary: data.is_primary,
       };
       setInitialData(updatedData);
-      form.reset(updatedData);  
+      form.reset(updatedData);
       successMessage("Bank details updated successfully!");
       navigation("/seller-dashboard");
     } catch (error: any) {
@@ -326,11 +325,7 @@ export default function EditBank() {
                 <Button type="button" variant="outline" onClick={goBack}>
                   Back
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="my-4"
-                >
+                <Button type="submit" disabled={isSubmitting} className="my-4">
                   {isSubmitting ? "Updating..." : "Update bank information"}
                 </Button>
               </div>

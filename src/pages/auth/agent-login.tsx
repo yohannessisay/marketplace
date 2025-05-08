@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { APIErrorResponse } from "@/types/api";
 import { saveToLocalStorage } from "@/lib/utils";
+import { UserProfile } from "@/types/user";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 const AgentLogin = () => {
@@ -39,20 +40,23 @@ const AgentLogin = () => {
       successMessage("Login successful!");
       const { access_token, refresh_token, agent } = response.data;
 
-      
       Cookies.set("accessToken", access_token, { expires: 1 / 48 });
       Cookies.set("refreshToken", refresh_token, { expires: 1 });
 
-      const userProfile = {
+      const userProfile: UserProfile = {
         id: agent.id,
-        firstName: agent.first_name,
-        lastName: agent.last_name,
-        phone: agent.phone,
-        email: agent.email,
-        image: agent.image??'',
+        first_name: agent.first_name ?? "",
+        last_name: agent.last_name ?? "",
+        phone: agent.phone ?? "",
+        email: agent.email ?? "",
+        avatar_url: agent.image ?? "",
         userType: "agent",
+        verification_status: agent.verification_status ?? "",
+        identity_verified: agent.identity_verified ?? false,
+        blocked_access: agent.blocked_access ?? false,
+        onboarding_stage: agent.onboarding_stage ?? "",
+        last_login_at: new Date().toISOString(),
       };
-
 
       saveToLocalStorage("userProfile", userProfile);
       navigate("/agent/farmer-management");
@@ -85,7 +89,7 @@ const AgentLogin = () => {
                 id="email"
                 type="text"
                 {...register("email")}
-                placeholder="someone@test.com"
+                placeholder="agent@afrovalley.io"
                 className={`w-full p-3 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 ${
                   errors.email ? "border-red-500" : ""
                 }`}

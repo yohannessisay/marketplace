@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Plus, X, ArrowLeft } from "lucide-react";
@@ -26,7 +26,11 @@ import {
   coffeeCropsSchema,
   type CoffeeCropsFormData,
 } from "@/types/validation/seller-onboarding";
-import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
+import {
+  saveToLocalStorage,
+  getFromLocalStorage,
+  removeFromLocalStorage,
+} from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -36,7 +40,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FileUpload } from "@/components/common/file-upload";
+import { FileUpload, FileWithPreview } from "@/components/common/file-upload";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
@@ -75,26 +79,22 @@ interface Farm {
   created_by_agent_id: string | null;
 }
 
-interface FileWithId extends File {
-  id: string;
-  url?: string;
-}
-
 export default function StepTwo() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const [photos, setPhotos] = useState<FileWithId[]>([]);
-  const [farm, setFarm] = useState<Farm>();
+  const [gradingReports, setGradingReports] = useState<FileWithPreview[]>([]);
+  const [photos, setPhotos] = useState<FileWithPreview[]>([]);
+  const [farm, setFarm] = useState<Farm | undefined>();
   const [discounts, setDiscounts] = useState<
     { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
   >([]);
   const { user, setUser, loading } = useAuth();
   const { successMessage, errorMessage } = useNotification();
-  const userProfile: any = getFromLocalStorage("userProfile", {});
-  const currentUserStage = userProfile?.onboarding_stage;
-  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+  const farmerProfile: any = useMemo(
+    () => getFromLocalStorage("farmerProfile", {}),
+    [],
+  );
 
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
@@ -122,30 +122,40 @@ export default function StepTwo() {
     mode: "onChange",
   });
 
+  const handleGradingReportsSelected = (selectedFiles: File[]) => {
+    const newFiles: FileWithPreview[] = selectedFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      type: file.type === "application/pdf" ? "pdf" : "image",
+    }));
+    setGradingReports(newFiles);
+  };
+
   const handlePhotosSelected = (selectedPhotos: File[]) => {
-    const newPhotos: FileWithId[] = selectedPhotos.map((file) =>
-      Object.assign(file, {
-        id: Math.random().toString(36).substring(2),
-      }),
-    );
+    const newPhotos: FileWithPreview[] = selectedPhotos.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      type: file.type === "application/pdf" ? "pdf" : "image",
+    }));
     setPhotos(newPhotos);
   };
 
   const handleAddDiscount = () => {
     if (discounts.length < 1) {
-      setDiscounts((prev) => [
-        ...prev,
-        {
-          minimum_quantity_kg: 1,
-          discount_percentage: 1,
-          id: Math.random().toString(36).substring(2),
-        },
-      ]);
+      const newDiscount = {
+        minimum_quantity_kg: 1,
+        discount_percentage: 1,
+        id: Math.random().toString(36).substring(2),
+      };
+      setDiscounts((prev) => [...prev, newDiscount]);
+      saveToLocalStorage("step-two-discounts", [...discounts, newDiscount]);
     }
   };
 
   const handleRemoveDiscount = (id: string) => {
-    setDiscounts((prev) => prev.filter((d) => d.id !== id));
+    const updatedDiscounts = discounts.filter((d) => d.id !== id);
+    setDiscounts(updatedDiscounts);
+    saveToLocalStorage("step-two-discounts", updatedDiscounts);
   };
 
   const handleDiscountChange = (
@@ -153,9 +163,11 @@ export default function StepTwo() {
     field: "minimum_quantity_kg" | "discount_percentage",
     value: number,
   ) => {
-    setDiscounts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
+    const updatedDiscounts = discounts.map((d) =>
+      d.id === id ? { ...d, [field]: value } : d,
     );
+    setDiscounts(updatedDiscounts);
+    saveToLocalStorage("step-two-discounts", updatedDiscounts);
   };
 
   const fetchFirstFarm = async () => {
@@ -165,8 +177,9 @@ export default function StepTwo() {
       }
 
       const farmerId =
-        user.userType === "agent" ? farmerProfile?.id : undefined;
-
+        user.userType === "agent" && farmerProfile?.id
+          ? farmerProfile.id
+          : undefined;
       const response: any = await apiService().get(
         "/onboarding/seller/get-first-farm",
         farmerId,
@@ -181,9 +194,131 @@ export default function StepTwo() {
     }
   };
 
+  const fetchCoffeeProfile = async () => {
+    try {
+      const farmerId =
+        user?.userType === "agent" && farmerProfile?.id
+          ? farmerProfile.id
+          : undefined;
+      const response: any = await apiService().get(
+        "/onboarding/seller/get-coffee-details",
+        farmerId,
+      );
+
+      if (response.success) {
+        const {
+          coffee_listing,
+          documents,
+          photos: listingPhotos,
+          discounts: fetchedDiscounts,
+        } = response.data;
+
+        const normalizedData: CoffeeCropsFormData = {
+          farmId: coffee_listing.farm_id || "",
+          coffee_variety: coffee_listing.coffee_variety || "",
+          grade: coffee_listing.grade || "",
+          bean_type: coffee_listing.bean_type || "",
+          crop_year: coffee_listing.crop_year || "",
+          processing_method: coffee_listing.processing_method || "",
+          moisture_percentage: coffee_listing.moisture_percentage || 0,
+          screen_size: coffee_listing.screen_size || "",
+          drying_method: coffee_listing.drying_method || "",
+          wet_mill: coffee_listing.wet_mill || "",
+          is_organic: coffee_listing.is_organic ? "yes" : "no",
+          cup_aroma: Array.isArray(coffee_listing.cup_aroma)
+            ? coffee_listing.cup_aroma
+            : [],
+          cup_taste: Array.isArray(coffee_listing.cup_taste)
+            ? coffee_listing.cup_taste
+            : [],
+          quantity_kg: coffee_listing.quantity_kg || 0,
+          price_per_kg: coffee_listing.price_per_kg || 0,
+          readiness_date:
+            coffee_listing.readiness_date || new Date().toISOString(),
+          lot_length: coffee_listing.lot_length || "",
+          delivery_type: coffee_listing.delivery_type || "",
+          shipping_port: coffee_listing.shipping_port || "",
+        };
+
+        form.reset(normalizedData);
+        saveToLocalStorage("step-two", normalizedData);
+        saveToLocalStorage("crop-id", coffee_listing.id);
+
+        // Fetch grading reports
+        if (documents?.grading_report) {
+          const gradingReportsTemp = await Promise.all(
+            [documents.grading_report].map(async (doc: any) => {
+              try {
+                const res = await fetch(doc.url);
+                if (!res.ok) throw new Error(`Failed to fetch ${doc.url}`);
+                const blob = await res.blob();
+                const fileName =
+                  doc.url.split("/").pop() || `grading_report_${doc.id}`;
+                const file = new File([blob], fileName, { type: blob.type });
+                const preview = URL.createObjectURL(file);
+                const type = file.type === "application/pdf" ? "pdf" : "image";
+                return { file, preview, type } as FileWithPreview;
+              } catch (err) {
+                console.error(`Error fetching grading report ${doc.url}:`, err);
+                return null;
+              }
+            }),
+          );
+          const validReports = gradingReportsTemp.filter(
+            (report): report is FileWithPreview => report !== null,
+          );
+          setGradingReports(validReports);
+        }
+
+        // Fetch photos
+        if (listingPhotos?.length > 0) {
+          const photosTemp = await Promise.all(
+            listingPhotos.map(async (photo: any) => {
+              try {
+                const res = await fetch(photo.url);
+                if (!res.ok) throw new Error(`Failed to fetch ${photo.url}`);
+                const blob = await res.blob();
+                const fileName =
+                  photo.url.split("/").pop() || `photo_${photo.id}`;
+                const file = new File([blob], fileName, { type: blob.type });
+                const preview = URL.createObjectURL(file);
+                const type = file.type === "application/pdf" ? "pdf" : "image";
+                return { file, preview, type } as FileWithPreview;
+              } catch (err) {
+                console.error(`Error fetching photo ${photo.url}:`, err);
+                return null;
+              }
+            }),
+          );
+          const validPhotos = photosTemp.filter(
+            (photo): photo is FileWithPreview => photo !== null,
+          );
+          setPhotos(validPhotos);
+        }
+
+        // Handle discounts
+        if (fetchedDiscounts?.length > 0) {
+          const normalizedDiscounts = fetchedDiscounts.map((discount: any) => ({
+            id: discount.id || Math.random().toString(36).substring(2),
+            minimum_quantity_kg: Number(discount.minimum_quantity_kg) || 1,
+            discount_percentage: Number(discount.discount_percentage) || 1,
+          }));
+          setDiscounts(normalizedDiscounts);
+          saveToLocalStorage("step-two-discounts", normalizedDiscounts);
+        } else {
+          setDiscounts([]);
+          saveToLocalStorage("step-two-discounts", []);
+        }
+      }
+    } catch (error: any) {
+      console.error("Error fetching coffee profile:", error);
+      errorMessage(error as APIErrorResponse);
+    }
+  };
+
   useEffect(() => {
     setIsClient(true);
-    if (user) {
+    if (user && !farm) {
       fetchFirstFarm();
     }
   }, [user]);
@@ -192,56 +327,69 @@ export default function StepTwo() {
     const populateForm = async () => {
       try {
         const laterStages = ["bank_information", "avatar_image", "completed"];
+        const effectiveOnboardingStage =
+          user?.userType === "agent" && farmerProfile?.id
+            ? farmerProfile.onboarding_stage
+            : user?.onboarding_stage;
+        const isBackButtonClicked =
+          getFromLocalStorage("back-button-clicked", {}) === "true";
+        const savedData: any = getFromLocalStorage("step-two", {});
+
         if (
           !loading &&
-          laterStages.includes(currentUserStage) &&
-          currentUserStage !== "crops_to_sell"
+          laterStages.includes(effectiveOnboardingStage) &&
+          effectiveOnboardingStage !== "crops_to_sell" &&
+          isBackButtonClicked &&
+          Object.keys(savedData).length === 0
         ) {
-          const savedData: any = getFromLocalStorage("step-two", {});
-          if (savedData && Object.keys(savedData).length > 0) {
-            const normalizedData = {
-              ...savedData,
-              cup_aroma: Array.isArray(savedData.cup_aroma)
-                ? savedData.cup_aroma
-                : [],
-              cup_taste: Array.isArray(savedData.cup_taste)
-                ? savedData.cup_taste
-                : [],
-              readiness_date: savedData.readiness_date
-                ? new Date(savedData.readiness_date).toISOString()
-                : new Date().toISOString(),
-              farmId: savedData.farmId || farm?.id || "",
-            };
-            form.reset(normalizedData);
-          }
+          await fetchCoffeeProfile();
+        } else if (Object.keys(savedData).length > 0) {
+          const normalizedData = {
+            ...savedData,
+            cup_aroma: Array.isArray(savedData.cup_aroma)
+              ? savedData.cup_aroma
+              : [],
+            cup_taste: Array.isArray(savedData.cup_taste)
+              ? savedData.cup_taste
+              : [],
+            readiness_date: savedData.readiness_date
+              ? new Date(savedData.readiness_date).toISOString()
+              : new Date().toISOString(),
+            farmId: savedData.farmId || farm?.id || "",
+          };
+          form.reset(normalizedData);
 
           const savedDiscounts: any = getFromLocalStorage(
             "step-two-discounts",
             [],
           );
           if (Array.isArray(savedDiscounts) && savedDiscounts.length > 0) {
-            const normalizedDiscounts = savedDiscounts.map((discount) => ({
+            const normalizedDiscounts = savedDiscounts.map((discount: any) => ({
               id: discount.id || Math.random().toString(36).substring(2),
               minimum_quantity_kg: Number(discount.minimum_quantity_kg) || 1,
               discount_percentage: Number(discount.discount_percentage) || 1,
             }));
             setDiscounts(normalizedDiscounts);
+            saveToLocalStorage("step-two-discounts", normalizedDiscounts);
           }
         }
       } catch (error: any) {
-        console.error("Error loading data from localStorage:", error);
+        console.error("Error loading data:", error);
         errorMessage(error as APIErrorResponse);
       }
     };
-    populateForm();
-  }, [loading, currentUserStage, form, farm]);
+
+    if (!loading && user) {
+      populateForm();
+    }
+  }, [loading, user, farmerProfile, farm]);
 
   const handleBack = () => {
     const formData = form.getValues();
     saveToLocalStorage("step-two", formData);
     saveToLocalStorage("step-two-discounts", discounts);
 
-    saveToLocalStorage("is-back-button-clicked", "true");
+    saveToLocalStorage("back-button-clicked", "true");
     localStorage.setItem("current-step", JSON.stringify("farm_profile"));
 
     if (farm?.id) {
@@ -269,12 +417,12 @@ export default function StepTwo() {
         }
       }
 
-      files.forEach((file) => {
-        formData.append("files", file);
+      gradingReports.forEach((file) => {
+        formData.append("files", file.file);
       });
 
       photos.forEach((photo) => {
-        formData.append("files", photo);
+        formData.append("files", photo.file);
       });
 
       if (farm) {
@@ -289,8 +437,13 @@ export default function StepTwo() {
         formData.append("discounts", JSON.stringify(formattedDiscounts));
       }
 
+      const effectiveOnboardingStage =
+        user?.userType === "agent" && farmerProfile?.id
+          ? farmerProfile.onboarding_stage
+          : user?.onboarding_stage;
+
       if (
-        user?.onboarding_stage === "crops_to_sell" ||
+        effectiveOnboardingStage === "crops_to_sell" ||
         (user?.userType === "agent" &&
           farmerProfile?.onboarding_stage === "crops_to_sell")
       ) {
@@ -298,7 +451,7 @@ export default function StepTwo() {
           "/onboarding/seller/coffee-details",
           formData,
           true,
-          user?.userType === "agent" ? user?.id : "",
+          user?.userType === "agent" ? farmerProfile?.id : "",
         );
 
         saveToLocalStorage("crop-id", response.data?.coffee_listing?.id);
@@ -313,6 +466,7 @@ export default function StepTwo() {
           "current-step",
           JSON.stringify("bank_information"),
         );
+        removeFromLocalStorage("back-button-clicked");
         successMessage("Crop information saved successfully");
         navigation("/onboarding/step-three");
       } else {
@@ -324,12 +478,13 @@ export default function StepTwo() {
           "/sellers/listings/update-listing",
           formData,
           true,
-          user?.userType === "agent" ? user?.id : "",
+          user?.userType === "agent" ? farmerProfile?.id : "",
         );
 
         saveToLocalStorage("step-two", data);
         saveToLocalStorage("step-two-discounts", discounts);
         successMessage("Crop data updated successfully");
+        removeFromLocalStorage("back-button-clicked");
         navigation("/onboarding/step-three");
       }
     } catch (error: any) {
@@ -416,20 +571,10 @@ export default function StepTwo() {
             }}
             className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white pt-10"
           >
-            <div className="flex justify-between items-center mb-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Step 1
-              </Button>
+            <div className="flex justify-center items-center mb-6">
               <h2 className="text-2xl font-semibold">
                 Add Coffee Crop Details
               </h2>
-              <div className="w-[100px]"></div> {/* Spacer for alignment */}
             </div>
 
             <div className="mb-8">
@@ -472,24 +617,48 @@ export default function StepTwo() {
                 <CardHeader>
                   <CardTitle>Upload grading report</CardTitle>
                   <CardDescription>
-                    Upload a single PDF document or image. Drag and drop or
-                    click to select a file.
+                    Upload PDF documents or images (Max 5 files, 5MB each). Drag
+                    and drop or click to select files.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <FileUpload
-                    onFilesSelected={(files) => {
-                      setFiles(files);
-                    }}
+                    onFilesSelected={handleGradingReportsSelected}
                     maxFiles={5}
                     maxSizeMB={5}
+                    initialFiles={gradingReports}
                   />
+                  {gradingReports.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                      {gradingReports.map((file, index) => (
+                        <div
+                          key={index}
+                          className="relative flex flex-col items-center"
+                        >
+                          {file.type === "image" ? (
+                            <img
+                              src={file.preview}
+                              alt={file.file.name}
+                              className="h-24 w-24 object-cover rounded-md"
+                            />
+                          ) : (
+                            <div className="h-24 w-24 bg-gray-100 flex items-center justify-center rounded-md">
+                              <span className="text-sm text-gray-500">PDF</span>
+                            </div>
+                          )}
+                          <p className="mt-2 text-sm text-gray-600 truncate w-full text-center">
+                            {file.file.name}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {files.length > 0
-                      ? files.length + " files selected"
-                      : "No file selected"}
+                    {gradingReports.length > 0
+                      ? `${gradingReports.length} files selected`
+                      : "No files selected"}
                   </div>
                 </CardFooter>
               </Card>
@@ -846,14 +1015,14 @@ export default function StepTwo() {
               <h3 className="text-lg font-medium mb-4">Coffee crop photos</h3>
               <p className="text-sm text-gray-600 mb-4">
                 Upload high-quality images of your coffee crop to create a clear
-                representation. Start with a primary photo that best showcases
-                your crop, then add additional images if needed.
+                representation (Max 6 files, 5MB each).
               </p>
               <Card className="max-w-2xl mx-auto">
                 <CardHeader>
                   <CardTitle>Coffee crop photos</CardTitle>
                   <CardDescription>
-                    Upload images. Drag and drop or click to select files.
+                    Upload images (Max 6 files, 5MB each). Drag and drop or
+                    click to select files.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -861,7 +1030,33 @@ export default function StepTwo() {
                     onFilesSelected={handlePhotosSelected}
                     maxFiles={6}
                     maxSizeMB={5}
+                    initialFiles={photos}
                   />
+                  {photos.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                      {photos.map((file, index) => (
+                        <div
+                          key={index}
+                          className="relative flex flex-col items-center"
+                        >
+                          {file.type === "image" ? (
+                            <img
+                              src={file.preview}
+                              alt={file.file.name}
+                              className="h-24 w-24 object-cover rounded-md"
+                            />
+                          ) : (
+                            <div className="h-24 w-24 bg-gray-100 flex items-center justify-center rounded-md">
+                              <span className="text-sm text-gray-500">PDF</span>
+                            </div>
+                          )}
+                          <p className="mt-2 text-sm text-gray-600 truncate w-full text-center">
+                            {file.file.name}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
