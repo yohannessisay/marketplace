@@ -32,13 +32,7 @@ export function FarmInformation({ listing }: FarmInformationProps) {
       </div>
 
       <div>
-        <h3 className="text-md font-medium mb-2">About the Farm</h3>
-        <p className="text-muted-foreground text-sm">
-          The Abadega Family Farm is located in the highlands of Yirgacheffe, one of Ethiopia's most renowned
-          coffee-growing regions. The farm has been in the family for three generations, with traditional cultivation
-          methods passed down and refined over time. The high altitude and rich soil contribute to the exceptional
-          quality of their coffee.
-        </p>
+ 
       </div>
     </div>
   )

@@ -68,7 +68,7 @@ export default function ListingDetailModal({
   const prevPhoto = () => {
     const photos = getPhotos(listing);
     setCurrentPhotoIndex(
-      (prevIndex) => (prevIndex - 1 + photos.length) % photos.length,
+      (prevIndex) => (prevIndex - 1 + photos.length) % photos.length
     );
   };
 
@@ -101,7 +101,7 @@ export default function ListingDetailModal({
   const handleSampleRequestClick = () => {
     if (!user) {
       setAuthMessage(
-        "To request a sample for this listing you have to login or signup for an AfroValley account",
+        "To request a sample for this listing you have to login or signup for an AfroValley account"
       );
 
       onRequireAuth();
@@ -114,7 +114,7 @@ export default function ListingDetailModal({
   const handleViewListingClick = (path: string) => {
     if (!user) {
       setAuthMessage(
-        "To view this listing you have to login or signup for an AfroValley account",
+        "To view this listing you have to login or signup for an AfroValley account"
       );
       onRequireAuth();
       return;
@@ -276,72 +276,26 @@ export default function ListingDetailModal({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-slate-500">Acidity</span>
-                        <span className="text-sm font-medium">
-                          {listing.cup_taste_acidity}
-                        </span>
-                      </div>
-                      <Progress
-                        value={getCupTastePercentage(listing.cup_taste_acidity)}
-                        className="h-2"
-                      />
+                      <h4 className="text-lg font-semibold">Cup Aroma</h4>
+                      <ul className="list-disc list-inside">
+                        {listing?.cup_aroma.map((aroma, index) => (
+                          <li key={index} className="text-slate-600">
+                            {aroma}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
+
+                    {/* Cup Taste Section */}
                     <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-slate-500">Body</span>
-                        <span className="text-sm font-medium">
-                          {listing.cup_taste_body}
-                        </span>
-                      </div>
-                      <Progress
-                        value={getCupTastePercentage(listing.cup_taste_body)}
-                        className="h-2"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-slate-500">
-                          Sweetness
-                        </span>
-                        <span className="text-sm font-medium">
-                          {listing.cup_taste_sweetness}
-                        </span>
-                      </div>
-                      <Progress
-                        value={getCupTastePercentage(
-                          listing.cup_taste_sweetness,
-                        )}
-                        className="h-2"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-slate-500">
-                          Aftertaste
-                        </span>
-                        <span className="text-sm font-medium">
-                          {listing.cup_taste_aftertaste}
-                        </span>
-                      </div>
-                      <Progress
-                        value={getCupTastePercentage(
-                          listing.cup_taste_aftertaste,
-                        )}
-                        className="h-2"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-slate-500">Balance</span>
-                        <span className="text-sm font-medium">
-                          {listing.cup_taste_balance}
-                        </span>
-                      </div>
-                      <Progress
-                        value={getCupTastePercentage(listing.cup_taste_balance)}
-                        className="h-2"
-                      />
+                      <h4 className="text-lg font-semibold">Cup Taste</h4>
+                      <ul className="list-disc list-inside">
+                        {listing?.cup_taste.map((taste, index) => (
+                          <li key={index} className="text-slate-600">
+                            {taste}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </CardContent>
                 </Card>
@@ -365,7 +319,7 @@ export default function ListingDetailModal({
                     <div>
                       <p className="text-sm text-slate-500">Altitude</p>
                       <p className="font-medium">
-                        {listing.farm.altitude_meters} 
+                        {listing.farm.altitude_meters}
                       </p>
                     </div>
                     <div>
@@ -443,8 +397,8 @@ export default function ListingDetailModal({
                     {user && sampleLoading
                       ? "Checking..."
                       : user && hasSampleRequest
-                        ? "Sample Requested"
-                        : "Request Samples"}
+                      ? "Sample Requested"
+                      : "Request Samples"}
                   </Button>
                 )}
 

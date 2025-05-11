@@ -99,7 +99,7 @@ export default function CompanyVerification() {
             {/* Step 1 */}
             <Card className="max-w-2xl mx-auto">
                   <CardHeader>
-                    <CardTitle>Upload Company Profile Picture</CardTitle>
+                    <CardTitle>Upload Company KYC Documents</CardTitle>
                     <CardDescription>
                       Upload an image. Drag and drop or
                       click to select a file.

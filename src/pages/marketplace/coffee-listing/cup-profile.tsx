@@ -24,6 +24,7 @@ export function CupProfile({ listing }: CupProfileProps) {
           <div className="mt-1">
             <div className="w-3 h-3 rounded-full bg-green-400"></div>
           </div>
+          Grading
           <Badge
             variant="outline"
             className="bg-yellow-100 text-yellow-800 border-0"
