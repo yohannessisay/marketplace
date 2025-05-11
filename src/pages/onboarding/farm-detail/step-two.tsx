@@ -93,7 +93,7 @@ export default function StepTwo() {
   const { successMessage, errorMessage } = useNotification();
   const farmerProfile: any = useMemo(
     () => getFromLocalStorage("farmerProfile", {}),
-    [],
+    []
   );
 
   const form = useForm<CoffeeCropsFormData>({
@@ -102,7 +102,7 @@ export default function StepTwo() {
       farmId: "",
       coffee_variety: "",
       grade: "",
-      bean_type: "",
+      bean_type: "Green beans",
       crop_year: "",
       processing_method: "",
       moisture_percentage: 0,
@@ -116,7 +116,7 @@ export default function StepTwo() {
       price_per_kg: 0,
       readiness_date: new Date().toISOString(),
       lot_length: "",
-      delivery_type: "",
+      delivery_type: "FOB (Free on Board) - Port of Djibouti",
       shipping_port: "",
     },
     mode: "onChange",
@@ -161,10 +161,10 @@ export default function StepTwo() {
   const handleDiscountChange = (
     id: string,
     field: "minimum_quantity_kg" | "discount_percentage",
-    value: number,
+    value: number
   ) => {
     const updatedDiscounts = discounts.map((d) =>
-      d.id === id ? { ...d, [field]: value } : d,
+      d.id === id ? { ...d, [field]: value } : d
     );
     setDiscounts(updatedDiscounts);
     saveToLocalStorage("step-two-discounts", updatedDiscounts);
@@ -182,7 +182,7 @@ export default function StepTwo() {
           : undefined;
       const response: any = await apiService().get(
         "/onboarding/seller/get-first-farm",
-        farmerId,
+        farmerId
       );
       const fetchedFarm = response.data.farm;
       setFarm(fetchedFarm);
@@ -202,7 +202,7 @@ export default function StepTwo() {
           : undefined;
       const response: any = await apiService().get(
         "/onboarding/seller/get-coffee-details",
-        farmerId,
+        farmerId
       );
 
       if (response.success) {
@@ -217,7 +217,7 @@ export default function StepTwo() {
           farmId: coffee_listing.farm_id || "",
           coffee_variety: coffee_listing.coffee_variety || "",
           grade: coffee_listing.grade || "",
-          bean_type: coffee_listing.bean_type || "",
+          bean_type: coffee_listing.bean_type || "Green beans",
           crop_year: coffee_listing.crop_year || "",
           processing_method: coffee_listing.processing_method || "",
           moisture_percentage: coffee_listing.moisture_percentage || 0,
@@ -236,7 +236,9 @@ export default function StepTwo() {
           readiness_date:
             coffee_listing.readiness_date || new Date().toISOString(),
           lot_length: coffee_listing.lot_length || "",
-          delivery_type: coffee_listing.delivery_type || "",
+          delivery_type:
+            coffee_listing.delivery_type ||
+            "FOB (Free on Board) - Port of Djibouti",
           shipping_port: coffee_listing.shipping_port || "",
         };
 
@@ -262,10 +264,10 @@ export default function StepTwo() {
                 console.error(`Error fetching grading report ${doc.url}:`, err);
                 return null;
               }
-            }),
+            })
           );
           const validReports = gradingReportsTemp.filter(
-            (report): report is FileWithPreview => report !== null,
+            (report): report is FileWithPreview => report !== null
           );
           setGradingReports(validReports);
         }
@@ -288,10 +290,10 @@ export default function StepTwo() {
                 console.error(`Error fetching photo ${photo.url}:`, err);
                 return null;
               }
-            }),
+            })
           );
           const validPhotos = photosTemp.filter(
-            (photo): photo is FileWithPreview => photo !== null,
+            (photo): photo is FileWithPreview => photo !== null
           );
           setPhotos(validPhotos);
         }
@@ -361,7 +363,7 @@ export default function StepTwo() {
 
           const savedDiscounts: any = getFromLocalStorage(
             "step-two-discounts",
-            [],
+            []
           );
           if (Array.isArray(savedDiscounts) && savedDiscounts.length > 0) {
             const normalizedDiscounts = savedDiscounts.map((discount: any) => ({
@@ -411,7 +413,7 @@ export default function StepTwo() {
           } else {
             formData.append(
               key,
-              String(data[key as keyof CoffeeCropsFormData]),
+              String(data[key as keyof CoffeeCropsFormData])
             );
           }
         }
@@ -441,22 +443,19 @@ export default function StepTwo() {
         user?.userType === "agent" && farmerProfile?.id
           ? farmerProfile.onboarding_stage
           : user?.onboarding_stage;
+ 
 
-      if (
-        effectiveOnboardingStage === "crops_to_sell" ||
-        (user?.userType === "agent" &&
-          farmerProfile?.onboarding_stage === "crops_to_sell")
-      ) {
+      if (effectiveOnboardingStage === "crops_to_sell") {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/coffee-details",
           formData,
           true,
-          user?.userType === "agent" ? farmerProfile?.id : "",
+          user?.userType === "agent" ? farmerProfile?.id : ""
         );
 
         saveToLocalStorage("crop-id", response.data?.coffee_listing?.id);
         setUser({
-          ...user,
+          ...user!,
           onboarding_stage: "bank_information",
         });
 
@@ -464,10 +463,16 @@ export default function StepTwo() {
         saveToLocalStorage("step-two-discounts", discounts);
         localStorage.setItem(
           "current-step",
-          JSON.stringify("bank_information"),
+          JSON.stringify("bank_information")
         );
         removeFromLocalStorage("back-button-clicked");
         successMessage("Crop information saved successfully");
+
+        const profile = getFromLocalStorage("userProfile", {});
+        saveToLocalStorage("userProfile", {
+          ...profile,
+          onboarding_stage: "bank_information",
+        });
         navigation("/onboarding/step-three");
       } else {
         const existingListingId = getFromLocalStorage("crop-id", "");
@@ -478,7 +483,7 @@ export default function StepTwo() {
           "/sellers/listings/update-listing",
           formData,
           true,
-          user?.userType === "agent" ? farmerProfile?.id : "",
+          user?.userType === "agent" ? farmerProfile?.id : ""
         );
 
         saveToLocalStorage("step-two", data);
@@ -770,7 +775,7 @@ export default function StepTwo() {
                                 <SelectValue placeholder="Select year" />
                               </SelectTrigger>
                               <SelectContent className="max-h-[300px] overflow-y-auto w-70">
-                                {Array.from({ length: 20 }, (_, i) => {
+                                {Array.from({ length: 2 }, (_, i) => {
                                   const year = new Date().getFullYear() - i;
                                   return (
                                     <SelectItem
@@ -948,7 +953,7 @@ export default function StepTwo() {
                                       const newValue = checked
                                         ? [...(field.value || []), aroma]
                                         : (field.value || []).filter(
-                                            (v) => v !== aroma,
+                                            (v) => v !== aroma
                                           );
                                       field.onChange(newValue);
                                     }}
@@ -994,7 +999,7 @@ export default function StepTwo() {
                                       const newValue = checked
                                         ? [...(field.value || []), taste]
                                         : (field.value || []).filter(
-                                            (v) => v !== taste,
+                                            (v) => v !== taste
                                           );
                                       field.onChange(newValue);
                                     }}
@@ -1150,16 +1155,19 @@ export default function StepTwo() {
                         <Input
                           type="number"
                           min={1}
+                          max={form.getValues().quantity_kg}
                           className="w-40"
                           placeholder="Min. quantity (kg)"
                           value={discount.minimum_quantity_kg}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const inputValue = Number(e.target.value) || 0;
+                            const max = form.getValues().quantity_kg-1;
                             handleDiscountChange(
                               discount.id,
                               "minimum_quantity_kg",
-                              Number(e.target.value) || 0,
-                            )
-                          }
+                              inputValue > max ? max : inputValue
+                            );
+                          }}
                         />
                         <span className="mx-2">kg</span>
                         <Input
@@ -1171,11 +1179,11 @@ export default function StepTwo() {
                           value={discount.discount_percentage}
                           onChange={(e) => {
                             const inputValue = Number(e.target.value) || 0;
-                            const max = form.getValues().quantity_kg;
+                            const max = 99;
                             handleDiscountChange(
                               discount.id,
                               "discount_percentage",
-                              inputValue > max ? max : inputValue,
+                              inputValue > max ? max : inputValue
                             );
                           }}
                         />

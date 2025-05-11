@@ -9,6 +9,9 @@ import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
+// Define the libraries array outside of the component
+const libraries: ("places" | "geometry" | "drawing")[] = ["drawing"];
+
 interface LocationPickerProps {
   onLocationChange: (coords: { lat: number; lng: number }) => void;
   initialLocation?: { lat: number; lng: number };
@@ -51,7 +54,7 @@ export default function LocationPicker({
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ["drawing"],
+    libraries, // Use the constant here
   });
 
   const defaultCenter = { lat: 9, lng: 40 };

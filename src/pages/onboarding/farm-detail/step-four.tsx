@@ -22,7 +22,7 @@ import {
   profileInfoSchema,
   type ProfileInfoFormData,
 } from "@/types/validation/seller-onboarding";
-import { getFromLocalStorage, removeFromLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
@@ -64,10 +64,9 @@ export default function StepFour() {
 
   const fetchProfileInfo = async () => {
     try {
-      console.log("Fetching profile info for:", { user, farmerProfile });
       const response: any = await apiService().get(
         "/onboarding/seller/get-profile",
-        user?.userType === "agent" ? farmerProfile?.id : "",
+        user?.userType === "agent" ? farmerProfile?.id : ""
       );
       setProfileInfo(response.data.profile);
       form.reset({
@@ -149,7 +148,7 @@ export default function StepFour() {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
               key,
-              String(data[key as keyof ProfileInfoFormData]),
+              String(data[key as keyof ProfileInfoFormData])
             );
           }
         }
@@ -161,24 +160,18 @@ export default function StepFour() {
           "/onboarding/seller/profile",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
         );
-
-        removeFromLocalStorage("step-one");
-        removeFromLocalStorage("step-two");
-        removeFromLocalStorage("step-three");
-        removeFromLocalStorage("step-four");
-        removeFromLocalStorage("bank-id");
-        removeFromLocalStorage("farm-id");
-        removeFromLocalStorage("crop-id");
-        removeFromLocalStorage("back-button-clicked");
-        removeFromLocalStorage("current-step");
-        removeFromLocalStorage("profile-image");
-        removeFromLocalStorage("userProfile");
+        const userInfo: any = getFromLocalStorage("userProfile", {});
+        userInfo.onboarding_stage = "completed";
         setUser({
           ...user!,
           onboarding_stage: "completed",
         });
+        localStorage.clear();
+        localStorage.setItem("userProfile", JSON.stringify(userInfo));
+ 
+
         successMessage("Registration completed successfully!");
         navigation("/seller-dashboard");
       } else {
@@ -187,7 +180,7 @@ export default function StepFour() {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
               key,
-              String(data[key as keyof ProfileInfoFormData]),
+              String(data[key as keyof ProfileInfoFormData])
             );
           }
         }
@@ -200,7 +193,7 @@ export default function StepFour() {
           "/sellers/profile/update-profile",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
         );
 
         successMessage("Profile data updated successfully");
@@ -280,7 +273,7 @@ export default function StepFour() {
                           accept="image/*"
                           onChange={(e) => {
                             const selectedFiles = Array.from(
-                              e.target.files || [],
+                              e.target.files || []
                             );
                             handleFilesSelected(selectedFiles);
                           }}

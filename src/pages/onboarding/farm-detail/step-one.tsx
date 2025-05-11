@@ -58,39 +58,37 @@ export default function StepOne() {
   const { user, loading, setUser } = useAuth();
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
 
+  const isBackButtonClicked = getFromLocalStorage(
+    "back-button-clicked",
+    "false"
+  );
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
-      region: "Oromia",
-      longitude: 39.04987986271199,
-      latitude: 7.958638844001975,
-      crop_type: "coffee",
-      crop_source: "Jimma, Oromia, Ethiopia",
-      origin: "Mana, Jimma",
-      tree_type: "sun_grown",
-      tree_variety: "typica",
-      soil_type: "Forest (Dark) Soil",
-      farm_name: "EEEE farm",
-      town_location: "Ethiopia",
+      region: undefined,
+      longitude: 0,
+      latitude: 0,
+      crop_type: "",
+      crop_source: "",
+      origin: "",
+      tree_type: "",
+      tree_variety: "",
+      soil_type: "",
+      farm_name: "",
+      town_location: "",
       country: "Ethiopia",
-      total_size_hectares: 10000,
-      coffee_area_hectares: 1000,
+      total_size_hectares: 0,
+      coffee_area_hectares: 0,
       altitude_meters: "Above 2200",
-      capacity_kg: 2000,
-      avg_annual_temp: 30,
-      annual_rainfall_mm: 1600,
-      polygon_coords: [
-        [
-          { lat: 7.979121318188337, lng: 38.948210551887044 },
-          { lat: 7.946820143512986, lng: 38.933447673469075 },
-          { lat: 7.943419871801804, lng: 38.970183208137044 },
-          { lat: 7.969941243508924, lng: 38.982886150031575 },
-        ],
-      ],
+      capacity_kg: 0,
+      avg_annual_temp: 0,
+      annual_rainfall_mm: 0,
+      polygon_coords: [],
     },
   });
-
-  const { reset, watch, trigger } = form;
+  const [latitude, setLatitude] = useState(0);
+  const [longitude, setLongitude] = useState(0);
+  const { reset, trigger } = form;
 
   useEffect(() => {
     const savedProfile: any = getFromLocalStorage("userProfile", {});
@@ -118,39 +116,32 @@ export default function StepOne() {
 
     const savedData = getFromLocalStorage<FarmDetailsFormData>(
       "step-one",
-      {} as FarmDetailsFormData,
+      {} as FarmDetailsFormData
     );
     if (savedData && Object.keys(savedData).length > 0) {
       reset({
         ...savedData,
         polygon_coords: Array.isArray(savedData.polygon_coords)
           ? savedData.polygon_coords
-          : [
-              [
-                { lat: 7.979121318188337, lng: 38.948210551887044 },
-                { lat: 7.946820143512986, lng: 38.933447673469075 },
-                { lat: 7.943419871801804, lng: 38.970183208137044 },
-                { lat: 7.969941243508924, lng: 38.982886150031575 },
-              ],
-            ],
-        region: savedData.region || "Oromia",
-        crop_source: savedData.crop_source || "Jimma, Oromia, Ethiopia",
-        origin: savedData.origin || "Mana, Jimma",
-        soil_type: savedData.soil_type || "Forest (Dark) Soil",
-        altitude_meters: savedData.altitude_meters || "Above 2200",
-        crop_type: savedData.crop_type || "coffee",
-        tree_type: savedData.tree_type || "sun_grown",
-        tree_variety: savedData.tree_variety || "typica",
-        farm_name: savedData.farm_name || "EEEE farm",
-        town_location: savedData.town_location || "Ethiopia",
-        country: savedData.country || "Ethiopia",
-        total_size_hectares: savedData.total_size_hectares || 10000,
-        coffee_area_hectares: savedData.coffee_area_hectares || 1000,
-        capacity_kg: savedData.capacity_kg || 2000,
-        avg_annual_temp: savedData.avg_annual_temp || 30,
-        annual_rainfall_mm: savedData.annual_rainfall_mm || 1600,
-        latitude: savedData.latitude || 7.958638844001975,
-        longitude: savedData.longitude || 39.04987986271199,
+          : [],
+        region: savedData.region,
+        crop_source: savedData.crop_source,
+        origin: savedData.origin,
+        soil_type: savedData.soil_type,
+        altitude_meters: savedData.altitude_meters,
+        crop_type: savedData.crop_type,
+        tree_type: savedData.tree_type,
+        tree_variety: savedData.tree_variety,
+        farm_name: savedData.farm_name,
+        town_location: savedData.town_location,
+        country: savedData.country,
+        total_size_hectares: savedData.total_size_hectares || 0,
+        coffee_area_hectares: savedData.coffee_area_hectares || 0,
+        capacity_kg: savedData.capacity_kg || 0,
+        avg_annual_temp: savedData.avg_annual_temp || 0,
+        annual_rainfall_mm: savedData.annual_rainfall_mm || 0,
+        latitude: savedData.latitude,
+        longitude: savedData.longitude,
       });
     }
   }, [reset]);
@@ -196,7 +187,7 @@ export default function StepOne() {
     }
 
     const oversizedGovFiles = govFiles.some(
-      (file) => file.size > 5 * 1024 * 1024,
+      (file) => file.size > 5 * 1024 * 1024
     );
     if (oversizedGovFiles) {
       const error: APIErrorResponse = {
@@ -214,7 +205,7 @@ export default function StepOne() {
     }
 
     const oversizedLandFiles = landFiles.some(
-      (file) => file.size > 5 * 1024 * 1024,
+      (file) => file.size > 5 * 1024 * 1024
     );
     if (oversizedLandFiles) {
       const error: APIErrorResponse = {
@@ -272,7 +263,7 @@ export default function StepOne() {
           } else {
             formData.append(
               key,
-              String(data[key as keyof FarmDetailsFormData]),
+              String(data[key as keyof FarmDetailsFormData])
             );
           }
         }
@@ -298,17 +289,23 @@ export default function StepOne() {
           "/onboarding/seller/farm-details",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
         );
 
         if (response?.success) {
+          const profile = getFromLocalStorage("userProfile", {});
           if (userProfile) {
-            const updatedProfile: UserProfile = {
-              ...userProfile,
+            const updatedProfile = {
+              ...profile,
               onboarding_stage: "crops_to_sell",
             };
-            setUser(updatedProfile);
+            setUser(updatedProfile as UserProfile);
           }
+          const updatedProfile = {
+            ...profile,
+            onboarding_stage: "crops_to_sell",
+          };
+          saveToLocalStorage("userProfile", updatedProfile);
           saveToLocalStorage("step-one", data);
           if (response.data?.farm?.id) {
             saveToLocalStorage("farm-id", response.data.farm.id);
@@ -327,7 +324,7 @@ export default function StepOne() {
           "/sellers/farms/update-farm",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
         );
 
         if (response.success) {
@@ -366,7 +363,7 @@ export default function StepOne() {
           user.userType === "agent" ? userProfile?.id : undefined;
         const response: any = await apiService().get(
           "/onboarding/seller/get-first-farm",
-          farmerId,
+          farmerId
         );
 
         if (response.success) {
@@ -379,11 +376,7 @@ export default function StepOne() {
             crop_source: response.data.farm.crop_source,
             origin: response.data.farm.origin,
             soil_type: response.data.farm.soil_type,
-            altitude_meters: response.data.farm.altitude_meters
-              ? response.data.farm.altitude_meters >= 2200
-                ? "Above 2200"
-                : "Below 2200"
-              : null,
+            altitude_meters: response.data.farm.altitude_meters,
             crop_type: response.data.farm.crop_type,
             tree_type: response.data.farm.tree_type,
             tree_variety: response.data.farm.tree_variety,
@@ -398,11 +391,14 @@ export default function StepOne() {
             latitude: response.data.farm.latitude,
             longitude: response.data.farm.longitude,
           });
+
+          setLatitude(response.data.farm.latitude);
+          setLongitude(response.data.farm.longitude);
           saveToLocalStorage("farm-id", response.data.farm.id);
         } else {
           console.log(
             "fetchFirstFarm: Failed to fetch farm",
-            response.error as APIErrorResponse,
+            response.error as APIErrorResponse
           );
         }
       } catch (error: any) {
@@ -412,15 +408,13 @@ export default function StepOne() {
 
     const existingFarmId = getFromLocalStorage("farm-id", "");
 
-    if (userProfile?.onboarding_stage !== undefined && existingFarmId) {
+    if (
+      (userProfile?.onboarding_stage !== undefined && existingFarmId) ||
+      isBackButtonClicked
+    ) {
       fetchFirstFarm();
-    } else {
-      console.log("useEffect: Skipping fetch for first-time user");
     }
-  }, [form, userProfile?.onboarding_stage, user, loading]);
-
-  const latitude = watch("latitude");
-  const longitude = watch("longitude");
+  }, [form, userProfile?.onboarding_stage, user, loading, isBackButtonClicked]);
 
   return (
     <>
@@ -456,10 +450,6 @@ export default function StepOne() {
                     onFilesSelected={(files) => {
                       setGovFiles(files);
                       setGovFileError("");
-                      const filePaths = files.map((file) =>
-                        URL.createObjectURL(file),
-                      );
-                      saveToLocalStorage("gov-files", filePaths);
                     }}
                     maxFiles={5}
                     maxSizeMB={5}
@@ -489,10 +479,6 @@ export default function StepOne() {
                     onFilesSelected={(files) => {
                       setLandFiles(files);
                       setLandFileError("");
-                      const filePaths = files.map((file) =>
-                        URL.createObjectURL(file),
-                      );
-                      saveToLocalStorage("land-files", filePaths);
                     }}
                     maxFiles={5}
                     maxSizeMB={5}
@@ -571,7 +557,6 @@ export default function StepOne() {
                       <FormLabel>Region</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue="Oromia"
                         value={field.value}
                       >
                         <FormControl>
@@ -675,15 +660,8 @@ export default function StepOne() {
                             field.onChange(coords.lat);
                             form.setValue("longitude", coords.lng);
                           }}
-                          initialLocation={
-                            latitude && longitude
-                              ? { lat: latitude, lng: longitude }
-                              : {
-                                  lat: 7.958638844001975,
-                                  lng: 39.04987986271199,
-                                }
-                          }
-                          farmName={form.getValues("farm_name") || "EEEE farm"}
+                          initialLocation={{ lat: latitude, lng: longitude }}
+                          farmName={form.getValues("farm_name")}
                         />
                       </FormControl>
                       <FormMessage />
@@ -702,14 +680,7 @@ export default function StepOne() {
                         <CropFieldManager
                           onPolygonChange={field.onChange}
                           initialPolygons={field.value}
-                          center={
-                            latitude && longitude
-                              ? { lat: latitude, lng: longitude }
-                              : {
-                                  lat: 7.958638844001975,
-                                  lng: 39.04987986271199,
-                                }
-                          }
+                          center={{ lat: latitude, lng: longitude }}
                           farmName={form.getValues("farm_name") || "EEEE farm"}
                         />
                       </FormControl>
@@ -899,7 +870,7 @@ export default function StepOne() {
                     <FormLabel>Tree Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue="sun_grown"
+                      defaultValue="Sun Grown"
                       value={field.value}
                     >
                       <FormControl>
@@ -908,9 +879,9 @@ export default function StepOne() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="shade_grown">Shade-grown</SelectItem>
-                        <SelectItem value="sun_grown">Sun-grown</SelectItem>
-                        <SelectItem value="mixed">Mixed</SelectItem>
+                        <SelectItem value="Shade Grown">Shade-grown</SelectItem>
+                        <SelectItem value="Sun Grown">Sun-grown</SelectItem>
+                        <SelectItem value="Mixed">Mixed</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

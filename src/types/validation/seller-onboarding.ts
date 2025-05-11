@@ -27,6 +27,7 @@ export const farmDetailsSchema = z
         "Guji, Oromia, Ethiopia",
         "Harar, Oromia, Ethiopia",
         "Illubabor, Oromia, Ethiopia",
+        ""
       ],
       {
         errorMap: () => ({
@@ -48,6 +49,7 @@ export const farmDetailsSchema = z
         "West Hararghe, Harrar",
         "Sidama",
         "Yirgachefe",
+        ""
       ],
       {
         errorMap: () => ({
@@ -58,7 +60,7 @@ export const farmDetailsSchema = z
     ),
     tree_type: z.string().min(1, "Tree type is required"),
     tree_variety: z.string().min(1, "Tree variety is required"),
-    soil_type: z.enum(["Forest (Dark) Soil", "Sand Soil"], {
+    soil_type: z.enum(["Forest (Dark) Soil", "Sand Soil",""], {
       errorMap: () => ({
         message: "Soil type must be either 'Forest (Dark) Soil' or 'Sand Soil'",
       }),

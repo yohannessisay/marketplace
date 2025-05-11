@@ -40,7 +40,7 @@ export function CoffeeDetailsTab({ listing }: CoffeeDetailsTabProps) {
           <h4 className="text-sm font-medium text-muted-foreground">
             Ready By
           </h4>
-          <p>{listing?.readiness_date || "N/A"}</p>
+          <p>{listing?.readiness_date.slice(0,10) || "N/A"}</p>
         </div>
 
         <div>

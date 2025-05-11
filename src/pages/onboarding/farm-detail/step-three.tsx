@@ -43,10 +43,9 @@ interface BankAccount {
 
 export default function StepThree() {
   const navigation = useNavigate();
-  const [isClient, setIsClient] = useState(false);
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const { successMessage, errorMessage } = useNotification();
-  const { user, setUser } = useAuth();
+  const { user, loading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
 
@@ -66,7 +65,7 @@ export default function StepThree() {
     try {
       const response: any = await apiService().get(
         "/onboarding/seller/get-bank-information",
-        user?.userType === "agent" ? farmerProfile?.id : "",
+        user?.userType === "agent" ? farmerProfile?.id : ""
       );
       const bankAccountData = response.data.bank_account;
       if (bankAccountData) {
@@ -74,20 +73,20 @@ export default function StepThree() {
         // Populate form with fetched data
         form.setValue(
           "account_holder_name",
-          bankAccountData.account_holder_name || "",
+          bankAccountData.account_holder_name || ""
         );
         form.setValue("bank_name", bankAccountData.bank_name || "");
         form.setValue("account_number", bankAccountData.account_number || "");
         form.setValue("branch_name", bankAccountData.branch_name || "");
         form.setValue(
           "is_primary",
-          bankAccountData.is_primary === "no" ? "no" : "yes",
+          bankAccountData.is_primary === "no" ? "no" : "yes"
         );
         form.setValue("swift_code", bankAccountData.swift_code || "");
       }
     } catch (error: any) {
       console.error(
-        (error as APIErrorResponse).error || "Failed to fetch bank account",
+        (error as APIErrorResponse).error || "Failed to fetch bank account"
       );
     }
   };
@@ -113,31 +112,21 @@ export default function StepThree() {
   };
 
   useEffect(() => {
-    setIsClient(true);
-    if (user) {
-      const isBackButtonClicked =
-        getFromLocalStorage("back-button-clicked", {}) === "true";
-      const laterStages = ["avatar_image", "completed"];
-      const effectiveOnboardingStage =
-        user.userType === "agent" && farmerProfile?.id
-          ? farmerProfile.onboarding_stage
-          : user.onboarding_stage;
+    const laterStages = ["avatar_image","bank_information", "completed"];
+    const effectiveOnboardingStage =
+      user?.userType === "agent" && farmerProfile?.id
+        ? farmerProfile.onboarding_stage
+        : user?.onboarding_stage;
 
-      if (
-        laterStages.includes(effectiveOnboardingStage) &&
-        isBackButtonClicked
-      ) {
-        fetchBankAccount();
-      }
-      loadSavedData();
+    if (laterStages.includes(effectiveOnboardingStage)) {
+      fetchBankAccount();
     }
-  }, [user]);
+    loadSavedData();
+  }, [loading]);
 
   useEffect(() => {
-    if (isClient && user) {
-      loadSavedData();
-    }
-  }, [isClient, user]);
+    loadSavedData();
+  }, []);
 
   const onSubmit = async (data: BankInfoFormData) => {
     try {
@@ -148,7 +137,7 @@ export default function StepThree() {
         await apiService().post(
           "/onboarding/seller/bank-information",
           data,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
         );
 
         successMessage("Bank details saved successfully!");
@@ -157,13 +146,27 @@ export default function StepThree() {
         navigation("/onboarding/step-four");
       } else {
         if (!bankAccount?.id) {
-          throw new Error("Bank account ID is missing");
+          errorMessage({
+            success: false,
+            error: {
+              message: "Something went wrong",
+              details: "Something went wrong",
+              code: 400,
+              hint: "",
+            },
+          } as APIErrorResponse);
+          return;
         }
         await apiService().patch(
           "/sellers/banks/update-bank-information",
           { ...data, id: bankAccount.id },
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
         );
+        const profile = getFromLocalStorage("userProfile", {});
+        saveToLocalStorage("userProfile", {
+          ...profile,
+          onboarding_stage: "avatar_image",
+        });
         saveToLocalStorage("step-three", data);
         successMessage("Bank account data updated successfully");
         navigation("/onboarding/step-four");
@@ -179,10 +182,6 @@ export default function StepThree() {
     saveToLocalStorage("back-button-clicked", "true");
     navigation("/onboarding/step-two");
   };
-
-  if (!isClient || !user) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-primary/5 pt-26">

@@ -365,7 +365,7 @@ export default function ListingDetailModal({
                     <div>
                       <p className="text-sm text-slate-500">Altitude</p>
                       <p className="font-medium">
-                        {listing.farm.altitude_meters} masl
+                        {listing.farm.altitude_meters} 
                       </p>
                     </div>
                     <div>
