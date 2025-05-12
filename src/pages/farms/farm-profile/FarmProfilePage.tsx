@@ -66,7 +66,7 @@ interface CoffeeListing {
   updated_at: string | null;
   expires_at: string | null;
   created_by_agent_id: string | null;
-  primary_photo: CoffeePhoto | null;
+  photos: CoffeePhoto[];
 }
 
 export interface Farm {
@@ -119,41 +119,48 @@ const ListingsSection = ({ listings }: { listings: CoffeeListing[] }) => {
         Active Listings
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {listings.map((listing) => (
-          <div
-            key={listing.id}
-            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => navigate(`/listing/${listing.id}`)}
-          >
-            {listing.primary_photo ? (
-              <img
-                src={listing.primary_photo.photo_url}
-                alt={listing.coffee_variety}
-                className="w-full h-48 object-cover"
-              />
-            ) : (
-              <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-500">No Image</span>
-              </div>
-            )}
-            <div className="p-4">
-              <h4 className="text-lg font-semibold text-gray-800">
-                {listing.coffee_variety}
-              </h4>
-              <p className="text-gray-600">
-                Price: ${listing.price_per_kg.toFixed(2)}/kg
-              </p>
-              <p className="text-gray-600">
-                Quantity: {listing.quantity_kg} kg
-              </p>
-              {listing.is_organic && (
-                <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-2">
-                  Organic
-                </span>
+        {listings.map((listing) => {
+          // Select the primary photo or the first photo if no primary exists
+          const primaryPhoto =
+            listing.photos.find((photo) => photo.is_primary) ||
+            listing.photos[0];
+
+          return (
+            <div
+              key={listing.id}
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/listing/${listing.id}`)}
+            >
+              {primaryPhoto ? (
+                <img
+                  src={primaryPhoto.photo_url}
+                  alt={listing.coffee_variety}
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500">No Image</span>
+                </div>
               )}
+              <div className="p-4">
+                <h4 className="text-lg font-semibold text-gray-800">
+                  {listing.coffee_variety}
+                </h4>
+                <p className="text-gray-600">
+                  Price: ${listing.price_per_kg.toFixed(2)}/kg
+                </p>
+                <p className="text-gray-600">
+                  Quantity: {listing.quantity_kg} kg
+                </p>
+                {listing.is_organic && (
+                  <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-2">
+                    Organic
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

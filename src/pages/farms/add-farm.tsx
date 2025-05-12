@@ -41,7 +41,6 @@ import {
 import { SkeletonForm } from "./SkeletonForm";
 import { useAuth } from "@/hooks/useAuth";
 import CropFieldManager from "@/components/CropFieldManager";
-import LocationPicker from "@/components/LocationPicker";
 import Header from "@/components/layout/header";
 
 export default function AddFarm() {
@@ -83,7 +82,7 @@ export default function AddFarm() {
     },
   });
 
-  const { watch, trigger } = form;
+  const { trigger } = form;
 
   useEffect(() => {
     if (user?.userType === "seller" && user.onboarding_stage !== "completed") {
@@ -412,9 +411,6 @@ export default function AddFarm() {
     }
   };
 
-  const latitude = watch("latitude");
-  const longitude = watch("longitude");
-
   return (
     <div className="bg-primary/5 py-8 px-8">
       <Header />
@@ -687,53 +683,138 @@ export default function AddFarm() {
                   <div className="mt-6">
                     <FormField
                       control={form.control}
-                      name="latitude"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Location (Required)</FormLabel>
-                          <FormControl>
-                            <LocationPicker
-                              onLocationChange={(coords) => {
-                                field.onChange(coords.lat);
-                                form.setValue("longitude", coords.lng);
-                              }}
-                              initialLocation={
-                                latitude && longitude
-                                  ? { lat: latitude, lng: longitude }
-                                  : undefined
-                              }
-                              farmName={
-                                form.getValues("farm_name") || "New Farm"
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="mt-6">
-                    <FormField
-                      control={form.control}
                       name="polygon_coords"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Farm Boundary Map</FormLabel>
                           <FormControl>
                             <CropFieldManager
-                              onPolygonChange={field.onChange}
+                              onPolygonChange={(polygons) => {
+                                field.onChange(polygons);
+                                if (
+                                  polygons.length > 0 &&
+                                  polygons[0].length > 0
+                                ) {
+                                  // Calculate approximate area
+                                  const calculateApproxArea = (
+                                    coords: { lat: number; lng: number }[],
+                                  ): number => {
+                                    if (!coords || coords.length < 3) return 0;
+                                    const R = 6371000; // Earth's radius in meters
+                                    let area = 0;
+                                    for (let i = 0; i < coords.length; i++) {
+                                      const j = (i + 1) % coords.length;
+                                      const lat1 =
+                                        (coords[i].lat * Math.PI) / 180;
+                                      const lng1 =
+                                        (coords[i].lng * Math.PI) / 180;
+                                      const lat2 =
+                                        (coords[j].lat * Math.PI) / 180;
+                                      const lng2 =
+                                        (coords[j].lng * Math.PI) / 180;
+                                      area +=
+                                        (lng2 - lng1) *
+                                        (2 + Math.sin(lat1) + Math.sin(lat2));
+                                    }
+                                    area = Math.abs((area * R * R) / 2);
+                                    return area / 10000; // Convert to hectares
+                                  };
+                                  const area = calculateApproxArea(polygons[0]);
+                                  form.setValue("total_size_hectares", area, {
+                                    shouldValidate: true,
+                                  });
+
+                                  // Calculate center coordinates
+                                  const calculateCenter = (
+                                    polygons: { lat: number; lng: number }[][],
+                                  ) => {
+                                    if (
+                                      !polygons.length ||
+                                      !polygons[0].length
+                                    ) {
+                                      return { lat: 9.03, lng: 38.74 };
+                                    }
+                                    const coords = polygons[0];
+                                    let latSum = 0;
+                                    let lngSum = 0;
+                                    for (const coord of coords) {
+                                      latSum += coord.lat;
+                                      lngSum += coord.lng;
+                                    }
+                                    return {
+                                      lat: latSum / coords.length,
+                                      lng: lngSum / coords.length,
+                                    };
+                                  };
+                                  const center = calculateCenter(polygons);
+                                  form.setValue("latitude", center.lat, {
+                                    shouldValidate: true,
+                                  });
+                                  form.setValue("longitude", center.lng, {
+                                    shouldValidate: true,
+                                  });
+                                } else {
+                                  form.setValue("total_size_hectares", 0, {
+                                    shouldValidate: true,
+                                  });
+                                  form.setValue("latitude", 7.67, {
+                                    shouldValidate: true,
+                                  });
+                                  form.setValue("longitude", 36.83, {
+                                    shouldValidate: true,
+                                  });
+                                }
+                              }}
                               initialPolygons={field.value}
-                              center={
-                                latitude && longitude
-                                  ? { lat: latitude, lng: longitude }
-                                  : undefined
-                              }
+                              center={{ lat: 9.03, lng: 38.74 }}
                               farmName={
                                 form.getValues("farm_name") || "New Farm"
                               }
                             />
                           </FormControl>
                           <FormMessage className="text-red-500" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="latitude"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Latitude</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="any"
+                              {...field}
+                              disabled
+                              value={field.value?.toFixed(6) ?? ""}
+                              placeholder="Calculated from boundary"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="longitude"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Longitude</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="any"
+                              {...field}
+                              disabled
+                              value={field.value?.toFixed(6) ?? ""}
+                              placeholder="Calculated from boundary"
+                            />
+                          </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />

@@ -47,7 +47,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { APIErrorResponse } from "@/types/api";
 import { AddCropSkeletonForm } from "./SkeletonForm";
 import { useAuth } from "@/hooks/useAuth";
-import { getFromLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -77,6 +77,9 @@ export default function AddCrop() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farmError, setFarmError] = useState<string | null>(null);
   const { user, loading } = useAuth();
+  const [discounts, setDiscounts] = useState<
+    { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
+  >([]);
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
   const isLoading = isLoadingFarms || isLoadingListing;
   const [hasFetched, setHasFetched] = useState(false);
@@ -87,7 +90,7 @@ export default function AddCrop() {
       farmId: "",
       coffee_variety: "",
       grade: "",
-      bean_type: "",
+      bean_type: "Green beans" as string,
       crop_year: "",
       processing_method: "",
       moisture_percentage: 0,
@@ -102,7 +105,7 @@ export default function AddCrop() {
       readiness_date: "",
       lot_length: "",
       delivery_type: "",
-      shipping_port: "",
+      shipping_port: "Djibouti" as string,
     },
     mode: "onChange",
   });
@@ -216,6 +219,22 @@ export default function AddCrop() {
                   (photo): photo is FileWithPreview => photo !== null,
                 ),
               );
+              if (listing.discounts?.length > 0) {
+                const normalizedDiscounts = listing.discounts.map(
+                  (discount: any) => ({
+                    id: discount.id || Math.random().toString(36).substring(2),
+                    minimum_quantity_kg:
+                      Number(discount.minimum_quantity_kg) || 1,
+                    discount_percentage:
+                      Number(discount.discount_percentage) || 1,
+                  }),
+                );
+                setDiscounts(normalizedDiscounts);
+                saveToLocalStorage("add-crop-discounts", normalizedDiscounts);
+              } else {
+                setDiscounts([]);
+                saveToLocalStorage("add-crop-discounts", []);
+              }
             }
 
             // Fetch grading reports
@@ -414,7 +433,16 @@ export default function AddCrop() {
 
       gradingReports.forEach((file) => formData.append("files", file.file));
       photos.forEach((photo) => formData.append("files", photo.file));
+
       formData.append("farm_id", data.farmId!);
+
+      if (discounts.length > 0) {
+        const formattedDiscounts = discounts.map((discount) => ({
+          minimum_quantity_kg: discount.minimum_quantity_kg,
+          discount_percentage: discount.discount_percentage,
+        }));
+        formData.append("discounts", JSON.stringify(formattedDiscounts));
+      }
 
       if (isEditMode && id) {
         formData.append("listingId", id);
@@ -678,19 +706,12 @@ export default function AddCrop() {
                           <FormItem>
                             <FormLabel>Bean type</FormLabel>
                             <FormControl>
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value || ""}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select bean type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Green beans">
-                                    Green beans
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <Input
+                                {...field}
+                                value="Green beans"
+                                disabled
+                                className="w-full"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1065,7 +1086,13 @@ export default function AddCrop() {
                           <FormItem>
                             <FormLabel>Shipping Port</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Input
+                                {...field}
+                                value="Djibouti"
+                                disabled
+                                className="w-full"
+                                onChange={() => {}}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

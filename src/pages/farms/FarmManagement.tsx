@@ -590,18 +590,6 @@ const FarmManagement: React.FC = () => {
                         </Alert>
                       )}
 
-                      {listing.listing_status === "pending" && (
-                        <Alert
-                          variant="default"
-                          className="mt-4 bg-amber-50 border-amber-200 text-amber-800"
-                        >
-                          <AlertDescription className="flex items-center text-sm">
-                            <Clock className="h-4 w-4 mr-2 text-amber-500" />
-                            Your listing is pending approval.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-
                       {listing.kyc_status === "pending" && (
                         <Alert
                           variant="default"
@@ -645,18 +633,6 @@ const FarmManagement: React.FC = () => {
 
           {/* Banks Tab */}
           <TabsContent value="banks">
-            {/* <div className="mb-6 max-w-md bg-white my-4 p-4 rounded-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search banks by account holder or bank name..."
-                  value={bankSearch}
-                  onChange={(e) => setBankSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div> */}
-
             {loadingBanks ? (
               <p className="text-slate-500 text-center">Loading banks...</p>
             ) : banks?.length === 0 ? (

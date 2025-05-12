@@ -1762,8 +1762,8 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Link to={`/listing/${item.listing_id}`}>
-                  <Button>View Listing</Button>
+                <Link to={`/manage-listing/${item.listing_id}`}>
+                  <Button>Manage Listing</Button>
                 </Link>
               </div>
             </div>

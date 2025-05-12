@@ -12,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import SampleRequestModal from "./sample-request-modal";
 import { useNavigate } from "react-router-dom";
 import { CoffeeListing, CoffeePhoto } from "@/types/coffee";
@@ -68,7 +67,7 @@ export default function ListingDetailModal({
   const prevPhoto = () => {
     const photos = getPhotos(listing);
     setCurrentPhotoIndex(
-      (prevIndex) => (prevIndex - 1 + photos.length) % photos.length
+      (prevIndex) => (prevIndex - 1 + photos.length) % photos.length,
     );
   };
 
@@ -83,25 +82,10 @@ export default function ListingDetailModal({
     return photos[currentPhotoIndex]?.photo_url || "/placeholder.svg";
   };
 
-  const getCupTastePercentage = (value: string): number => {
-    const map: Record<string, number> = {
-      Low: 30,
-      Medium: 60,
-      High: 90,
-      Full: 90,
-      Light: 30,
-      Balanced: 75,
-      Long: 85,
-      Short: 40,
-      Ful: 90, // Handling typo in the data
-    };
-    return map[value] || 50;
-  };
-
   const handleSampleRequestClick = () => {
     if (!user) {
       setAuthMessage(
-        "To request a sample for this listing you have to login or signup for an AfroValley account"
+        "To request a sample for this listing you have to login or signup for an AfroValley account",
       );
 
       onRequireAuth();
@@ -114,7 +98,7 @@ export default function ListingDetailModal({
   const handleViewListingClick = (path: string) => {
     if (!user) {
       setAuthMessage(
-        "To view this listing you have to login or signup for an AfroValley account"
+        "To view this listing you have to login or signup for an AfroValley account",
       );
       onRequireAuth();
       return;
@@ -209,7 +193,6 @@ export default function ListingDetailModal({
                       <span className="text-lg font-semibold text-amber-700">
                         {listing.grade}
                       </span>
-                      <span className="text-slate-500 text-sm ml-1">grade</span>
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-emerald-700">
@@ -278,7 +261,7 @@ export default function ListingDetailModal({
                     <div>
                       <h4 className="text-lg font-semibold">Cup Aroma</h4>
                       <ul className="list-disc list-inside">
-                        {listing?.cup_aroma.map((aroma, index) => (
+                        {listing?.cup_aroma?.map((aroma, index) => (
                           <li key={index} className="text-slate-600">
                             {aroma}
                           </li>
@@ -290,7 +273,7 @@ export default function ListingDetailModal({
                     <div>
                       <h4 className="text-lg font-semibold">Cup Taste</h4>
                       <ul className="list-disc list-inside">
-                        {listing?.cup_taste.map((taste, index) => (
+                        {listing?.cup_taste?.map((taste, index) => (
                           <li key={index} className="text-slate-600">
                             {taste}
                           </li>
@@ -397,8 +380,8 @@ export default function ListingDetailModal({
                     {user && sampleLoading
                       ? "Checking..."
                       : user && hasSampleRequest
-                      ? "Sample Requested"
-                      : "Request Samples"}
+                        ? "Sample Requested"
+                        : "Request Samples"}
                   </Button>
                 )}
 

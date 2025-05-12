@@ -11,13 +11,13 @@ export const OrderItem = ({
   item,
   tabType,
   expandedOrderId,
-  toggleOrderExpansion, 
+  toggleOrderExpansion,
   openReviewModal,
 }: {
   item: Order | Bid;
   tabType: string;
   expandedOrderId: string;
-  toggleOrderExpansion: (id: string) => void; 
+  toggleOrderExpansion: (id: string) => void;
   openReviewModal: (order: Order, type: string) => void;
 }) => {
   const isOrderTab = tabType === "current" || tabType === "historical";
@@ -47,6 +47,16 @@ export const OrderItem = ({
                   Organic
                 </Badge>
               )}
+              {isBid
+                ? listing?.listing_status === "active" && (
+                    <Badge
+                      variant="outline"
+                      className="ml-2 bg-green-500 text-white border-0"
+                    >
+                      Active Listing
+                    </Badge>
+                  )
+                : ""}
             </div>
             {isBid && (
               <div className="text-sm text-muted-foreground">
@@ -98,7 +108,9 @@ export const OrderItem = ({
             <User className="h-4 w-4 mr-1 text-muted-foreground" />
             <span className="text-sm font-medium">
               {(isBid
-                ? (item as Bid).seller?.first_name
+                ? (item as Bid).seller?.first_name +
+                  " " +
+                  (item as Bid).seller?.last_name
                 : (item as Order).seller_name) || "Unknown"}{" "}
             </span>
             {(isBid ? (item as Bid).seller : (item as Order)) && (

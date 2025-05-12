@@ -27,9 +27,10 @@ import { apiService } from "@/services/apiService";
 import ListingDetailModal from "./view-listing-modal";
 import { SignUpPromptModal } from "@/components/modals/SignUpPromptModal";
 import { useAuth } from "@/hooks/useAuth";
-import { CoffeeListing, FilterState } from "@/types/types";
+import { FilterState } from "@/types/types";
 import { LoadingCard } from "./marketplace-skeleton";
 import { ListingCard } from "./ListingCard";
+import { CoffeeListing } from "@/types/coffee";
 
 const varieties = [
   "Arabica",
@@ -337,123 +338,125 @@ export default function CoffeeMarketplace() {
 
           <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
             {/* Filters Sidebar */}
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="variety">Coffee Variety</Label>
-                  <Select
-                    value={filters.variety}
-                    onValueChange={(value) =>
-                      handleFilterChange("variety", value)
-                    }
+            <div className="md:sticky md:top-20 self-start">
+              <Card className="w-full">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="variety">Coffee Variety</Label>
+                    <Select
+                      value={filters.variety}
+                      onValueChange={(value) =>
+                        handleFilterChange("variety", value)
+                      }
+                    >
+                      <SelectTrigger id="variety" className="w-full">
+                        <SelectValue placeholder="All Varieties" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Varieties</SelectItem>
+                        {varieties.map((variety) => (
+                          <SelectItem key={variety} value={variety}>
+                            {variety}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="processing">Processing Method</Label>
+                    <Select
+                      value={filters.processing_method}
+                      onValueChange={(value) =>
+                        handleFilterChange("processing_method", value)
+                      }
+                    >
+                      <SelectTrigger id="processing" className="w-full">
+                        <SelectValue placeholder="All Methods" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Methods</SelectItem>
+                        {processingMethods.map((method) => (
+                          <SelectItem key={method} value={method}>
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="organic">Organic</Label>
+                    <Select
+                      value={filters.is_organic}
+                      onValueChange={(value) =>
+                        handleFilterChange("is_organic", value)
+                      }
+                    >
+                      <SelectTrigger id="organic" className="w-full">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="true">Organic</SelectItem>
+                        <SelectItem value="false">Non-Organic</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="min-price">Min Price ($/kg)</Label>
+                    <Input
+                      id="min-price"
+                      type="number"
+                      placeholder="Min"
+                      value={filters.min_price}
+                      onChange={(e) =>
+                        handleFilterChange("min_price", e.target.value)
+                      }
+                      min={0}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="max-price">Max Price ($/kg)</Label>
+                    <Input
+                      id="max-price"
+                      type="number"
+                      placeholder="Max"
+                      value={filters.max_price}
+                      onChange={(e) =>
+                        handleFilterChange("max_price", e.target.value)
+                      }
+                      min={0}
+                    />
+                  </div>
+
+                  {priceError && (
+                    <Alert
+                      variant="destructive"
+                      className="bg-red-50 border-red-200 rounded-lg mt-4"
+                    >
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle className="text-red-800 font-semibold">
+                        Invalid Price Range
+                      </AlertTitle>
+                      <AlertDescription className="text-red-700">
+                        {priceError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    onClick={resetFilters}
+                    variant="outline"
+                    className="w-full"
                   >
-                    <SelectTrigger id="variety" className="w-full">
-                      <SelectValue placeholder="All Varieties" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Varieties</SelectItem>
-                      {varieties.map((variety) => (
-                        <SelectItem key={variety} value={variety}>
-                          {variety}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="processing">Processing Method</Label>
-                  <Select
-                    value={filters.processing_method}
-                    onValueChange={(value) =>
-                      handleFilterChange("processing_method", value)
-                    }
-                  >
-                    <SelectTrigger id="processing" className="w-full">
-                      <SelectValue placeholder="All Methods" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Methods</SelectItem>
-                      {processingMethods.map((method) => (
-                        <SelectItem key={method} value={method}>
-                          {method}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="organic">Organic</Label>
-                  <Select
-                    value={filters.is_organic}
-                    onValueChange={(value) =>
-                      handleFilterChange("is_organic", value)
-                    }
-                  >
-                    <SelectTrigger id="organic" className="w-full">
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="true">Organic</SelectItem>
-                      <SelectItem value="false">Non-Organic</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="min-price">Min Price ($/kg)</Label>
-                  <Input
-                    id="min-price"
-                    type="number"
-                    placeholder="Min"
-                    value={filters.min_price}
-                    onChange={(e) =>
-                      handleFilterChange("min_price", e.target.value)
-                    }
-                    min={0}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="max-price">Max Price ($/kg)</Label>
-                  <Input
-                    id="max-price"
-                    type="number"
-                    placeholder="Max"
-                    value={filters.max_price}
-                    onChange={(e) =>
-                      handleFilterChange("max_price", e.target.value)
-                    }
-                    min={0}
-                  />
-                </div>
-
-                {priceError && (
-                  <Alert
-                    variant="destructive"
-                    className="bg-red-50 border-red-200 rounded-lg mt-4"
-                  >
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle className="text-red-800 font-semibold">
-                      Invalid Price Range
-                    </AlertTitle>
-                    <AlertDescription className="text-red-700">
-                      {priceError}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <Button
-                  onClick={resetFilters}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Clear Filters
-                </Button>
-              </CardContent>
-            </Card>
+                    Clear Filters
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Listings & Search */}
             <div className="space-y-6">

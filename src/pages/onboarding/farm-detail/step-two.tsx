@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus, X, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -93,7 +93,7 @@ export default function StepTwo() {
   const { successMessage, errorMessage } = useNotification();
   const farmerProfile: any = useMemo(
     () => getFromLocalStorage("farmerProfile", {}),
-    []
+    [],
   );
 
   const form = useForm<CoffeeCropsFormData>({
@@ -140,36 +140,6 @@ export default function StepTwo() {
     setPhotos(newPhotos);
   };
 
-  const handleAddDiscount = () => {
-    if (discounts.length < 1) {
-      const newDiscount = {
-        minimum_quantity_kg: 1,
-        discount_percentage: 1,
-        id: Math.random().toString(36).substring(2),
-      };
-      setDiscounts((prev) => [...prev, newDiscount]);
-      saveToLocalStorage("step-two-discounts", [...discounts, newDiscount]);
-    }
-  };
-
-  const handleRemoveDiscount = (id: string) => {
-    const updatedDiscounts = discounts.filter((d) => d.id !== id);
-    setDiscounts(updatedDiscounts);
-    saveToLocalStorage("step-two-discounts", updatedDiscounts);
-  };
-
-  const handleDiscountChange = (
-    id: string,
-    field: "minimum_quantity_kg" | "discount_percentage",
-    value: number
-  ) => {
-    const updatedDiscounts = discounts.map((d) =>
-      d.id === id ? { ...d, [field]: value } : d
-    );
-    setDiscounts(updatedDiscounts);
-    saveToLocalStorage("step-two-discounts", updatedDiscounts);
-  };
-
   const fetchFirstFarm = async () => {
     try {
       if (!user) {
@@ -182,7 +152,7 @@ export default function StepTwo() {
           : undefined;
       const response: any = await apiService().get(
         "/onboarding/seller/get-first-farm",
-        farmerId
+        farmerId,
       );
       const fetchedFarm = response.data.farm;
       setFarm(fetchedFarm);
@@ -202,7 +172,7 @@ export default function StepTwo() {
           : undefined;
       const response: any = await apiService().get(
         "/onboarding/seller/get-coffee-details",
-        farmerId
+        farmerId,
       );
 
       if (response.success) {
@@ -264,10 +234,10 @@ export default function StepTwo() {
                 console.error(`Error fetching grading report ${doc.url}:`, err);
                 return null;
               }
-            })
+            }),
           );
           const validReports = gradingReportsTemp.filter(
-            (report): report is FileWithPreview => report !== null
+            (report): report is FileWithPreview => report !== null,
           );
           setGradingReports(validReports);
         }
@@ -290,10 +260,10 @@ export default function StepTwo() {
                 console.error(`Error fetching photo ${photo.url}:`, err);
                 return null;
               }
-            })
+            }),
           );
           const validPhotos = photosTemp.filter(
-            (photo): photo is FileWithPreview => photo !== null
+            (photo): photo is FileWithPreview => photo !== null,
           );
           setPhotos(validPhotos);
         }
@@ -363,7 +333,7 @@ export default function StepTwo() {
 
           const savedDiscounts: any = getFromLocalStorage(
             "step-two-discounts",
-            []
+            [],
           );
           if (Array.isArray(savedDiscounts) && savedDiscounts.length > 0) {
             const normalizedDiscounts = savedDiscounts.map((discount: any) => ({
@@ -413,7 +383,7 @@ export default function StepTwo() {
           } else {
             formData.append(
               key,
-              String(data[key as keyof CoffeeCropsFormData])
+              String(data[key as keyof CoffeeCropsFormData]),
             );
           }
         }
@@ -431,26 +401,17 @@ export default function StepTwo() {
         formData.append("farm_id", farm.id);
       }
 
-      if (discounts.length > 0) {
-        const formattedDiscounts = discounts.map((discount) => ({
-          minimum_quantity_kg: discount.minimum_quantity_kg,
-          discount_percentage: discount.discount_percentage,
-        }));
-        formData.append("discounts", JSON.stringify(formattedDiscounts));
-      }
-
       const effectiveOnboardingStage =
         user?.userType === "agent" && farmerProfile?.id
           ? farmerProfile.onboarding_stage
           : user?.onboarding_stage;
- 
 
       if (effectiveOnboardingStage === "crops_to_sell") {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/coffee-details",
           formData,
           true,
-          user?.userType === "agent" ? farmerProfile?.id : ""
+          user?.userType === "agent" ? farmerProfile?.id : "",
         );
 
         saveToLocalStorage("crop-id", response.data?.coffee_listing?.id);
@@ -463,7 +424,7 @@ export default function StepTwo() {
         saveToLocalStorage("step-two-discounts", discounts);
         localStorage.setItem(
           "current-step",
-          JSON.stringify("bank_information")
+          JSON.stringify("bank_information"),
         );
         removeFromLocalStorage("back-button-clicked");
         successMessage("Crop information saved successfully");
@@ -483,7 +444,7 @@ export default function StepTwo() {
           "/sellers/listings/update-listing",
           formData,
           true,
-          user?.userType === "agent" ? farmerProfile?.id : ""
+          user?.userType === "agent" ? farmerProfile?.id : "",
         );
 
         saveToLocalStorage("step-two", data);
@@ -730,21 +691,14 @@ export default function StepTwo() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Bean type</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value)}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select bean type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Green beans">
-                            Green beans
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value="Green beans"
+                          disabled
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -953,7 +907,7 @@ export default function StepTwo() {
                                       const newValue = checked
                                         ? [...(field.value || []), aroma]
                                         : (field.value || []).filter(
-                                            (v) => v !== aroma
+                                            (v) => v !== aroma,
                                           );
                                       field.onChange(newValue);
                                     }}
@@ -999,7 +953,7 @@ export default function StepTwo() {
                                       const newValue = checked
                                         ? [...(field.value || []), taste]
                                         : (field.value || []).filter(
-                                            (v) => v !== taste
+                                            (v) => v !== taste,
                                           );
                                       field.onChange(newValue);
                                     }}
@@ -1037,31 +991,6 @@ export default function StepTwo() {
                     maxSizeMB={5}
                     initialFiles={photos}
                   />
-                  {photos.length > 0 && (
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      {photos.map((file, index) => (
-                        <div
-                          key={index}
-                          className="relative flex flex-col items-center"
-                        >
-                          {file.type === "image" ? (
-                            <img
-                              src={file.preview}
-                              alt={file.file.name}
-                              className="h-24 w-24 object-cover rounded-md"
-                            />
-                          ) : (
-                            <div className="h-24 w-24 bg-gray-100 flex items-center justify-center rounded-md">
-                              <span className="text-sm text-gray-500">PDF</span>
-                            </div>
-                          )}
-                          <p className="mt-2 text-sm text-gray-600 truncate w-full text-center">
-                            {file.file.name}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">
@@ -1078,8 +1007,8 @@ export default function StepTwo() {
                 Set the price and discounts
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Provide details on crop variety, quality, quantity, and base
-                price to help buyers assess availability and cost
+                Provide details on crop quantity, and base price to help buyers
+                assess availability and cost
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                 <FormField
@@ -1135,83 +1064,17 @@ export default function StepTwo() {
                     <FormItem>
                       <FormLabel>Shipping Port</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          value="Djibouti"
+                          disabled
+                          className="w-full"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="mb-4">
-                <h4 className="text-base font-medium mb-2">Discounts</h4>
-                {discounts.length > 0 && (
-                  <div className="space-y-2">
-                    {discounts.map((discount) => (
-                      <div
-                        key={discount.id}
-                        className="flex items-center gap-2"
-                      >
-                        <Input
-                          type="number"
-                          min={1}
-                          max={form.getValues().quantity_kg}
-                          className="w-40"
-                          placeholder="Min. quantity (kg)"
-                          value={discount.minimum_quantity_kg}
-                          onChange={(e) => {
-                            const inputValue = Number(e.target.value) || 0;
-                            const max = form.getValues().quantity_kg-1;
-                            handleDiscountChange(
-                              discount.id,
-                              "minimum_quantity_kg",
-                              inputValue > max ? max : inputValue
-                            );
-                          }}
-                        />
-                        <span className="mx-2">kg</span>
-                        <Input
-                          type="number"
-                          min={1}
-                          disabled={form.getValues().quantity_kg === 0}
-                          className="w-32"
-                          placeholder="Discount (%)"
-                          value={discount.discount_percentage}
-                          onChange={(e) => {
-                            const inputValue = Number(e.target.value) || 0;
-                            const max = 99;
-                            handleDiscountChange(
-                              discount.id,
-                              "discount_percentage",
-                              inputValue > max ? max : inputValue
-                            );
-                          }}
-                        />
-                        <span className="mx-2">%</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveDiscount(discount.id)}
-                          className="text-red-500"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {discounts.length < 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="flex items-center text-sm text-green-600 gap-1 mt-2 p-0 h-auto"
-                    onClick={handleAddDiscount}
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add discount</span>
-                  </Button>
-                )}
               </div>
             </div>
 

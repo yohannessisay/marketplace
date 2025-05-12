@@ -3,17 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Favorite } from "@/types/orders";
 import { Separator } from "@radix-ui/react-dropdown-menu";
-import {  Calendar, ChevronDown, Coffee, User } from "lucide-react";
+import { Calendar, ChevronDown, Coffee, User } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const FavoriteItem = ({
   item,
   expandedOrderId,
-  toggleOrderExpansion
+  toggleOrderExpansion,
 }: {
   item: Favorite;
   expandedOrderId: string;
-  toggleOrderExpansion:(id:string) => void;
+  toggleOrderExpansion: (id: string) => void;
 }) => {
   const isExpanded = expandedOrderId === item.id;
 
@@ -26,6 +26,14 @@ export const FavoriteItem = ({
               <h3 className="font-bold text-lg">
                 {item.listing?.coffee_variety || "Unknown Coffee"}
               </h3>
+              {item.listing?.listing_status === "active" && (
+                <Badge
+                  variant="outline"
+                  className="ml-2 bg-green-500 text-white border-0"
+                >
+                  Active Listing
+                </Badge>
+              )}
               {item.listing?.is_organic && (
                 <Badge
                   variant="outline"

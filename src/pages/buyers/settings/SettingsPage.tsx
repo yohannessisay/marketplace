@@ -31,7 +31,6 @@ import Header from "@/components/layout/header";
 import { UserProfile } from "@/types/user";
 import { accountSchema, profileSchema } from "@/types/validation/buyer";
 
-
 type ProfileDetails = z.infer<typeof profileSchema>;
 type AccountDetails = z.infer<typeof accountSchema>;
 
@@ -72,7 +71,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
-     
       profileForm.reset({
         company_name: user.company_name || "",
         country: user.country || "",
@@ -89,7 +87,7 @@ export default function SettingsPage() {
         phone: user.phone,
         files: undefined,
       });
-      setPreviewImage(null);
+      setPreviewImage(user.avatar_url || null);
     }
   }, [user, profileForm, accountForm]);
 
@@ -119,7 +117,6 @@ export default function SettingsPage() {
 
   const onProfileSubmit = async (data: ProfileDetails) => {
     setIsProfileSubmitting(true);
-
     try {
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
@@ -169,12 +166,13 @@ export default function SettingsPage() {
           address: user!.address,
         };
         setUser(updatedUser);
+        localStorage.setItem("userProfile", JSON.stringify(updatedUser));
         successMessage("Your profile has been updated successfully.");
         profileForm.reset(data);
       } else {
         throw new Error("Failed to update profile");
       }
-    } catch (error) { 
+    } catch (error) {
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsProfileSubmitting(false);
@@ -183,12 +181,11 @@ export default function SettingsPage() {
 
   const onAccountSubmit = async (data: AccountDetails) => {
     setIsAccountSubmitting(true);
-
     try {
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
         if (key === "files" && value) {
-          formData.append(key, value);
+          formData.append("files", value);
         } else if (value !== undefined && value !== "") {
           formData.append(key, value.toString());
         }
@@ -199,11 +196,11 @@ export default function SettingsPage() {
         formData,
         true,
       );
- 
 
       if (response.success) {
-        const newAvatarUrl = response.data?.profile.avatar_url || user!.avatar_url;
- 
+        const newAvatarUrl =
+          response.data?.profile?.avatar_url || user!.avatar_url;
+
         const updatedUser: UserProfile = {
           ...user!,
           email: data.email,
@@ -234,6 +231,7 @@ export default function SettingsPage() {
         };
 
         setUser(updatedUser);
+        localStorage.setItem("userProfile", JSON.stringify(updatedUser));
         successMessage("Your account has been updated successfully.");
         accountForm.reset({
           ...data,
@@ -243,7 +241,7 @@ export default function SettingsPage() {
       } else {
         throw new Error("Failed to update account");
       }
-    } catch (error) { 
+    } catch (error) {
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsAccountSubmitting(false);
@@ -252,7 +250,7 @@ export default function SettingsPage() {
 
   const handleRemoveImage = () => {
     accountForm.setValue("files", undefined);
-    setPreviewImage(null);
+    setPreviewImage(user!.avatar_url || null);
   };
 
   const sidebarItems = [
@@ -568,15 +566,16 @@ export default function SettingsPage() {
                                         alt="Profile"
                                         className="w-full h-full object-cover"
                                       />
-                                      {previewImage && (
-                                        <button
-                                          type="button"
-                                          onClick={handleRemoveImage}
-                                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700"
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                      )}
+                                      {previewImage &&
+                                        previewImage !== user.avatar_url && (
+                                          <button
+                                            type="button"
+                                            onClick={handleRemoveImage}
+                                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700"
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        )}
                                     </>
                                   ) : (
                                     <User className="w-20 h-20 text-gray-400" />
@@ -612,7 +611,9 @@ export default function SettingsPage() {
                                                 URL.createObjectURL(file),
                                               );
                                             } else {
-                                              setPreviewImage(null);
+                                              setPreviewImage(
+                                                user!.avatar_url || null,
+                                              );
                                             }
                                           }}
                                         />
@@ -678,7 +679,7 @@ export default function SettingsPage() {
                             variant="outline"
                             onClick={() => {
                               accountForm.reset();
-                              setPreviewImage(null);
+                              setPreviewImage(user!.avatar_url || null);
                             }}
                             disabled={
                               isAccountSubmitting ||

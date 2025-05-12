@@ -29,6 +29,7 @@ import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
+import { USER_PROFILE_KEY } from "@/types/constants";
 
 interface ProfileInfo {
   id: string;
@@ -66,7 +67,7 @@ export default function StepFour() {
     try {
       const response: any = await apiService().get(
         "/onboarding/seller/get-profile",
-        user?.userType === "agent" ? farmerProfile?.id : ""
+        user?.userType === "agent" ? farmerProfile?.id : "",
       );
       setProfileInfo(response.data.profile);
       form.reset({
@@ -148,7 +149,7 @@ export default function StepFour() {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
               key,
-              String(data[key as keyof ProfileInfoFormData])
+              String(data[key as keyof ProfileInfoFormData]),
             );
           }
         }
@@ -160,17 +161,16 @@ export default function StepFour() {
           "/onboarding/seller/profile",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
-        const userInfo: any = getFromLocalStorage("userProfile", {});
+        const userInfo: any = getFromLocalStorage(USER_PROFILE_KEY, {});
         userInfo.onboarding_stage = "completed";
         setUser({
           ...user!,
           onboarding_stage: "completed",
         });
         localStorage.clear();
-        localStorage.setItem("userProfile", JSON.stringify(userInfo));
- 
+        localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userInfo));
 
         successMessage("Registration completed successfully!");
         navigation("/seller-dashboard");
@@ -180,7 +180,7 @@ export default function StepFour() {
           if (Object.prototype.hasOwnProperty.call(data, key)) {
             formData.append(
               key,
-              String(data[key as keyof ProfileInfoFormData])
+              String(data[key as keyof ProfileInfoFormData]),
             );
           }
         }
@@ -193,7 +193,7 @@ export default function StepFour() {
           "/sellers/profile/update-profile",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
         successMessage("Profile data updated successfully");
@@ -273,7 +273,7 @@ export default function StepFour() {
                           accept="image/*"
                           onChange={(e) => {
                             const selectedFiles = Array.from(
-                              e.target.files || []
+                              e.target.files || [],
                             );
                             handleFilesSelected(selectedFiles);
                           }}

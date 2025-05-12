@@ -36,7 +36,7 @@ export default function CompanyVerification() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   const [files, setFiles] = useState<File[]>([]);
- 
+
   const navigate = useNavigate();
   const userProfile: any = getFromLocalStorage("userProfile", {});
   const form = useForm<CompanyDetails>({
@@ -51,7 +51,7 @@ export default function CompanyVerification() {
       about_me: "",
     },
   });
- 
+
   const onSubmit = async (data: CompanyDetails) => {
     setIsSubmitting(true);
 
@@ -90,40 +90,37 @@ export default function CompanyVerification() {
 
   return (
     <div className="min-h-screen bg-primary/5 p-8">
-      {/* Header */}
       <Header />
-      {/* Main content */}
       <main className="max-w-3xl mx-auto px-4 py-8 mt-10">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            {/* Step 1 */}
-            <Card className="max-w-2xl mx-auto">
-                  <CardHeader>
-                    <CardTitle>Upload Company KYC Documents</CardTitle>
-                    <CardDescription>
-                      Upload an image. Drag and drop or
-                      click to select a file.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <FileUpload
-                      onFilesSelected={(files) => {
-                        setFiles(files);
-                      }}
-                      maxFiles={5}
-                      maxSizeMB={5}
-                    />
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      {files.length > 0
-                        ? files.length + " files selected"
-                        : "No file selected"}
-                    </div>
-                  </CardFooter>
-                </Card>
+            {/* Step 1 - Upload Documents */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Upload Company KYC Documents</CardTitle>
+                <CardDescription>
+                  Upload an image. Drag and drop or click to select a file.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FileUpload
+                  onFilesSelected={(files) => {
+                    setFiles(files);
+                  }}
+                  maxFiles={5}
+                  maxSizeMB={5}
+                />
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <div className="text-sm text-muted-foreground">
+                  {files.length > 0
+                    ? `${files.length} files selected`
+                    : "No file selected"}
+                </div>
+              </CardFooter>
+            </Card>
 
-            {/* Step 2 */}
+            {/* Step 2 - Company Details */}
             <Card>
               <CardHeader>
                 <div className="text-sm font-medium text-gray-500">Step 2</div>
@@ -191,7 +188,7 @@ export default function CompanyVerification() {
                       <FormItem>
                         <FormLabel>Website or social media link</FormLabel>
                         <FormControl>
-                          <Input placeholder="company@email.com" {...field} />
+                          <Input placeholder="https://company.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -206,7 +203,6 @@ export default function CompanyVerification() {
                         <FormLabel>
                           Company address<span className="text-red-500">*</span>
                         </FormLabel>
-
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -214,6 +210,7 @@ export default function CompanyVerification() {
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={form.control}
                     name="telegram"
@@ -227,6 +224,7 @@ export default function CompanyVerification() {
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={form.control}
                     name="about_me"
@@ -244,7 +242,7 @@ export default function CompanyVerification() {
               </CardContent>
             </Card>
 
-            {/* Action buttons */}
+            {/* Action Buttons */}
             <div className="flex justify-end space-x-4">
               <Button
                 type="button"

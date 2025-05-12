@@ -37,6 +37,9 @@ export function MessageThread({
 
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || !thread || !activeMessageThread) return;
+    setChatMessage("");
+
+    const messageToSend = chatMessage;
 
     const latestMessage = thread.messages[0];
     const recipientId =
@@ -63,7 +66,7 @@ export function MessageThread({
         avatar_url_csv: thread.buyerAvatar,
       },
       recipientType: thread.buyerCompany ? "buyer" : "seller",
-      message: chatMessage,
+      message: messageToSend,
       listingId: listingId || null,
       createdAt: new Date().toISOString(),
     };
@@ -83,12 +86,11 @@ export function MessageThread({
     );
 
     updateThreads(updatedThreads);
-    setChatMessage("");
 
     try {
       await chatService().sendMessage({
         recipientId,
-        message: chatMessage,
+        message: messageToSend,
         listingId: listingId || undefined,
       });
     } catch (error: unknown) {
@@ -201,7 +203,6 @@ export function MessageThread({
           </div>
         </div>
         <div className="flex space-x-2">
-        
           {isMobile && (
             <Button
               variant="ghost"

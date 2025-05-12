@@ -3,7 +3,7 @@
 import { Droplet, Coffee, Star, Heart, Loader2, Map } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { CoffeeListing } from "@/types/types";
+import { CoffeeListing } from "@/types/coffee";
 import { CoffeeImage } from "./coffee-image";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";

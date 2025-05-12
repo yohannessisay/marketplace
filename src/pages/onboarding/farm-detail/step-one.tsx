@@ -41,10 +41,11 @@ import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import CropFieldManager from "@/components/CropFieldManager";
-import LocationPicker from "@/components/LocationPicker";
 import { useAuth } from "@/hooks/useAuth";
 import { UserProfile } from "@/types/user";
 import { Input } from "@/components/ui/input";
+import { PolygonCoord } from "@/components/GoogleMaps";
+import { USER_PROFILE_KEY } from "@/types/constants";
 
 export default function StepOne() {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ export default function StepOne() {
 
   const isBackButtonClicked = getFromLocalStorage(
     "back-button-clicked",
-    "false"
+    "false",
   );
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
@@ -86,12 +87,50 @@ export default function StepOne() {
       polygon_coords: [],
     },
   });
-  const [latitude, setLatitude] = useState(0);
-  const [longitude, setLongitude] = useState(0);
+  const [_latitude, setLatitude] = useState(0);
+  const [_longitude, setLongitude] = useState(0);
   const { reset, trigger } = form;
 
+  const calculateCenter = (polygons: PolygonCoord[][]) => {
+    if (!polygons.length || !polygons[0].length)
+      return { lat: 9.03, lng: 38.74 };
+
+    const coords = polygons[0];
+    let latSum = 0;
+    let lngSum = 0;
+
+    for (const coord of coords) {
+      latSum += coord.lat;
+      lngSum += coord.lng;
+    }
+
+    return {
+      lat: latSum / coords.length,
+      lng: lngSum / coords.length,
+    };
+  };
+
+  const calculateApproxArea = (coords: PolygonCoord[]): number => {
+    if (!coords || coords.length < 3) return 0;
+
+    const R = 6371000;
+    let area = 0;
+
+    for (let i = 0; i < coords.length; i++) {
+      const j = (i + 1) % coords.length;
+      const lat1 = (coords[i].lat * Math.PI) / 180;
+      const lng1 = (coords[i].lng * Math.PI) / 180;
+      const lat2 = (coords[j].lat * Math.PI) / 180;
+      const lng2 = (coords[j].lng * Math.PI) / 180;
+      area += (lng2 - lng1) * (2 + Math.sin(lat1) + Math.sin(lat2));
+    }
+
+    area = Math.abs((area * R * R) / 2);
+    return area / 10000;
+  };
+
   useEffect(() => {
-    const savedProfile: any = getFromLocalStorage("userProfile", {});
+    const savedProfile: any = getFromLocalStorage(USER_PROFILE_KEY, {});
     if (
       savedProfile &&
       savedProfile.id &&
@@ -116,7 +155,7 @@ export default function StepOne() {
 
     const savedData = getFromLocalStorage<FarmDetailsFormData>(
       "step-one",
-      {} as FarmDetailsFormData
+      {} as FarmDetailsFormData,
     );
     if (savedData && Object.keys(savedData).length > 0) {
       reset({
@@ -187,7 +226,7 @@ export default function StepOne() {
     }
 
     const oversizedGovFiles = govFiles.some(
-      (file) => file.size > 5 * 1024 * 1024
+      (file) => file.size > 5 * 1024 * 1024,
     );
     if (oversizedGovFiles) {
       const error: APIErrorResponse = {
@@ -205,7 +244,7 @@ export default function StepOne() {
     }
 
     const oversizedLandFiles = landFiles.some(
-      (file) => file.size > 5 * 1024 * 1024
+      (file) => file.size > 5 * 1024 * 1024,
     );
     if (oversizedLandFiles) {
       const error: APIErrorResponse = {
@@ -263,7 +302,7 @@ export default function StepOne() {
           } else {
             formData.append(
               key,
-              String(data[key as keyof FarmDetailsFormData])
+              String(data[key as keyof FarmDetailsFormData]),
             );
           }
         }
@@ -289,23 +328,24 @@ export default function StepOne() {
           "/onboarding/seller/farm-details",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
         if (response?.success) {
-          const profile = getFromLocalStorage("userProfile", {});
+          const profile = getFromLocalStorage(USER_PROFILE_KEY, {});
           if (userProfile) {
             const updatedProfile = {
               ...profile,
               onboarding_stage: "crops_to_sell",
             };
+
             setUser(updatedProfile as UserProfile);
           }
           const updatedProfile = {
             ...profile,
             onboarding_stage: "crops_to_sell",
           };
-          saveToLocalStorage("userProfile", updatedProfile);
+          saveToLocalStorage(USER_PROFILE_KEY, updatedProfile);
           saveToLocalStorage("step-one", data);
           if (response.data?.farm?.id) {
             saveToLocalStorage("farm-id", response.data.farm.id);
@@ -324,7 +364,7 @@ export default function StepOne() {
           "/sellers/farms/update-farm",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : ""
+          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
         if (response.success) {
@@ -363,7 +403,7 @@ export default function StepOne() {
           user.userType === "agent" ? userProfile?.id : undefined;
         const response: any = await apiService().get(
           "/onboarding/seller/get-first-farm",
-          farmerId
+          farmerId,
         );
 
         if (response.success) {
@@ -398,7 +438,7 @@ export default function StepOne() {
         } else {
           console.log(
             "fetchFirstFarm: Failed to fetch farm",
-            response.error as APIErrorResponse
+            response.error as APIErrorResponse,
           );
         }
       } catch (error: any) {
@@ -647,28 +687,7 @@ export default function StepOne() {
                   )}
                 />
               </div>
-              <div className="mt-6">
-                <FormField
-                  control={form.control}
-                  name="latitude"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location (Required)</FormLabel>
-                      <FormControl>
-                        <LocationPicker
-                          onLocationChange={(coords) => {
-                            field.onChange(coords.lat);
-                            form.setValue("longitude", coords.lng);
-                          }}
-                          initialLocation={{ lat: latitude, lng: longitude }}
-                          farmName={form.getValues("farm_name")}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+
               <div className="mt-6">
                 <FormField
                   control={form.control}
@@ -678,13 +697,82 @@ export default function StepOne() {
                       <FormLabel>Farm Boundary Map</FormLabel>
                       <FormControl>
                         <CropFieldManager
-                          onPolygonChange={field.onChange}
+                          onPolygonChange={(polygons) => {
+                            field.onChange(polygons);
+                            if (polygons.length > 0 && polygons[0].length > 0) {
+                              const area = calculateApproxArea(polygons[0]);
+                              form.setValue("total_size_hectares", area, {
+                                shouldValidate: true,
+                              });
+
+                              // Calculate and set center coordinates
+                              const center = calculateCenter(polygons);
+                              form.setValue("latitude", center.lat, {
+                                shouldValidate: true,
+                              });
+                              form.setValue("longitude", center.lng, {
+                                shouldValidate: true,
+                              });
+                            } else {
+                              form.setValue("total_size_hectares", 0, {
+                                shouldValidate: true,
+                              });
+                              form.setValue("latitude", 7.67, {
+                                shouldValidate: true,
+                              });
+                              form.setValue("longitude", 36.83, {
+                                shouldValidate: true,
+                              });
+                            }
+                          }}
                           initialPolygons={field.value}
-                          center={{ lat: latitude, lng: longitude }}
-                          farmName={form.getValues("farm_name") || "EEEE farm"}
+                          center={{ lat: 9.03, lng: 38.74 }}
+                          farmName={form.getValues("farm_name") || "Addis farm"}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="latitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Latitude</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          {...field}
+                          disabled
+                          value={field.value.toFixed(6)}
+                          placeholder="Calculated from boundary"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="longitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Longitude</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          {...field}
+                          disabled
+                          value={field.value.toFixed(6)}
+                          placeholder="Calculated from boundary"
+                        />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />

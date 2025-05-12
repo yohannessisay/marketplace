@@ -20,19 +20,22 @@ interface AuthState {
 }
 
 export const useAuth = (): AuthState => {
-  const [authState, setAuthState] = useState<AuthState>({
+  const [authState, setAuthState] = useState<Omit<AuthState, "setUser">>({
     isAuthenticated: false,
     user: null,
     loading: true,
-    setUser: (user: UserProfile) => {
-      setAuthState((prev) => ({
-        ...prev,
-        isAuthenticated: true,
-        user,
-      }));
-      localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(user));
-    },
   });
+
+  // Define setUser separately so it always uses the current setAuthState
+  const setUser = (user: UserProfile) => {
+    setAuthState((prev) => ({
+      ...prev,
+      isAuthenticated: true,
+      user,
+    }));
+    localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(user));
+  };
+
   const location = useLocation();
 
   useEffect(() => {
@@ -52,7 +55,6 @@ export const useAuth = (): AuthState => {
             isAuthenticated: true,
             user: storedProfile as UserProfile,
             loading: false,
-            setUser: authState.setUser,
           });
           return;
         }
@@ -67,7 +69,6 @@ export const useAuth = (): AuthState => {
                 isAuthenticated: true,
                 user: userProfile,
                 loading: false,
-                setUser: authState.setUser,
               });
               return;
             }
@@ -99,7 +100,6 @@ export const useAuth = (): AuthState => {
               isAuthenticated: true,
               user,
               loading: false,
-              setUser: authState.setUser,
             });
             return;
           } else {
@@ -142,7 +142,6 @@ export const useAuth = (): AuthState => {
                   isAuthenticated: true,
                   user,
                   loading: false,
-                  setUser: authState.setUser,
                 });
                 return;
               }
@@ -161,12 +160,14 @@ export const useAuth = (): AuthState => {
         isAuthenticated: false,
         user: null,
         loading: false,
-        setUser: authState.setUser,
       });
     };
 
     authenticate();
   }, [location]);
 
-  return authState;
+  return {
+    ...authState,
+    setUser,
+  };
 };

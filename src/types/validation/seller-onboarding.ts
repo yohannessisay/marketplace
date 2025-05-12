@@ -27,7 +27,7 @@ export const farmDetailsSchema = z
         "Guji, Oromia, Ethiopia",
         "Harar, Oromia, Ethiopia",
         "Illubabor, Oromia, Ethiopia",
-        ""
+        "",
       ],
       {
         errorMap: () => ({
@@ -49,7 +49,7 @@ export const farmDetailsSchema = z
         "West Hararghe, Harrar",
         "Sidama",
         "Yirgachefe",
-        ""
+        "",
       ],
       {
         errorMap: () => ({
@@ -60,7 +60,7 @@ export const farmDetailsSchema = z
     ),
     tree_type: z.string().min(1, "Tree type is required"),
     tree_variety: z.string().min(1, "Tree variety is required"),
-    soil_type: z.enum(["Forest (Dark) Soil", "Sand Soil",""], {
+    soil_type: z.enum(["Forest (Dark) Soil", "Sand Soil", ""], {
       errorMap: () => ({
         message: "Soil type must be either 'Forest (Dark) Soil' or 'Sand Soil'",
       }),
@@ -126,7 +126,7 @@ export const coffeeCropsSchema = z.object({
   farmId: z.string().min(1, "Farm ID is required"),
   coffee_variety: z.string().min(1, "Coffee variety is required"),
   grade: z.string().min(1, "Grade is required"),
-  bean_type: z.string().min(1, "Bean type is required"),
+  bean_type: z.string().default("Green beans"),
   crop_year: z.string().min(1, "Crop year is required"),
   processing_method: z.string().min(1, "Processing method is required"),
   moisture_percentage: z
@@ -147,10 +147,11 @@ export const coffeeCropsSchema = z.object({
   readiness_date: z.string().min(1, "Readiness date is required"),
   lot_length: z.string().optional(),
   delivery_type: z.string().min(1, "Delivery type is required"),
-  shipping_port: z.string().min(1, "Shipping port is required"),
+  shipping_port: z.string().default("Djibouti"),
 });
 
 export type CoffeeCropsFormData = z.infer<typeof coffeeCropsSchema>;
+
 // Step 3: Bank Information Schema
 const accountHolderNameValidation = z
   .string()

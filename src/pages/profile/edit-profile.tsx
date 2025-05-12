@@ -121,6 +121,7 @@ export default function EditProfile() {
           form.reset(profileData);
           setInitialData(profileData);
           setProfileImage(profile.avatar_url || null);
+          console.log(profile.avatar_url);
         }
       }
     } catch (error: any) {
