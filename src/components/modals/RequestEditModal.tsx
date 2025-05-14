@@ -133,14 +133,16 @@ export function RequestEditModal({
             Request Edit Access for{" "}
             {entityType.charAt(0).toUpperCase() + entityType.slice(1)}
           </DialogTitle>
-          <p className="text-xs text-gray-600 text-center">
-            KYC for this {entityType} is completed, you need to create a edit
+          <p className="text-sm text-gray-600 text-center">
+            KYC for this {entityType} is completed, you need to create an edit
             access request to proceed to edit{" "}
           </p>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div>
-            <Label htmlFor="message">Message</Label>
+            <Label htmlFor="message" className="pb-2">
+              Message
+            </Label>
             <Textarea
               id="message"
               value={message}
@@ -150,7 +152,7 @@ export function RequestEditModal({
             />
           </div>
           <div>
-            <Label>Fields to Edit</Label>
+            <Label className="pb-2">Fields to Edit</Label>
             <div className="grid grid-cols-2 gap-4 mt-2">
               {editableFields.map((field) => (
                 <div key={field.id} className="flex items-center space-x-2">
@@ -171,11 +173,20 @@ export function RequestEditModal({
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+        <DialogFooter className="grid grid-cols-2 gap-3 mb-3 mt-5">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="w-full"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full "
+          >
             {isSubmitting ? "Submitting..." : "Submit Request"}
           </Button>
         </DialogFooter>

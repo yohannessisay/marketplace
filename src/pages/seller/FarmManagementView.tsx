@@ -9,6 +9,7 @@ import {
   CalendarX,
   PencilLine,
   X,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -467,24 +468,44 @@ export default function FarmSellerView() {
                       </div>
                     </div>
                   </div>
+
                   <div className="mt-6">
                     {farm!.admin_edit_request_approval_status === "allowed" ? (
                       <Link to={`/edit-farm/${farm!.id}`}>
                         <Button className="w-full">Edit Farm</Button>
                       </Link>
-                    ) : farm!.verification_status === "pending" ? (
-                      <Link to={`/edit-farm/${farm!.id}`}>
-                        <Button className="w-full">Edit Farm</Button>
-                      </Link>
-                    ) : (farm!.verification_status === "approved" &&
-                        farm!.admin_edit_request_approval_status ===
-                          "requested") ||
-                      farm!.admin_edit_request_approval_status === "expired" ||
-                      farm!.admin_edit_request_approval_status ===
-                        "rejected" ? (
+                    ) : farm!.admin_edit_request_approval_status ===
+                        "requested" ||
+                      farm!.admin_edit_request_approval_status === "expired" ? (
                       <Button className="w-full" disabled>
-                        Edit Requested
+                        {farm!.admin_edit_request_approval_status ===
+                        "requested"
+                          ? "Edit Requested"
+                          : farm!.admin_edit_request_approval_status ===
+                              "expired"
+                            ? "Request Expired"
+                            : "Request Rejected"}
                       </Button>
+                    ) : farm!.verification_status === "pending" ? (
+                      <div className="space-y-4 rounded-lg bg-amber-100 p-4 mt-4">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="h-5 w-5 text-amber-900 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="text-sm font-medium text-amber-800">
+                              KYC is Pending
+                            </h4>
+                            <p className="mt-1 text-sm text-amber-800">
+                              Request edit access to modify this farm.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full"
+                          onClick={() => setIsModalOpen(true)}
+                        >
+                          Request Edit Access
+                        </Button>
+                      </div>
                     ) : (
                       <div className="space-y-4 rounded-lg bg-green-100 p-4 mt-4">
                         <div className="flex items-start gap-3">

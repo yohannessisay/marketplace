@@ -309,11 +309,11 @@ export default function StepOne() {
       }
 
       govFiles.forEach((file) => {
-        formData.append(`files`, file);
+        formData.append("government_registration", file);
       });
 
       landFiles.forEach((file) => {
-        formData.append(`files`, file);
+        formData.append("land_rights", file);
       });
 
       const govFilePaths = govFiles.map((file) => URL.createObjectURL(file));

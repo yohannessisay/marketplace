@@ -1,6 +1,14 @@
 "use client";
 
-import { Star, Award, Download, MapPin, Coffee, Droplet } from "lucide-react";
+import {
+  Star,
+  Award,
+  Download,
+  MapPin,
+  Coffee,
+  Droplet,
+  Circle,
+} from "lucide-react";
 import { OrderStatus } from "@/types/order";
 import { CoffeeListing } from "@/types/coffee";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,8 +20,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBuyerOrderData } from "@/hooks/useListingBid";
 import { useEffect, useCallback, useState } from "react";
 import { BidModal } from "./Bid-modal";
-import { apiService } from "@/services/apiService";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface OrderSidebarProps {
   listing: CoffeeListing | null;
@@ -32,7 +40,7 @@ export function OrderSidebar({
   const { user } = useAuth();
   const { hasBid, loading, checkBid } = useBuyerOrderData();
   const [showBidModal, setShowBidModal] = useState(false);
-  const [quantity, setQuantity] = useState<number>();
+  const [_quantity, setQuantity] = useState<number>();
   const [bidPrice, setBidPrice] = useState(0);
 
   useEffect(() => {
@@ -54,20 +62,6 @@ export function OrderSidebar({
     }
   }, [listing?.id, checkBid]);
 
-  const handleSubmitBid = async () => {
-    if (!listing?.id) return;
-    try {
-      await apiService().post("/buyers/bids/place-bid", {
-        listingId: listing.id,
-        quantity_kg: quantity,
-        unit_price: bidPrice,
-      });
-    } catch (error) {
-      console.error("[OrderSidebar] Error submitting bid:", error);
-      throw error;
-    }
-  };
-
   const openBidModal = () => {
     if (!user) {
       onRequireAuth();
@@ -86,7 +80,30 @@ export function OrderSidebar({
   return (
     <div className="space-y-6">
       <Card className="top-6">
-        <CardContent className="p-6">
+        <CardContent className="pb-3 pl-6 pr-6">
+          <div className="mb-4 flex justify-between items-start">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-sm font-medium",
+                listing?.listing_status === "active"
+                  ? "bg-green-400 text-white border-green-200"
+                  : "bg-orange-300 text-gray-800 border-gray-200",
+              )}
+            >
+              {listing?.listing_status === "active" ? (
+                <div className="flex items-center">
+                  <Circle className="h-2 w-2 mr-1.5 fill-current text-white" />
+                  Active
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <Circle className="h-2 w-2 mr-1.5 fill-current text-gray-500" />
+                  Inactive
+                </div>
+              )}
+            </Badge>
+          </div>
           <div className="mb-4">
             <img
               src={primaryPhoto}
@@ -283,7 +300,6 @@ export function OrderSidebar({
           bidPrice={bidPrice}
           setBidPrice={setBidPrice}
           onClose={handleModalClose}
-          onSubmit={handleSubmitBid}
           onBidSubmitted={handleBidSubmitted}
         />
       )}

@@ -4,6 +4,8 @@ import type { CoffeeListing } from "@/types/coffee";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -11,6 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { apiService } from "@/services/apiService";
+import { useNotification } from "@/hooks/useNotification";
+import { APIErrorResponse } from "@/types/api";
 
 interface BidModalProps {
   listing: CoffeeListing | null;
@@ -19,7 +25,6 @@ interface BidModalProps {
   bidPrice: number;
   setBidPrice: (price: number) => void;
   onClose: () => void;
-  onSubmit: () => Promise<void>;
   onBidSubmitted?: () => void;
 }
 
@@ -28,22 +33,38 @@ export function BidModal({
   quantity,
   bidPrice,
   setBidPrice,
-  onClose,
-  onSubmit,
   onBidSubmitted,
+  onClose,
 }: BidModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [shipZipcode, setShipZipcode] = useState("");
+  const [shipAddress, setShipAddress] = useState("");
+  const [shipInstructions, setShipInstructions] = useState("");
+  const { successMessage, errorMessage } = useNotification();
   const discount = 0;
   const totalPrice = bidPrice * quantity;
 
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      await onSubmit();
+      if (!listing) {
+        throw new Error("No listing provided");
+      }
+
+      await apiService().post("/buyers/bids/place-bid", {
+        listingId: listing.id,
+        quantity_kg: quantity,
+        unit_price: bidPrice,
+        ship_zipcode: shipZipcode,
+        ship_adrs: shipAddress,
+        ship_instructions: shipInstructions || "None",
+      });
+      successMessage("Bid placed successfully!");
       onBidSubmitted?.();
       onClose();
     } catch (error) {
       console.error("[BidModal] Error submitting bid:", error);
+      errorMessage(error as APIErrorResponse);
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +74,11 @@ export function BidModal({
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Place Your Bid</DialogTitle>
+          <DialogTitle className="text-center">Place Your Bid</DialogTitle>
+          <DialogDescription className="text-center">
+            You can place a bid to this listing and if the seller accepts your
+            offer order will be created
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -65,7 +90,7 @@ export function BidModal({
               min="10"
               max={listing?.quantity_kg}
               value={quantity}
-              className="mt-1"
+              className="mt-2"
               disabled
             />
             <p className="mt-1 text-sm text-muted-foreground">
@@ -82,11 +107,46 @@ export function BidModal({
               step="0.01"
               value={bidPrice}
               onChange={(e) => setBidPrice(Number(e.target.value) || 0)}
-              className="mt-1"
+              className="mt-2"
             />
             <p className="mt-1 text-sm text-muted-foreground">
               Suggested: ${listing?.price_per_kg}
             </p>
+          </div>
+
+          <div>
+            <Label htmlFor="ship_zipcode">Shipping Zip/Postal Code</Label>
+            <Input
+              id="ship_zipcode"
+              type="text"
+              value={shipZipcode}
+              onChange={(e) => setShipZipcode(e.target.value)}
+              className="mt-2"
+              placeholder="Enter zip/postal code"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="ship_adrs">Shipping Address</Label>
+            <Input
+              id="ship_adrs"
+              type="text"
+              value={shipAddress}
+              onChange={(e) => setShipAddress(e.target.value)}
+              className="mt-2"
+              placeholder="Enter full shipping address"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="ship_instructions">Shipping Instructions</Label>
+            <Textarea
+              id="ship_instructions"
+              value={shipInstructions}
+              onChange={(e) => setShipInstructions(e.target.value)}
+              className="mt-2"
+              placeholder="Enter any special instructions (or 'None')"
+            />
           </div>
 
           <div className="bg-muted p-4 rounded-md">
@@ -126,19 +186,27 @@ export function BidModal({
               </div>
             </div>
           </div>
-
-          <div className="flex justify-end space-x-3 pt-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              disabled={isLoading || bidPrice <= 0 || quantity < 10}
-              onClick={handleSubmit}
-            >
-              {isLoading ? "Placing Bid..." : "Place Bid"}
-            </Button>
-          </div>
         </div>
+
+        <DialogFooter className="grid grid-cols-2 gap-3">
+          <Button variant="outline" onClick={onClose} className="w-full">
+            Cancel
+          </Button>
+          <Button
+            disabled={
+              isLoading ||
+              bidPrice <= 0 ||
+              quantity < 10 ||
+              !shipZipcode.trim() ||
+              !shipAddress.trim() ||
+              !shipInstructions.trim()
+            }
+            onClick={handleSubmit}
+            className="w-full"
+          >
+            {isLoading ? "Placing Bid..." : "Place Bid"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

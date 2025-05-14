@@ -11,6 +11,7 @@ import {
   XCircle,
   CalendarX,
   PencilLine,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1013,20 +1014,36 @@ export default function CoffeeListingSellerView() {
                           <Link to={`/edit-crop/${listing!.id}`}>
                             <Button className="w-full">Edit Listing</Button>
                           </Link>
-                        ) : listing!.kyc_status === "pending" ? (
-                          <Link to={`/edit-crop/${listing!.id}`}>
-                            <Button className="w-full">Edit Listing</Button>
-                          </Link>
-                        ) : (listing!.kyc_status === "approved" &&
-                            listing!.admin_edit_request_approval_status ===
-                              "requested") ||
+                        ) : listing!.admin_edit_request_approval_status ===
+                            "requested" ||
                           listing!.admin_edit_request_approval_status ===
-                            "expired" ||
-                          listing!.admin_edit_request_approval_status ===
-                            "rejected" ? (
+                            "expired" ? (
                           <Button className="w-full" disabled>
-                            Edit Requested
+                            {listing!.admin_edit_request_approval_status ===
+                            "requested"
+                              ? "Edit Requested"
+                              : "Request Expired"}
                           </Button>
+                        ) : listing!.kyc_status === "pending" ? (
+                          <div className="space-y-4 rounded-lg bg-amber-100 p-4 mt-4">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="h-5 w-5 text-amber-900 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <h4 className="text-sm font-medium text-amber-800">
+                                  KYC is Pending
+                                </h4>
+                                <p className="mt-1 text-sm text-amber-800">
+                                  Request edit access to modify this listing.
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              className="w-full"
+                              onClick={() => setIsModalOpen(true)}
+                            >
+                              Request Edit Access
+                            </Button>
+                          </div>
                         ) : (
                           <div className="space-y-4 rounded-lg bg-green-100 p-4 mt-4">
                             <div className="flex items-start gap-3">

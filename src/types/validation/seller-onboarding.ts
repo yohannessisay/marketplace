@@ -70,8 +70,7 @@ export const farmDetailsSchema = z
     country: z.string().min(1, "Country is required"),
     total_size_hectares: z
       .number()
-      .min(0.1, "Minimum farm size is 0.1 hectares")
-      .max(10000, "Maximum farm size is 10,000 hectares"),
+      .min(0.1, "Minimum farm size is 0.1 hectares"),
     coffee_area_hectares: z
       .number()
       .min(0.1, "Minimum coffee area is 0.1 hectares")
@@ -126,7 +125,7 @@ export const coffeeCropsSchema = z.object({
   farmId: z.string().min(1, "Farm ID is required"),
   coffee_variety: z.string().min(1, "Coffee variety is required"),
   grade: z.string().min(1, "Grade is required"),
-  bean_type: z.string().default("Green beans"),
+  bean_type: z.string().min(1, "Bean type is required"),
   crop_year: z.string().min(1, "Crop year is required"),
   processing_method: z.string().min(1, "Processing method is required"),
   moisture_percentage: z
@@ -147,7 +146,7 @@ export const coffeeCropsSchema = z.object({
   readiness_date: z.string().min(1, "Readiness date is required"),
   lot_length: z.string().optional(),
   delivery_type: z.string().min(1, "Delivery type is required"),
-  shipping_port: z.string().default("Djibouti"),
+  shipping_port: z.string().min(1, "Shipping port is required"),
 });
 
 export type CoffeeCropsFormData = z.infer<typeof coffeeCropsSchema>;

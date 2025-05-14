@@ -5,7 +5,6 @@ import Cookies from "js-cookie";
 import { apiService } from "@/services/apiService";
 import { APIErrorResponse } from "@/types/api";
 import { UserProfile } from "@/types/user";
-
 import {
   ACCESS_TOKEN_KEY,
   REFRESH_TOKEN_KEY,
@@ -26,7 +25,6 @@ export const useAuth = (): AuthState => {
     loading: true,
   });
 
-  // Define setUser separately so it always uses the current setAuthState
   const setUser = (user: UserProfile) => {
     setAuthState((prev) => ({
       ...prev,
@@ -152,7 +150,6 @@ export const useAuth = (): AuthState => {
         }
       }
 
-      // Clear auth if all else fails
       localStorage.removeItem(USER_PROFILE_KEY);
       Cookies.remove(ACCESS_TOKEN_KEY);
       Cookies.remove(REFRESH_TOKEN_KEY);

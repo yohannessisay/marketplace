@@ -68,6 +68,7 @@ export interface Order {
   seller_name?: string;
   buyer_name?: string;
   reviews: any;
+  seller: Seller;
 }
 
 export interface SampleRequest {

@@ -50,6 +50,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import ConfirmationModal from "@/components/modals/ConfrmationModal";
 
 interface Farm {
   id: string;
@@ -83,6 +84,7 @@ export default function AddCrop() {
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
   const isLoading = isLoadingFarms || isLoadingListing;
   const [hasFetched, setHasFetched] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
@@ -398,6 +400,11 @@ export default function AddCrop() {
     setPhotoError("");
   };
 
+  const handleFormSubmit = (data: CoffeeCropsFormData) => {
+    setIsSubmitting(true);
+    setIsModalOpen(true);
+  };
+
   const onSubmit = async (data: CoffeeCropsFormData) => {
     setIsSubmitting(true);
     try {
@@ -431,8 +438,11 @@ export default function AddCrop() {
         }
       }
 
-      gradingReports.forEach((file) => formData.append("files", file.file));
-      photos.forEach((photo) => formData.append("files", photo.file));
+      gradingReports.forEach((file) =>
+        formData.append("grading_reports", file.file),
+      );
+
+      photos.forEach((photo) => formData.append("coffee_photos", photo.file));
 
       formData.append("farm_id", data.farmId!);
 
@@ -444,30 +454,56 @@ export default function AddCrop() {
         formData.append("discounts", JSON.stringify(formattedDiscounts));
       }
 
+      let xfmrId: string | null = null;
+      if (user && user.userType === "agent") {
+        xfmrId = farmerProfile.id ?? "";
+      }
+
       if (isEditMode && id) {
         formData.append("listingId", id);
-        await apiService().patchFormData(
+        const response: any = await apiService().patchFormData(
           "/sellers/listings/update-listing",
           formData,
           true,
+          xfmrId ? xfmrId : "",
         );
-        successMessage("Listing updated successfully!");
-        navigate(`/manage-listing/${id}`);
+        if (response.success) {
+          successMessage("Listing updated successfully!");
+          navigate(`/manage-listing/${id}`);
+        } else {
+          errorMessage(response.error as APIErrorResponse);
+        }
       } else {
         const response: any = await apiService().postFormData(
           "/sellers/listings/create-listing",
           formData,
           true,
+          xfmrId ? xfmrId : "",
         );
-        successMessage("Listing created successfully!");
-        navigate(`/manage-listing/${response?.data.coffee_listing.id}`);
+        if (response.success) {
+          successMessage("Listing created successfully!");
+          navigate(`/manage-listing/${response?.data.coffee_listing.id}`);
+        } else {
+          errorMessage(response.error as APIErrorResponse);
+        }
       }
     } catch (error: any) {
       console.error("Error submitting form:", error);
       errorMessage(error as APIErrorResponse);
     } finally {
       setIsSubmitting(false);
+      setIsModalOpen(false);
     }
+  };
+
+  const handleConfirmSubmit = () => {
+    form.handleSubmit(onSubmit)();
+    setIsModalOpen(false);
+  };
+
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+    setIsSubmitting(false);
   };
 
   const gradeOptions = ["1", "2", "3", "4", "5", "UG"];
@@ -537,7 +573,7 @@ export default function AddCrop() {
         ) : (
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={form.handleSubmit(handleFormSubmit)}
               className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white"
             >
               <h2 className="text-center text-2xl">
@@ -734,14 +770,16 @@ export default function AddCrop() {
                               <PopoverContent className="w-auto p-0">
                                 <div className="p-3">
                                   <Select
-                                    onValueChange={field.onChange}
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                    }}
                                     value={field.value}
                                   >
                                     <SelectTrigger className="w-70">
                                       <SelectValue placeholder="Select year" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-[300px] overflow-y-auto w-70">
-                                      {Array.from({ length: 20 }, (_, i) => {
+                                      {Array.from({ length: 2 }, (_, i) => {
                                         const year =
                                           new Date().getFullYear() - i;
                                         return (
@@ -1210,6 +1248,20 @@ export default function AddCrop() {
             </form>
           </Form>
         )}
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={handleModalCancel}
+          title={
+            isEditMode
+              ? "Confirm Edit Crop Listing"
+              : "Confirm Add Crop Listing"
+          }
+          message="Once submitted, you cannot edit the crop listing until you submit an edit request. Please ensure all information and documents are correct before proceeding."
+          confirmText="Proceed"
+          cancelText="Cancel"
+          onConfirm={handleConfirmSubmit}
+          isDestructive={false}
+        />
       </main>
     </div>
   );

@@ -48,12 +48,12 @@ const LocationMarker: React.FC<{
   position: google.maps.LatLngLiteral;
   label: string;
   price: string | number;
-}> = ({ position, label, price }) => {
+}> = ({ position, label }) => {
   return (
     <Marker
       position={position}
       label={{
-        text: `$${typeof price === "number" ? price.toFixed(2) : parseFloat(String(price)) ? parseFloat(String(price)).toFixed(2) : "N/A"}`,
+        text: label,
         className:
           "bg-emerald-500 text-white px-2 py-1 rounded-md text-sm font-medium",
       }}

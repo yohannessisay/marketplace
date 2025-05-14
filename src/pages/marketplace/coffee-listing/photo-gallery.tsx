@@ -44,11 +44,11 @@ export function PhotoGallery({ photos, isOrganic }: PhotoGalleryProps) {
         )}
       </div>
       {photos && photos.length > 0 && (
-        <div className="flex p-2 space-x-2 overflow-x-auto ml-2">
+        <div className="flex p-2 space-x-2 overflow-x-auto ml-2 ">
           {photos.map((photo, index) => (
             <button
               key={index}
-              className={`flex-shrink-0 bg-card w-24 h-24 rounded border-2 ${
+              className={`flex-shrink-0 bg-card w-24 h-24 rounded border-2 cursor-pointer ${
                 index === activePhotoIndex
                   ? "border-primary"
                   : "border-transparent"

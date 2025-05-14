@@ -114,7 +114,7 @@ class ApiService {
       headers["x-fmr-id"] = xFmrId;
     }
 
-    try { 
+    try {
       const response = await fetch(`${this.baseURL}${url}`, {
         method,
         headers,
@@ -136,7 +136,7 @@ class ApiService {
   }
 
   // JSON Request Methods
-  get<T>(url: string, xFmrId?: string): Promise<T> { 
+  get<T>(url: string, xFmrId?: string): Promise<T> {
     return this.makeJsonRequest<T>(url, "GET", undefined, true, xFmrId);
   }
   getWithoutAuth<T>(url: string): Promise<T> {

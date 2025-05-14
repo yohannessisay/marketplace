@@ -66,9 +66,8 @@ export default function SampleRequestModal({
       });
     }
   }, [open, user, listingId]);
-  const navigate=useNavigate();
+  const navigate = useNavigate();
 
-  
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -108,7 +107,6 @@ export default function SampleRequestModal({
       navigate("/market-place");
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
-      
     } finally {
       setIsSubmitting(false);
     }
@@ -117,17 +115,19 @@ export default function SampleRequestModal({
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-scroll">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="items-center">
+          <div className="flex items-center gap-2">
             <Coffee className="h-5 w-5 text-emerald-600" />
-            Request Coffee Sample
-          </DialogTitle>
-          <DialogDescription>
+            <DialogTitle className="text-center">
+              Request Coffee Sample
+            </DialogTitle>
+          </div>
+          <DialogDescription className="text-center">
             Request a sample of {coffeeName} from {farmName}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-3">
           <div className="space-y-2">
             <Label htmlFor="deliveryAddress" className="required">
               Delivery Address
@@ -191,16 +191,17 @@ export default function SampleRequestModal({
             />
           </div>
 
-          <DialogFooter className="pt-4">
+          <DialogFooter className="grid grid-cols-2 gap-3 mb-3 mt-10">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
+              className="w-full"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Submitting..." : "Submit Request"}
             </Button>
           </DialogFooter>

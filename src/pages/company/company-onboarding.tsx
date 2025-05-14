@@ -24,11 +24,11 @@ import { useNavigate } from "react-router-dom";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { APIErrorResponse } from "@/types/api";
-import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
 import { buyerOnboardingSchema } from "@/types/validation/buyer";
 import { z } from "zod";
 import { FileUpload } from "@/components/common/file-upload";
 import Header from "@/components/layout/header";
+import { useAuth } from "@/hooks/useAuth";
 
 type CompanyDetails = z.infer<typeof buyerOnboardingSchema>;
 
@@ -38,7 +38,8 @@ export default function CompanyVerification() {
   const [files, setFiles] = useState<File[]>([]);
 
   const navigate = useNavigate();
-  const userProfile: any = getFromLocalStorage("userProfile", {});
+  const { setUser } = useAuth();
+
   const form = useForm<CompanyDetails>({
     resolver: zodResolver(buyerOnboardingSchema),
     defaultValues: {
@@ -58,24 +59,24 @@ export default function CompanyVerification() {
     const formData = new FormData();
 
     Object.entries(data).forEach(([key, value]) => {
-      formData.append(key, value);
+      if (value !== undefined && value !== "") {
+        formData.append(key, value);
+      }
     });
 
     files.forEach((file) => {
-      formData.append(`files`, file);
+      formData.append("company_registration", file);
     });
 
     try {
-      await apiService().postFormData(
+      const response: any = await apiService().postFormData(
         "/onboarding/buyer/complete-onboarding",
         formData,
         true,
       );
-      saveToLocalStorage("current-step", "completed");
-      saveToLocalStorage("userProfile", {
-        ...userProfile,
-        onboarding_stage: "completed",
-      });
+
+      setUser({ ...response.data.buyer });
+
       successMessage(
         "Your company verification has been submitted successfully.",
       );
@@ -251,11 +252,7 @@ export default function CompanyVerification() {
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                className="bg-green-600 hover:bg-green-700 text-white"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Save"}
               </Button>
             </div>

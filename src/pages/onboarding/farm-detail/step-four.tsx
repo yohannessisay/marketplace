@@ -22,14 +22,14 @@ import {
   profileInfoSchema,
   type ProfileInfoFormData,
 } from "@/types/validation/seller-onboarding";
-import { getFromLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage, removeFromLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
-import { USER_PROFILE_KEY } from "@/types/constants";
+import ConfirmationModal from "@/components/modals/ConfrmationModal";
 
 interface ProfileInfo {
   id: string;
@@ -48,6 +48,7 @@ export default function StepFour() {
   const [profileInfo, setProfileInfo] = useState<ProfileInfo | undefined>();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { user, setUser, isAuthenticated } = useAuth();
   const { successMessage, errorMessage } = useNotification();
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
@@ -139,54 +140,36 @@ export default function StepFour() {
   const onSubmit = async (data: ProfileInfoFormData) => {
     try {
       setIsSubmitting(true);
+      const formData = new FormData();
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          formData.append(key, String(data[key as keyof ProfileInfoFormData]));
+        }
+      }
+      files.forEach((file) => {
+        formData.append("avatar_image", file);
+      });
 
       if (
         user?.onboarding_stage === "avatar_image" ||
         user?.userType === "agent"
       ) {
-        const formData = new FormData();
-        for (const key in data) {
-          if (Object.prototype.hasOwnProperty.call(data, key)) {
-            formData.append(
-              key,
-              String(data[key as keyof ProfileInfoFormData]),
-            );
-          }
-        }
-        files.forEach((file) => {
-          formData.append("files", file);
-        });
-
         await apiService().postFormData(
           "/onboarding/seller/profile",
           formData,
           true,
           user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
-        const userInfo: any = getFromLocalStorage(USER_PROFILE_KEY, {});
-        userInfo.onboarding_stage = "completed";
+
         setUser({
           ...user!,
           onboarding_stage: "completed",
         });
-        localStorage.clear();
-        localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userInfo));
 
         successMessage("Registration completed successfully!");
+        removeFromLocalStorage("profile-image");
         navigation("/seller-dashboard");
       } else {
-        const formData = new FormData();
-        for (const key in data) {
-          if (Object.prototype.hasOwnProperty.call(data, key)) {
-            formData.append(
-              key,
-              String(data[key as keyof ProfileInfoFormData]),
-            );
-          }
-        }
-        files.forEach((file) => {
-          formData.append("files", file);
-        });
         formData.append("id", profileInfo?.id || "");
 
         await apiService().patchFormData(
@@ -196,7 +179,13 @@ export default function StepFour() {
           user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
+        setUser({
+          ...user!,
+          onboarding_stage: "completed",
+        });
+
         successMessage("Profile data updated successfully");
+        removeFromLocalStorage("profile-image");
         navigation("/seller-dashboard");
       }
     } catch (error: any) {
@@ -207,13 +196,25 @@ export default function StepFour() {
     }
   };
 
+  const handleFormSubmit = (data: ProfileInfoFormData) => {
+    setIsModalOpen(true);
+  };
+
+  const handleModalConfirm = () => {
+    form.handleSubmit(onSubmit)();
+  };
+
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+  };
+
   const goBack = () => {
     localStorage.setItem("back-button-clicked", "true");
     navigation("/onboarding/step-three");
   };
 
   if (!isClient) {
-    return null; // Prevent hydration errors
+    return null;
   }
 
   return (
@@ -224,7 +225,7 @@ export default function StepFour() {
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(handleFormSubmit)}
             className="space-y-8 shadow-lg px-8 rounded-md py-4"
           >
             <div className="mb-10">
@@ -351,6 +352,17 @@ export default function StepFour() {
             </div>
           </form>
         </Form>
+
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={handleModalCancel}
+          title="Confirm Registration"
+          message="Once submitted, you cannot edit the data you have entered so far until you submit an edit request. Please ensure all information across all steps is correct before proceeding."
+          confirmText="Proceed"
+          cancelText="Cancel"
+          onConfirm={handleModalConfirm}
+          isDestructive={false}
+        />
       </main>
     </div>
   );

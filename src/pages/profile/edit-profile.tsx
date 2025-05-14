@@ -78,7 +78,7 @@ export default function EditProfile() {
   const navigation = useNavigate();
   const [isClient, setIsClient] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
+  const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialData, setInitialData] = useState<ProfileInfoFormData | null>(
     null,
@@ -121,7 +121,6 @@ export default function EditProfile() {
           form.reset(profileData);
           setInitialData(profileData);
           setProfileImage(profile.avatar_url || null);
-          console.log(profile.avatar_url);
         }
       }
     } catch (error: any) {
@@ -129,17 +128,17 @@ export default function EditProfile() {
     }
   }, [form, errorMessage, initialData, user, farmerProfile]);
 
-  const handleFilesSelected = (selectedFiles: File[]) => {
-    const file = selectedFiles[0];
-    if (file) {
+  const handleFileSelected = (selectedFiles: File[]) => {
+    const selectedFile = selectedFiles[0];
+    if (selectedFile) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
         setProfileImage(imageUrl);
         localStorage.setItem("profile-image", imageUrl);
-        setFiles([file]);
+        setFile(selectedFile);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(selectedFile);
     }
   };
 
@@ -171,11 +170,16 @@ export default function EditProfile() {
       setIsSubmitting(true);
       const formData = new FormData();
 
-      const fieldsToSend: Partial<ProfileInfoFormData> = {
-        telegram: data.telegram?.trim() || initialData?.telegram || "",
-        about_me: data.about_me?.trim() || initialData?.about_me || "",
-        address: data.address?.trim() || initialData?.address || "",
-      };
+      const fieldsToSend: Partial<ProfileInfoFormData> = {};
+      if (data.telegram?.trim() && data.telegram !== initialData.telegram) {
+        fieldsToSend.telegram = data.telegram.trim();
+      }
+      if (data.about_me?.trim() && data.about_me !== initialData.about_me) {
+        fieldsToSend.about_me = data.about_me.trim();
+      }
+      if (data.address?.trim() && data.address !== initialData.address) {
+        fieldsToSend.address = data.address.trim();
+      }
 
       for (const key in fieldsToSend) {
         if (Object.prototype.hasOwnProperty.call(fieldsToSend, key)) {
@@ -184,10 +188,8 @@ export default function EditProfile() {
         }
       }
 
-      if (files.length > 0) {
-        files.forEach((file) => {
-          formData.append("files", file);
-        });
+      if (file) {
+        formData.append("avatar_image", file);
       }
 
       if (!user) {
@@ -210,24 +212,32 @@ export default function EditProfile() {
           telegram: fieldsToSend.telegram || user.telegram || "",
           about_me: fieldsToSend.about_me || user.about_me || "",
           address: fieldsToSend.address || user.address || "",
-          avatar_url:
-            files.length > 0
-              ? response.data.avatar_url || profileImage || user.avatar_url
-              : user.avatar_url || "",
+          avatar_url: file
+            ? response.data.profile.avatar_url || profileImage
+            : user.avatar_url || "",
         };
         setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        if (file && response.data.profile.avatar_url) {
+          localStorage.setItem(
+            "profile-image",
+            response.data.profile.avatar_url,
+          );
+          setProfileImage(response.data.profile.avatar_url);
+        }
       }
 
       const updatedData: ProfileInfoFormData = {
-        telegram: fieldsToSend.telegram || "",
-        about_me: fieldsToSend.about_me || "",
-        address: fieldsToSend.address || "",
-        avatar_url:
-          files.length > 0 ? profileImage || "" : initialData.avatar_url || "",
+        telegram: fieldsToSend.telegram || initialData.telegram || "",
+        about_me: fieldsToSend.about_me || initialData.about_me || "",
+        address: fieldsToSend.address || initialData.address || "",
+        avatar_url: file
+          ? response.data.profile.avatar_url || initialData.avatar_url || ""
+          : initialData.avatar_url || "",
       };
       setInitialData(updatedData);
       form.reset(updatedData);
-      setFiles([]);
+      setFile(null);
       successMessage("Profile updated successfully!");
       navigation("/seller-dashboard");
     } catch (error: any) {
@@ -294,7 +304,7 @@ export default function EditProfile() {
                               const selectedFiles = Array.from(
                                 e.target.files || [],
                               );
-                              handleFilesSelected(selectedFiles);
+                              handleFileSelected(selectedFiles);
                             }}
                           />
                         </label>

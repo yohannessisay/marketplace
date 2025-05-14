@@ -390,11 +390,11 @@ export default function StepTwo() {
       }
 
       gradingReports.forEach((file) => {
-        formData.append("files", file.file);
+        formData.append("grading_reports", file.file);
       });
 
       photos.forEach((photo) => {
-        formData.append("files", photo.file);
+        formData.append("coffee_photos", photo.file);
       });
 
       if (farm) {
@@ -594,31 +594,6 @@ export default function StepTwo() {
                     maxSizeMB={5}
                     initialFiles={gradingReports}
                   />
-                  {gradingReports.length > 0 && (
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      {gradingReports.map((file, index) => (
-                        <div
-                          key={index}
-                          className="relative flex flex-col items-center"
-                        >
-                          {file.type === "image" ? (
-                            <img
-                              src={file.preview}
-                              alt={file.file.name}
-                              className="h-24 w-24 object-cover rounded-md"
-                            />
-                          ) : (
-                            <div className="h-24 w-24 bg-gray-100 flex items-center justify-center rounded-md">
-                              <span className="text-sm text-gray-500">PDF</span>
-                            </div>
-                          )}
-                          <p className="mt-2 text-sm text-gray-600 truncate w-full text-center">
-                            {file.file.name}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="text-sm text-muted-foreground">

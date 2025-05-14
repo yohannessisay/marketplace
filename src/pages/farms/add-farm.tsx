@@ -42,6 +42,7 @@ import { SkeletonForm } from "./SkeletonForm";
 import { useAuth } from "@/hooks/useAuth";
 import CropFieldManager from "@/components/CropFieldManager";
 import Header from "@/components/layout/header";
+import ConfirmationModal from "@/components/modals/ConfrmationModal";
 
 export default function AddFarm() {
   const navigate = useNavigate();
@@ -54,13 +55,14 @@ export default function AddFarm() {
   const [landRightsFiles, setLandRightsFiles] = useState<FileWithPreview[]>([]);
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
 
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
-      region: "Oromia",
+      region: undefined,
       longitude: undefined,
       latitude: undefined,
       crop_type: "",
@@ -309,6 +311,11 @@ export default function AddFarm() {
     return { isValid: true };
   };
 
+  const handleFormSubmit = (data: FarmDetailsFormData) => {
+    setIsSubmitting(true);
+    setIsModalOpen(true);
+  };
+
   const onSubmit = async (data: FarmDetailsFormData) => {
     setIsSubmitting(true);
     try {
@@ -353,11 +360,11 @@ export default function AddFarm() {
       }
 
       govRegFiles.forEach((file) => {
-        formData.append(`files`, file.file);
+        formData.append("government_registration", file.file);
       });
 
       landRightsFiles.forEach((file) => {
-        formData.append(`files`, file.file);
+        formData.append("land_rights", file.file);
       });
 
       const govFilePaths = govRegFiles.map((file) => file.preview);
@@ -408,7 +415,18 @@ export default function AddFarm() {
     } finally {
       saveToLocalStorage("step-one", data);
       setIsSubmitting(false);
+      setIsModalOpen(false);
     }
+  };
+
+  const handleConfirmSubmit = () => {
+    form.handleSubmit(onSubmit)();
+    setIsModalOpen(false);
+  };
+
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+    setIsSubmitting(false);
   };
 
   return (
@@ -420,7 +438,7 @@ export default function AddFarm() {
         ) : (
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={form.handleSubmit(handleFormSubmit)}
               className="space-y-8 shadow-lg px-8 rounded-md py-4 bg-white"
             >
               <div className="mb-10">
@@ -1110,6 +1128,16 @@ export default function AddFarm() {
             </form>
           </Form>
         )}
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={handleModalCancel}
+          title={isEditMode ? "Confirm Edit Farm" : "Confirm Add Farm"}
+          message="Once submitted, you cannot edit the farm data until you submit an edit request. Please ensure all information and documents are correct before proceeding."
+          confirmText="Proceed"
+          cancelText="Cancel"
+          onConfirm={handleConfirmSubmit}
+          isDestructive={false}
+        />
       </div>
     </div>
   );

@@ -25,11 +25,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { APIErrorResponse } from "@/types/api";
-import { User, Settings, Upload, X } from "lucide-react";
+import { User, Settings, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
 import { UserProfile } from "@/types/user";
 import { accountSchema, profileSchema } from "@/types/validation/buyer";
+import { FileUpload } from "@/components/common/file-upload";
 
 type ProfileDetails = z.infer<typeof profileSchema>;
 type AccountDetails = z.infer<typeof accountSchema>;
@@ -39,6 +40,7 @@ export default function SettingsPage() {
   const [isAccountSubmitting, setIsAccountSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [kycDocuments, setKYCDocuments] = useState<any[]>([]);
   const [isLoadingKYCDocuments, setIsLoadingKYCDocuments] = useState(false);
   const [kycDocsFetched, setKycDocsFetched] = useState(false);
@@ -65,7 +67,6 @@ export default function SettingsPage() {
       first_name: "",
       last_name: "",
       phone: "",
-      files: undefined,
     },
   });
 
@@ -85,7 +86,6 @@ export default function SettingsPage() {
         first_name: user.first_name,
         last_name: user.last_name,
         phone: user.phone,
-        files: undefined,
       });
       setPreviewImage(user.avatar_url || null);
     }
@@ -184,12 +184,14 @@ export default function SettingsPage() {
     try {
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
-        if (key === "files" && value) {
-          formData.append("files", value);
-        } else if (value !== undefined && value !== "") {
+        if (value !== undefined && value !== "") {
           formData.append(key, value.toString());
         }
       });
+
+      if (avatarFile) {
+        formData.append("avatar_image", avatarFile);
+      }
 
       const response: any = await apiService().postFormData(
         "/buyers/profile/update-account-details",
@@ -231,12 +233,11 @@ export default function SettingsPage() {
         };
 
         setUser(updatedUser);
-        localStorage.setItem("userProfile", JSON.stringify(updatedUser));
         successMessage("Your account has been updated successfully.");
         accountForm.reset({
           ...data,
-          files: undefined,
         });
+        setAvatarFile(null);
         setPreviewImage(newAvatarUrl);
       } else {
         throw new Error("Failed to update account");
@@ -249,7 +250,7 @@ export default function SettingsPage() {
   };
 
   const handleRemoveImage = () => {
-    accountForm.setValue("files", undefined);
+    setAvatarFile(null);
     setPreviewImage(user!.avatar_url || null);
   };
 
@@ -581,47 +582,26 @@ export default function SettingsPage() {
                                     <User className="w-20 h-20 text-gray-400" />
                                   )}
                                 </div>
-                                <FormField
-                                  control={accountForm.control}
-                                  name="files"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel
-                                        htmlFor="profile-image"
-                                        className="cursor-pointer"
-                                      >
-                                        <div className="flex items-center gap-2 text-sm text-green-600">
-                                          <Upload className="w-4 h-4" />
-                                          <span>Upload photo</span>
-                                        </div>
-                                      </FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          id="profile-image"
-                                          type="file"
-                                          className="hidden"
-                                          accept="image/*"
-                                          onChange={(e) => {
-                                            const file = e.target.files
-                                              ? e.target.files[0]
-                                              : undefined;
-                                            field.onChange(file);
-                                            if (file) {
-                                              setPreviewImage(
-                                                URL.createObjectURL(file),
-                                              );
-                                            } else {
-                                              setPreviewImage(
-                                                user!.avatar_url || null,
-                                              );
-                                            }
-                                          }}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
+                                <FileUpload
+                                  onFilesSelected={(files) => {
+                                    const file = files[0] || null;
+                                    setAvatarFile(file);
+                                    if (file) {
+                                      setPreviewImage(
+                                        URL.createObjectURL(file),
+                                      );
+                                    } else {
+                                      setPreviewImage(user!.avatar_url || null);
+                                    }
+                                  }}
+                                  maxFiles={1}
+                                  maxSizeMB={5}
                                 />
+                                <div className="text-sm text-muted-foreground mt-2">
+                                  {avatarFile
+                                    ? "1 photo selected"
+                                    : "No photo selected"}
+                                </div>
                               </div>
                             </CardContent>
                           </Card>
@@ -679,11 +659,12 @@ export default function SettingsPage() {
                             variant="outline"
                             onClick={() => {
                               accountForm.reset();
+                              setAvatarFile(null);
                               setPreviewImage(user!.avatar_url || null);
                             }}
                             disabled={
                               isAccountSubmitting ||
-                              !accountForm.formState.isDirty
+                              (!accountForm.formState.isDirty && !avatarFile)
                             }
                           >
                             Reset
@@ -692,7 +673,7 @@ export default function SettingsPage() {
                             type="submit"
                             disabled={
                               isAccountSubmitting ||
-                              !accountForm.formState.isDirty
+                              (!accountForm.formState.isDirty && !avatarFile)
                             }
                           >
                             {isAccountSubmitting

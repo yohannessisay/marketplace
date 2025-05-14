@@ -111,7 +111,9 @@ export const OrderItem = ({
                 ? (item as Bid).seller?.first_name +
                   " " +
                   (item as Bid).seller?.last_name
-                : (item as Order).seller_name) || "Unknown"}{" "}
+                : (item as Order).seller?.first_name +
+                  " " +
+                  (item as Order).seller?.last_name) || "Unknown"}{" "}
             </span>
             {(isBid ? (item as Bid).seller : (item as Order)) && (
               <Link
