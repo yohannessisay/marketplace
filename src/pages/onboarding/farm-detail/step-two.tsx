@@ -85,6 +85,7 @@ export default function StepTwo() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gradingReports, setGradingReports] = useState<FileWithPreview[]>([]);
   const [photos, setPhotos] = useState<FileWithPreview[]>([]);
+  const [hasListing, setHasListing] = useState(false);
   const [farm, setFarm] = useState<Farm | undefined>();
   const [discounts, setDiscounts] = useState<
     { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
@@ -95,7 +96,8 @@ export default function StepTwo() {
     () => getFromLocalStorage("farmerProfile", {}),
     [],
   );
-
+  const isBackButtonClicked =
+    getFromLocalStorage("back-button-clicked", {}) === "true";
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
@@ -117,7 +119,7 @@ export default function StepTwo() {
       readiness_date: new Date().toISOString(),
       lot_length: "",
       delivery_type: "FOB (Free on Board) - Port of Djibouti",
-      shipping_port: "",
+      shipping_port: "Djibouti" as string,
     },
     mode: "onChange",
   });
@@ -161,6 +163,26 @@ export default function StepTwo() {
     } catch (error: any) {
       console.error("Error fetching farm:", error);
       errorMessage(error as APIErrorResponse);
+    }
+  };
+
+  const checkHasListing = async () => {
+    try {
+      if (!user) {
+        return;
+      }
+
+      const farmerId =
+        user.userType === "agent" && farmerProfile?.id
+          ? farmerProfile.id
+          : undefined;
+      const response: any = await apiService().get(
+        "/onboarding/seller/check-listing",
+        farmerId,
+      );
+      setHasListing(response.data.hasListing);
+    } catch (error: any) {
+      console.error("Error checkig listig:", error);
     }
   };
 
@@ -292,6 +314,7 @@ export default function StepTwo() {
     setIsClient(true);
     if (user && !farm) {
       fetchFirstFarm();
+      checkHasListing();
     }
   }, [user]);
 
@@ -303,8 +326,6 @@ export default function StepTwo() {
           user?.userType === "agent" && farmerProfile?.id
             ? farmerProfile.onboarding_stage
             : user?.onboarding_stage;
-        const isBackButtonClicked =
-          getFromLocalStorage("back-button-clicked", {}) === "true";
         const savedData: any = getFromLocalStorage("step-two", {});
 
         if (
@@ -405,8 +426,10 @@ export default function StepTwo() {
         user?.userType === "agent" && farmerProfile?.id
           ? farmerProfile.onboarding_stage
           : user?.onboarding_stage;
-
-      if (effectiveOnboardingStage === "crops_to_sell") {
+      if (
+        effectiveOnboardingStage === "crops_to_sell" &&
+        hasListing === false
+      ) {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/coffee-details",
           formData,
@@ -429,11 +452,13 @@ export default function StepTwo() {
         removeFromLocalStorage("back-button-clicked");
         successMessage("Crop information saved successfully");
 
-        const profile = getFromLocalStorage("userProfile", {});
-        saveToLocalStorage("userProfile", {
-          ...profile,
-          onboarding_stage: "bank_information",
-        });
+        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+        if (farmerProfile1) {
+          saveToLocalStorage("farmerProfile", {
+            ...farmerProfile1,
+            onboarding_stage: "bank_information",
+          });
+        }
         navigation("/onboarding/step-three");
       } else {
         const existingListingId = getFromLocalStorage("crop-id", "");
@@ -450,6 +475,17 @@ export default function StepTwo() {
         saveToLocalStorage("step-two", data);
         saveToLocalStorage("step-two-discounts", discounts);
         successMessage("Crop data updated successfully");
+        setUser({
+          ...user!,
+          onboarding_stage: "bank_information",
+        });
+        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+        if (farmerProfile1) {
+          saveToLocalStorage("farmerProfile", {
+            ...farmerProfile1,
+            onboarding_stage: "bank_information",
+          });
+        }
         removeFromLocalStorage("back-button-clicked");
         navigation("/onboarding/step-three");
       }
@@ -1044,6 +1080,7 @@ export default function StepTwo() {
                           value="Djibouti"
                           disabled
                           className="w-full"
+                          onChange={() => {}}
                         />
                       </FormControl>
                       <FormMessage />

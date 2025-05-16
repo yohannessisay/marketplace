@@ -26,16 +26,10 @@ export const useSampleRequest = (): UseSampleRequestState => {
         return;
       }
 
-      if (user.userType === "seller") {
+      if (user.userType === "seller" || user.userType === "agent") {
         setHasSampleRequest(false);
         setError(null);
         setLoading(false);
-        return;
-      }
-
-      if (user.userType !== "buyer") {
-        setError("User must be a buyer to check sample requests");
-        setHasSampleRequest(null);
         return;
       }
 
@@ -79,17 +73,11 @@ export const useSampleRequest = (): UseSampleRequestState => {
       return;
     }
 
-    if (user.userType === "seller") {
+    if (user.userType === "seller" || user.userType === "agent") {
       setHasSampleRequest(false);
       setError(null);
       setLoading(false);
       return;
-    }
-
-    if (user.userType !== "buyer") {
-      setHasSampleRequest(null);
-      setError("User must be a buyer to check sample requests");
-      setLoading(false);
     }
   }, [isAuthenticated, user, authLoading]);
 

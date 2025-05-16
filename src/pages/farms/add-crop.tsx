@@ -506,7 +506,14 @@ export default function AddCrop() {
     setIsSubmitting(false);
   };
 
-  const gradeOptions = ["1", "2", "3", "4", "5", "UG"];
+  const gradeOptions = [
+    "Grade 1",
+    "Grade 2",
+    "Grade 3",
+    "Grade 4",
+    "Grade 5",
+    "UG",
+  ];
   const screenSizeOptions = [
     "Screen 20 (>8.0mm)",
     "Screen 19 (7.5-8.0mm)",
@@ -725,7 +732,7 @@ export default function AddCrop() {
                                 <SelectContent>
                                   {gradeOptions.map((option) => (
                                     <SelectItem key={option} value={option}>
-                                      Grade {option}
+                                      {option}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -178,7 +177,7 @@ export default function EditBank() {
   };
 
   const goBack = () => {
-    navigation("/onboarding/step-two");
+    navigation("/seller-dashboard");
   };
 
   if (!isClient) {

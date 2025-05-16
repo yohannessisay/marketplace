@@ -164,7 +164,8 @@ export function OrderSidebar({
           <div className="mb-2 text-sm text-muted-foreground">
             <b>Delivery:</b> {listing?.delivery_type}
           </div>
-          {(!user || user?.userType !== "seller") &&
+          {(!user ||
+            (user?.userType !== "seller" && user?.userType !== "agent")) &&
             listing?.listing_status === "active" && (
               <div className="flex flex-col gap-3 pt-4">
                 <ActionTooltip

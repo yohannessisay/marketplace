@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { SampleRequest } from "@/types/orders";
+import { SampleRequest } from "../my-orders";
 import { Calendar, ChevronDown, MapPin, User } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -36,8 +36,8 @@ export const SampleRequestItem = ({
               )}
             </div>
             <div className="text-sm text-muted-foreground">
-              {item.coffee_listing.farm?.farm_name || "Unknown Farm"}
-              {item.coffee_listing.farm?.region
+              {item.coffee_listing?.farm?.farm_name || "Unknown Farm"}
+              {item.coffee_listing?.farm?.region
                 ? `, ${item.coffee_listing.farm.region}`
                 : ""}
             </div>
@@ -52,7 +52,7 @@ export const SampleRequestItem = ({
           <div className="flex items-center">
             <Calendar className="h-4 w-4 mr-1" />
             <span>
-              Requested: {new Date(item.created_at).toLocaleDateString()}
+              Requested: {new Date(item.created_at!).toLocaleDateString()}
             </span>
           </div>
           <div className="flex items-center">
@@ -66,10 +66,10 @@ export const SampleRequestItem = ({
           <div className="flex items-center">
             <User className="h-4 w-4 mr-1 text-muted-foreground" />
             <span className="text-sm font-medium">
-              {item.coffee_listing.seller?.first_name || "Unknown"}{" "}
-              {item.coffee_listing.seller?.last_name || ""}
+              {item.coffee_listing?.seller?.first_name || "Unknown"}{" "}
+              {item.coffee_listing?.seller?.last_name || ""}
             </span>
-            {item.coffee_listing.seller && (
+            {item.coffee_listing?.seller && (
               <Link
                 to={`/sellers/${item.coffee_listing.seller.id}`}
                 className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
@@ -149,14 +149,14 @@ export const SampleRequestItem = ({
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Seller:</span>
                     <span className="font-medium">
-                      {item.coffee_listing.seller?.first_name || "N/A"}{" "}
-                      {item.coffee_listing.seller?.last_name || ""}
+                      {item.coffee_listing?.seller?.first_name || "N/A"}{" "}
+                      {item.coffee_listing?.seller?.last_name || ""}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Email:</span>
                     <span className="font-medium">
-                      {item.coffee_listing.seller?.email || "N/A"}
+                      {item.coffee_listing?.seller?.email || "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">

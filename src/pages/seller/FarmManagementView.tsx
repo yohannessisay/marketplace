@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { apiService } from "@/services/apiService";
 import Header from "@/components/layout/header";
 import { APIErrorResponse } from "@/types/api";
-import { getFromLocalStorage, getUserId } from "@/lib/utils";
+import { getFromLocalStorage } from "@/lib/utils";
 import { useNotification } from "@/hooks/useNotification";
 import { useAuth } from "@/hooks/useAuth";
 import { SkeletonCardContent, SkeletonPhotoGallery } from "./skeletons";
@@ -85,7 +85,7 @@ function PhotoGallery({
             <img
               src={photos[activePhotoIndex].photo_url || "/placeholder.svg"}
               alt={`Farm ${activePhotoIndex + 1}`}
-              className="w-full h-64 object-cover rounded-lg"
+              className="w-full h-100 object-cover rounded-lg"
             />
           </div>
         ) : (
@@ -111,7 +111,7 @@ function PhotoGallery({
                 <img
                   src={photo.photo_url || "/placeholder.svg"}
                   alt=""
-                  className="w-full h-full object-cover rounded"
+                  className="w-full h-full object-cover rounded cursor-pointer"
                 />
               </button>
               <button
@@ -137,7 +137,6 @@ export default function FarmSellerView() {
   const params = useParams();
   const farmId = params.id as string | undefined;
   const { user } = useAuth();
-  const senderId = getUserId();
   const farmerProfile: any = useMemo(
     () => getFromLocalStorage("farmerProfile", {}),
     [],
@@ -149,7 +148,7 @@ export default function FarmSellerView() {
   }
 
   const fetchData = useCallback(async () => {
-    if (!farmId || !senderId || hasFetched) return;
+    if (!farmId || !user || hasFetched) return;
     if (user && user.userType === "agent" && fmrId === null) {
       errorMessage({
         error: { message: "Agent must specify a farmer profile" },
@@ -170,7 +169,7 @@ export default function FarmSellerView() {
       setIsFetching(false);
       setHasFetched(true);
     }
-  }, [farmId, senderId, fmrId, errorMessage, user, farmerProfile, hasFetched]);
+  }, [farmId, fmrId, errorMessage, user, farmerProfile, hasFetched]);
 
   useEffect(() => {
     fetchData();
@@ -545,6 +544,7 @@ export default function FarmSellerView() {
                 : null,
             )
           }
+          xfmrId={fmrId}
         />
       </main>
     </div>

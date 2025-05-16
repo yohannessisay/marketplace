@@ -18,6 +18,9 @@ import {
   CheckCircle2,
   PauseCircle,
   XCircle,
+  AlertCircle,
+  PencilLine,
+  CalendarX,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +41,7 @@ import { apiService } from "@/services/apiService";
 import { getFromLocalStorage } from "@/lib/utils";
 import EditProfile from "../profile/edit-profile";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RequestEditModal } from "@/components/modals/RequestEditModal";
 
 interface Farm {
   id: string;
@@ -71,6 +75,14 @@ interface Bank {
   branch_name: string;
   swift_code?: string;
   is_primary: boolean;
+  kyc_status: "pending" | "approved" | "rejected";
+  admin_edit_request_approval_status:
+    | "not_requested"
+    | "requested"
+    | "allowed"
+    | "expired"
+    | "rejected";
+  edit_requested_at?: string;
   created_at?: string;
 }
 
@@ -124,6 +136,16 @@ const FarmManagement: React.FC = () => {
   const [listingSearch, setListingSearch] = useState("");
   const [page] = useState(1);
   const [limit] = useState(10);
+  const [isEditRequestModalOpen, setIsEditRequestModalOpen] = useState(false);
+  const [currentBankId, setCurrentBankId] = useState<string | null>(null);
+  const [_editRequestStatus, setEditRequestStatus] = useState<
+    "not_requested" | "requested" | "allowed" | "expired" | "rejected"
+  >("not_requested");
+
+  const handleEditRequestSuccess = (status: any) => {
+    setEditRequestStatus(status);
+    fetchBanks();
+  };
 
   const user: any = getFromLocalStorage("userProfile", {});
   let fmrId = null;
@@ -169,6 +191,7 @@ const FarmManagement: React.FC = () => {
         `/sellers/banks/get-banks?page=${page}&limit=${limit}`,
         fmrId ? fmrId : "",
       );
+      setCurrentBankId(response.data.bank_accounts[0].id);
       setBanks(response.data.bank_accounts);
     } catch (error) {
       console.error("Failed to fetch banks:", error);
@@ -643,67 +666,260 @@ const FarmManagement: React.FC = () => {
                 <h3 className="text-lg font-medium text-slate-700 mb-2">
                   No banks found
                 </h3>
-                {/* <p className="text-slate-500 max-w-md mx-auto mb-6">
-                  {bankSearch
-                    ? "No banks match your search criteria."
-                    : "You haven't added any banks to your account. Start by adding your first bank account."}
-                </p> */}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {banks.map((bank, index) => (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {" "}
+                {/* Changed to 2 columns for wider cards */}
+                {banks.map((bank) => (
                   <Card
-                    key={index}
+                    key={bank.id}
                     className="overflow-hidden border border-slate-200 hover:shadow-md transition-all duration-200"
                   >
                     <CardHeader className="bg-white pb-2">
                       <div className="flex justify-between items-start">
-                        <div className="flex items-center">
-                          <h3 className="text-lg font-medium text-slate-700">
-                            {bank.account_holder_name}
-                          </h3>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                            <Banknote className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-medium text-slate-700">
+                              {bank.account_holder_name}
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                              {bank.bank_name}
+                            </p>
+                          </div>
                         </div>
-                        {bank.is_primary && (
-                          <Badge className="bg-green-500 text-white">
-                            Primary
+                        <div className="flex flex-col items-end gap-1">
+                          {bank.is_primary && (
+                            <Badge className="bg-green-500 text-white">
+                              Primary
+                            </Badge>
+                          )}
+                          <Badge
+                            variant={
+                              bank.kyc_status === "approved"
+                                ? "default"
+                                : bank.kyc_status === "rejected"
+                                  ? "destructive"
+                                  : "warning"
+                            }
+                            className="text-xs"
+                          >
+                            {bank.kyc_status === "approved" ? (
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                            ) : bank.kyc_status === "rejected" ? (
+                              <XCircle className="h-3 w-3 mr-1" />
+                            ) : (
+                              <Clock className="h-3 w-3 mr-1" />
+                            )}
+                            KYC: {bank.kyc_status}
                           </Badge>
-                        )}
+                        </div>
                       </div>
                     </CardHeader>
 
                     <CardContent className="pt-4 pb-6">
-                      <div className="space-y-3">
-                        <div className="flex items-center text-slate-600">
-                          <span className="font-medium">Bank:</span>
-                          <span className="ml-2">{bank.bank_name}</span>
-                        </div>
-                        <div className="flex items-center text-slate-600">
-                          <span className="font-medium">Account Number:</span>
-                          <span className="ml-2">{bank.account_number}</span>
-                        </div>
-                        <div className="flex items-center text-slate-600">
-                          <span className="font-medium">Branch:</span>
-                          <span className="ml-2">{bank.branch_name}</span>
-                        </div>
-                        {bank.swift_code && (
-                          <div className="flex items-center text-slate-600">
-                            <span className="font-medium">SWIFT Code:</span>
-                            <span className="ml-2">{bank.swift_code}</span>
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Column 1 */}
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Account Number
+                            </h4>
+                            <p className="text-gray-900">
+                              {bank.account_number}
+                            </p>
                           </div>
-                        )}
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Branch
+                            </h4>
+                            <p className="text-gray-900">
+                              {bank.branch_name || "N/A"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Created On
+                            </h4>
+                            <p className="text-gray-900">
+                              {bank.created_at
+                                ? new Date(bank.created_at).toLocaleDateString()
+                                : "N/A"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Column 2 */}
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              SWIFT Code
+                            </h4>
+                            <p className="text-gray-900">
+                              {bank.swift_code || "N/A"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">
+                              Edit Status
+                            </h4>
+                            <div className="mt-1">
+                              {bank.admin_edit_request_approval_status ===
+                                "allowed" && (
+                                <Badge className="gap-1 text-[14px]">
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Allowed
+                                </Badge>
+                              )}
+                              {bank.admin_edit_request_approval_status ===
+                                "requested" && (
+                                <Badge
+                                  variant="warning"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <Clock className="h-3.5 w-3.5" />
+                                  Requested
+                                </Badge>
+                              )}
+                              {bank.admin_edit_request_approval_status ===
+                                "rejected" && (
+                                <Badge
+                                  variant="destructive"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Rejected
+                                </Badge>
+                              )}
+                              {bank.admin_edit_request_approval_status ===
+                                "expired" && (
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <CalendarX className="h-3.5 w-3.5" />
+                                  Expired
+                                </Badge>
+                              )}
+                              {bank.admin_edit_request_approval_status ===
+                                "not_requested" && (
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 text-[14px]"
+                                >
+                                  <PencilLine className="h-3.5 w-3.5" />
+                                  Not Requested
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          {bank.edit_requested_at && (
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-500">
+                                Last Edit Request
+                              </h4>
+                              <p className="text-gray-900">
+                                {new Date(
+                                  bank.edit_requested_at,
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {/* KYC Status Alerts */}
+                      {bank.kyc_status === "pending" && (
+                        <Alert
+                          variant="default"
+                          className="mt-4 bg-blue-50 border-blue-200 text-blue-800"
+                        >
+                          <AlertDescription className="flex items-center text-sm">
+                            <FileSearch className="h-4 w-4 mr-2 text-blue-500" />
+                            KYC verification is in progress for this bank
+                            account.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {bank.kyc_status === "rejected" && (
+                        <Alert variant="destructive" className="mt-4">
+                          <AlertDescription className="flex items-center text-sm">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            KYC verification failed. Please update your bank
+                            details.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </CardContent>
-                    <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col">
-                      <Button
-                        variant="outline"
-                        className="w-full flex items-center justify-center group"
-                        asChild
-                      >
+
+                    <CardFooter className="bg-slate-50 border-t border-slate-100 px-6 py-4 flex flex-col gap-3">
+                      {bank.admin_edit_request_approval_status === "allowed" ? (
                         <Link to={`/edit-bank/${bank.id}`}>
-                          <span>Manage Bank Info</span>
-                          <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                          <Button className="w-full">Edit Bank Info</Button>
                         </Link>
-                      </Button>
+                      ) : bank.admin_edit_request_approval_status ===
+                          "requested" ||
+                        bank.admin_edit_request_approval_status ===
+                          "expired" ? (
+                        <Button className="w-full" disabled>
+                          {bank.admin_edit_request_approval_status ===
+                          "requested"
+                            ? "Edit Requested"
+                            : "Request Expired"}
+                        </Button>
+                      ) : bank.kyc_status === "pending" ? (
+                        <div className="space-y-4 rounded-lg bg-amber-100 p-4 w-full">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-5 w-5 text-amber-900 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h4 className="text-sm font-medium text-amber-800">
+                                KYC is Pending
+                              </h4>
+                              <p className="mt-1 text-sm text-amber-800">
+                                Request edit access to modify this bank account.
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            className="w-full"
+                            onClick={() => setIsEditRequestModalOpen(true)}
+                          >
+                            Request Edit Access
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4 rounded-lg bg-green-100 p-4 w-full">
+                          <div className="flex items-start gap-3">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h4 className="text-sm font-medium text-green-800">
+                                KYC Verified
+                              </h4>
+                              <p className="mt-1 text-sm text-green-700">
+                                Request edit access to modify this verified bank
+                                account.
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            className="w-full"
+                            onClick={() => {
+                              setCurrentBankId(bank.id);
+                              setIsEditRequestModalOpen(true);
+                            }}
+                          >
+                            Request Edit Access
+                          </Button>
+                        </div>
+                      )}
                     </CardFooter>
                   </Card>
                 ))}
@@ -716,6 +932,14 @@ const FarmManagement: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <RequestEditModal
+        isOpen={isEditRequestModalOpen}
+        onClose={() => setIsEditRequestModalOpen(false)}
+        entityId={currentBankId || ""}
+        entityType="bank"
+        onSubmitSuccess={handleEditRequestSuccess}
+        xfmrId={fmrId || undefined}
+      />
     </div>
   );
 };

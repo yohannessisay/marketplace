@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -53,10 +55,20 @@ const SkeletonProfileForm = () => (
                 <Skeleton className="h-5 w-20 mb-2" />
                 <Skeleton className="h-10 w-full" />
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div>
+                <Skeleton className="h-5 w-20 mb-2" />
+                <Skeleton className="h-10 w-full" />
+              </div>
               <div>
                 <Skeleton className="h-5 w-16 mb-2" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div>
+                <Skeleton className="h-5 w-16 mb-2" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div>
+                <Skeleton className="h-5 w-20 mb-2" />
                 <Skeleton className="h-10 w-full" />
               </div>
             </div>
@@ -90,9 +102,14 @@ export default function EditProfile() {
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
     defaultValues: {
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone: "",
       telegram: "",
       about_me: "",
       address: "",
+      avatar_url: "",
     },
   });
 
@@ -112,6 +129,10 @@ export default function EditProfile() {
       if (response.success && response.data) {
         const { profile } = response.data;
         const profileData: ProfileInfoFormData = {
+          first_name: user.first_name || "",
+          last_name: user.last_name || "",
+          email: user.email || "",
+          phone: user.phone || "",
           telegram: profile.telegram || "",
           about_me: profile.about_me || "",
           address: profile.address || "",
@@ -171,6 +192,21 @@ export default function EditProfile() {
       const formData = new FormData();
 
       const fieldsToSend: Partial<ProfileInfoFormData> = {};
+      if (
+        data.first_name?.trim() &&
+        data.first_name !== initialData.first_name
+      ) {
+        fieldsToSend.first_name = data.first_name.trim();
+      }
+      if (data.last_name?.trim() && data.last_name !== initialData.last_name) {
+        fieldsToSend.last_name = data.last_name.trim();
+      }
+      if (data.email?.trim() && data.email !== initialData.email) {
+        fieldsToSend.email = data.email.trim();
+      }
+      if (data.phone?.trim() && data.phone !== initialData.phone) {
+        fieldsToSend.phone = data.phone.trim();
+      }
       if (data.telegram?.trim() && data.telegram !== initialData.telegram) {
         fieldsToSend.telegram = data.telegram.trim();
       }
@@ -209,6 +245,10 @@ export default function EditProfile() {
       if (response.success && response.data) {
         const updatedUser = {
           ...user,
+          first_name: fieldsToSend.first_name || user.first_name || "",
+          last_name: fieldsToSend.last_name || user.last_name || "",
+          email: fieldsToSend.email || user.email || "",
+          phone: fieldsToSend.phone || user.phone || "",
           telegram: fieldsToSend.telegram || user.telegram || "",
           about_me: fieldsToSend.about_me || user.about_me || "",
           address: fieldsToSend.address || user.address || "",
@@ -228,6 +268,10 @@ export default function EditProfile() {
       }
 
       const updatedData: ProfileInfoFormData = {
+        first_name: fieldsToSend.first_name || initialData.first_name || "",
+        last_name: fieldsToSend.last_name || initialData.last_name || "",
+        email: fieldsToSend.email || initialData.email || "",
+        phone: fieldsToSend.phone || initialData.phone || "",
         telegram: fieldsToSend.telegram || initialData.telegram || "",
         about_me: fieldsToSend.about_me || initialData.about_me || "",
         address: fieldsToSend.address || initialData.address || "",
@@ -331,6 +375,58 @@ export default function EditProfile() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
+                          name="first_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>First Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="last_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Last Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="email" disabled />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Phone Number</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="tel " disabled />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
                           name="telegram"
                           render={({ field }) => (
                             <FormItem>
@@ -342,8 +438,6 @@ export default function EditProfile() {
                             </FormItem>
                           )}
                         />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                         <FormField
                           control={form.control}
                           name="address"

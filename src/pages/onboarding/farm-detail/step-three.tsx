@@ -145,6 +145,13 @@ export default function StepThree() {
           ...user!,
           onboarding_stage: "avatar_image",
         });
+        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+        if (farmerProfile1) {
+          saveToLocalStorage("farmerProfile", {
+            ...farmerProfile1,
+            onboarding_stage: "avatar_image",
+          });
+        }
         saveToLocalStorage("step-three", data);
         saveToLocalStorage("current-step", "avatar_image");
         navigation("/onboarding/step-four");
@@ -171,6 +178,14 @@ export default function StepThree() {
           ...user!,
           onboarding_stage: "avatar_image",
         });
+
+        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+        if (farmerProfile1) {
+          saveToLocalStorage("farmerProfile", {
+            ...farmerProfile1,
+            onboarding_stage: "avatar_image",
+          });
+        }
         saveToLocalStorage("step-three", data);
         successMessage("Bank account data updated successfully");
         navigation("/onboarding/step-four");

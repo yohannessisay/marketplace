@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Star,
@@ -161,10 +161,12 @@ function PhotoGallery({
   listingId,
   photos: initialPhotos,
   isOrganic,
+  xfmrId,
 }: {
   photos: Listing["photos"] | null;
   isOrganic: boolean;
   listingId: string;
+  xfmrId?: string;
 }) {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [photos, setPhotos] = useState(initialPhotos);
@@ -186,10 +188,14 @@ function PhotoGallery({
     }
     try {
       setIsDeleting(true);
-      await apiService().post(`/sellers/listings/delete-listing-image`, {
-        listingId,
-        photoId,
-      });
+      await apiService().post(
+        `/sellers/listings/delete-listing-image`,
+        {
+          listingId,
+          photoId,
+        },
+        xfmrId,
+      );
 
       setPhotos(
         (prev) => prev?.filter((photo) => photo.id !== photoId) || null,
@@ -219,7 +225,7 @@ function PhotoGallery({
             <img
               src={photos[activePhotoIndex].photo_url || "/placeholder.svg"}
               alt={`Coffee ${activePhotoIndex + 1}`}
-              className="w-full h-64 object-cover rounded-lg"
+              className="w-full h-100 object-cover rounded-lg"
             />
             {isOrganic && (
               <div className="absolute top-4 right-4">
@@ -255,7 +261,7 @@ function PhotoGallery({
                 <img
                   src={photo.photo_url || "/placeholder.svg"}
                   alt=""
-                  className="w-full h-full object-cover rounded"
+                  className="w-full h-full object-cover rounded cursor-pointer"
                 />
               </button>
               <button
@@ -292,15 +298,9 @@ export default function CoffeeListingSellerView() {
   const id = params.id as string | undefined;
   const { user } = useAuth();
   const senderId = getUserId();
-  const farmerProfile: any = useMemo(
-    () => getFromLocalStorage("farmerProfile", {}),
-    [],
-  );
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
 
-  let fmrId = null;
-  if (user && user.userType === "agent") {
-    fmrId = farmerProfile ? farmerProfile.id : undefined;
-  }
+  const fmrId = farmerProfile ? farmerProfile.id : undefined;
 
   const fetchData = useCallback(async () => {
     if (!id || !senderId || hasFetched) return;
@@ -518,6 +518,7 @@ export default function CoffeeListingSellerView() {
                       listingId={id!}
                       photos={listing!.photos}
                       isOrganic={listing!.is_organic}
+                      xfmrId={fmrId}
                     />
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-4">
@@ -1084,6 +1085,7 @@ export default function CoffeeListingSellerView() {
                     : null,
                 )
               }
+              xfmrId={fmrId}
             />
           </TabsContent>
           <TabsContent value="messages">

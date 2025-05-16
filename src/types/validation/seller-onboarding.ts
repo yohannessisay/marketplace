@@ -189,6 +189,16 @@ export type BankInfoFormData = z.infer<typeof bankInfoSchema>;
 
 // Step 4: Profile Information Schema
 export const profileInfoSchema = z.object({
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address").min(1, "Email is required"),
+  phone: z
+    .string()
+    .min(1, "Phone number is required")
+    .regex(
+      /^\+?[1-9]\d{1,14}$/,
+      "Invalid phone number format (e.g., +1234567890)",
+    ),
   telegram: z
     .string()
     .min(1, "Telegram is required")

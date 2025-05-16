@@ -21,26 +21,223 @@ import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import { ReviewModal } from "./review-modal";
-import {
-  Bid,
-  BidFilterState,
-  Favorite,
-  FavoriteFilterState,
-  Order,
-  OrderFilterState,
-  PaginationData,
-  SampleFilterState,
-  SampleRequest,
-} from "@/types/orders";
-import { LoadingSkeleton } from "./my-orders/loading-skeleton";
-import { EmptyState } from "./my-orders/empty-state";
+import { FileUploadModal } from "@/components/modals/FileUploadModal";
+import { FilePreviewModal } from "@/components/modals/FilePreviewModal";
+import { FilterMenu } from "./my-orders/filter";
 import { OrderItem } from "./my-orders/order-item";
 import { FavoriteItem } from "./my-orders/favorite-item";
 import { SampleRequestItem } from "./my-orders/sample-request-item";
-import { FilterMenu } from "./my-orders/filter";
+import { EmptyState } from "./my-orders/empty-state";
+import { LoadingSkeleton } from "./my-orders/loading-skeleton";
+import { FileUpdateModal } from "@/components/modals/FileUpdateModal";
+
+export interface Buyer {
+  first_name?: string;
+  last_name?: string;
+}
+
+export interface Listing {
+  id: string;
+  coffee_variety?: string;
+  farm_name?: string;
+  region?: string;
+  processing_method?: string;
+  bean_type?: string;
+  price_per_kg?: number;
+  is_organic?: boolean;
+  quantity_kg?: number;
+  farm?: {
+    farm_name: string;
+    region: string | null;
+    country: string;
+  };
+  listing_status?: string;
+  seller: Seller;
+}
+
+export interface OrderDocument {
+  id: string;
+  url: string;
+  type:
+    | "contract"
+    | "commercial_invoice"
+    | "packing_list"
+    | "certificate_of_origin"
+    | "phytosanitary_certificate"
+    | "bill_of_lading"
+    | "ico"
+    | "payment_slip";
+  name?: string;
+  created_at: string;
+}
+
+export interface Review {
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer_buyer_id: string | null;
+}
+
+export interface Order {
+  id: string;
+  order_id: string;
+  buyer_name: string;
+  buyer_id: string;
+  seller_id: string;
+  listing_id: string;
+  quantity_kg: number;
+  unit_price: number;
+  total_amount: number;
+  cancelled_reason: string | null;
+  cancelled_by: string | null;
+  ship_zipcode: string;
+  ship_adrs: string;
+  ship_instructions: string;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+  created_by_agent_id: string | null;
+  current_progress_status?: OrderProgressStatus;
+  listing?: Listing;
+  seller?: Seller;
+  buyer?: Buyer;
+  documents?: OrderDocument[];
+  reviews: Review[];
+}
+
+export interface SampleRequest {
+  id: string;
+  weight: number;
+  phone: string | null;
+  delivery_address: string;
+  delivery_status: string;
+  expires_at: string;
+  created_at: string | null;
+  updated_at: string | null;
+  coffee_listing: {
+    id: string;
+    coffee_variety: string;
+    bean_type: string | null;
+    is_organic: boolean;
+    quantity_kg: number;
+    price_per_kg: number;
+    readiness_date: string | null;
+    listing_status: string;
+    farm: {
+      id: string;
+      farm_name: string;
+      region: string | null;
+      country: string;
+      altitude_meters: string | null;
+    };
+    seller: {
+      id: string;
+      first_name: string;
+      last_name: string;
+      email: string;
+      telegram: string | null;
+    };
+  };
+}
+
+export interface Bid {
+  id: string;
+  buyer_id: string;
+  seller_id: string;
+  listing_id: string;
+  quantity_kg: number;
+  unit_price: number;
+  total_amount: number;
+  status: "pending" | "accepted" | "rejected" | "expired";
+  expires_at: string;
+  created_at: string;
+  updated_at: string | null;
+  listing?: Listing;
+  buyer?: Buyer;
+  seller?: Seller;
+}
+
+export interface Seller {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface Favorite {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  created_at: string;
+  listing: Listing;
+}
+
+interface PaginationData {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+enum SampleRequestDeliveryStatus {
+  PENDING = "pending",
+  INPROGRESS = "inprogress",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
+  ACCEPTED = "accepted",
+}
+
+enum OrderBidStatus {
+  PENDING = "pending",
+  ACCEPTED = "accepted",
+  REJECTED = "rejected",
+  EXPIRED = "expired",
+}
+
+enum OrderProgressStatus {
+  OrderPlaced = "order_placed",
+  ContractSigned = "contract_signed",
+  ProcessingCompleted = "processing_completed",
+  ReadyForShipment = "ready_for_shipment",
+  PreShipmentSampleApproved = "pre_shipment_sample_approved",
+  ContainerLoaded = "container_loaded",
+  ContainerArrivedToPort = "container_arrived_to_port",
+  DocumentationsCompleted = "documentations_completed",
+  PaymentCompleted = "payment_completed",
+  DeliveryCompleted = "delivery_completed",
+}
+
+interface OrderFilterState {
+  status?: string;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  progressStatus?: OrderProgressStatus;
+}
+
+interface SampleFilterState {
+  status?: SampleRequestDeliveryStatus;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+interface BidFilterState {
+  status?: OrderBidStatus;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+interface FavoriteFilterState {
+  listingStatus?: string;
+  coffeeVariety?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
 
 export default function OrdersPage() {
   const { user, loading } = useAuth();
+  const { successMessage, errorMessage } = useNotification();
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
@@ -52,33 +249,33 @@ export default function OrdersPage() {
   const [activePagination, setActivePagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
-    total: 0,
-    total_pages: 0,
+    totalItems: 0,
+    totalPages: 0,
   });
   const [historyPagination, setHistoryPagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
-    total: 0,
-    total_pages: 0,
+    totalItems: 0,
+    totalPages: 0,
   });
   const [samplePagination, setSamplePagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
-    total: 0,
-    total_pages: 0,
+    totalItems: 0,
+    totalPages: 0,
   });
   const [bidPagination, setBidPagination] = useState<PaginationData>({
     page: 1,
     limit: 10,
-    total: 0,
-    total_pages: 0,
+    totalItems: 0,
+    totalPages: 0,
   });
   const [favoritesPagination, setFavoritesPagination] =
     useState<PaginationData>({
       page: 1,
       limit: 10,
-      total: 0,
-      total_pages: 0,
+      totalItems: 0,
+      totalPages: 0,
     });
   const [activeLoading, setActiveLoading] = useState<boolean>(true);
   const [historyLoading, setHistoryLoading] = useState<boolean>(true);
@@ -124,18 +321,91 @@ export default function OrdersPage() {
     bids: BidFilterState;
     favorites: FavoriteFilterState;
   }>({
-    current: {},
-    historical: {},
-    sample: {},
-    bids: {},
-    favorites: {},
+    current: { status: "", coffeeVariety: "" },
+    historical: { status: "", coffeeVariety: "" },
+    sample: { status: undefined, coffeeVariety: "" },
+    bids: { status: undefined, coffeeVariety: "" },
+    favorites: { coffeeVariety: "" },
   });
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<
+    "contract" | "documents" | "payment_slip"
+  >("contract");
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
-  const { errorMessage } = useNotification();
+  const handleUploadModalClose = useCallback(() => {
+    setUploadModalOpen(false);
+    setCurrentOrderId(null);
+  }, []);
+
+  const handleUpdateModalClose = useCallback(() => {
+    setUpdateModalOpen(false);
+    setCurrentOrderId(null);
+  }, []);
+
+  const handlePreviewModalClose = useCallback(() => {
+    setPreviewModalOpen(false);
+    setCurrentOrderId(null);
+  }, []);
+
+  const handleUploadSuccess = useCallback(
+    (mode: "contract" | "documents" | "payment_slip", orderId: string) => {
+      if (mode === "contract") {
+        setActiveOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, contract_signed: true } : order,
+          ),
+        );
+        setHistoricalOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, contract_signed: true } : order,
+          ),
+        );
+      }
+      fetchActiveOrders();
+      fetchHistoricalOrders();
+      successMessage(
+        `${mode === "contract" ? "Contract" : "Payment Slip"} uploaded successfully`,
+      );
+    },
+    [successMessage],
+  );
+
+  const handleUpdateModalSuccess = useCallback(
+    (mode: "contract" | "documents" | "payment_slip", orderId: string) => {
+      if (mode === "contract") {
+        setActiveOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, contract_signed: true } : order,
+          ),
+        );
+        setHistoricalOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, contract_signed: true } : order,
+          ),
+        );
+      }
+      fetchActiveOrders();
+      fetchHistoricalOrders();
+      successMessage(
+        `${mode === "contract" ? "Contract" : "Payment Slip"} updated successfully`,
+      );
+    },
+    [successMessage],
+  );
 
   const fetchActiveOrders = useCallback(async () => {
-    setActiveLoading(true);
+    if (!user) {
+      setActiveError("User not authenticated");
+      setActiveLoading(false);
+      return;
+    }
+
     try {
+      setActiveLoading(true);
+      setActiveError(null);
       const filterParams = new URLSearchParams({
         page: activeCurrentPage.toString(),
         limit: activePagination.limit.toString(),
@@ -148,48 +418,30 @@ export default function OrdersPage() {
           date_from: filters.current.dateFrom,
         }),
         ...(filters.current.dateTo && { date_to: filters.current.dateTo }),
-        ...(filters.current.contractSigned !== undefined && {
-          contract_signed: filters.current.contractSigned.toString(),
-        }),
-        ...(filters.current.coffeeProcessingCompleted !== undefined && {
-          coffee_processing_completed:
-            filters.current.coffeeProcessingCompleted.toString(),
-        }),
-        ...(filters.current.coffeeReadyForShipment !== undefined && {
-          coffee_ready_for_shipment:
-            filters.current.coffeeReadyForShipment.toString(),
-        }),
-        ...(filters.current.preShipmentSampleApproved !== undefined && {
-          pre_shipment_sample_approved:
-            filters.current.preShipmentSampleApproved.toString(),
-        }),
-        ...(filters.current.containerLoaded !== undefined && {
-          container_loaded: filters.current.containerLoaded.toString(),
-        }),
-        ...(filters.current.containerOnBoard !== undefined && {
-          container_on_board: filters.current.containerOnBoard.toString(),
-        }),
-        ...(filters.current.delivered !== undefined && {
-          delivered: filters.current.delivered.toString(),
+        ...(filters.current.progressStatus && {
+          progress_status: filters.current.progressStatus,
         }),
       }).toString();
 
       const response: any = await apiService().get(
         `/orders/active-orders?${filterParams}`,
       );
+
       if (response.success) {
         setActiveOrders(response.data.orders || []);
         setActivePagination(
           response.data.pagination || {
             page: 1,
             limit: 10,
-            total: 0,
-            total_pages: 0,
+            totalItems: 0,
+            totalPages: 0,
           },
         );
         setFetchedTabs((prev) => ({ ...prev, current: true }));
       } else {
-        setActiveError("Failed to fetch active orders");
+        throw new Error(
+          response.error?.message || "Failed to fetch active orders",
+        );
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -198,11 +450,24 @@ export default function OrdersPage() {
     } finally {
       setActiveLoading(false);
     }
-  }, [activeCurrentPage, activeSearchTerm, filters.current]);
+  }, [
+    user,
+    activeCurrentPage,
+    activeSearchTerm,
+    filters.current,
+    errorMessage,
+  ]);
 
   const fetchHistoricalOrders = useCallback(async () => {
-    setHistoryLoading(true);
+    if (!user) {
+      setHistoryError("User not authenticated");
+      setHistoryLoading(false);
+      return;
+    }
+
     try {
+      setHistoryLoading(true);
+      setHistoryError(null);
       const filterParams = new URLSearchParams({
         page: historyCurrentPage.toString(),
         limit: historyPagination.limit.toString(),
@@ -217,48 +482,30 @@ export default function OrdersPage() {
         ...(filters.historical.dateTo && {
           date_to: filters.historical.dateTo,
         }),
-        ...(filters.historical.contractSigned !== undefined && {
-          contract_signed: filters.historical.contractSigned.toString(),
-        }),
-        ...(filters.historical.coffeeProcessingCompleted !== undefined && {
-          coffee_processing_completed:
-            filters.historical.coffeeProcessingCompleted.toString(),
-        }),
-        ...(filters.historical.coffeeReadyForShipment !== undefined && {
-          coffee_ready_for_shipment:
-            filters.historical.coffeeReadyForShipment.toString(),
-        }),
-        ...(filters.historical.preShipmentSampleApproved !== undefined && {
-          pre_shipment_sample_approved:
-            filters.historical.preShipmentSampleApproved.toString(),
-        }),
-        ...(filters.historical.containerLoaded !== undefined && {
-          container_loaded: filters.historical.containerLoaded.toString(),
-        }),
-        ...(filters.historical.containerOnBoard !== undefined && {
-          container_on_board: filters.historical.containerOnBoard.toString(),
-        }),
-        ...(filters.historical.delivered !== undefined && {
-          delivered: filters.historical.delivered.toString(),
+        ...(filters.historical.progressStatus && {
+          progress_status: filters.historical.progressStatus,
         }),
       }).toString();
 
       const response: any = await apiService().get(
         `/orders/order-history?${filterParams}`,
       );
+
       if (response.success) {
         setHistoricalOrders(response.data.orders || []);
         setHistoryPagination(
           response.data.pagination || {
             page: 1,
             limit: 10,
-            total: 0,
-            total_pages: 0,
+            totalItems: 0,
+            totalPages: 0,
           },
         );
         setFetchedTabs((prev) => ({ ...prev, historical: true }));
       } else {
-        setHistoryError("Failed to fetch order history");
+        throw new Error(
+          response.error?.message || "Failed to fetch order history",
+        );
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -267,11 +514,24 @@ export default function OrdersPage() {
     } finally {
       setHistoryLoading(false);
     }
-  }, [historyCurrentPage, historySearchTerm, filters.historical]);
+  }, [
+    user,
+    historyCurrentPage,
+    historySearchTerm,
+    filters.historical,
+    errorMessage,
+  ]);
 
   const fetchSampleRequests = useCallback(async () => {
-    setSampleLoading(true);
+    if (!user) {
+      setSampleError("User not authenticated");
+      setSampleLoading(false);
+      return;
+    }
+
     try {
+      setSampleLoading(true);
+      setSampleError(null);
       const filterParams = new URLSearchParams({
         page: sampleCurrentPage.toString(),
         limit: samplePagination.limit.toString(),
@@ -289,18 +549,20 @@ export default function OrdersPage() {
       const response: any = await apiService().get(
         `/buyers/samples/get-sample-requests?${filterParams}`,
       );
+
       if (response.success && response.data) {
         setSampleRequests(response.data.sample_requests || null);
         setSamplePagination({
           page: response.data.pagination.page,
           limit: response.data.pagination.limit,
-          total: response.data.pagination.total,
-          total_pages: response.data.pagination.total_pages,
+          totalItems: response.data.pagination.total,
+          totalPages: response.data.pagination.total_pages,
         });
         setFetchedTabs((prev) => ({ ...prev, sample: true }));
       } else {
-        setSampleError("Failed to fetch sample requests");
-        setSampleRequests(null);
+        throw new Error(
+          response.error?.message || "Failed to fetch sample requests",
+        );
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -310,13 +572,18 @@ export default function OrdersPage() {
     } finally {
       setSampleLoading(false);
     }
-  }, [sampleCurrentPage, sampleSearchTerm, filters.sample]);
+  }, [user, sampleCurrentPage, sampleSearchTerm, filters.sample, errorMessage]);
 
   const fetchBids = useCallback(async () => {
-    if (loading) return;
+    if (loading || !user) {
+      setBidError("User not authenticated");
+      setBidLoading(false);
+      return;
+    }
 
-    setBidLoading(true);
     try {
+      setBidLoading(true);
+      setBidError(null);
       const filterParams = new URLSearchParams({
         page: bidCurrentPage.toString(),
         limit: bidPagination.limit.toString(),
@@ -332,19 +599,20 @@ export default function OrdersPage() {
       const response: any = await apiService().get(
         `/buyers/bids/get-all-bids?${filterParams}`,
       );
+
       if (response.success) {
         setBids(response.data.bids || []);
         setBidPagination(
           response.data.pagination || {
             page: 1,
             limit: 10,
-            total: 0,
-            total_pages: 0,
+            totalItems: 0,
+            totalPages: 0,
           },
         );
         setFetchedTabs((prev) => ({ ...prev, bids: true }));
       } else {
-        setBidError("Failed to fetch bids");
+        throw new Error(response.error?.message || "Failed to fetch bids");
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -353,7 +621,14 @@ export default function OrdersPage() {
     } finally {
       setBidLoading(false);
     }
-  }, [bidCurrentPage, bidSearchTerm, filters.bids, loading]);
+  }, [
+    loading,
+    user,
+    bidCurrentPage,
+    bidSearchTerm,
+    filters.bids,
+    errorMessage,
+  ]);
 
   const fetchFavorites = useCallback(async () => {
     if (!user?.id) {
@@ -362,14 +637,18 @@ export default function OrdersPage() {
       return;
     }
 
-    setFavoritesLoading(true);
     try {
+      setFavoritesLoading(true);
+      setFavoritesError(null);
       const filterParams = new URLSearchParams({
         page: favoritesCurrentPage.toString(),
         limit: favoritesPagination.limit.toString(),
         search: encodeURIComponent(favoritesSearchTerm),
         ...(filters.favorites.listingStatus && {
           listing_status: filters.favorites.listingStatus,
+        }),
+        ...(filters.favorites.coffeeVariety && {
+          coffee_variety: filters.favorites.coffeeVariety,
         }),
         ...(filters.favorites.dateFrom && {
           date_from: filters.favorites.dateFrom,
@@ -380,19 +659,20 @@ export default function OrdersPage() {
       const response: any = await apiService().get(
         `/buyers/listings/favorites/get-favorite-listings?${filterParams}`,
       );
+
       if (response.success) {
         setFavorites(response.data.favorites || []);
         setFavoritesPagination(
           response.data.pagination || {
             page: 1,
             limit: 10,
-            total: 0,
-            total_pages: 0,
+            totalItems: 0,
+            totalPages: 0,
           },
         );
         setFetchedTabs((prev) => ({ ...prev, favorites: true }));
       } else {
-        setFavoritesError("Failed to fetch favorites");
+        throw new Error(response.error?.message || "Failed to fetch favorites");
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -401,7 +681,13 @@ export default function OrdersPage() {
     } finally {
       setFavoritesLoading(false);
     }
-  }, [favoritesCurrentPage, favoritesSearchTerm, filters.favorites, user?.id]);
+  }, [
+    user?.id,
+    favoritesCurrentPage,
+    favoritesSearchTerm,
+    filters.favorites,
+    errorMessage,
+  ]);
 
   useEffect(() => {
     if (activeTab === "current" && !fetchedTabs.current) {
@@ -492,6 +778,12 @@ export default function OrdersPage() {
     setFavoritesCurrentPage(1);
     setFetchedTabs((prev) => ({ ...prev, favorites: false }));
     fetchFavorites();
+  };
+
+  const handlePreviewDocs = (order: Order) => {
+    setModalMode("documents");
+    setCurrentOrderId(order.id);
+    setPreviewModalOpen(true);
   };
 
   const openReviewModal = (order: Order, type: string) => {
@@ -609,11 +901,17 @@ export default function OrdersPage() {
                       item={item}
                       tabType="current"
                       expandedOrderId={expandedOrderId ?? ""}
-                      toggleOrderExpansion={toggleOrderExpansion} 
+                      toggleOrderExpansion={toggleOrderExpansion}
                       openReviewModal={openReviewModal}
+                      setModalMode={setModalMode}
+                      setCurrentOrderId={setCurrentOrderId}
+                      setUploadModalOpen={setUploadModalOpen}
+                      setPreviewModalOpen={setPreviewModalOpen}
+                      handlePreviewDocs={handlePreviewDocs}
+                      setUpdateModalOpen={setUpdateModalOpen}
                     />
                   ))}
-                  {activePagination.total_pages > 1 && (
+                  {activePagination.totalPages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -632,7 +930,7 @@ export default function OrdersPage() {
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: activePagination.total_pages },
+                          { length: activePagination.totalPages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -654,12 +952,12 @@ export default function OrdersPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               if (
-                                activeCurrentPage < activePagination.total_pages
+                                activeCurrentPage < activePagination.totalPages
                               )
                                 setActiveCurrentPage(activeCurrentPage + 1);
                             }}
                             className={
-                              activeCurrentPage >= activePagination.total_pages
+                              activeCurrentPage >= activePagination.totalPages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -735,11 +1033,17 @@ export default function OrdersPage() {
                       item={item}
                       tabType="historical"
                       expandedOrderId={expandedOrderId ?? ""}
-                      toggleOrderExpansion={toggleOrderExpansion} 
+                      toggleOrderExpansion={toggleOrderExpansion}
                       openReviewModal={openReviewModal}
+                      setModalMode={setModalMode}
+                      setCurrentOrderId={setCurrentOrderId}
+                      setUploadModalOpen={setUploadModalOpen}
+                      setPreviewModalOpen={setPreviewModalOpen}
+                      handlePreviewDocs={handlePreviewDocs}
+                      setUpdateModalOpen={setUpdateModalOpen}
                     />
                   ))}
-                  {historyPagination.total_pages > 1 && (
+                  {historyPagination.totalPages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -758,7 +1062,7 @@ export default function OrdersPage() {
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: historyPagination.total_pages },
+                          { length: historyPagination.totalPages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -781,13 +1085,12 @@ export default function OrdersPage() {
                               e.preventDefault();
                               if (
                                 historyCurrentPage <
-                                historyPagination.total_pages
+                                historyPagination.totalPages
                               )
                                 setHistoryCurrentPage(historyCurrentPage + 1);
                             }}
                             className={
-                              historyCurrentPage >=
-                              historyPagination.total_pages
+                              historyCurrentPage >= historyPagination.totalPages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -865,7 +1168,7 @@ export default function OrdersPage() {
                       toggleOrderExpansion={toggleOrderExpansion}
                     />
                   ))}
-                  {samplePagination.total_pages > 1 && (
+                  {samplePagination.totalPages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -884,7 +1187,7 @@ export default function OrdersPage() {
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: samplePagination.total_pages },
+                          { length: samplePagination.totalPages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -906,12 +1209,12 @@ export default function OrdersPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               if (
-                                sampleCurrentPage < samplePagination.total_pages
+                                sampleCurrentPage < samplePagination.totalPages
                               )
                                 setSampleCurrentPage(sampleCurrentPage + 1);
                             }}
                             className={
-                              sampleCurrentPage >= samplePagination.total_pages
+                              sampleCurrentPage >= samplePagination.totalPages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -985,11 +1288,17 @@ export default function OrdersPage() {
                       item={item}
                       tabType="bids"
                       expandedOrderId={expandedOrderId ?? ""}
-                      toggleOrderExpansion={toggleOrderExpansion} 
+                      toggleOrderExpansion={toggleOrderExpansion}
                       openReviewModal={openReviewModal}
+                      setModalMode={setModalMode}
+                      setCurrentOrderId={setCurrentOrderId}
+                      setUploadModalOpen={setUploadModalOpen}
+                      setPreviewModalOpen={setPreviewModalOpen}
+                      handlePreviewDocs={handlePreviewDocs}
+                      setUpdateModalOpen={setUpdateModalOpen}
                     />
                   ))}
-                  {bidPagination.total_pages > 1 && (
+                  {bidPagination.totalPages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -1008,7 +1317,7 @@ export default function OrdersPage() {
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: bidPagination.total_pages },
+                          { length: bidPagination.totalPages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -1029,11 +1338,11 @@ export default function OrdersPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              if (bidCurrentPage < bidPagination.total_pages)
+                              if (bidCurrentPage < bidPagination.totalPages)
                                 setBidCurrentPage(bidCurrentPage + 1);
                             }}
                             className={
-                              bidCurrentPage >= bidPagination.total_pages
+                              bidCurrentPage >= bidPagination.totalPages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -1111,7 +1420,7 @@ export default function OrdersPage() {
                       toggleOrderExpansion={toggleOrderExpansion}
                     />
                   ))}
-                  {favoritesPagination.total_pages > 1 && (
+                  {favoritesPagination.totalPages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -1132,7 +1441,7 @@ export default function OrdersPage() {
                           />
                         </PaginationItem>
                         {Array.from(
-                          { length: favoritesPagination.total_pages },
+                          { length: favoritesPagination.totalPages },
                           (_, i) => i + 1,
                         ).map((page) => (
                           <PaginationItem key={page}>
@@ -1155,7 +1464,7 @@ export default function OrdersPage() {
                               e.preventDefault();
                               if (
                                 favoritesCurrentPage <
-                                favoritesPagination.total_pages
+                                favoritesPagination.totalPages
                               )
                                 setFavoritesCurrentPage(
                                   favoritesCurrentPage + 1,
@@ -1163,7 +1472,7 @@ export default function OrdersPage() {
                             }}
                             className={
                               favoritesCurrentPage >=
-                              favoritesPagination.total_pages
+                              favoritesPagination.totalPages
                                 ? "pointer-events-none opacity-50"
                                 : ""
                             }
@@ -1179,6 +1488,7 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
         </Tabs>
+
         {showReviewModal && selectedOrder && (
           <ReviewModal
             viewData={selectedOrder.reviews[0]}
@@ -1188,8 +1498,38 @@ export default function OrdersPage() {
             onClose={() => {
               setShowReviewModal(false);
               setSelectedOrder(null);
+              fetchActiveOrders();
             }}
           />
+        )}
+
+        {currentOrderId && (
+          <>
+            <FileUploadModal
+              isOpen={uploadModalOpen}
+              onClose={handleUploadModalClose}
+              orderId={currentOrderId}
+              mode={modalMode}
+              onUploadSuccess={() =>
+                handleUploadSuccess(modalMode, currentOrderId)
+              }
+            />
+            <FileUpdateModal
+              isOpen={updateModalOpen}
+              onClose={handleUpdateModalClose}
+              orderId={currentOrderId}
+              mode={modalMode}
+              onUploadSuccess={() =>
+                handleUpdateModalSuccess(modalMode, currentOrderId)
+              }
+            />
+            <FilePreviewModal
+              isOpen={previewModalOpen}
+              onClose={handlePreviewModalClose}
+              orderId={currentOrderId}
+              mode={modalMode}
+            />
+          </>
         )}
       </main>
     </div>

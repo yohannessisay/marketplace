@@ -220,7 +220,17 @@ const RouterContent: React.FC = () => {
         path="/onboarding/step-one"
         element={
           <ProtectedRoute>
-            {currentStep === "completed" ? <FarmManagement /> : <FarmDetails />}
+            {user?.userType === "agent" ? (
+              farmerProfile?.onboarding_stage === "completed" ? (
+                <FarmManagement />
+              ) : (
+                <FarmDetails />
+              )
+            ) : user?.onboarding_stage === "completed" ? (
+              <FarmManagement />
+            ) : (
+              <FarmDetails />
+            )}
           </ProtectedRoute>
         }
       />

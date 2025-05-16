@@ -1,10 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Favorite } from "@/types/orders";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { Calendar, ChevronDown, Coffee, User } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Favorite } from "../my-orders";
 
 export const FavoriteItem = ({
   item,
@@ -81,9 +81,9 @@ export const FavoriteItem = ({
               {item.listing.seller?.first_name || "Unknown"}{" "}
               {item.listing.seller?.last_name || ""}
             </span>
-            {item.seller && (
+            {item.listing.seller && (
               <Link
-                to={`/sellers/${item.seller.first_name?.toLowerCase()}-${item.seller.last_name?.toLowerCase()}`}
+                to={`/sellers/${item.listing.seller.first_name?.toLowerCase()}-${item.listing.seller.last_name?.toLowerCase()}`}
                 className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
               >
                 View Seller
@@ -127,12 +127,6 @@ export const FavoriteItem = ({
                     </span>
                     <span className="font-medium">
                       {item.listing?.processing_method || "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Cup Score:</span>
-                    <span className="font-medium">
-                      {item.listing?.cup_score || "N/A"}
                     </span>
                   </div>
                 </div>

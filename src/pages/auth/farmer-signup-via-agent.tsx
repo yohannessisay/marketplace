@@ -53,7 +53,7 @@ export default function FarmerSignupViaAgentPage() {
         id: response.data.userId,
         email: response.data.email,
       });
-      navigate("/home");
+      navigate("/agent/farmer-management");
     } catch (error: unknown) {
       setIsSubmitting(false);
       const errorResponse = error as APIErrorResponse;

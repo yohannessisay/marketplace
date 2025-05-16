@@ -45,7 +45,12 @@ export function ListingCard({
       onRequireAuth();
       return;
     }
-    if (user.userType === "seller" || isFavoriteLoading) return;
+    if (
+      user.userType === "seller" ||
+      user.userType === "agent" ||
+      isFavoriteLoading
+    )
+      return;
 
     const previousFavorited = optimisticFavorited;
     setOptimisticFavorited(!optimisticFavorited);
@@ -104,7 +109,7 @@ export function ListingCard({
           <Coffee className="h-4 w-4 mr-1" />
           <span>{listing?.bean_type}</span>
         </div>
-        {user?.userType !== "seller" && (
+        {user?.userType !== "seller" && user?.userType !== "agent" && (
           <div className="flex justify-end items-end mb-2 mt-4">
             <button
               role="button"

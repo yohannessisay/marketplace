@@ -72,7 +72,12 @@ export default function CoffeeMarketplace() {
   const { user: loggedInUser, loading: authLoading } = useAuth();
 
   const checkFavoriteStatus = async (listingIds: string[]) => {
-    if (!loggedInUser || loggedInUser.userType === "seller") return;
+    if (
+      !loggedInUser ||
+      loggedInUser.userType === "seller" ||
+      loggedInUser.userType === "agent"
+    )
+      return;
     const favoriteStatus: {
       [listingId: string]: { isFavorited: boolean; favoriteId?: string };
     } = {};
@@ -230,7 +235,12 @@ export default function CoffeeMarketplace() {
   const hasSearchOrFilters = searchQuery || hasActiveFilters;
 
   const addFavorite = async (listingId: string) => {
-    if (!listingId || !loggedInUser || loggedInUser.userType === "seller")
+    if (
+      !listingId ||
+      !loggedInUser ||
+      loggedInUser.userType === "seller" ||
+      loggedInUser.userType === "agent"
+    )
       return;
 
     setFavoriteState((prev) => ({
@@ -273,7 +283,12 @@ export default function CoffeeMarketplace() {
   };
 
   const removeFavorite = async (listingId: string) => {
-    if (!listingId || !loggedInUser || loggedInUser.userType === "seller")
+    if (
+      !listingId ||
+      !loggedInUser ||
+      loggedInUser.userType === "seller" ||
+      loggedInUser.userType === "agent"
+    )
       return;
     const favoriteId = favoriteState[listingId]?.favoriteId;
     if (!favoriteId) return;

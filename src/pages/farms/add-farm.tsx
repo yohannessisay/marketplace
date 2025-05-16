@@ -53,8 +53,10 @@ export default function AddFarm() {
   const [isLoading, setIsLoading] = useState(false);
   const [govRegFiles, setGovRegFiles] = useState<FileWithPreview[]>([]);
   const [landRightsFiles, setLandRightsFiles] = useState<FileWithPreview[]>([]);
+  const [farmPhotos, setFarmPhotos] = useState<FileWithPreview[]>([]);
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
+  const [farmPhotoError, setFarmPhotoError] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
@@ -221,6 +223,39 @@ export default function AddFarm() {
           setGovRegFiles(govRegFilesTemp);
           setLandRightsFiles(landRightsFilesTemp);
         }
+
+        if (farm.photos?.length > 0) {
+          const photosTemp: FileWithPreview[] = await Promise.all(
+            farm.photos.map(async (photo: any) => {
+              try {
+                const res = await fetch(photo.photo_url);
+                if (!res.ok)
+                  throw new Error(`Failed to fetch ${photo.photo_url}`);
+                const blob = await res.blob();
+                const fileName =
+                  photo.photo_url.split("/").pop() || `farm_photo_${photo.id}`;
+                const file = new File([blob], fileName, { type: blob.type });
+                const preview = URL.createObjectURL(file);
+                const type = file.type === "application/pdf" ? "pdf" : "image";
+                return { file, preview, type } as FileWithPreview;
+              } catch (err) {
+                console.error(
+                  `[AddFarm] Error fetching farm photo ${photo.photo_url}:`,
+                  err,
+                );
+                return null;
+              }
+            }),
+          );
+          const validPhotos = photosTemp.filter(
+            (photo): photo is FileWithPreview => photo !== null,
+          );
+          setFarmPhotos(validPhotos);
+          saveToLocalStorage(
+            "farm-photos",
+            validPhotos.map((photo) => photo.preview),
+          );
+        }
       } else {
         throw new Error(response.message || "Failed to fetch farm data");
       }
@@ -241,6 +276,7 @@ export default function AddFarm() {
   const validateFiles = (): { isValid: boolean; error?: APIErrorResponse } => {
     setGovFileError("");
     setLandFileError("");
+    setFarmPhotoError("");
 
     if (govRegFiles.length === 0) {
       const error: APIErrorResponse = {
@@ -268,6 +304,21 @@ export default function AddFarm() {
         },
       };
       setLandFileError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    if (farmPhotos.length === 0) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "At least one farm photo is required",
+          details: "Please upload at least one farm photo",
+          code: 400,
+          hint: "The file must be in JPG or PNG format, up to 5MB",
+        },
+      };
+      setFarmPhotoError(error.error.message);
       errorMessage(error);
       return { isValid: false, error };
     }
@@ -304,6 +355,24 @@ export default function AddFarm() {
         },
       };
       setLandFileError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    const oversizedFarmPhotos = farmPhotos.some(
+      (photo) => photo.file.size > 5 * 1024 * 1024,
+    );
+    if (oversizedFarmPhotos) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Farm photo exceeds 5MB",
+          details: "File size must be less than 5MB",
+          code: 413,
+          hint: "Compress the file or upload a smaller version",
+        },
+      };
+      setFarmPhotoError(error.error.message);
       errorMessage(error);
       return { isValid: false, error };
     }
@@ -367,10 +436,16 @@ export default function AddFarm() {
         formData.append("land_rights", file.file);
       });
 
+      farmPhotos.forEach((photo) => {
+        formData.append("farm_photos", photo.file);
+      });
+
       const govFilePaths = govRegFiles.map((file) => file.preview);
       const landFilePaths = landRightsFiles.map((file) => file.preview);
+      const farmPhotoPaths = farmPhotos.map((photo) => photo.preview);
       saveToLocalStorage("gov-files", govFilePaths);
       saveToLocalStorage("land-files", landFilePaths);
+      saveToLocalStorage("farm-photos", farmPhotoPaths);
 
       let xfmrId: string | null = null;
       if (user && user.userType === "agent") {
@@ -447,11 +522,12 @@ export default function AddFarm() {
                     {isEditMode ? "Edit Farm" : "Add Farm"}
                   </h2>
                   <h3 className="text-xl text-gray-900 font-semibold">
-                    Upload your farm documents
+                    Upload your farm documents and photos
                   </h3>
                   <p className="text-sm text-gray-600">
-                    Upload clear government registration and land rights
-                    documents. Make sure text is readable and high-quality
+                    Upload clear government registration, land rights documents,
+                    and high-quality farm photos. Make sure text is readable and
+                    images are clear.
                   </p>
                 </div>
 
@@ -542,6 +618,59 @@ export default function AddFarm() {
                         {landRightsFiles.length > 0
                           ? `${landRightsFiles.length} files selected`
                           : "No files selected"}
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </div>
+
+                <div className="mt-8">
+                  <h3 className="text-lg font-medium mb-4">Farm photos</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Upload high-quality images of your farm to showcase its
+                    environment (Max 6 files, 5MB each).
+                  </p>
+                  <Card className="max-w-2xl mx-auto">
+                    <CardHeader>
+                      <CardTitle>Farm photos</CardTitle>
+                      <CardDescription>
+                        Upload images (Max 6 files, 5MB each). Drag and drop or
+                        click to select files.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <FileUpload
+                        onFilesSelected={(files) => {
+                          setFarmPhotos(
+                            files.map((file) => ({
+                              file,
+                              preview: URL.createObjectURL(file),
+                              type:
+                                file.type === "application/pdf"
+                                  ? "pdf"
+                                  : "image",
+                            })),
+                          );
+                          setFarmPhotoError("");
+                          const filePaths = files.map((file) =>
+                            URL.createObjectURL(file),
+                          );
+                          saveToLocalStorage("farm-photos", filePaths);
+                        }}
+                        maxFiles={6}
+                        maxSizeMB={5}
+                        initialFiles={farmPhotos}
+                      />
+                      {farmPhotoError && (
+                        <p className="text-red-500 text-sm mt-2">
+                          {farmPhotoError}
+                        </p>
+                      )}
+                    </CardContent>
+                    <CardFooter>
+                      <div className="text-sm text-muted-foreground">
+                        {farmPhotos.length > 0
+                          ? `${farmPhotos.length} photo(s) selected`
+                          : "No photos selected"}
                       </div>
                     </CardFooter>
                   </Card>
@@ -1132,7 +1261,7 @@ export default function AddFarm() {
           isOpen={isModalOpen}
           onClose={handleModalCancel}
           title={isEditMode ? "Confirm Edit Farm" : "Confirm Add Farm"}
-          message="Once submitted, you cannot edit the farm data until you submit an edit request. Please ensure all information and documents are correct before proceeding."
+          message="Once submitted, you cannot edit the farm data until you submit an edit request. Please ensure all information, documents, and photos are correct before proceeding."
           confirmText="Proceed"
           cancelText="Cancel"
           onConfirm={handleConfirmSubmit}

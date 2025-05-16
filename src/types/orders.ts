@@ -39,6 +39,19 @@ export interface Listing {
   };
 }
 
+export enum OrderProgressStatus {
+  OrderPlaced = "order_placed",
+  ContractSigned = "contract_signed",
+  ProcessingCompleted = "processing_completed",
+  ReadyForShipment = "ready_for_shipment",
+  PreShipmentSampleApproved = "pre_shipment_sample_approved",
+  ContainerLoaded = "container_loaded",
+  ContainerArrivedToPort = "container_arrived_to_port",
+  DocumentationsCompleted = "documentations_completed",
+  PaymentCompleted = "payment_completed",
+  DeliveryCompleted = "delivery_completed",
+}
+
 export interface Order {
   id: string;
   order_id: string;
@@ -108,18 +121,23 @@ export interface SampleRequest {
 
 export interface Bid {
   id: string;
-  listing_id: string;
-  seller_id: string;
   buyer_id: string;
+  seller_id: string;
+  listing_id: string;
   quantity_kg: number;
   unit_price: number;
   total_amount: number;
-  status: string;
-  created_at: string;
+  status: "pending" | "accepted" | "rejected" | "expired";
   expires_at: string;
+  created_at: string;
   updated_at: string | null;
   listing?: Listing;
-  seller?: Seller;
+  buyer?: Buyer;
+}
+
+export interface Buyer {
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface Favorite {
@@ -143,13 +161,7 @@ export interface OrderFilterState {
   coffeeVariety?: string;
   dateFrom?: string;
   dateTo?: string;
-  contractSigned?: boolean;
-  coffeeProcessingCompleted?: boolean;
-  coffeeReadyForShipment?: boolean;
-  preShipmentSampleApproved?: boolean;
-  containerLoaded?: boolean;
-  containerOnBoard?: boolean;
-  delivered?: boolean;
+  progressStatus?: OrderProgressStatus;
 }
 
 export interface SampleFilterState {
@@ -168,6 +180,7 @@ export interface BidFilterState {
 
 export interface FavoriteFilterState {
   listingStatus?: string;
+  coffeeVariety?: string;
   dateFrom?: string;
   dateTo?: string;
 }

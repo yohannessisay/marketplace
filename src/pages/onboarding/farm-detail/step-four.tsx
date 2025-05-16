@@ -22,7 +22,7 @@ import {
   profileInfoSchema,
   type ProfileInfoFormData,
 } from "@/types/validation/seller-onboarding";
-import { getFromLocalStorage, removeFromLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
@@ -49,15 +49,17 @@ export default function StepFour() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user, setUser, isAuthenticated } = useAuth();
+  const { user, setUser } = useAuth();
   const { successMessage, errorMessage } = useNotification();
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
-
-  console.log("Auth State:", { user, isAuthenticated, farmerProfile });
 
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
     defaultValues: {
+      first_name: farmerProfile.first_name || "",
+      last_name: farmerProfile.last_name || "",
+      email: farmerProfile.email || "",
+      phone: farmerProfile.phone || "",
       telegram: "",
       about_me: "",
       address: "",
@@ -72,6 +74,10 @@ export default function StepFour() {
       );
       setProfileInfo(response.data.profile);
       form.reset({
+        first_name: farmerProfile.first_name || "",
+        last_name: farmerProfile.last_name || "",
+        email: farmerProfile.email || "",
+        phone: farmerProfile.phone || "",
         telegram: response.data.profile.telegram || "",
         about_me: response.data.profile.about_me || "",
         address: response.data.profile.address || "",
@@ -90,6 +96,10 @@ export default function StepFour() {
     const savedData = getFromLocalStorage("step-four", {});
     if (Object.keys(savedData).length > 0) {
       const loadedData: ProfileInfoFormData = {
+        first_name: (savedData as any).first_name || "",
+        last_name: (savedData as any).last_name || "",
+        phone: (savedData as any).phone || "",
+        email: (savedData as any).email || "",
         telegram: (savedData as any).telegram || "",
         about_me: (savedData as any).about_me || "",
         address: (savedData as any).address || "",
@@ -137,6 +147,20 @@ export default function StepFour() {
     setFiles((prev) => [...prev, ...selectedFiles]);
   };
 
+  const clearLocalStorageExcept = (keysToKeep: string[]) => {
+    const keptData: { [key: string]: any } = {};
+    keysToKeep.forEach((key) => {
+      const data = localStorage.getItem(key);
+      if (data) {
+        keptData[key] = data;
+      }
+    });
+    localStorage.clear();
+    Object.keys(keptData).forEach((key) => {
+      localStorage.setItem(key, keptData[key]);
+    });
+  };
+
   const onSubmit = async (data: ProfileInfoFormData) => {
     try {
       setIsSubmitting(true);
@@ -154,38 +178,74 @@ export default function StepFour() {
         user?.onboarding_stage === "avatar_image" ||
         user?.userType === "agent"
       ) {
-        await apiService().postFormData(
+        const response: any = await apiService().postFormData(
           "/onboarding/seller/profile",
           formData,
           true,
           user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
-        setUser({
-          ...user!,
-          onboarding_stage: "completed",
-        });
+        if (user && user.userType === "agent" && farmerProfile) {
+          const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+          if (farmerProfile1) {
+            saveToLocalStorage("farmerProfile", {
+              ...farmerProfile1,
+              onboarding_stage: "completed",
+              avatar_url: response.data.profile.avatar_image.url,
+              telegram: response.data.profile.telegram,
+              address: response.data.profile.address,
+              about_me: response.data.profile.about_me,
+            });
+          }
+        } else {
+          setUser({
+            ...user!,
+            onboarding_stage: "completed",
+            avatar_url: response.data.profile.avatar_image.url,
+            telegram: response.data.profile.telegram,
+            address: response.data.profile.address,
+            about_me: response.data.profile.about_me,
+          });
+        }
 
         successMessage("Registration completed successfully!");
-        removeFromLocalStorage("profile-image");
+        clearLocalStorageExcept(["farmerProfile", "userProfile"]);
         navigation("/seller-dashboard");
       } else {
         formData.append("id", profileInfo?.id || "");
 
-        await apiService().patchFormData(
+        const response: any = await apiService().patchFormData(
           "/sellers/profile/update-profile",
           formData,
           true,
           user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
-        setUser({
-          ...user!,
-          onboarding_stage: "completed",
-        });
+        if (user && user.userType === "agent" && farmerProfile) {
+          const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+          if (farmerProfile1) {
+            saveToLocalStorage("farmerProfile", {
+              ...farmerProfile1,
+              onboarding_stage: "completed",
+              avatar_url: response.data.profile.avatar_image.url,
+              telegram: response.data.profile.telegram,
+              address: response.data.profile.address,
+              about_me: response.data.profile.about_me,
+            });
+          }
+        } else {
+          setUser({
+            ...user!,
+            onboarding_stage: "completed",
+            avatar_url: response.data.profile.avatar_image.url,
+            telegram: response.data.profile.telegram,
+            address: response.data.profile.address,
+            about_me: response.data.profile.about_me,
+          });
+        }
 
         successMessage("Profile data updated successfully");
-        removeFromLocalStorage("profile-image");
+        clearLocalStorageExcept(["farmerProfile", "userProfile"]);
         navigation("/seller-dashboard");
       }
     } catch (error: any) {
@@ -196,7 +256,7 @@ export default function StepFour() {
     }
   };
 
-  const handleFormSubmit = (data: ProfileInfoFormData) => {
+  const handleFormSubmit = () => {
     setIsModalOpen(true);
   };
 
@@ -289,6 +349,58 @@ export default function StepFour() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
+                        name="first_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="last_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="email" disabled />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="tel" disabled />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
                         name="telegram"
                         render={({ field }) => (
                           <FormItem>
@@ -300,9 +412,6 @@ export default function StepFour() {
                           </FormItem>
                         )}
                       />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                       <FormField
                         control={form.control}
                         name="address"

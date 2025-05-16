@@ -29,6 +29,7 @@ interface RequestEditModalProps {
   entityId: string;
   entityType: string;
   onSubmitSuccess: (status: AdminEditRequestStatusType) => void;
+  xfmrId?: string | undefined;
 }
 
 export function RequestEditModal({
@@ -37,6 +38,7 @@ export function RequestEditModal({
   entityId,
   entityType,
   onSubmitSuccess,
+  xfmrId,
 }: RequestEditModalProps) {
   const [message, setMessage] = useState("");
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
@@ -91,7 +93,17 @@ export function RequestEditModal({
             { id: "photos", label: "Photos" },
             { id: "documents", label: "KYC Documents" },
           ]
-        : [];
+        : entityType === "bank"
+          ? [
+              { id: "account_holder_name", label: "Account Holder Name" },
+              { id: "bank_name", label: "Bank Name" },
+              { id: "account_number", label: "Account Number" },
+              { id: "branch_name", label: "Branch Name" },
+              { id: "swift_code", label: "SWIFT Code" },
+              { id: "is_primary", label: "Primary Account Status" },
+              { id: "kyc_documents", label: "KYC Documents" },
+            ]
+          : [];
 
   const handleSubmit = async () => {
     if (!message.trim()) {
@@ -107,12 +119,16 @@ export function RequestEditModal({
 
     try {
       setIsSubmitting(true);
-      await apiService().post(`/admin/request-edit-access`, {
-        entity_id: entityId,
-        entity_type: entityType,
-        requested_fields: selectedFields,
-        message,
-      });
+      await apiService().post(
+        `/admin/request-edit-access`,
+        {
+          entity_id: entityId,
+          entity_type: entityType,
+          requested_fields: selectedFields,
+          message,
+        },
+        xfmrId ? xfmrId : "",
+      );
       successMessage("Edit access request submitted successfully");
       onSubmitSuccess("requested");
       setMessage("");

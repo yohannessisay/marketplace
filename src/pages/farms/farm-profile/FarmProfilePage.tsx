@@ -270,10 +270,7 @@ export default function FarmProfilePage() {
           The farm you’re looking for doesn’t exist or is no longer available.
         </p>
         <div className="flex justify-center gap-4">
-          <Button
-            onClick={() => navigate("/marketplace")}
-            className="bg-primary text-white hover:bg-primary/90"
-          >
+          <Button onClick={() => navigate("/marketplace")}>
             Back to Marketplace
           </Button>
           <Button

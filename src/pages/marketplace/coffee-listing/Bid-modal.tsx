@@ -72,86 +72,109 @@ export function BidModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-center">Place Your Bid</DialogTitle>
-          <DialogDescription className="text-center">
-            You can place a bid to this listing and if the seller accepts your
-            offer order will be created
+      <DialogContent className="sm:max-w-3xl w-full">
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="text-2xl font-semibold text-center">
+            Place Your Bid
+          </DialogTitle>
+          <DialogDescription className="text-center text-muted-foreground">
+            Submit your bid for this coffee listing. If the seller accepts, an
+            order will be created.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div>
-            <Label htmlFor="quantity">Quantity (kg)</Label>
-            <Input
-              id="quantity"
-              type="number"
-              min="10"
-              max={listing?.quantity_kg}
-              value={quantity}
-              className="mt-2"
-              disabled
-            />
-            <p className="mt-1 text-sm text-muted-foreground">
-              Available: {quantity} kg
-            </p>
+        <div className="py-6">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            {/* Quantity Field */}
+            <div>
+              <Label htmlFor="quantity" className="text-sm font-medium">
+                Quantity (kg)
+              </Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="10"
+                max={listing?.quantity_kg}
+                value={quantity}
+                className="mt-1.5 h-10"
+                disabled
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Available: {quantity} kg
+              </p>
+            </div>
+
+            {/* Bid Price Field */}
+            <div>
+              <Label htmlFor="price_per_kg" className="text-sm font-medium">
+                Bid Price per kg ($)
+              </Label>
+              <Input
+                id="price_per_kg"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={bidPrice}
+                onChange={(e) => setBidPrice(Number(e.target.value) || 0)}
+                className="mt-1.5 h-10"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Suggested: ${listing?.price_per_kg}
+              </p>
+            </div>
+
+            {/* Shipping Zipcode */}
+            <div>
+              <Label htmlFor="ship_zipcode" className="text-sm font-medium">
+                Shipping Zip/Postal Code
+              </Label>
+              <Input
+                id="ship_zipcode"
+                type="text"
+                value={shipZipcode}
+                onChange={(e) => setShipZipcode(e.target.value)}
+                className="mt-1.5 h-10"
+                placeholder="Enter zip/postal code"
+              />
+            </div>
+
+            {/* Shipping Address */}
+            <div>
+              <Label htmlFor="ship_adrs" className="text-sm font-medium">
+                Shipping Address
+              </Label>
+              <Input
+                id="ship_adrs"
+                type="text"
+                value={shipAddress}
+                onChange={(e) => setShipAddress(e.target.value)}
+                className="mt-1.5 h-10"
+                placeholder="Enter full shipping address"
+              />
+            </div>
+
+            {/* Shipping Instructions (Spans both columns) */}
+            <div className="col-span-2">
+              <Label
+                htmlFor="ship_instructions"
+                className="text-sm font-medium"
+              >
+                Shipping Instructions
+              </Label>
+              <Textarea
+                id="ship_instructions"
+                value={shipInstructions}
+                onChange={(e) => setShipInstructions(e.target.value)}
+                className="mt-1.5 min-h-[100px]"
+                placeholder="Enter any special instructions (or 'None')"
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="price_per_kg">Bid Price per kg ($)</Label>
-            <Input
-              id="price_per_kg"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={bidPrice}
-              onChange={(e) => setBidPrice(Number(e.target.value) || 0)}
-              className="mt-2"
-            />
-            <p className="mt-1 text-sm text-muted-foreground">
-              Suggested: ${listing?.price_per_kg}
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="ship_zipcode">Shipping Zip/Postal Code</Label>
-            <Input
-              id="ship_zipcode"
-              type="text"
-              value={shipZipcode}
-              onChange={(e) => setShipZipcode(e.target.value)}
-              className="mt-2"
-              placeholder="Enter zip/postal code"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="ship_adrs">Shipping Address</Label>
-            <Input
-              id="ship_adrs"
-              type="text"
-              value={shipAddress}
-              onChange={(e) => setShipAddress(e.target.value)}
-              className="mt-2"
-              placeholder="Enter full shipping address"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="ship_instructions">Shipping Instructions</Label>
-            <Textarea
-              id="ship_instructions"
-              value={shipInstructions}
-              onChange={(e) => setShipInstructions(e.target.value)}
-              className="mt-2"
-              placeholder="Enter any special instructions (or 'None')"
-            />
-          </div>
-
-          <div className="bg-muted p-4 rounded-md">
-            <h4 className="text-sm font-medium mb-2">Bid Summary</h4>
-            <div className="space-y-2">
+          {/* Bid Summary */}
+          <div className="mt-6 bg-muted p-5 rounded-lg">
+            <h4 className="text-base font-semibold mb-3">Bid Summary</h4>
+            <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">
                   Bid Price per kg
@@ -164,7 +187,6 @@ export function BidModal({
                 <span className="text-sm text-muted-foreground">Quantity</span>
                 <span className="text-sm font-medium">{quantity} kg</span>
               </div>
-
               {discount > 0 && (
                 <div className="flex justify-between text-primary">
                   <span className="text-sm">
@@ -175,11 +197,10 @@ export function BidModal({
                   </span>
                 </div>
               )}
-
-              <div className="pt-2 border-t border-border">
+              <div className="pt-3 border-t border-border">
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium">Total</span>
-                  <span className="text-sm font-medium text-primary">
+                  <span className="text-sm font-semibold">Total</span>
+                  <span className="text-sm font-semibold text-primary">
                     ${totalPrice.toFixed(2)}
                   </span>
                 </div>
@@ -188,8 +209,8 @@ export function BidModal({
           </div>
         </div>
 
-        <DialogFooter className="grid grid-cols-2 gap-3">
-          <Button variant="outline" onClick={onClose} className="w-full">
+        <DialogFooter className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onClose} className="w-32 h-10">
             Cancel
           </Button>
           <Button
@@ -202,7 +223,7 @@ export function BidModal({
               !shipInstructions.trim()
             }
             onClick={handleSubmit}
-            className="w-full"
+            className="w-32 h-10"
           >
             {isLoading ? "Placing Bid..." : "Place Bid"}
           </Button>

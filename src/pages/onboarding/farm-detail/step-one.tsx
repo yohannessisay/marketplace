@@ -36,7 +36,7 @@ import {
   getFromLocalStorage,
   removeFromLocalStorage,
 } from "@/lib/utils";
-import { FileUpload } from "@/components/common/file-upload";
+import { FileUpload, FileWithPreview } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
@@ -52,17 +52,17 @@ export default function StepOne() {
   const { successMessage, errorMessage } = useNotification();
   const [govFiles, setGovFiles] = useState<File[]>([]);
   const [landFiles, setLandFiles] = useState<File[]>([]);
+  const [farmPhotos, setFarmPhotos] = useState<FileWithPreview[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
+  const [farmPhotoError, setFarmPhotoError] = useState<string>("");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const { user, loading, setUser } = useAuth();
   const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
 
-  const isBackButtonClicked = getFromLocalStorage(
-    "back-button-clicked",
-    "false",
-  );
+  const isBackButtonClicked =
+    getFromLocalStorage("back-button-clicked", {}) === "true";
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
@@ -157,7 +157,7 @@ export default function StepOne() {
       "step-one",
       {} as FarmDetailsFormData,
     );
-    if (savedData && Object.keys(savedData).length > 0) {
+    if (savedData && Object.keys(savedData).length > 0 && isBackButtonClicked) {
       reset({
         ...savedData,
         polygon_coords: Array.isArray(savedData.polygon_coords)
@@ -183,11 +183,24 @@ export default function StepOne() {
         longitude: savedData.longitude,
       });
     }
+
+    const savedFarmPhotos: string[] = getFromLocalStorage("farm-photos", []);
+    if (savedFarmPhotos.length > 0) {
+      const loadedPhotos: FileWithPreview[] = savedFarmPhotos.map(
+        (url, index) => ({
+          file: new File([], `photo_${index}`),
+          preview: url,
+          type: url.endsWith(".pdf") ? "pdf" : "image",
+        }),
+      );
+      setFarmPhotos(loadedPhotos);
+    }
   }, [reset]);
 
   const validateFiles = (): { isValid: boolean; error?: APIErrorResponse } => {
     setGovFileError("");
     setLandFileError("");
+    setFarmPhotoError("");
 
     if (
       govFiles.length === 0 &&
@@ -261,7 +274,35 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
+    const oversizedFarmPhotos = farmPhotos.some(
+      (photo) => photo.file.size > 5 * 1024 * 1024,
+    );
+    if (oversizedFarmPhotos) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "Farm photo exceeds 5MB",
+          details: "File size must be less than 5MB",
+          code: 413,
+          hint: "Compress the file or upload a smaller version",
+        },
+      };
+      setFarmPhotoError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
     return { isValid: true };
+  };
+
+  const handleFarmPhotosSelected = (selectedPhotos: File[]) => {
+    const newPhotos: FileWithPreview[] = selectedPhotos.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      type: file.type === "application/pdf" ? "pdf" : "image",
+    }));
+    setFarmPhotos(newPhotos);
+    setFarmPhotoError("");
   };
 
   const onSubmit = async (data: FarmDetailsFormData) => {
@@ -316,10 +357,16 @@ export default function StepOne() {
         formData.append("land_rights", file);
       });
 
+      farmPhotos.forEach((photo) => {
+        formData.append("farm_photos", photo.file);
+      });
+
       const govFilePaths = govFiles.map((file) => URL.createObjectURL(file));
       const landFilePaths = landFiles.map((file) => URL.createObjectURL(file));
+      const farmPhotoPaths = farmPhotos.map((photo) => photo.preview);
       saveToLocalStorage("gov-files", govFilePaths);
       saveToLocalStorage("land-files", landFilePaths);
+      saveToLocalStorage("farm-photos", farmPhotoPaths);
 
       const existingFarmId = getFromLocalStorage("farm-id", "");
 
@@ -330,59 +377,55 @@ export default function StepOne() {
           true,
           user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
+        setUser({
+          ...user!,
+          onboarding_stage: "crops_to_sell",
+        });
 
-        if (response?.success) {
-          const profile = getFromLocalStorage(USER_PROFILE_KEY, {});
-          if (userProfile) {
-            const updatedProfile = {
-              ...profile,
-              onboarding_stage: "crops_to_sell",
-            };
-
-            setUser(updatedProfile as UserProfile);
-          }
-          const updatedProfile = {
-            ...profile,
+        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+        if (farmerProfile1) {
+          saveToLocalStorage("farmerProfile", {
+            ...farmerProfile1,
             onboarding_stage: "crops_to_sell",
-          };
-          saveToLocalStorage(USER_PROFILE_KEY, updatedProfile);
-          saveToLocalStorage("step-one", data);
-          if (response.data?.farm?.id) {
-            saveToLocalStorage("farm-id", response.data.farm.id);
-          }
-          navigate("/onboarding/step-two");
-          successMessage("Farm details saved successfully!");
-          saveToLocalStorage("is-back-button-clicked", "false");
-          localStorage.setItem("current-step", JSON.stringify("crops_to_sell"));
-        } else {
-          errorMessage(response?.error as APIErrorResponse);
+          });
         }
+
+        saveToLocalStorage("step-one", data);
+        if (response.data?.farm?.id) {
+          saveToLocalStorage("farm-id", response.data.farm.id);
+        }
+        navigate("/onboarding/step-two");
+        successMessage("Farm details saved successfully!");
+        saveToLocalStorage("is-back-button-clicked", "false");
+        localStorage.setItem("current-step", JSON.stringify("crops_to_sell"));
       } else {
         formData.append("farmId", existingFarmId);
 
-        const response: any = await apiService().patchFormData(
+        await apiService().patchFormData(
           "/sellers/farms/update-farm",
           formData,
           true,
           user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
         );
 
-        if (response.success) {
-          if (userProfile) {
-            const updatedProfile: UserProfile = {
-              ...userProfile,
-              onboarding_stage: "crops_to_sell",
-            };
-            setUser(updatedProfile);
-          }
-          removeFromLocalStorage("current-step");
-          saveToLocalStorage("is-back-button-clicked", "false");
-          saveToLocalStorage("current-step", "crops_to_sell");
-          navigate("/onboarding/step-two");
-          successMessage("Farm data updated successfully!");
-        } else {
-          errorMessage(response.error as APIErrorResponse);
+        setUser({
+          ...user!,
+          onboarding_stage: "crops_to_sell",
+        });
+
+        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+        if (farmerProfile1) {
+          saveToLocalStorage("farmerProfile", {
+            ...farmerProfile1,
+            onboarding_stage: "crops_to_sell",
+          });
         }
+
+        removeFromLocalStorage("current-step");
+        saveToLocalStorage("is-back-button-clicked", "false");
+        saveToLocalStorage("current-step", "crops_to_sell");
+        navigate("/onboarding/step-two");
+        successMessage("Farm data updated successfully!");
       }
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
@@ -400,7 +443,7 @@ export default function StepOne() {
         }
 
         const farmerId =
-          user.userType === "agent" ? userProfile?.id : undefined;
+          user.userType === "agent" ? farmerProfile?.id : undefined;
         const response: any = await apiService().get(
           "/onboarding/seller/get-first-farm",
           farmerId,
@@ -435,6 +478,37 @@ export default function StepOne() {
           setLatitude(response.data.farm.latitude);
           setLongitude(response.data.farm.longitude);
           saveToLocalStorage("farm-id", response.data.farm.id);
+
+          // Fetch farm photos if available
+          if (response.data.farm.photos?.length > 0) {
+            const photosTemp = await Promise.all(
+              response.data.farm.photos.map(async (photo: any) => {
+                try {
+                  const res = await fetch(photo.url);
+                  if (!res.ok) throw new Error(`Failed to fetch ${photo.url}`);
+                  const blob = await res.blob();
+                  const fileName =
+                    photo.url.split("/").pop() || `farm_photo_${photo.id}`;
+                  const file = new File([blob], fileName, { type: blob.type });
+                  const preview = URL.createObjectURL(file);
+                  const type =
+                    file.type === "application/pdf" ? "pdf" : "image";
+                  return { file, preview, type } as FileWithPreview;
+                } catch (err) {
+                  console.error(`Error fetching farm photo ${photo.url}:`, err);
+                  return null;
+                }
+              }),
+            );
+            const validPhotos = photosTemp.filter(
+              (photo): photo is FileWithPreview => photo !== null,
+            );
+            setFarmPhotos(validPhotos);
+            saveToLocalStorage(
+              "farm-photos",
+              validPhotos.map((photo) => photo.preview),
+            );
+          }
         } else {
           console.log(
             "fetchFirstFarm: Failed to fetch farm",
@@ -469,11 +543,12 @@ export default function StepOne() {
             <div className="mb-2">
               <h2 className="text-green-600 font-medium">Step 1</h2>
               <h3 className="text-xl text-gray-900 font-semibold">
-                Upload your farm documents
+                Upload your farm documents and photos
               </h3>
               <p className="text-sm text-gray-600">
-                Upload clear government registration and land rights documents.
-                Make sure text is readable and high-quality
+                Upload clear government registration, land rights documents, and
+                high-quality farm photos. Make sure text is readable and images
+                are clear.
               </p>
             </div>
 
@@ -532,6 +607,43 @@ export default function StepOne() {
                     {landFiles.length > 0
                       ? `${landFiles.length} files selected`
                       : "No files selected"}
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+
+            <div className="mt-8">
+              <h3 className="text-lg font-medium mb-4">Farm photos</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Upload high-quality images of your farm to showcase its
+                environment (Max 6 files, 5MB each).
+              </p>
+              <Card className="max-w-2xl mx-auto">
+                <CardHeader>
+                  <CardTitle>Farm photos</CardTitle>
+                  <CardDescription>
+                    Upload images (Max 6 files, 5MB each). Drag and drop or
+                    click to select files.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FileUpload
+                    onFilesSelected={handleFarmPhotosSelected}
+                    maxFiles={6}
+                    maxSizeMB={5}
+                    initialFiles={farmPhotos}
+                  />
+                  {farmPhotoError && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {farmPhotoError}
+                    </p>
+                  )}
+                </CardContent>
+                <CardFooter>
+                  <div className="text-sm text-muted-foreground">
+                    {farmPhotos.length > 0
+                      ? `${farmPhotos.length} photo(s) selected`
+                      : "No photos selected"}
                   </div>
                 </CardFooter>
               </Card>

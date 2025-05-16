@@ -18,6 +18,7 @@ import { CoffeeListing, CoffeePhoto } from "@/types/coffee";
 import { useSampleRequest } from "@/hooks/useSampleRequest";
 import { CoffeeImage } from "./coffee-image";
 import { useAuth } from "@/hooks/useAuth";
+import { getFromLocalStorage } from "@/lib/utils";
 
 interface ListingDetailModalProps {
   listing: CoffeeListing;
@@ -38,6 +39,11 @@ export default function ListingDetailModal({
   const [isviewLoading, setIsviewLoading] = React.useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const farmerProfile: any = React.useMemo(
+    () => getFromLocalStorage("farmerProfile", {}),
+    [],
+  );
+
   const {
     hasSampleRequest,
     loading: sampleLoading,
@@ -364,15 +370,15 @@ export default function ListingDetailModal({
               </Card>
 
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                {user?.userType !== "seller" && (
+                {/* Sample Request Button - only shown for non-seller, non-agent users */}
+                {user?.userType !== "seller" && user?.userType !== "agent" && (
                   <Button
                     variant="outline"
                     className="w-full sm:flex-1 px-4 py-2"
                     onClick={handleSampleRequestClick}
                     disabled={
                       user! &&
-                      (user.userType === "seller" ||
-                        user.onboarding_stage !== "completed" ||
+                      (user.onboarding_stage !== "completed" ||
                         sampleLoading ||
                         hasSampleRequest!)
                     }
@@ -385,21 +391,28 @@ export default function ListingDetailModal({
                   </Button>
                 )}
 
-                <Button
-                  onClick={() => {
-                    handleViewListingClick(`/listing/${listing.id}`);
-                    setIsviewLoading(true);
-                  }}
-                  disabled={
-                    (user! && user.onboarding_stage !== "completed") ||
-                    isviewLoading
-                  }
-                  className="w-full sm:flex-1 px-4 py-2"
-                >
-                  {user && isviewLoading
-                    ? "Loading..."
-                    : "View Listing Details"}
-                </Button>
+                {(user?.userType !== "agent" ||
+                  (user?.userType === "agent" && farmerProfile)) && (
+                  <Button
+                    onClick={() => {
+                      handleViewListingClick(`/listing/${listing.id}`);
+                      setIsviewLoading(true);
+                    }}
+                    disabled={
+                      (user?.userType === "agent" &&
+                        farmerProfile?.onboarding_stage !== "completed") ||
+                      (user! &&
+                        user?.userType !== "agent" &&
+                        user.onboarding_stage !== "completed") ||
+                      isviewLoading
+                    }
+                    className="w-full sm:flex-1 px-4 py-2"
+                  >
+                    {user && isviewLoading
+                      ? "Loading..."
+                      : "View Listing Details"}
+                  </Button>
+                )}
               </div>
             </div>
           </>

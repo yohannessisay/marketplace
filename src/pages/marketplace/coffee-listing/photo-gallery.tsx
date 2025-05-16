@@ -20,7 +20,7 @@ export function PhotoGallery({ photos, isOrganic }: PhotoGalleryProps) {
             <img
               src={photos[activePhotoIndex].photo_url || "/placeholder.svg"}
               alt={`Coffee photo ${activePhotoIndex + 1}`}
-              className="w-full h-96 object-cover rounded-lg"
+              className="w-full h-100 object-cover rounded-lg"
             />
             {isOrganic && (
               <div className="absolute top-4 right-4">

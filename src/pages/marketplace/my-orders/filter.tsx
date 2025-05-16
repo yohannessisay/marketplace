@@ -14,15 +14,16 @@ import {
   FavoriteFilterState,
   OrderBidStatus,
   OrderFilterState,
+  OrderProgressStatus,
   SampleFilterState,
   SampleRequestDeliveryStatus,
 } from "@/types/orders";
-import { ChevronDown, Filter, X } from "lucide-react"; 
+import { ChevronDown, Filter, X } from "lucide-react";
 
 export const FilterMenu = ({
   tab,
   handleFilterChange,
-  filters
+  filters,
 }: {
   tab: string;
   handleFilterChange: (
@@ -31,7 +32,7 @@ export const FilterMenu = ({
       | OrderFilterState
       | SampleFilterState
       | BidFilterState
-      | FavoriteFilterState
+      | FavoriteFilterState,
   ) => void;
   filters: {
     current: OrderFilterState;
@@ -41,30 +42,36 @@ export const FilterMenu = ({
     favorites: FavoriteFilterState;
   };
 }) => {
- 
   const currentFilters = filters[tab as keyof typeof filters];
   const isOrderTab = tab === "current" || tab === "historical";
+  const isCurrentOrderTab = tab === "current";
   const isSampleTab = tab === "sample";
   const isBidsTab = tab === "bids";
   const isFavoritesTab = tab === "favorites";
 
-  const filterCount = Object.values(currentFilters).filter(
-    (value) => value !== undefined && value !== ""
-  ).length;
+  const filterCount = Object.entries(currentFilters).filter(([key, value]) => {
+    if (
+      tab === "historical" &&
+      (key === "status" || key === "progressStatus")
+    ) {
+      return false;
+    }
+    return value !== undefined && value !== "";
+  }).length;
 
   const statusOptions = isSampleTab
     ? Object.values(SampleRequestDeliveryStatus)
     : isBidsTab
-    ? Object.values(OrderBidStatus)
-    : isOrderTab
-    ? ["pending", "completed", "cancelled"]
-    : [];
+      ? Object.values(OrderBidStatus)
+      : isCurrentOrderTab
+        ? ["pending", "completed", "cancelled"]
+        : [];
   const coffeeVarieties = ["Yirgacheffe", "Sidamo", "Guji", "Harrar", "Jimma"];
   const listingStatusOptions = ["active", "inactive"];
-  const booleanOptions = ["true", "false"];
+  const progressStatusOptions = Object.values(OrderProgressStatus);
 
   const getFilterStateWithoutStatus = () => {
-    if (isOrderTab) {
+    if (isCurrentOrderTab) {
       const { status: _status, ...rest } = currentFilters as OrderFilterState;
       return rest;
     } else if (isSampleTab) {
@@ -89,6 +96,28 @@ export const FilterMenu = ({
     } else if (isBidsTab) {
       const { coffeeVariety: _coffeeVariety, ...rest } =
         currentFilters as BidFilterState;
+      return rest;
+    } else if (isFavoritesTab) {
+      const { coffeeVariety: _coffeeVariety, ...rest } =
+        currentFilters as FavoriteFilterState;
+      return rest;
+    }
+    return currentFilters;
+  };
+
+  const getFilterStateWithoutListingStatus = () => {
+    if (isFavoritesTab) {
+      const { listingStatus: _listingStatus, ...rest } =
+        currentFilters as FavoriteFilterState;
+      return rest;
+    }
+    return currentFilters;
+  };
+
+  const getFilterStateWithoutProgressStatus = () => {
+    if (isCurrentOrderTab) {
+      const { progressStatus: _progressStatus, ...rest } =
+        currentFilters as OrderFilterState;
       return rest;
     }
     return currentFilters;
@@ -119,7 +148,7 @@ export const FilterMenu = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full justify-between">
-                  {(isOrderTab &&
+                  {(isCurrentOrderTab &&
                     (currentFilters as OrderFilterState).status) ||
                     (isSampleTab &&
                       (currentFilters as SampleFilterState).status) ||
@@ -150,7 +179,7 @@ export const FilterMenu = ({
             </DropdownMenu>
           </div>
         )}
-        {(isOrderTab || isSampleTab || isBidsTab) && (
+        {(isOrderTab || isSampleTab || isBidsTab || isFavoritesTab) && (
           <div className="mb-2">
             <label className="text-sm font-medium">Coffee Variety</label>
             <DropdownMenu>
@@ -162,6 +191,8 @@ export const FilterMenu = ({
                       (currentFilters as SampleFilterState).coffeeVariety) ||
                     (isBidsTab &&
                       (currentFilters as BidFilterState).coffeeVariety) ||
+                    (isFavoritesTab &&
+                      (currentFilters as FavoriteFilterState).coffeeVariety) ||
                     "All Varieties"}
                   <ChevronDown className="h-4 w-4 ml-2" />
                 </Button>
@@ -171,7 +202,7 @@ export const FilterMenu = ({
                   onClick={() =>
                     handleFilterChange(
                       tab,
-                      getFilterStateWithoutCoffeeVariety()
+                      getFilterStateWithoutCoffeeVariety(),
                     )
                   }
                 >
@@ -194,6 +225,50 @@ export const FilterMenu = ({
             </DropdownMenu>
           </div>
         )}
+        {isCurrentOrderTab && (
+          <div className="mb-2">
+            <label className="text-sm font-medium">Progress Status</label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  {(currentFilters as OrderFilterState).progressStatus ||
+                    "All Progress Statuses"}
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  onClick={() =>
+                    handleFilterChange(
+                      tab,
+                      getFilterStateWithoutProgressStatus(),
+                    )
+                  }
+                >
+                  All Progress Statuses
+                </DropdownMenuItem>
+                {progressStatusOptions.map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() =>
+                      handleFilterChange(tab, {
+                        ...currentFilters,
+                        progressStatus: status,
+                      })
+                    }
+                  >
+                    {status
+                      .split("_")
+                      .map(
+                        (word) => word.charAt(0).toUpperCase() + word.slice(1),
+                      )
+                      .join(" ")}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
         {isFavoritesTab && (
           <div className="mb-2">
             <label className="text-sm font-medium">Listing Status</label>
@@ -208,10 +283,10 @@ export const FilterMenu = ({
               <DropdownMenuContent>
                 <DropdownMenuItem
                   onClick={() =>
-                    handleFilterChange(tab, {
-                      ...(currentFilters as FavoriteFilterState),
-                      listingStatus: undefined,
-                    })
+                    handleFilterChange(
+                      tab,
+                      getFilterStateWithoutListingStatus(),
+                    )
                   }
                 >
                   All Statuses
@@ -232,299 +307,6 @@ export const FilterMenu = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        )}
-        {isOrderTab && (
-          <>
-            <div className="mb-2">
-              <label className="text-sm font-medium">Contract Signed</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(currentFilters as OrderFilterState).contractSigned ===
-                    undefined
-                      ? "Any"
-                      : (
-                          currentFilters as OrderFilterState
-                        ).contractSigned?.toString() ?? "Any"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...(currentFilters as OrderFilterState),
-                        contractSigned: undefined,
-                      })
-                    }
-                  >
-                    Any
-                  </DropdownMenuItem>
-                  {booleanOptions.map((value) => (
-                    <DropdownMenuItem
-                      key={value}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          contractSigned: value === "true",
-                        })
-                      }
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="mb-2">
-              <label className="text-sm font-medium">
-                Processing Completed
-              </label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(currentFilters as OrderFilterState)
-                      .coffeeProcessingCompleted === undefined
-                      ? "Any"
-                      : (
-                          currentFilters as OrderFilterState
-                        ).coffeeProcessingCompleted?.toString() ?? "Any"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...(currentFilters as OrderFilterState),
-                        coffeeProcessingCompleted: undefined,
-                      })
-                    }
-                  >
-                    Any
-                  </DropdownMenuItem>
-                  {booleanOptions.map((value) => (
-                    <DropdownMenuItem
-                      key={value}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          coffeeProcessingCompleted: value === "true",
-                        })
-                      }
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="mb-2">
-              <label className="text-sm font-medium">Ready for Shipment</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(currentFilters as OrderFilterState)
-                      .coffeeReadyForShipment === undefined
-                      ? "Any"
-                      : (
-                          currentFilters as OrderFilterState
-                        ).coffeeReadyForShipment?.toString() ?? "Any"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...(currentFilters as OrderFilterState),
-                        coffeeReadyForShipment: undefined,
-                      })
-                    }
-                  >
-                    Any
-                  </DropdownMenuItem>
-                  {booleanOptions.map((value) => (
-                    <DropdownMenuItem
-                      key={value}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          coffeeReadyForShipment: value === "true",
-                        })
-                      }
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="mb-2">
-              <label className="text-sm font-medium">Sample Approved</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(currentFilters as OrderFilterState)
-                      .preShipmentSampleApproved === undefined
-                      ? "Any"
-                      : (
-                          currentFilters as OrderFilterState
-                        ).preShipmentSampleApproved?.toString() ?? "Any"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...(currentFilters as OrderFilterState),
-                        preShipmentSampleApproved: undefined,
-                      })
-                    }
-                  >
-                    Any
-                  </DropdownMenuItem>
-                  {booleanOptions.map((value) => (
-                    <DropdownMenuItem
-                      key={value}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          preShipmentSampleApproved: value === "true",
-                        })
-                      }
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="mb-2">
-              <label className="text-sm font-medium">Container Loaded</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(currentFilters as OrderFilterState).containerLoaded ===
-                    undefined
-                      ? "Any"
-                      : (
-                          currentFilters as OrderFilterState
-                        ).containerLoaded?.toString() ?? "Any"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...(currentFilters as OrderFilterState),
-                        containerLoaded: undefined,
-                      })
-                    }
-                  >
-                    Any
-                  </DropdownMenuItem>
-                  {booleanOptions.map((value) => (
-                    <DropdownMenuItem
-                      key={value}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          containerLoaded: value === "true",
-                        })
-                      }
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="mb-2">
-              <label className="text-sm font-medium">Shipped</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(currentFilters as OrderFilterState).containerOnBoard ===
-                    undefined
-                      ? "Any"
-                      : (
-                          currentFilters as OrderFilterState
-                        ).containerOnBoard?.toString() ?? "Any"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...(currentFilters as OrderFilterState),
-                        containerOnBoard: undefined,
-                      })
-                    }
-                  >
-                    Any
-                  </DropdownMenuItem>
-                  {booleanOptions.map((value) => (
-                    <DropdownMenuItem
-                      key={value}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          containerOnBoard: value === "true",
-                        })
-                      }
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="mb-2">
-              <label className="text-sm font-medium">Delivered</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {(currentFilters as OrderFilterState).delivered ===
-                    undefined
-                      ? "Any"
-                      : (
-                          currentFilters as OrderFilterState
-                        ).delivered?.toString() ?? "Any"}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleFilterChange(tab, {
-                        ...(currentFilters as OrderFilterState),
-                        delivered: undefined,
-                      })
-                    }
-                  >
-                    Any
-                  </DropdownMenuItem>
-                  {booleanOptions.map((value) => (
-                    <DropdownMenuItem
-                      key={value}
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          delivered: value === "true",
-                        })
-                      }
-                    >
-                      {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </>
         )}
         <div className="mb-2">
           <label className="text-sm font-medium">Date From</label>

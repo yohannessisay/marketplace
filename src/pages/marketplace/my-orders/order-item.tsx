@@ -2,10 +2,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Bid, Listing, Order } from "@/types/orders";
 import { Calendar, ChevronDown, Clock, Coffee, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { renderOrderProgress } from "./render-order-progress";
+import { Bid, Listing, Order } from "../my-orders";
+
+interface OrderItemProps {
+  item: Order | Bid;
+  tabType: string;
+  expandedOrderId: string;
+  toggleOrderExpansion: (id: string) => void;
+  openReviewModal: (order: Order, type: string) => void;
+  setModalMode: (mode: "contract" | "documents" | "payment_slip") => void;
+  setCurrentOrderId: (orderId: string) => void;
+  setUploadModalOpen: (open: boolean) => void;
+  setPreviewModalOpen: (open: boolean) => void;
+  handlePreviewDocs: (order: Order) => void;
+  setUpdateModalOpen: (open: boolean) => void;
+}
 
 export const OrderItem = ({
   item,
@@ -13,13 +27,13 @@ export const OrderItem = ({
   expandedOrderId,
   toggleOrderExpansion,
   openReviewModal,
-}: {
-  item: Order | Bid;
-  tabType: string;
-  expandedOrderId: string;
-  toggleOrderExpansion: (id: string) => void;
-  openReviewModal: (order: Order, type: string) => void;
-}) => {
+  setModalMode,
+  setCurrentOrderId,
+  setUploadModalOpen,
+  setPreviewModalOpen,
+  handlePreviewDocs,
+  setUpdateModalOpen,
+}: OrderItemProps) => {
   const isOrderTab = tabType === "current" || tabType === "historical";
   const isBid = tabType === "bids";
   const isExpanded = expandedOrderId === item.id;
@@ -245,24 +259,49 @@ export const OrderItem = ({
               )}
             </div>
 
-            {isOrderTab && renderOrderProgress(item as Order)}
+            {isOrderTab &&
+              tabType !== "historical" &&
+              renderOrderProgress(
+                item as Order,
+                setModalMode,
+                setCurrentOrderId,
+                setUploadModalOpen,
+                setPreviewModalOpen,
+                setUpdateModalOpen,
+              )}
 
             <div className="mt-4 flex justify-end space-x-3">
               {tabType === "historical" && (
                 <>
-                  {!(item as Order).reviews ? (
-                    <Button
-                      variant="default"
-                      onClick={() => openReviewModal(item as Order, "")}
-                    >
-                      Review Seller
-                    </Button>
+                  {(item as Order).reviews.length === 0 ? (
+                    <>
+                      <Button
+                        variant="default"
+                        onClick={() => openReviewModal(item as Order, "")}
+                      >
+                        Review Seller
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handlePreviewDocs(item as Order)}
+                      >
+                        View Documents
+                      </Button>
+                    </>
                   ) : (
-                    <Button
-                      onClick={() => openReviewModal(item as Order, "view")}
-                    >
-                      View Review
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handlePreviewDocs(item as Order)}
+                      >
+                        View Documents
+                      </Button>
+                      <Button
+                        onClick={() => openReviewModal(item as Order, "view")}
+                      >
+                        View Review
+                      </Button>
+                    </>
                   )}
                 </>
               )}

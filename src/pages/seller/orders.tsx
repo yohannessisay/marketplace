@@ -16,9 +16,9 @@ import {
   Search,
   Coffee,
   File,
-  MapPin,
   Hand,
   X,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,6 +60,12 @@ import {
   SkeletonOrdersTable,
   SkeletonSampleRequestsTable,
 } from "./skeletons";
+import { getFromLocalStorage } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { FileUploadModal } from "@/components/modals/FileUploadModal";
+import { FilePreviewModal } from "@/components/modals/FilePreviewModal";
+import { ReviewModal } from "../marketplace/review-modal";
+import { FileUpdateModal } from "@/components/modals/FileUpdateModal";
 
 interface Seller {
   first_name?: string;
@@ -84,6 +90,22 @@ interface Listing {
   farm?: { farm_name: string; region: string | null };
 }
 
+interface OrderDocument {
+  id: string;
+  url: string;
+  type:
+    | "contract"
+    | "commercial_invoice"
+    | "packing_list"
+    | "certificate_of_origin"
+    | "phytosanitary_certificate"
+    | "bill_of_lading"
+    | "ico"
+    | "payment_slip";
+  name?: string;
+  created_at: string;
+}
+
 interface Order {
   id: string;
   order_id: string;
@@ -94,13 +116,6 @@ interface Order {
   quantity_kg: number;
   unit_price: number;
   total_amount: number;
-  contract_signed: boolean;
-  coffee_processing_completed: boolean;
-  coffee_ready_for_shipment: boolean;
-  pre_shipment_sample_approved: boolean;
-  pre_shipment_sample_ready: boolean;
-  container_loaded: boolean;
-  container_on_board: boolean;
   cancelled_reason: string | null;
   cancelled_by: string | null;
   ship_zipcode: string;
@@ -110,14 +125,19 @@ interface Order {
   created_at: string;
   updated_at: string | null;
   created_by_agent_id: string | null;
+  current_progress_status?: OrderProgressStatus;
   listing?: Listing;
   seller?: Seller;
-  buyer?: buyer;
+  buyer?: Buyer;
+  documents?: OrderDocument[];
+  reviews: Review[];
 }
 
-interface buyer {
-  first_name: string;
-  last_name: string;
+export interface Review {
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer_buyer_id: string | null;
 }
 
 interface SampleRequest {
@@ -189,18 +209,25 @@ enum OrderBidStatus {
   EXPIRED = "expired",
 }
 
+enum OrderProgressStatus {
+  OrderPlaced = "order_placed",
+  ContractSigned = "contract_signed",
+  ProcessingCompleted = "processing_completed",
+  ReadyForShipment = "ready_for_shipment",
+  PreShipmentSampleApproved = "pre_shipment_sample_approved",
+  ContainerLoaded = "container_loaded",
+  ContainerArrivedToPort = "container_arrived_to_port",
+  DocumentationsCompleted = "documentations_completed",
+  PaymentCompleted = "payment_completed",
+  DeliveryCompleted = "delivery_completed",
+}
+
 interface OrderFilterState {
   status?: string;
   coffeeVariety?: string;
   dateFrom?: string;
   dateTo?: string;
-  contractSigned?: boolean;
-  coffeeProcessingCompleted?: boolean;
-  coffeeReadyForShipment?: boolean;
-  preShipmentSampleApproved?: boolean;
-  containerLoaded?: boolean;
-  containerOnBoard?: boolean;
-  delivered?: boolean;
+  progressStatus?: OrderProgressStatus;
 }
 
 interface SampleFilterState {
@@ -224,7 +251,7 @@ interface FavoriteFilterState {
   dateTo?: string;
 }
 
-export default function OrdersPage({ fmrId }: { fmrId?: string }) {
+export default function OrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [historicalOrders, setHistoricalOrders] = useState<Order[]>([]);
@@ -272,6 +299,10 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
   const [sampleSearchTerm, setSampleSearchTerm] = useState<string>("");
   const [bidsSearchTerm, setBidsSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("current");
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [reviewType, setReviewType] = useState<string | null>(null);
+
   const [fetchedTabs, setFetchedTabs] = useState<{
     current: boolean;
     historical: boolean;
@@ -291,53 +322,79 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     bids: { status: undefined, coffeeVariety: "" },
     favorites: { coffeeVariety: "" },
   });
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<
+    "contract" | "documents" | "payment_slip"
+  >("contract");
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+
+  const handleUploadModalClose = useCallback(() => {
+    setUploadModalOpen(false);
+    setCurrentOrderId(null);
+  }, []);
+
+  const handleUpdateModalClose = useCallback(() => {
+    setUpdateModalOpen(false);
+    setCurrentOrderId(null);
+  }, []);
+
+  const handlePreviewModalClose = useCallback(() => {
+    setPreviewModalOpen(false);
+    setCurrentOrderId(null);
+  }, []);
+
+  const openReviewModal = (order: Order, type: string) => {
+    setSelectedOrder(order);
+    setShowReviewModal(true);
+    setReviewType(type || "add");
+  };
 
   const { successMessage, errorMessage } = useNotification();
+  const { user } = useAuth();
 
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+
+  const fmrId = farmerProfile ? farmerProfile.id : undefined;
   const fetchActiveOrders = useCallback(async () => {
-    setActiveLoading(true);
+    if (!user) {
+      setActiveError("User not authenticated");
+      setActiveLoading(false);
+      return;
+    }
+
+    if (user.userType === "agent" && fmrId === null) {
+      setActiveError("Agent must specify a farmer ID");
+      setActiveLoading(false);
+      return;
+    }
+
     try {
+      setActiveLoading(true);
+      setActiveError(null);
       const filterParams = new URLSearchParams({
         page: activeCurrentPage.toString(),
         limit: activePagination.limit.toString(),
         search: encodeURIComponent(activeSearchTerm),
-        ...(filters!.current.status && { status: filters!.current.status }),
-        ...(filters!.current.coffeeVariety && {
-          coffee_variety: filters!.current.coffeeVariety,
+        ...(filters.current.status && { status: filters.current.status }),
+        ...(filters.current.coffeeVariety && {
+          coffee_variety: filters.current.coffeeVariety,
         }),
-        ...(filters!.current.dateFrom && {
-          date_from: filters!.current.dateFrom,
+        ...(filters.current.dateFrom && {
+          date_from: filters.current.dateFrom,
         }),
-        ...(filters!.current.dateTo && { date_to: filters!.current.dateTo }),
-        ...(filters!.current.contractSigned !== undefined && {
-          contract_signed: filters!.current.contractSigned.toString(),
-        }),
-        ...(filters!.current.coffeeProcessingCompleted !== undefined && {
-          coffee_processing_completed:
-            filters!.current.coffeeProcessingCompleted.toString(),
-        }),
-        ...(filters!.current.coffeeReadyForShipment !== undefined && {
-          coffee_ready_for_shipment:
-            filters!.current.coffeeReadyForShipment.toString(),
-        }),
-        ...(filters!.current.preShipmentSampleApproved !== undefined && {
-          pre_shipment_sample_approved:
-            filters!.current.preShipmentSampleApproved.toString(),
-        }),
-        ...(filters!.current.containerLoaded !== undefined && {
-          container_loaded: filters!.current.containerLoaded.toString(),
-        }),
-        ...(filters!.current.containerOnBoard !== undefined && {
-          container_on_board: filters!.current.containerOnBoard.toString(),
-        }),
-        ...(filters!.current.delivered !== undefined && {
-          delivered: filters!.current.delivered.toString(),
+        ...(filters.current.dateTo && { date_to: filters.current.dateTo }),
+        ...(filters.current.progressStatus && {
+          progress_status: filters.current.progressStatus,
         }),
       }).toString();
 
       const response: any = await apiService().get(
         `/orders/active-orders?${filterParams}`,
+        fmrId,
       );
+
       if (response.success) {
         setActiveOrders(response.data.orders || []);
         setActivePagination(
@@ -350,7 +407,9 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
         );
         setFetchedTabs((prev) => ({ ...prev, current: true }));
       } else {
-        setActiveError("Failed to fetch active orders");
+        throw new Error(
+          response.error?.message || "Failed to fetch active orders",
+        );
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -359,56 +418,55 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     } finally {
       setActiveLoading(false);
     }
-  }, [activeCurrentPage, activeSearchTerm, filters!.current]);
+  }, [
+    user,
+    fmrId,
+    activeCurrentPage,
+    activeSearchTerm,
+    filters.current,
+    errorMessage,
+  ]);
 
   const fetchHistoricalOrders = useCallback(async () => {
-    setHistoryLoading(true);
+    if (!user) {
+      setHistoryError("User not authenticated");
+      setHistoryLoading(false);
+      return;
+    }
+
+    if (user.userType === "agent" && fmrId === null) {
+      setHistoryError("Agent must specify a farmer ID");
+      setHistoryLoading(false);
+      return;
+    }
+
     try {
+      setHistoryLoading(true);
+      setHistoryError(null);
       const filterParams = new URLSearchParams({
         page: historyCurrentPage.toString(),
         limit: historyPagination.limit.toString(),
         search: encodeURIComponent(historySearchTerm),
-        ...(filters!.historical.status && {
-          status: filters!.historical.status,
+        ...(filters.historical.status && { status: filters.historical.status }),
+        ...(filters.historical.coffeeVariety && {
+          coffee_variety: filters.historical.coffeeVariety,
         }),
-        ...(filters!.historical.coffeeVariety && {
-          coffee_variety: filters!.historical.coffeeVariety,
+        ...(filters.historical.dateFrom && {
+          date_from: filters.historical.dateFrom,
         }),
-        ...(filters!.historical.dateFrom && {
-          date_from: filters!.historical.dateFrom,
+        ...(filters.historical.dateTo && {
+          date_to: filters.historical.dateTo,
         }),
-        ...(filters!.historical.dateTo && {
-          date_to: filters!.historical.dateTo,
-        }),
-        ...(filters!.historical.contractSigned !== undefined && {
-          contract_signed: filters!.historical.contractSigned.toString(),
-        }),
-        ...(filters!.historical.coffeeProcessingCompleted !== undefined && {
-          coffee_processing_completed:
-            filters!.historical.coffeeProcessingCompleted.toString(),
-        }),
-        ...(filters!.historical.coffeeReadyForShipment !== undefined && {
-          coffee_ready_for_shipment:
-            filters!.historical.coffeeReadyForShipment.toString(),
-        }),
-        ...(filters!.historical.preShipmentSampleApproved !== undefined && {
-          pre_shipment_sample_approved:
-            filters!.historical.preShipmentSampleApproved.toString(),
-        }),
-        ...(filters!.historical.containerLoaded !== undefined && {
-          container_loaded: filters!.historical.containerLoaded.toString(),
-        }),
-        ...(filters!.historical.containerOnBoard !== undefined && {
-          container_on_board: filters!.historical.containerOnBoard.toString(),
-        }),
-        ...(filters!.historical.delivered !== undefined && {
-          delivered: filters!.historical.delivered.toString(),
+        ...(filters.historical.progressStatus && {
+          progress_status: filters.historical.progressStatus,
         }),
       }).toString();
 
       const response: any = await apiService().get(
         `/orders/order-history?${filterParams}`,
+        fmrId,
       );
+
       if (response.success) {
         setHistoricalOrders(response.data.orders || []);
         setHistoryPagination(
@@ -421,7 +479,9 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
         );
         setFetchedTabs((prev) => ({ ...prev, historical: true }));
       } else {
-        setHistoryError("Failed to fetch order history");
+        throw new Error(
+          response.error?.message || "Failed to fetch order history",
+        );
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -430,30 +490,50 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     } finally {
       setHistoryLoading(false);
     }
-  }, [historyCurrentPage, historySearchTerm, filters!.historical]);
+  }, [
+    user,
+    fmrId,
+    historyCurrentPage,
+    historySearchTerm,
+    filters.historical,
+    errorMessage,
+  ]);
 
   const fetchSampleRequests = useCallback(async () => {
-    setSampleLoading(true);
+    if (!user) {
+      setSampleError("User not authenticated");
+      setSampleLoading(false);
+      return;
+    }
+
+    if (user.userType === "agent" && fmrId === null) {
+      setSampleError("Agent must specify a farmer ID");
+      setSampleLoading(false);
+      return;
+    }
+
     try {
+      setSampleLoading(true);
+      setSampleError(null);
       const filterParams = new URLSearchParams({
         page: sampleCurrentPage.toString(),
         limit: samplePagination.limit.toString(),
         search: encodeURIComponent(sampleSearchTerm),
-        ...(filters!.sample.status && {
-          delivery_status: filters!.sample.status,
+        ...(filters.sample.status && {
+          delivery_status: filters.sample.status,
         }),
-        ...(filters!.sample.coffeeVariety && {
-          coffee_variety: filters!.sample.coffeeVariety,
+        ...(filters.sample.coffeeVariety && {
+          coffee_variety: filters.sample.coffeeVariety,
         }),
-        ...(filters!.sample.dateFrom && {
-          date_from: filters!.sample.dateFrom,
-        }),
-        ...(filters!.sample.dateTo && { date_to: filters!.sample.dateTo }),
+        ...(filters.sample.dateFrom && { date_from: filters.sample.dateFrom }),
+        ...(filters.sample.dateTo && { date_to: filters.sample.dateTo }),
       }).toString();
 
       const response: any = await apiService().get(
         `/sellers/samples/get-sample-requests?${filterParams}`,
+        fmrId ? fmrId : "",
       );
+
       if (response.success) {
         setSampleRequests(response.data.sampleRequests || []);
         setSamplePagination(
@@ -466,7 +546,9 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
         );
         setFetchedTabs((prev) => ({ ...prev, sample: true }));
       } else {
-        setSampleError("Failed to fetch sample requests");
+        throw new Error(
+          response.error?.message || "Failed to fetch sample requests",
+        );
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -475,26 +557,48 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     } finally {
       setSampleLoading(false);
     }
-  }, [sampleCurrentPage, sampleSearchTerm, filters!.sample]);
+  }, [
+    user,
+    fmrId,
+    sampleCurrentPage,
+    sampleSearchTerm,
+    filters.sample,
+    errorMessage,
+  ]);
 
   const fetchSellerBids = useCallback(async () => {
-    setBidsLoading(true);
+    if (!user) {
+      setBidsError("User not authenticated");
+      setBidsLoading(false);
+      return;
+    }
+
+    if (user.userType === "agent" && fmrId === null) {
+      setBidsError("Agent must specify a farmer ID");
+      setBidsLoading(false);
+      return;
+    }
+
     try {
+      setBidsLoading(true);
+      setBidsError(null);
       const filterParams = new URLSearchParams({
         page: bidsCurrentPage.toString(),
         limit: bidsPagination.limit.toString(),
         search: encodeURIComponent(bidsSearchTerm),
-        ...(filters!.bids.status && { status: filters!.bids.status }),
-        ...(filters!.bids.coffeeVariety && {
-          coffee_variety: filters!.bids.coffeeVariety,
+        ...(filters.bids.status && { status: filters.bids.status }),
+        ...(filters.bids.coffeeVariety && {
+          coffee_variety: filters.bids.coffeeVariety,
         }),
-        ...(filters!.bids.dateFrom && { date_from: filters!.bids.dateFrom }),
-        ...(filters!.bids.dateTo && { date_to: filters!.bids.dateTo }),
+        ...(filters.bids.dateFrom && { date_from: filters.bids.dateFrom }),
+        ...(filters.bids.dateTo && { date_to: filters.bids.dateTo }),
       }).toString();
 
       const response: any = await apiService().get(
         `/sellers/listings/bids/get-bids?${filterParams}`,
+        fmrId ? fmrId : "",
       );
+
       if (response.success) {
         setBids(response.data.bids || []);
         setBidsPagination(
@@ -507,7 +611,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
         );
         setFetchedTabs((prev) => ({ ...prev, bids: true }));
       } else {
-        setBidsError("Failed to fetch bids");
+        throw new Error(response.error?.message || "Failed to fetch bids");
       }
     } catch (err: unknown) {
       const errorResponse = err as APIErrorResponse;
@@ -516,57 +620,35 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     } finally {
       setBidsLoading(false);
     }
-  }, [bidsCurrentPage, bidsSearchTerm, filters!.bids]);
-
-  const fetchData = useCallback(async () => {
-    setBidsLoading(true);
-    try {
-      const filterParams = new URLSearchParams({
-        page: bidsCurrentPage.toString(),
-        limit: bidsPagination.limit.toString(),
-        search: encodeURIComponent(bidsSearchTerm),
-        ...(filters!.bids.status && { status: filters!.bids.status }),
-        ...(filters!.bids.coffeeVariety && {
-          coffee_variety: filters!.bids.coffeeVariety,
-        }),
-        ...(filters!.bids.dateFrom && { date_from: filters!.bids.dateFrom }),
-        ...(filters!.bids.dateTo && { date_to: filters!.bids.dateTo }),
-      }).toString();
-
-      const response: any = await apiService().get(
-        `/sellers/listings/bids/get-bids?${filterParams}`,
-      );
-      if (response.success) {
-        setBids(response.data.bids || []);
-        setBidsPagination(
-          response.data.pagination || {
-            page: 1,
-            limit: 10,
-            totalItems: 0,
-            totalPages: 0,
-          },
-        );
-      } else {
-        setBidsError("Failed to fetch bids");
-      }
-    } catch (err: unknown) {
-      const errorResponse = err as APIErrorResponse;
-      setBidsError(errorResponse.error?.message || "An error occurred");
-      errorMessage(errorResponse);
-    } finally {
-      setBidsLoading(false);
-    }
-  }, [bidsCurrentPage, bidsSearchTerm, filters!.bids]);
+  }, [
+    user,
+    fmrId,
+    bidsCurrentPage,
+    bidsSearchTerm,
+    filters.bids,
+    errorMessage,
+  ]);
 
   const acceptBid = async (bidId: string) => {
+    if (!user) {
+      setGeneralLoading(false);
+      return;
+    }
+
+    if (user.userType === "agent" && fmrId === null) {
+      setGeneralLoading(false);
+      return;
+    }
+
     try {
       setGeneralLoading(true);
       await apiService().post(
         `/sellers/listings/bids/accept-bid?bidId=${bidId}`,
-        fmrId ? fmrId : "",
+        {},
+        fmrId,
       );
       successMessage("Bid accepted successfully, and order is placed");
-      fetchData();
+      fetchSellerBids();
     } catch (error: any) {
       console.error("Error accepting bid:", error);
       errorMessage(error as APIErrorResponse);
@@ -576,14 +658,25 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
   };
 
   const rejectBid = async (bidId: string) => {
+    if (!user) {
+      setGeneralLoading(false);
+      return;
+    }
+
+    if (user.userType === "agent" && fmrId === null) {
+      setGeneralLoading(false);
+      return;
+    }
+
     try {
       setGeneralLoading(true);
       await apiService().post(
         `/sellers/listings/bids/reject-bid?bidId=${bidId}`,
-        fmrId ? fmrId : "",
+        {},
+        fmrId,
       );
       successMessage("Bid rejected successfully");
-      fetchData();
+      fetchSellerBids();
     } catch (error: any) {
       console.error("Error rejecting bid:", error);
       errorMessage(error as APIErrorResponse);
@@ -591,6 +684,52 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
       setGeneralLoading(false);
     }
   };
+
+  const handleUploadSuccess = useCallback(
+    (mode: "contract" | "documents" | "payment_slip", orderId: string) => {
+      if (mode === "contract") {
+        setActiveOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, contract_signed: true } : order,
+          ),
+        );
+        setHistoricalOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, contract_signed: true } : order,
+          ),
+        );
+      }
+      fetchActiveOrders();
+      fetchHistoricalOrders();
+      successMessage(
+        `${mode === "contract" ? "Contract" : "Documents"} uploaded successfully`,
+      );
+    },
+    [fetchActiveOrders, fetchHistoricalOrders, successMessage],
+  );
+
+  const handleUpdateModalSuccess = useCallback(
+    (mode: "contract" | "documents" | "payment_slip", orderId: string) => {
+      if (mode === "contract") {
+        setActiveOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, contract_signed: true } : order,
+          ),
+        );
+        setHistoricalOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, contract_signed: true } : order,
+          ),
+        );
+      }
+      fetchActiveOrders();
+      fetchHistoricalOrders();
+      successMessage(
+        `${mode === "contract" ? "Contract" : "Documents"} updated successfully`,
+      );
+    },
+    [fetchActiveOrders, fetchHistoricalOrders, successMessage],
+  );
 
   useEffect(() => {
     if (activeTab === "current" && !fetchedTabs.current) {
@@ -627,7 +766,11 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
 
   const handleFilterChange = (
     tab: string,
-    filter: OrderFilterState | SampleFilterState | BidFilterState,
+    filter:
+      | OrderFilterState
+      | SampleFilterState
+      | BidFilterState
+      | FavoriteFilterState,
   ) => {
     setFilters((prev) => ({ ...prev, [tab]: filter }));
     setFetchedTabs((prev) => ({ ...prev, [tab]: false }));
@@ -671,6 +814,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
     const isSampleTab = tab === "sample";
     const isBidsTab = tab === "bids";
     const isFavoritesTab = tab === "favorites";
+    const isCurrentOrderTab = tab === "current"; // New flag for current orders only
 
     const filterCount = Object.values(currentFilters).filter(
       (value) => value !== undefined && value !== "",
@@ -680,7 +824,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
       ? Object.values(SampleRequestDeliveryStatus)
       : isBidsTab
         ? Object.values(OrderBidStatus)
-        : isOrderTab
+        : isCurrentOrderTab // Only show status for current orders
           ? ["pending", "completed", "cancelled"]
           : [];
     const coffeeVarieties = [
@@ -691,7 +835,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
       "Jimma",
     ];
     const listingStatusOptions = ["active", "inactive"];
-    const booleanOptions = ["true", "false"];
+    const progressStatusOptions = Object.values(OrderProgressStatus);
 
     const getFilterStateWithoutStatus = () => {
       if (isOrderTab) {
@@ -738,6 +882,15 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
       return currentFilters;
     };
 
+    const getFilterStateWithoutProgressStatus = () => {
+      if (isOrderTab) {
+        const { progressStatus: _progressStatus, ...rest } =
+          currentFilters as OrderFilterState;
+        return rest;
+      }
+      return currentFilters;
+    };
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -763,7 +916,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
-                    {(isOrderTab &&
+                    {(isCurrentOrderTab &&
                       (currentFilters as OrderFilterState).status) ||
                       (isSampleTab &&
                         (currentFilters as SampleFilterState).status) ||
@@ -842,6 +995,51 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
               </DropdownMenu>
             </div>
           )}
+          {isCurrentOrderTab && ( // Only render for current orders
+            <div className="mb-2">
+              <label className="text-sm font-medium">Progress Status</label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {(currentFilters as OrderFilterState).progressStatus ||
+                      "All Progress Statuses"}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleFilterChange(
+                        tab,
+                        getFilterStateWithoutProgressStatus(),
+                      )
+                    }
+                  >
+                    All Progress Statuses
+                  </DropdownMenuItem>
+                  {progressStatusOptions.map((status) => (
+                    <DropdownMenuItem
+                      key={status}
+                      onClick={() =>
+                        handleFilterChange(tab, {
+                          ...currentFilters,
+                          progressStatus: status,
+                        })
+                      }
+                    >
+                      {status
+                        .split("_")
+                        .map(
+                          (word) =>
+                            word.charAt(0).toUpperCase() + word.slice(1),
+                        )
+                        .join(" ")}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
           {isFavoritesTab && (
             <div className="mb-2">
               <label className="text-sm font-medium">Listing Status</label>
@@ -870,7 +1068,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                       onClick={() =>
                         handleFilterChange(tab, {
                           ...(currentFilters as FavoriteFilterState),
-                          status: status,
+                          listingStatus: status,
                         })
                       }
                     >
@@ -880,322 +1078,6 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          )}
-          {isOrderTab && (
-            <>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Contract Signed</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState).contractSigned ===
-                      undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).contractSigned?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          contractSigned: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            contractSigned: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">
-                  Processing Completed
-                </label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState)
-                        .coffeeProcessingCompleted === undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).coffeeProcessingCompleted?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          coffeeProcessingCompleted: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            coffeeProcessingCompleted: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">
-                  Ready for Shipment
-                </label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState)
-                        .coffeeReadyForShipment === undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).coffeeReadyForShipment?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          coffeeReadyForShipment: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            coffeeReadyForShipment: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Sample Approved</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState)
-                        .preShipmentSampleApproved === undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).preShipmentSampleApproved?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          preShipmentSampleApproved: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            preShipmentSampleApproved: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Container Loaded</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState).containerLoaded ===
-                      undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).containerLoaded?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          containerLoaded: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            containerLoaded: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Shipped</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState).containerOnBoard ===
-                      undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).containerOnBoard?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          containerOnBoard: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            containerOnBoard: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="mb-2">
-                <label className="text-sm font-medium">Delivered</label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                    >
-                      {(currentFilters as OrderFilterState).delivered ===
-                      undefined
-                        ? "Any"
-                        : ((
-                            currentFilters as OrderFilterState
-                          ).delivered?.toString() ?? "Any")}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange(tab, {
-                          ...(currentFilters as OrderFilterState),
-                          delivered: undefined,
-                        })
-                      }
-                    >
-                      Any
-                    </DropdownMenuItem>
-                    {booleanOptions.map((value) => (
-                      <DropdownMenuItem
-                        key={value}
-                        onClick={() =>
-                          handleFilterChange(tab, {
-                            ...(currentFilters as OrderFilterState),
-                            delivered: value === "true",
-                          })
-                        }
-                      >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </>
           )}
           <div className="mb-2">
             <label className="text-sm font-medium">Date From</label>
@@ -1254,45 +1136,90 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
 
   const renderOrderProgress = (order: Order) => {
     const steps = [
-      { key: "order_placed", label: "Order Placed", completed: true },
+      { key: OrderProgressStatus.OrderPlaced, label: "Order Placed" },
+      { key: OrderProgressStatus.ContractSigned, label: "Contract Signed" },
       {
-        key: "contract_signed",
-        label: "Contract Signed",
-        completed: order.contract_signed,
-      },
-      {
-        key: "coffee_processing_completed",
+        key: OrderProgressStatus.ProcessingCompleted,
         label: "Processing Completed",
-        completed: order.coffee_processing_completed,
       },
       {
-        key: "coffee_ready_for_shipment",
+        key: OrderProgressStatus.ReadyForShipment,
         label: "Ready for Shipment",
-        completed: order.coffee_ready_for_shipment,
       },
       {
-        key: "pre_shipment_sample_approved",
+        key: OrderProgressStatus.PreShipmentSampleApproved,
         label: "Sample Approved",
-        completed: order.pre_shipment_sample_approved,
+      },
+      { key: OrderProgressStatus.ContainerLoaded, label: "Container Loaded" },
+      {
+        key: OrderProgressStatus.ContainerArrivedToPort,
+        label: "Arrived to Port",
       },
       {
-        key: "container_loaded",
-        label: "Container Loaded",
-        completed: order.container_loaded,
+        key: OrderProgressStatus.DocumentationsCompleted,
+        label: "Documents Completed",
       },
+      { key: OrderProgressStatus.PaymentCompleted, label: "Payment Completed" },
       {
-        key: "container_on_board",
-        label: "Shipped",
-        completed: order.container_on_board,
-      },
-      {
-        key: "delivered",
-        label: "Delivered",
-        completed: order.status === "completed",
+        key: OrderProgressStatus.DeliveryCompleted,
+        label: "Delivery Completed",
       },
     ];
 
-    const currentStepIndex = steps.findIndex((step) => !step.completed);
+    const isOrderCompleted = order.status === "completed";
+    const isDeliveryCompleted =
+      order.current_progress_status === OrderProgressStatus.DeliveryCompleted;
+    const currentProgress =
+      order.current_progress_status || OrderProgressStatus.OrderPlaced;
+
+    const currentStepIndex = steps.findIndex(
+      (step) => step.key === currentProgress,
+    );
+
+    const completedSteps =
+      isOrderCompleted || isDeliveryCompleted
+        ? steps.length
+        : Math.max(currentStepIndex + 1, 0);
+
+    const hasContract = order.documents?.some((doc) => doc.type === "contract");
+    const hasDocuments = order.documents?.some((doc) =>
+      [
+        "commercial_invoice",
+        "packing_list",
+        "certificate_of_origin",
+        "phytosanitary_certificate",
+        "bill_of_lading",
+        "ico",
+      ].includes(doc.type),
+    );
+    const hasPaymentSlip = order.documents?.some(
+      (doc) => doc.type === "payment_slip",
+    );
+
+    const handleUploadClick = (
+      mode: "contract" | "documents" | "payment_slip",
+    ) => {
+      if (isDeliveryCompleted) return;
+      setModalMode(mode);
+      setCurrentOrderId(order.id);
+      setUploadModalOpen(true);
+    };
+
+    const handleUpdateClick = (
+      mode: "contract" | "documents" | "payment_slip",
+    ) => {
+      setModalMode(mode);
+      setCurrentOrderId(order.id);
+      setUpdateModalOpen(true);
+    };
+
+    const handlePreviewClick = (
+      mode: "contract" | "documents" | "payment_slip",
+    ) => {
+      setModalMode(mode);
+      setCurrentOrderId(order.id);
+      setPreviewModalOpen(true);
+    };
 
     return (
       <Card className="mt-6">
@@ -1300,46 +1227,116 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
           <h4 className="text-sm font-semibold mb-4">Order Progress</h4>
           <div className="space-y-4">
             {steps.map((step, index) => {
+              const isCompleted = index < completedSteps;
+              const isCurrent =
+                index === completedSteps &&
+                !isOrderCompleted &&
+                !isDeliveryCompleted;
+              const isContractStep =
+                step.key === OrderProgressStatus.ContractSigned;
+              const isDocumentsStep =
+                step.key === OrderProgressStatus.DocumentationsCompleted;
+              const isPaymentStep =
+                step.key === OrderProgressStatus.PaymentCompleted;
+
               let statusClass = "";
               let StatusIcon = Circle;
-
-              if (step.completed) {
+              if (isCompleted || isOrderCompleted || isDeliveryCompleted) {
                 statusClass = "text-green-600";
                 StatusIcon = CheckCircle;
-              } else if (index === currentStepIndex) {
-                statusClass = "text-primary";
+              } else if (isCurrent) {
+                statusClass = "text-yellow-600";
                 StatusIcon = AlertCircle;
               } else {
-                statusClass = "text-muted-foreground/30";
+                statusClass = "text-gray-300";
                 StatusIcon = Circle;
               }
 
+              const showContractButtons = isCurrent && isContractStep;
+              const showDocumentButtons =
+                isCurrent &&
+                isDocumentsStep &&
+                currentProgress === OrderProgressStatus.ContainerArrivedToPort;
+
               return (
-                <div key={step.key} className="flex items-center">
-                  <div className={`${statusClass}`}>
+                <div key={step.key} className="flex items-center gap-3">
+                  <div className={`flex-shrink-0 ${statusClass}`}>
                     <StatusIcon className="h-5 w-5" />
                   </div>
-                  <div
-                    className={`ml-3 ${
-                      step.completed
-                        ? "text-foreground"
-                        : index === currentStepIndex
-                          ? "text-foreground font-medium"
-                          : "text-muted-foreground"
-                    }`}
-                  >
-                    {step.label}
+                  <div className="flex-1 flex items-center justify-between gap-2">
+                    <span
+                      className={`text-sm font-medium w-1/3 ${
+                        isCompleted || isOrderCompleted || isDeliveryCompleted
+                          ? "text-green-600"
+                          : isCurrent
+                            ? "text-yellow-600"
+                            : "text-gray-400"
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                    <div className="flex items-center gap-2 justify-end">
+                      {isContractStep && hasContract && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePreviewClick("contract")}
+                        >
+                          View Contract
+                        </Button>
+                      )}
+                      {showContractButtons && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            if (hasContract) {
+                              handleUpdateClick("contract");
+                            } else {
+                              handleUploadClick("contract");
+                            }
+                          }}
+                        >
+                          {hasContract ? "Update Contract" : "Upload Contract"}
+                        </Button>
+                      )}
+                      {isDocumentsStep && hasDocuments && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePreviewClick("documents")}
+                        >
+                          View Documents
+                        </Button>
+                      )}
+                      {showDocumentButtons && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            if (hasDocuments) {
+                              handleUpdateClick("documents");
+                            } else {
+                              handleUploadClick("documents");
+                            }
+                          }}
+                        >
+                          {hasDocuments
+                            ? "Update Documents"
+                            : "Upload Documents"}
+                        </Button>
+                      )}
+                      {isPaymentStep && hasPaymentSlip && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePreviewClick("documents")}
+                        >
+                          View Payment Slip
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  {step.completed && index < steps.length - 1 && (
-                    <div className="ml-auto text-xs text-green-600 font-medium">
-                      Completed
-                    </div>
-                  )}
-                  {!step.completed && index === currentStepIndex && (
-                    <div className="ml-auto text-xs text-primary font-medium">
-                      In Progress
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -1352,7 +1349,6 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
   const OrderItem = ({ item, tabType }: { item: Order; tabType: string }) => {
     const isExpanded = expandedOrderId === item.id;
     const listing: Listing | undefined = item.listing;
-
     return (
       <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
         <CardContent className="p-5">
@@ -1494,6 +1490,26 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
               </div>
 
               {tabType === "current" && renderOrderProgress(item)}
+
+              <div className="flex justify-end gap-3 mt-4">
+                {tabType === "historical" &&
+                  (item as Order).reviews.length !== 0 && (
+                    <Button
+                      onClick={() => openReviewModal(item as Order, "view")}
+                      variant="outline"
+                    >
+                      View Review
+                    </Button>
+                  )}
+                {tabType === "historical" && (
+                  <Button
+                    onClick={() => handlePreviewDocs(item as Order)}
+                    variant="outline"
+                  >
+                    View Documents
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -1504,6 +1520,12 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
         </CardContent>
       </Card>
     );
+  };
+
+  const handlePreviewDocs = (order: Order) => {
+    setModalMode("documents");
+    setCurrentOrderId(order.id);
+    setPreviewModalOpen(true);
   };
 
   const EmptyState = ({ tabType }: { tabType: string }) => {
@@ -1535,9 +1557,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
             {message}
           </p>
           <Link to="/market-place">
-            <Button className="mt-6 bg-green-600 hover:bg-green-700">
-              Browse Marketplace
-            </Button>
+            <Button className="mt-6">Browse Marketplace</Button>
           </Link>
         </CardContent>
       </Card>
@@ -1562,6 +1582,7 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
           {
             delivery_status: status.toLowerCase(),
           },
+          fmrId,
         );
 
         setDeliveryStatus(status.toLowerCase());
@@ -2352,6 +2373,53 @@ export default function OrdersPage({ fmrId }: { fmrId?: string }) {
             </div>
           </TabsContent>
         </Tabs>
+
+        {showReviewModal && selectedOrder && (
+          <ReviewModal
+            viewData={selectedOrder.reviews[0]}
+            type={reviewType ?? "add"}
+            orderId={selectedOrder.id}
+            sellerId={selectedOrder.seller_id}
+            onClose={() => {
+              setShowReviewModal(false);
+              setSelectedOrder(null);
+              fetchActiveOrders();
+            }}
+          />
+        )}
+
+        {currentOrderId && (
+          <>
+            <FileUploadModal
+              isOpen={uploadModalOpen}
+              onClose={handleUploadModalClose}
+              orderId={currentOrderId}
+              mode={modalMode}
+              onUploadSuccess={() =>
+                handleUploadSuccess(modalMode, currentOrderId)
+              }
+              xfmrId={fmrId}
+            />
+            <FileUpdateModal
+              isOpen={updateModalOpen}
+              onClose={handleUpdateModalClose}
+              orderId={currentOrderId}
+              mode={modalMode}
+              onUploadSuccess={() =>
+                handleUpdateModalSuccess(modalMode, currentOrderId)
+              }
+              xfmrId={fmrId}
+            />
+
+            <FilePreviewModal
+              isOpen={previewModalOpen}
+              onClose={handlePreviewModalClose}
+              orderId={currentOrderId}
+              mode={modalMode}
+              xfmrId={fmrId}
+            />
+          </>
+        )}
       </main>
     </div>
   );

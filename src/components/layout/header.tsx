@@ -40,9 +40,39 @@ import { useMobile } from "@/hooks/useMobile";
 import { chatService } from "@/services/chatService";
 import { getFromLocalStorage } from "@/lib/utils";
 
+// Define navigation item structure
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+// Define navigation categories
+const navItems = {
+  agentOnly: [
+    { to: "/agent/farmer-management", label: "Farmer Management", icon: List },
+    { to: "/chats", label: "Chats", icon: Send },
+  ] as NavItem[],
+  seller: [
+    {
+      to: "/seller-dashboard",
+      label: "My Dashboard",
+      icon: Home,
+    },
+    { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
+    { to: "/orders", label: "Orders", icon: Receipt },
+    { to: "/chats", label: "Chats", icon: Send },
+  ] as NavItem[],
+  buyerOnly: [
+    { to: "/my-orders", label: "My Orders", icon: ShoppingBagIcon },
+    { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
+    { to: "/chats", label: "Chats", icon: Send },
+  ] as NavItem[], // Removed Settings from buyerOnly
+};
+
 export default function Header() {
   const { user } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmer-profile", {});
+  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
@@ -100,28 +130,59 @@ export default function Header() {
 
   const loginUrl = `/login?redirectTo=${encodeURIComponent(location.pathname)}`;
 
-  // Determine navigation items for agent based on farmer profile
   const isAgentWithFarmerProfile =
     user?.userType === "agent" && Object.keys(farmerProfile).length > 0;
-
-  const agentNavItems = isAgentWithFarmerProfile
-    ? [
-        {
-          to: "/seller-dashboard",
+  const getNavItems = () => {
+    if (!user) {
+      return [
+        { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
+      ] as NavItem[];
+    }
+    if (user.userType === "agent") {
+      if (isAgentWithFarmerProfile) {
+        const combinedNavItems = [
+          ...navItems.seller.map((item) => ({
+            ...item,
+            label:
+              item.to === "/seller-dashboard" &&
+              farmerProfile?.onboarding_stage !== "completed"
+                ? "Onboarding"
+                : item.label,
+          })),
+          ...navItems.agentOnly.filter(
+            (agentItem) =>
+              !navItems.seller.some(
+                (sellerItem) => sellerItem.to === agentItem.to,
+              ),
+          ),
+        ];
+        return combinedNavItems;
+      }
+      return navItems.agentOnly;
+    }
+    if (user.userType === "buyer") {
+      return navItems.buyerOnly;
+    }
+    if (user.userType === "seller") {
+      const sellerItems = navItems.seller
+        .filter(
+          (item) =>
+            item.to !== "/orders" || user.onboarding_stage === "completed",
+        )
+        .map((item) => ({
+          ...item,
           label:
-            user.onboarding_stage === "completed" ||
-            (farmerProfile && farmerProfile?.onboarding_stage === "completed")
-              ? "My Dashboard"
-              : "Onboarding",
-          icon: Home,
-        },
-        { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
-        { to: "/chats", label: "Chats", icon: Send },
-      ]
-    : [
-        { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
-        { to: "/chats", label: "Chats", icon: Send },
-      ];
+            item.to === "/seller-dashboard" &&
+            user.onboarding_stage !== "completed"
+              ? "Onboarding"
+              : item.label,
+        }));
+      return sellerItems;
+    }
+    return [] as NavItem[];
+  };
+
+  const currentNavItems = getNavItems();
 
   return (
     <header
@@ -137,80 +198,16 @@ export default function Header() {
           <nav className="flex items-center space-x-2">
             {user ? (
               <>
-                {user.userType === "seller" && (
-                  <>
-                    <Link
-                      to="/seller-dashboard"
-                      className={linkClasses("/seller-dashboard")}
-                    >
-                      <Home className="h-4 w-4 text-green-400" />
-                      {user.onboarding_stage === "completed"
-                        ? "My Dashboard"
-                        : "Onboarding"}
-                    </Link>
-                    {user.onboarding_stage === "completed" ? (
-                      <Link to="/orders" className={linkClasses("/orders")}>
-                        <Receipt className="h-4 w-4 text-green-400" />
-                        Orders
-                      </Link>
-                    ) : (
-                      <></>
-                    )}
-                  </>
-                )}
-
-                {user.userType === "agent" ? (
-                  <>
-                    <Link
-                      to="/agent/farmer-management"
-                      className={linkClasses("/agent/farmer-management")}
-                    >
-                      <List className="h-4 w-4 text-green-400" />
-                      Farmer Management
-                    </Link>
-                    {agentNavItems.map((item) => (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        className={linkClasses(item.to)}
-                      >
-                        <item.icon className="h-4 w-4 text-green-400" />
-                        {item.label}
-                      </Link>
-                    ))}
-                  </>
-                ) : (
-                  <></>
-                )}
-
-                {user.userType === "buyer" && (
-                  <>
-                    <Link to="/my-orders" className={linkClasses("/my-orders")}>
-                      <ShoppingBagIcon className="h-4 w-4 text-green-400" />
-                      My Orders
-                    </Link>
-                  </>
-                )}
-                {user.userType !== "agent" ? (
+                {currentNavItems.map((item) => (
                   <Link
-                    to="/market-place"
-                    className={linkClasses("/market-place")}
+                    key={item.to}
+                    to={item.to}
+                    className={linkClasses(item.to)}
                   >
-                    <LucideShoppingBag className="h-4 w-4 text-green-400" />
-                    Marketplace
+                    <item.icon className="h-4 w-4 text-green-400" />
+                    {item.label}
                   </Link>
-                ) : (
-                  <></>
-                )}
-
-                {user.userType !== "agent" ? (
-                  <Link to="/chats" className={linkClasses("/chats")}>
-                    <Send className="h-4 w-4 text-green-400" />
-                    Chats
-                  </Link>
-                ) : (
-                  <></>
-                )}
+                ))}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -236,7 +233,7 @@ export default function Header() {
                         {user.avatar_url ? (
                           <img
                             src={user.avatar_url}
-                            alt="User avatar"
+                            alt="AU"
                             className="rounded-full h-5 w-5 object-cover"
                           />
                         ) : (
@@ -316,84 +313,17 @@ export default function Header() {
               <nav className="flex flex-col space-y-3 flex-grow">
                 {user ? (
                   <>
-                    {user.userType === "seller" && (
-                      <>
-                        <Link
-                          to="/seller-dashboard"
-                          className={linkClasses("/seller-dashboard")}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <Home className="h-4 w-4 text-green-400" />
-                          My Dashboard
-                        </Link>
-                        <Link
-                          to="/orders"
-                          className={linkClasses("/orders")}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <Receipt className="h-4 w-4 text-green-400" />
-                          Orders
-                        </Link>
-                        <Link
-                          to="/market-place"
-                          className={linkClasses("/market-place")}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <LucideShoppingBag className="h-4 w-4 text-green-400" />
-                          Marketplace
-                        </Link>
-                      </>
-                    )}
-
-                    {user.userType === "agent" &&
-                      agentNavItems.map((item) => (
-                        <Link
-                          key={item.to}
-                          to={item.to}
-                          className={linkClasses(item.to)}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <item.icon className="h-4 w-4 text-green-400" />
-                          {item.label}
-                        </Link>
-                      ))}
-
-                    {user.userType === "buyer" && (
-                      <>
-                        <Link
-                          to="/my-orders"
-                          className={linkClasses("/my-orders")}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <ShoppingBagIcon className="h-4 w-4 text-green-400" />
-                          My Orders
-                        </Link>
-                        <Link
-                          to="/market-place"
-                          className={linkClasses("/market-place")}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <LucideShoppingBag className="h-4 w-4 text-green-400" />
-                          Marketplace
-                        </Link>
-                        <Link
-                          to="/chats"
-                          className={linkClasses("/chats")}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <Send className="h-4 w-4 text-green-400" />
-                          Chats
-                        </Link>
-                        <Link
-                          to="/settings"
-                          className={linkClasses("/settings")}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <Settings className="h-4 w-4 text-green-400" />
-                          Settings
-                        </Link>
-                      </>
-                    )}
+                    {currentNavItems.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        className={linkClasses(item.to)}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <item.icon className="h-4 w-4 text-green-400" />
+                        {item.label}
+                      </Link>
+                    ))}
 
                     {user.userType === "agent" && !isAgentWithFarmerProfile && (
                       <Link
@@ -403,6 +333,16 @@ export default function Header() {
                       >
                         <UserCheck className="h-4 w-4 text-green-400" />
                         Profile
+                      </Link>
+                    )}
+                    {user.userType === "buyer" && (
+                      <Link
+                        to="/settings"
+                        className={linkClasses("/settings")}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Settings className="h-4 w-4 text-green-400" />
+                        Settings
                       </Link>
                     )}
 

@@ -1,221 +1,231 @@
+//
+  const fetchSampleRequests = useCallback(async () => {
+    setSampleLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: sampleCurrentPage.toString(),
+        limit: samplePagination.limit.toString(),
+        search: encodeURIComponent(sampleSearchTerm),
+        ...(filters.sample.status && {
+          delivery_status: filters.sample.status,
+        }),
+        ...(filters.sample.coffeeVariety && {
+          coffee_variety: filters.sample.coffeeVariety,
+        }),
+        ...(filters.sample.dateFrom && { date_from: filters.sample.dateFrom }),
+        ...(filters.sample.dateTo && { date_to: filters.sample.dateTo }),
+      }).toString();
 
+      const response: any = await apiService().get(
+        `/buyers/samples/get-sample-requests?${filterParams}`,
+      );
+      if (response.success && response.data) {
+        setSampleRequests(response.data.sample_requests || null);
+        setSamplePagination({
+          page: response.data.pagination.page,
+          limit: response.data.pagination.limit,
+          total: response.data.pagination.total,
+          total_pages: response.data.pagination.total_pages,
+        });
+        setFetchedTabs((prev) => ({ ...prev, sample: true }));
+      } else {
+        setSampleError("Failed to fetch sample requests");
+        setSampleRequests(null);
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setSampleError(errorResponse.error?.message || "An error occurred");
+      setSampleRequests(null);
+      errorMessage(errorResponse);
+    } finally {
+      setSampleLoading(false);
+    }
+  }, [sampleCurrentPage, sampleSearchTerm, filters.sample]);
 
-# Directory Structure
+  const fetchBids = useCallback(async () => {
+    if (loading) return;
 
-├── public
-│   └── images
-│       ├── 3811384.jpg
-│       ├── agent.webp
-│       ├── email.svg
-│       ├── hero.png
-│       ├── login.png
-│       ├── otp.svg
-│       ├── registration.png
-│       ├── verify-email.jpg
-│   ├── vite.svg
-└── src
-    ├── assets
-    │   ├── about.jpg
-    │   ├── feature.jpg
-    │   ├── hero.png
-    │   ├── heroo.png
-    │   ├── react.svg
-    ├── components
-    │   ├── common
-    │   │   ├── Button.tsx
-    │   │   ├── Input.tsx
-    │   │   ├── action-tooltip.tsx
-    │   │   ├── feature-card.tsx
-    │   │   ├── file-upload.tsx
-    │   │   ├── loading.tsx
-    │   │   ├── market-place-card.tsx
-    │   ├── layout
-    │   │   ├── Logo.tsx
-    │   │   ├── header.tsx
-    │   ├── modals
-    │   │   ├── CancelOrderModal.tsx
-    │   │   ├── ConfrmationModal.tsx
-    │   │   ├── SignUpPromptModal.tsx
-    │   └── ui
-    │       ├── accordion.tsx
-    │       ├── alert.tsx
-    │       ├── avatar.tsx
-    │       ├── badge.tsx
-    │       ├── button.tsx
-    │       ├── calendar.tsx
-    │       ├── card.tsx
-    │       ├── checkbox.tsx
-    │       ├── command.tsx
-    │       ├── dialog.tsx
-    │       ├── dropdown-menu.tsx
-    │       ├── form.tsx
-    │       ├── input-otp.tsx
-    │       ├── input.tsx
-    │       ├── label.tsx
-    │       ├── navigation-menu.tsx
-    │       ├── pagination.tsx
-    │       ├── popover.tsx
-    │       ├── progress.tsx
-    │       ├── radio-group.tsx
-    │       ├── scroll-area.tsx
-    │       ├── select.tsx
-    │       ├── separator.tsx
-    │       ├── sheet.tsx
-    │       ├── skeleton.tsx
-    │       ├── sonner.tsx
-    │       ├── stepper.tsx
-    │       ├── table.tsx
-    │       ├── tabs.tsx
-    │       ├── textarea.tsx
-    │       ├── tooltip.tsx
-    │   ├── CropFieldManager.tsx
-    │   ├── GoogleMaps.tsx
-    │   ├── WashingStationMap.tsx
-    ├── hooks
-    │   ├── useAuth.ts
-    │   ├── useListingBid.ts
-    │   ├── useMobile.tsx
-    │   ├── useNotification.tsx
-    │   ├── useOrderStatus.tsx
-    │   ├── useSampleRequest.ts
-    ├── lib
-    │   ├── config.ts
-    │   ├── utils.ts
-    ├── pages
-    │   ├── agent
-    │   │   ├── farmer-management.tsx
-    │   ├── auth
-    │   │   ├── CreatePassword.tsx
-    │   │   ├── Login.tsx
-    │   │   ├── OTP.tsx
-    │   │   ├── Signup.tsx
-    │   │   ├── VerifyEmail.tsx
-    │   │   ├── agent-login.tsx
-    │   │   ├── farmer-signup-via-agent.tsx
-    │   ├── bank
-    │   │   ├── BankInformation.tsx
-    │   │   ├── edit-bank.tsx
-    │   ├── buyers
-    │   │   └── settings
-    │   │       ├── SettingsPage.tsx
-    │   ├── chats
-    │   │   ├── ChatsPage.tsx
-    │   ├── company
-    │   │   ├── company-onboarding.tsx
-    │   ├── crops
-    │   │   ├── CoffeeListing.tsx
-    │   ├── farms
-    │   │   └── farm-profile
-    │   │       ├── FarmDetails.tsx
-    │   │       ├── FarmProfilePage.tsx
-    │   │       ├── FarmSidebar.tsx
-    │   │   ├── FarmDetails.tsx
-    │   │   ├── FarmManagement.tsx
-    │   │   ├── FarmProfile.tsx
-    │   │   ├── SkeletonForm.tsx
-    │   │   ├── add-crop.tsx
-    │   │   ├── add-farm.tsx
-    │   ├── landing
-    │   │   └── sections
-    │   │       ├── about.tsx
-    │   │       ├── contact.tsx
-    │   │       ├── eudr.tsx
-    │   │       ├── features.tsx
-    │   │       ├── market-place.tsx
-    │   │       ├── testimonial.tsx
-    │   │   ├── Hero.tsx
-    │   │   ├── contact-us.tsx
-    │   │   ├── footer.tsx
-    │   │   ├── header.tsx
-    │   │   ├── index.tsx
-    │   ├── marketplace
-    │   │   ├── coffee-listing
-    │   │   │   ├── Bid-modal.tsx
-    │   │   │   ├── CoffeeListingPage.tsx
-    │   │   │   ├── coffee-details-tab.tsx
-    │   │   │   ├── coffee-details.tsx
-    │   │   │   ├── cup-profile.tsx
-    │   │   │   ├── farm-information.tsx
-    │   │   │   ├── header.tsx
-    │   │   │   ├── order-modal.tsx
-    │   │   │   ├── order-sidebar.tsx
-    │   │   │   ├── order-status-card.tsx
-    │   │   │   ├── photo-gallery.tsx
-    │   │   │   ├── review-modal.tsx
-    │   │   ├── coffee-listing-seller
-    │   │   │   ├── coffee-listing-seller.tsx
-    │   │   │   ├── message-thread-list.tsx
-    │   │   │   ├── message-thread.tsx
-    │   │   │   ├── stat-card.tsx
-    │   │   └── my-orders
-    │   │       ├── empty-state.tsx
-    │   │       ├── favorite-item.tsx
-    │   │       ├── filter.tsx
-    │   │       ├── loading-skeleton.tsx
-    │   │       ├── order-item.tsx
-    │   │       ├── render-order-progress.tsx
-    │   │       ├── sample-request-item.tsx
-    │   │   ├── ListingCard.tsx
-    │   │   ├── coffee-image.tsx
-    │   │   ├── coffee-marketplace.tsx
-    │   │   ├── marketplace-skeleton.tsx
-    │   │   ├── my-orders.tsx
-    │   │   ├── review-modal.tsx
-    │   │   ├── sample-request-modal.tsx
-    │   │   ├── skeletons.tsx
-    │   │   ├── view-listing-modal.tsx
-    │   ├── onboarding
-    │   │   └── farm-detail
-    │   │       ├── step-four.tsx
-    │   │       ├── step-one.tsx
-    │   │       ├── step-three.tsx
-    │   │       ├── step-two.tsx
-    │   │   ├── Welcome.tsx
-    │   ├── profile
-    │   │   ├── ProfilePhoto.tsx
-    │   │   ├── UserProfile.tsx
-    │   │   ├── edit-profile.tsx
-    │   └── seller
-    │       ├── Dashboard.tsx
-    │       ├── SellerProfilePage.tsx
-    │       ├── orders.tsx
-    │       ├── skeletons.tsx
-    ├── services
-    │   ├── apiService.ts
-    │   ├── chatService.ts
-    └── types
-        └── validation
-            ├── auth.ts
-            ├── buyer.ts
-            ├── seller-onboarding.ts
-        ├── api.ts
-        ├── coffee-listing.ts
-        ├── coffee.ts
-        ├── constants.ts
-        ├── order.ts
-        ├── orders.ts
-        ├── types.ts
-        ├── user.ts
-    ├── App.css
-    ├── App.tsx
-    ├── index.css
-    ├── main.tsx
-    ├── vite-env.d.ts
-├── .env
-├── .gitignore
-├── Makefile
-├── README.md
-├── components.json
-├── eslint.config.js
-├── index.html
-├── package-lock.json
-├── package.json
-├── pnpm-lock.yaml
-├── pnpm-workspace.yaml
-├── postcss.config.js
-├── tsconfig.app.json
-├── tsconfig.json
-├── tsconfig.node.json
-├── vite.config.ts
+    setBidLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: bidCurrentPage.toString(),
+        limit: bidPagination.limit.toString(),
+        search: encodeURIComponent(bidSearchTerm),
+        ...(filters.bids.status && { status: filters.bids.status }),
+        ...(filters.bids.coffeeVariety && {
+          coffee_variety: filters.bids.coffeeVariety,
+        }),
+        ...(filters.bids.dateFrom && { date_from: filters.bids.dateFrom }),
+        ...(filters.bids.dateTo && { date_to: filters.bids.dateTo }),
+      }).toString();
 
-# End Directory Structure
+      const response: any = await apiService().get(
+        `/buyers/bids/get-all-bids?${filterParams}`,
+      );
+      if (response.success) {
+        setBids(response.data.bids || []);
+        setBidPagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            total: 0,
+            total_pages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, bids: true }));
+      } else {
+        setBidError("Failed to fetch bids");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setBidError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setBidLoading(false);
+    }
+  }, [bidCurrentPage, bidSearchTerm, filters.bids, loading]);
+
+  const fetchFavorites = useCallback(async () => {
+    if (!user?.id) {
+      setFavoritesError("User not authenticated");
+      setFavoritesLoading(false);
+      return;
+    }
+
+    setFavoritesLoading(true);
+    try {
+      const filterParams = new URLSearchParams({
+        page: favoritesCurrentPage.toString(),
+        limit: favoritesPagination.limit.toString(),
+        search: encodeURIComponent(favoritesSearchTerm),
+        ...(filters.favorites.listingStatus && {
+          listing_status: filters.favorites.listingStatus,
+        }),
+        ...(filters.favorites.dateFrom && {
+          date_from: filters.favorites.dateFrom,
+        }),
+        ...(filters.favorites.dateTo && { date_to: filters.favorites.dateTo }),
+      }).toString();
+
+      const response: any = await apiService().get(
+        `/buyers/listings/favorites/get-favorite-listings?${filterParams}`,
+      );
+      if (response.success) {
+        setFavorites(response.data.favorites || []);
+        setFavoritesPagination(
+          response.data.pagination || {
+            page: 1,
+            limit: 10,
+            total: 0,
+            total_pages: 0,
+          },
+        );
+        setFetchedTabs((prev) => ({ ...prev, favorites: true }));
+      } else {
+        setFavoritesError("Failed to fetch favorites");
+      }
+    } catch (err: unknown) {
+      const errorResponse = err as APIErrorResponse;
+      setFavoritesError(errorResponse.error?.message || "An error occurred");
+      errorMessage(errorResponse);
+    } finally {
+      setFavoritesLoading(false);
+    }
+  }, [favoritesCurrentPage, favoritesSearchTerm, filters.favorites, user?.id]);
+
+  useEffect(() => {
+    if (activeTab === "current" && !fetchedTabs.current) {
+      fetchActiveOrders();
+    }
+  }, [activeTab, fetchActiveOrders, fetchedTabs.current]);
+
+  useEffect(() => {
+    if (activeTab === "historical" && !fetchedTabs.historical) {
+      fetchHistoricalOrders();
+    }
+  }, [activeTab, fetchHistoricalOrders, fetchedTabs.historical]);
+
+  useEffect(() => {
+    if (activeTab === "sample" && !fetchedTabs.sample) {
+      fetchSampleRequests();
+    }
+  }, [activeTab, fetchSampleRequests, fetchedTabs.sample]);
+
+  useEffect(() => {
+    if (activeTab === "bids" && !fetchedTabs.bids) {
+      fetchBids();
+    }
+  }, [activeTab, fetchBids, fetchedTabs.bids]);
+
+  useEffect(() => {
+    if (activeTab === "favorites" && !fetchedTabs.favorites) {
+      fetchFavorites();
+    }
+  }, [activeTab, fetchFavorites, fetchedTabs.favorites]);
+
+  const toggleOrderExpansion = (orderId: string) => {
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setExpandedOrderId(null);
+  };
+
+  const handleFilterChange = (
+    tab: string,
+    filter:
+      | OrderFilterState
+      | SampleFilterState
+      | BidFilterState
+      | FavoriteFilterState,
+  ) => {
+    setFilters((prev) => ({ ...prev, [tab]: filter }));
+    setFetchedTabs((prev) => ({ ...prev, [tab]: false }));
+    if (tab === "current") setActiveCurrentPage(1);
+    if (tab === "historical") setHistoryCurrentPage(1);
+    if (tab === "sample") setSampleCurrentPage(1);
+    if (tab === "bids") setBidCurrentPage(1);
+    if (tab === "favorites") setFavoritesCurrentPage(1);
+  };
+
+  const handleActiveSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setActiveCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, current: false }));
+    fetchActiveOrders();
+  };
+
+  const handleHistorySearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setHistoryCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, historical: false }));
+    fetchHistoricalOrders();
+  };
+
+  const handleSampleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSampleCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, sample: false }));
+    fetchSampleRequests();
+  };
+
+  const handleBidSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setBidCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, bids: false }));
+    fetchBids();
+  };
+
+  const handleFavoritesSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFavoritesCurrentPage(1);
+    setFetchedTabs((prev) => ({ ...prev, favorites: false }));
+    fetchFavorites();
+  };
+
+  const openReviewModal = (order: Order, type: string) => {
+    setSelectedOrder(order);
+    setShowReviewModal(true);
+    setReviewType(type || "add");
+  };
