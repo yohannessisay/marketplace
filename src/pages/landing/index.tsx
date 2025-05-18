@@ -1,17 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Header } from './header';
- 
-import Features from './sections/features';
-import About from './sections/about';
-import Marketplace from './sections/market-place';
-import Testimonials from './sections/testimonial';
-import EUDRSection from './sections/eudr';
-import ContactSection from './sections/contact';
-import { Footer } from './footer';
-import { Hero } from './Hero';
+"use client";
+
+import { useEffect, useState } from "react";
+import { Header } from "./header";
+import { Hero } from "./Hero";
+import ContactModal from "./sections/contact";
 
 const LandingPage = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,9 +19,9 @@ const LandingPage = () => {
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -33,15 +29,16 @@ const LandingPage = () => {
     <div className="min-h-screen flex flex-col">
       <Header scrolled={scrolled} />
       <main className="flex-grow p-24">
-        <Hero />
-        <Marketplace />
+        <Hero setIsContactModalOpen={setIsContactModalOpen} />
+        {/* <Marketplace />
         <Features />
         <About />
         <EUDRSection />
         <Testimonials />
-        <ContactSection />
+        <ContactSection /> */}
       </main>
-      <Footer />
+      <ContactModal open={isContactModalOpen} setOpen={setIsContactModalOpen} />
+      {/* <Footer /> */}
     </div>
   );
 };

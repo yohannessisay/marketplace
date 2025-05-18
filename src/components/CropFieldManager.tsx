@@ -21,7 +21,7 @@ export default function CropFieldManager({
   farmName?: string;
   disableButtons?: boolean;
 }) {
-  const [cropLocations] = useState<CropLocation[]>([
+  const [cropLocations, setCropLocations] = useState<CropLocation[]>([
     {
       cropId: "farm-center",
       address: farmName,
@@ -35,6 +35,19 @@ export default function CropFieldManager({
   const [isReadOnly, setIsReadOnly] = useState(disableButtons);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const mapRef = useRef<MapRef>(null);
+
+  // Update cropLocations when farmName prop changes
+  useEffect(() => {
+    setCropLocations([
+      {
+        cropId: "farm-center",
+        address: farmName,
+        lat: center.lat,
+        lng: center.lng,
+        price: "N/A",
+      },
+    ]);
+  }, [farmName, center.lat, center.lng]);
 
   // Ensure initial polygons are drawn when component mounts in edit mode
   useEffect(() => {
@@ -135,7 +148,7 @@ export default function CropFieldManager({
               size="sm"
               type="button"
               onClick={handleResetMap}
-              className="bg-gray-200 text-gray-800 hover:bg-gray-300 border-none"
+              className="bg-grayummary-200 text-gray-800 hover:bg-gray-300 border-none"
             >
               Reset Map
             </Button>
@@ -204,12 +217,6 @@ export default function CropFieldManager({
             </CardHeader>
             <CardContent>
               <div className="flex gap-4">
-                <div>
-                  <span className="text-xs text-gray-500">Vertices: </span>
-                  <span className="text-sm font-semibold">
-                    {polygonsData[0]?.length || 0}
-                  </span>
-                </div>
                 <div>
                   <span className="text-xs text-gray-500">Approx. Area: </span>
                   <span className="text-sm font-semibold">

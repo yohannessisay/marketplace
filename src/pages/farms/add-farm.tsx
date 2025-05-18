@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,7 @@ import {
 import { FileUpload, FileWithPreview } from "@/components/common/file-upload";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
-import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
 import {
   Select,
@@ -43,6 +43,7 @@ import { useAuth } from "@/hooks/useAuth";
 import CropFieldManager from "@/components/CropFieldManager";
 import Header from "@/components/layout/header";
 import ConfirmationModal from "@/components/modals/ConfrmationModal";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 export default function AddFarm() {
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ export default function AddFarm() {
   const [farmPhotoError, setFarmPhotoError] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+  const farmerProfile: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
 
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
@@ -87,6 +88,12 @@ export default function AddFarm() {
   });
 
   const { trigger } = form;
+
+  const farmName = useWatch({
+    control: form.control,
+    name: "farm_name",
+    defaultValue: "",
+  });
 
   useEffect(() => {
     if (user?.userType === "seller" && user.onboarding_stage !== "completed") {
@@ -117,6 +124,7 @@ export default function AddFarm() {
         `/sellers/farms/get-farm?farmId=${farmId}`,
         farmerId,
       );
+
       if (response.success) {
         const farm = response.data.farm;
 
@@ -150,9 +158,9 @@ export default function AddFarm() {
           : [];
 
         form.reset({
-          farm_name: farm.farm_name ?? "New Farm",
-          town_location: farm.town_location ?? "Unknown",
-          country: farm.country ?? "Ethiopia",
+          farm_name: farm.farm_name,
+          town_location: farm.town_location,
+          country: farm.country,
           region: validRegions.includes(farm.region) ? farm.region : "Oromia",
           total_size_hectares: farm.total_size_hectares ?? 0.1,
           coffee_area_hectares: farm.coffee_area_hectares ?? 0.1,
@@ -251,10 +259,6 @@ export default function AddFarm() {
             (photo): photo is FileWithPreview => photo !== null,
           );
           setFarmPhotos(validPhotos);
-          saveToLocalStorage(
-            "farm-photos",
-            validPhotos.map((photo) => photo.preview),
-          );
         }
       } else {
         throw new Error(response.message || "Failed to fetch farm data");
@@ -440,13 +444,6 @@ export default function AddFarm() {
         formData.append("farm_photos", photo.file);
       });
 
-      const govFilePaths = govRegFiles.map((file) => file.preview);
-      const landFilePaths = landRightsFiles.map((file) => file.preview);
-      const farmPhotoPaths = farmPhotos.map((photo) => photo.preview);
-      saveToLocalStorage("gov-files", govFilePaths);
-      saveToLocalStorage("land-files", landFilePaths);
-      saveToLocalStorage("farm-photos", farmPhotoPaths);
-
       let xfmrId: string | null = null;
       if (user && user.userType === "agent") {
         xfmrId = farmerProfile.id ?? "";
@@ -454,41 +451,29 @@ export default function AddFarm() {
 
       if (isEditMode && id) {
         formData.append("farmId", id);
-        const response: any = await apiService().patchFormData(
+
+        await apiService().patchFormData(
           `/sellers/farms/update-farm`,
           formData,
           true,
           xfmrId ? xfmrId : "",
         );
-        if (response.success) {
-          saveToLocalStorage("step-one", data);
-          successMessage("Farm updated successfully!");
-          navigate("/seller-dashboard");
-        } else {
-          errorMessage(response.error as APIErrorResponse);
-        }
+
+        successMessage("Farm updated successfully!");
+        navigate("/seller-dashboard");
       } else {
-        const response: any = await apiService().postFormData(
+        await apiService().postFormData(
           `/sellers/farms/create-farm`,
           formData,
           true,
           xfmrId ? xfmrId : "",
         );
-        if (response.success) {
-          saveToLocalStorage("step-one", data);
-          if (response.data?.farm?.id) {
-            saveToLocalStorage("farm-id", response.data.farm.id);
-          }
-          successMessage("Farm added successfully!");
-          navigate("/seller-dashboard");
-        } else {
-          errorMessage(response.error as APIErrorResponse);
-        }
+        successMessage("Farm added successfully!");
+        navigate("/seller-dashboard");
       }
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
     } finally {
-      saveToLocalStorage("step-one", data);
       setIsSubmitting(false);
       setIsModalOpen(false);
     }
@@ -553,10 +538,6 @@ export default function AddFarm() {
                             })),
                           );
                           setGovFileError("");
-                          const filePaths = files.map((file) =>
-                            URL.createObjectURL(file),
-                          );
-                          saveToLocalStorage("gov-files", filePaths);
                         }}
                         maxFiles={5}
                         maxSizeMB={5}
@@ -598,10 +579,6 @@ export default function AddFarm() {
                             })),
                           );
                           setLandFileError("");
-                          const filePaths = files.map((file) =>
-                            URL.createObjectURL(file),
-                          );
-                          saveToLocalStorage("land-files", filePaths);
                         }}
                         maxFiles={5}
                         maxSizeMB={5}
@@ -651,10 +628,6 @@ export default function AddFarm() {
                             })),
                           );
                           setFarmPhotoError("");
-                          const filePaths = files.map((file) =>
-                            URL.createObjectURL(file),
-                          );
-                          saveToLocalStorage("farm-photos", filePaths);
                         }}
                         maxFiles={6}
                         maxSizeMB={5}
@@ -842,12 +815,11 @@ export default function AddFarm() {
                                   polygons.length > 0 &&
                                   polygons[0].length > 0
                                 ) {
-                                  // Calculate approximate area
                                   const calculateApproxArea = (
                                     coords: { lat: number; lng: number }[],
                                   ): number => {
                                     if (!coords || coords.length < 3) return 0;
-                                    const R = 6371000; // Earth's radius in meters
+                                    const R = 6371000;
                                     let area = 0;
                                     for (let i = 0; i < coords.length; i++) {
                                       const j = (i + 1) % coords.length;
@@ -871,7 +843,6 @@ export default function AddFarm() {
                                     shouldValidate: true,
                                   });
 
-                                  // Calculate center coordinates
                                   const calculateCenter = (
                                     polygons: { lat: number; lng: number }[][],
                                   ) => {
@@ -914,9 +885,7 @@ export default function AddFarm() {
                               }}
                               initialPolygons={field.value}
                               center={{ lat: 9.03, lng: 38.74 }}
-                              farmName={
-                                form.getValues("farm_name") || "New Farm"
-                              }
+                              farmName={farmName || "New Farm"}
                             />
                           </FormControl>
                           <FormMessage className="text-red-500" />

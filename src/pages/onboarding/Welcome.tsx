@@ -17,7 +17,6 @@ import { Card } from "@/components/ui/card";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
 
-// Step item component for each onboarding step
 interface StepItemProps {
   step: number;
   title: string;
@@ -37,7 +36,9 @@ const StepItem: React.FC<StepItemProps> = ({
   isCompleted = false,
   isLast = false,
 }) => (
-  <div className={`${isActive?'border border-primary rounded-md p-2 shadow-md':''} flex items-start group`}>
+  <div
+    className={`${isActive ? "border border-primary rounded-md p-2 shadow-md" : ""} flex items-start group`}
+  >
     <div className="flex flex-col items-center mr-6">
       <div
         className={`relative flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
@@ -141,7 +142,7 @@ const WelcomePage: React.FC = () => {
                   title="Add Farms to Your Profile"
                   description="Register your coffee farms with key details like location, size, and production capacity to help buyers find your premium coffee."
                   icon={<Farm className="h-5 w-5" />}
-                  isActive={user?.onboarding_stage==='farm_profile'}
+                  isActive={user?.onboarding_stage === "farm_profile"}
                 />
 
                 <StepItem
@@ -149,7 +150,7 @@ const WelcomePage: React.FC = () => {
                   title="Add Your Coffee Crops for Sale"
                   description="Showcase your coffee varieties with detailed information about processing methods, flavor profiles, and available quantities."
                   icon={<Coffee className="h-5 w-5" />}
-                  isActive={user?.onboarding_stage==='crops_to_sell'}
+                  isActive={user?.onboarding_stage === "crops_to_sell"}
                 />
 
                 <StepItem
@@ -157,7 +158,7 @@ const WelcomePage: React.FC = () => {
                   title="Set Up Your Banking Information"
                   description="Connect your bank account to receive secure and timely payments when your coffee is purchased by buyers around the world."
                   icon={<BadgeDollarSign className="h-5 w-5" />}
-                  isActive={user?.onboarding_stage==='bank_information'}
+                  isActive={user?.onboarding_stage === "bank_information"}
                 />
 
                 <StepItem
@@ -165,7 +166,7 @@ const WelcomePage: React.FC = () => {
                   title="Complete Your Profile"
                   description="Add a professional profile picture and additional details about your farming practices to build trust with potential buyers."
                   icon={<User className="h-5 w-5" />}
-                  isActive={user?.onboarding_stage==='avatar_image'}
+                  isActive={user?.onboarding_stage === "avatar_image"}
                   isLast={true}
                 />
               </>
@@ -180,14 +181,14 @@ const WelcomePage: React.FC = () => {
               user?.userType === "buyer"
                 ? "/company-onboarding"
                 : user?.onboarding_stage === "farm_profile"
-                ? "/onboarding/step-one"
-                : user?.onboarding_stage === "crops_to_sell"
-                ? "/onboarding/step-two"
-                : user?.onboarding_stage === "bank_information"
-                ? "/onboarding/step-three"
-                : user?.onboarding_stage === "avatar_image"
-                ? "/onboarding/step-four"
-                : "/onboarding/step-one"
+                  ? "/onboarding/step-one"
+                  : user?.onboarding_stage === "crops_to_sell"
+                    ? "/onboarding/step-two"
+                    : user?.onboarding_stage === "bank_information"
+                      ? "/onboarding/step-three"
+                      : user?.onboarding_stage === "avatar_image"
+                        ? "/onboarding/step-four"
+                        : "/onboarding/step-one"
             }
           >
             <Button
@@ -200,16 +201,6 @@ const WelcomePage: React.FC = () => {
           </Link>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="mt-16 py-6 border-t border-slate-100 text-center text-slate-500 text-sm">
-        <div className="max-w-4xl mx-auto px-6">
-          <p>
-            © 2025 Afrovalley. Connecting Ethiopian coffee farmers with global
-            markets.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 };

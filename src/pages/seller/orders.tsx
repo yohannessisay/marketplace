@@ -66,6 +66,7 @@ import { FileUploadModal } from "@/components/modals/FileUploadModal";
 import { FilePreviewModal } from "@/components/modals/FilePreviewModal";
 import { ReviewModal } from "../marketplace/review-modal";
 import { FileUpdateModal } from "@/components/modals/FileUpdateModal";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 interface Seller {
   first_name?: string;
@@ -354,7 +355,7 @@ export default function OrdersPage() {
   const { successMessage, errorMessage } = useNotification();
   const { user } = useAuth();
 
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+  const farmerProfile: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
 
   const fmrId = farmerProfile ? farmerProfile.id : undefined;
   const fetchActiveOrders = useCallback(async () => {
@@ -814,7 +815,7 @@ export default function OrdersPage() {
     const isSampleTab = tab === "sample";
     const isBidsTab = tab === "bids";
     const isFavoritesTab = tab === "favorites";
-    const isCurrentOrderTab = tab === "current"; // New flag for current orders only
+    const isCurrentOrderTab = tab === "current";
 
     const filterCount = Object.values(currentFilters).filter(
       (value) => value !== undefined && value !== "",
@@ -824,7 +825,7 @@ export default function OrdersPage() {
       ? Object.values(SampleRequestDeliveryStatus)
       : isBidsTab
         ? Object.values(OrderBidStatus)
-        : isCurrentOrderTab // Only show status for current orders
+        : isCurrentOrderTab
           ? ["pending", "completed", "cancelled"]
           : [];
     const coffeeVarieties = [
@@ -1330,7 +1331,7 @@ export default function OrdersPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handlePreviewClick("documents")}
+                          onClick={() => handlePreviewClick("payment_slip")}
                         >
                           View Payment Slip
                         </Button>
@@ -2240,13 +2241,10 @@ export default function OrdersPage() {
                               </TableCell>
                               <TableCell>
                                 {bid.buyer ? (
-                                  <Link
-                                    to={`/buyers/${bid.buyer_id}`}
-                                    className="text-green-600 hover:text-green-700"
-                                  >
+                                  <>
                                     {bid.buyer.first_name || "Unknown"}{" "}
                                     {bid.buyer.last_name || ""}
-                                  </Link>
+                                  </>
                                 ) : (
                                   "Unknown"
                                 )}

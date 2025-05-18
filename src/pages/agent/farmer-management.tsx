@@ -23,11 +23,14 @@ import Header from "@/components/layout/header";
 import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { saveToLocalStorage } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 export default function FarmersTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   interface Farmer {
     about_me: string;
     address: string;
@@ -55,9 +58,9 @@ export default function FarmersTable() {
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
 
-  // Fetch farmers data from API
   useEffect(() => {
     const fetchFarmers = async () => {
+      setIsLoading(true);
       try {
         const response: any = await apiService().get(
           `/agent/farmers/management?search=${searchTerm}&page=${currentPage}`,
@@ -66,6 +69,8 @@ export default function FarmersTable() {
         setTotalPages(response.data.pagination.totalPages || 1);
       } catch (error) {
         console.error("Error fetching farmers:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -82,7 +87,7 @@ export default function FarmersTable() {
 
     if (response && response.success) {
       const farmerInfo = response.data.farmer;
-      saveToLocalStorage("farmerProfile", farmerInfo);
+      saveToLocalStorage(FARMER_PROFILE_KEY, farmerInfo);
 
       switch (farmerInfo.onboarding_stage) {
         case "not_started":
@@ -121,9 +126,9 @@ export default function FarmersTable() {
   };
 
   return (
-    <div className=" min-h-screen bg-primary/5 p-8 w-full">
-      <Header></Header>
-      <div className="mx-24 bg-white rounded-md shadow-md p-4 my-8">
+    <div className="min-h-screen bg-primary/5 p-8 w-full">
+      <Header />
+      <div className="mx-24 bg-white rounded-md shadow-md p-4 my-8 mt-20">
         <div className="flex justify-between items-center mb-6 mt-8">
           <h1 className="text-2xl font-bold">Farmers Registered By You</h1>
           <Link to={"/farmer-signup-via-agent"}>
@@ -137,12 +142,12 @@ export default function FarmersTable() {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search by name or phone..."
+              placeholder="Search by name, email or phone..."
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on search
+                setCurrentPage(1);
               }}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -168,36 +173,54 @@ export default function FarmersTable() {
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {farmers.map((farmer) => (
-                <TableRow key={farmer.id}>
-                  <TableCell>{farmer.id}</TableCell>
-                  <TableCell>
-                    {farmer.first_name} {farmer.last_name}
-                  </TableCell>
-                  <TableCell>{farmer.phone}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewFarmer(farmer)}
-                      disabled={isSubmitting}
-                      className="flex items-center gap-1"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading
+                ? Array.from({ length: 10 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-48" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-32" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="h-8 w-16 ml-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                : farmers.map((farmer) => (
+                    <TableRow key={farmer.id}>
+                      <TableCell>{farmer.id}</TableCell>
+                      <TableCell>
+                        {farmer.first_name} {farmer.last_name}
+                      </TableCell>
+                      <TableCell>{farmer.email}</TableCell>
+                      <TableCell>{farmer.phone}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewFarmer(farmer)}
+                          disabled={isSubmitting}
+                          className="flex items-center gap-1"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
             </TableBody>
           </Table>
         </div>
-
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -211,7 +234,6 @@ export default function FarmersTable() {
                   }
                 />
               </PaginationItem>
-
               {Array.from({ length: totalPages }).map((_, index) => (
                 <PaginationItem key={index}>
                   <PaginationLink
@@ -222,7 +244,6 @@ export default function FarmersTable() {
                   </PaginationLink>
                 </PaginationItem>
               ))}
-
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>

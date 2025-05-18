@@ -42,7 +42,7 @@ export function Header({ scrolled }: HeaderProps) {
       )}
     >
       <div className="container flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <Logo />
         </div>
 
@@ -103,7 +103,14 @@ export function Header({ scrolled }: HeaderProps) {
 
         {/* Desktop Button */}
         <div className="hidden md:flex items-center gap-4">
-          <Button>
+          <Button
+            variant="outline"
+            className="border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white"
+            asChild
+          >
+            <Link to="/market-place">Go to Marketplace</Link>
+          </Button>
+          <Button className="bg-amber-700 hover:text-amber-700 w-40">
             <Link to={buttonLink}>{buttonText}</Link>
           </Button>
         </div>
@@ -164,12 +171,12 @@ export function Header({ scrolled }: HeaderProps) {
               <div className="flex flex-col space-y-2 pt-2 border-t">
                 <Button
                   variant="outline"
-                  className="rounded-full border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white"
+                  className="hover:bg-amber-700 text-amber-700 hover:text-white"
                 >
-                  <Link to={buttonLink}>{buttonText}</Link>
+                  <Link to="/market-place">Go to Marketplace</Link>
                 </Button>
-                <Button className="rounded-full bg-amber-700 hover:bg-amber-800">
-                  Get Started
+                <Button className="bg-amber-700 hover:text-amber-700">
+                  <Link to={buttonLink}>{buttonText}</Link>
                 </Button>
               </div>
             </nav>

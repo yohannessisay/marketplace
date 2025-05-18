@@ -47,10 +47,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { APIErrorResponse } from "@/types/api";
 import { AddCropSkeletonForm } from "./SkeletonForm";
 import { useAuth } from "@/hooks/useAuth";
-import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationModal from "@/components/modals/ConfrmationModal";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 interface Farm {
   id: string;
@@ -81,11 +82,12 @@ export default function AddCrop() {
   const [discounts, setDiscounts] = useState<
     { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
   >([]);
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+
   const isLoading = isLoadingFarms || isLoadingListing;
   const [hasFetched, setHasFetched] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const farmerProfile: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
   const form = useForm<CoffeeCropsFormData>({
     resolver: zodResolver(coffeeCropsSchema),
     defaultValues: {
@@ -124,7 +126,6 @@ export default function AddCrop() {
         const farmerId =
           user?.userType === "agent" ? farmerProfile?.id : undefined;
 
-        // Fetch farms
         const farmsResponse: any = await apiService().get(
           "/sellers/farms/get-farms",
           farmerId,
@@ -189,7 +190,6 @@ export default function AddCrop() {
               shipping_port: listing.shipping_port || "",
             });
 
-            // Fetch photos
             if (listing.photos?.length > 0) {
               const photosTemp: FileWithPreview[] = await Promise.all(
                 listing.photos.map(async (photo: any) => {
@@ -221,25 +221,8 @@ export default function AddCrop() {
                   (photo): photo is FileWithPreview => photo !== null,
                 ),
               );
-              if (listing.discounts?.length > 0) {
-                const normalizedDiscounts = listing.discounts.map(
-                  (discount: any) => ({
-                    id: discount.id || Math.random().toString(36).substring(2),
-                    minimum_quantity_kg:
-                      Number(discount.minimum_quantity_kg) || 1,
-                    discount_percentage:
-                      Number(discount.discount_percentage) || 1,
-                  }),
-                );
-                setDiscounts(normalizedDiscounts);
-                saveToLocalStorage("add-crop-discounts", normalizedDiscounts);
-              } else {
-                setDiscounts([]);
-                saveToLocalStorage("add-crop-discounts", []);
-              }
             }
 
-            // Fetch grading reports
             if (listing.documents?.length > 0) {
               const gradingReportsTemp: FileWithPreview[] = await Promise.all(
                 listing.documents
@@ -400,7 +383,7 @@ export default function AddCrop() {
     setPhotoError("");
   };
 
-  const handleFormSubmit = (data: CoffeeCropsFormData) => {
+  const handleFormSubmit = () => {
     setIsSubmitting(true);
     setIsModalOpen(true);
   };

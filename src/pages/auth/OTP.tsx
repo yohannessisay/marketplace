@@ -25,7 +25,11 @@ import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
-import { OTP_TIMER_KEY, SIGNUP_PROFILE_KEY } from "@/types/constants";
+import {
+  OTP_TIMER_KEY,
+  OTP_TIMER_RESETED_KEY,
+  SIGNUP_PROFILE_KEY,
+} from "@/types/constants";
 
 type OTPValidationType = z.infer<typeof createOTPValidationSchema>;
 
@@ -43,6 +47,10 @@ export default function OTPInputPage() {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const otpTimerReseted: any = getFromLocalStorage(
+    OTP_TIMER_RESETED_KEY,
+    "false",
+  );
 
   // Function to start the timer with a given expiration time
   const startTimer = (expirationTime: number) => {
@@ -75,23 +83,28 @@ export default function OTPInputPage() {
       return;
     }
 
-    const savedExpiration = localStorage.getItem(OTP_TIMER_KEY);
-    let expirationTime: number;
-
-    if (savedExpiration) {
-      expirationTime = parseInt(savedExpiration, 10);
-      const currentTime = Date.now();
-      const remainingTimeMs = expirationTime - currentTime;
-
-      if (remainingTimeMs > 0) {
-        startTimer(expirationTime);
-      } else {
-        setTimer(0);
-        localStorage.removeItem(OTP_TIMER_KEY);
-      }
+    if (otpTimerReseted === "true") {
+      setTimer(0);
+      localStorage.removeItem(OTP_TIMER_KEY);
     } else {
-      expirationTime = Date.now() + 60 * 1000;
-      startTimer(expirationTime);
+      const savedExpiration = localStorage.getItem(OTP_TIMER_KEY);
+      let expirationTime: number;
+
+      if (savedExpiration) {
+        expirationTime = parseInt(savedExpiration, 10);
+        const currentTime = Date.now();
+        const remainingTimeMs = expirationTime - currentTime;
+
+        if (remainingTimeMs > 0) {
+          startTimer(expirationTime);
+        } else {
+          setTimer(0);
+          localStorage.removeItem(OTP_TIMER_KEY);
+        }
+      } else {
+        expirationTime = Date.now() + 60 * 1000;
+        startTimer(expirationTime);
+      }
     }
 
     return () => {
@@ -99,7 +112,7 @@ export default function OTPInputPage() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [navigate]);
+  }, [navigate, otpTimerReseted]);
 
   const onSubmit = async (data: OTPValidationType) => {
     try {
@@ -113,13 +126,14 @@ export default function OTPInputPage() {
         };
       }
       await apiService().postWithoutAuth("/auth/verify-email", {
-        ...data,
-        email: email,
+        otp: data.otp,
+        email,
       });
 
       saveToLocalStorage("current-step", "farm_profile");
       localStorage.removeItem(OTP_TIMER_KEY);
       localStorage.removeItem(SIGNUP_PROFILE_KEY);
+      localStorage.removeItem(OTP_TIMER_RESETED_KEY);
       successMessage("OTP verified successfully!");
       navigate("/login");
     } catch (error: unknown) {
@@ -130,6 +144,7 @@ export default function OTPInputPage() {
         "This user's email has already been verified"
       ) {
         localStorage.removeItem(OTP_TIMER_KEY);
+        localStorage.removeItem(OTP_TIMER_RESETED_KEY);
         successMessage("Email already verified!");
         navigate("/login");
       } else {
@@ -158,7 +173,8 @@ export default function OTPInputPage() {
 
       successMessage("New OTP sent to your email!");
       const expirationTime = Date.now() + 60 * 1000;
-      startTimer(expirationTime); // Start the timer immediately
+      localStorage.setItem(OTP_TIMER_RESETED_KEY, "false");
+      startTimer(expirationTime);
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
       errorMessage(errorResponse);
@@ -232,7 +248,7 @@ export default function OTPInputPage() {
                 }
                 className="w-full"
               >
-                {form.formState.isSubmitting ? "Submitting..." : "Verify OTP"}
+                {form.formState.isSubmitting ? "Verifying..." : "Verify OTP"}
               </Button>
 
               <div className="text-center mt-4">

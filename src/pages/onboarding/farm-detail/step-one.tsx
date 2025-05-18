@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,54 +42,72 @@ import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import CropFieldManager from "@/components/CropFieldManager";
 import { useAuth } from "@/hooks/useAuth";
-import { UserProfile } from "@/types/user";
 import { Input } from "@/components/ui/input";
 import { PolygonCoord } from "@/components/GoogleMaps";
-import { USER_PROFILE_KEY } from "@/types/constants";
+import {
+  BACK_BUTTON_CLICKED_KEY,
+  CURRENT_STEP_KEY,
+  FARM_ID_KEY,
+  FARMER_PROFILE_KEY,
+  STEP_ONE_KEY,
+} from "@/types/constants";
 
 export default function StepOne() {
   const navigate = useNavigate();
   const { successMessage, errorMessage } = useNotification();
-  const [govFiles, setGovFiles] = useState<File[]>([]);
-  const [landFiles, setLandFiles] = useState<File[]>([]);
+  const [govRegFiles, setGovRegFiles] = useState<FileWithPreview[]>([]);
+  const [landRightsFiles, setLandRightsFiles] = useState<FileWithPreview[]>([]);
   const [farmPhotos, setFarmPhotos] = useState<FileWithPreview[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [govFileError, setGovFileError] = useState<string>("");
   const [landFileError, setLandFileError] = useState<string>("");
   const [farmPhotoError, setFarmPhotoError] = useState<string>("");
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const { user, loading, setUser } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+  const farmerProfile: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
+  const effectiveOnboardingStage =
+    user?.userType === "agent"
+      ? farmerProfile.onboarding_stage
+      : user?.onboarding_stage;
 
+  const xfmrId = farmerProfile.id ?? "";
+
+  const existingFarmId = getFromLocalStorage(FARM_ID_KEY, "");
   const isBackButtonClicked =
-    getFromLocalStorage("back-button-clicked", {}) === "true";
+    getFromLocalStorage(BACK_BUTTON_CLICKED_KEY, {}) === "true";
+
   const form = useForm<FarmDetailsFormData>({
     resolver: zodResolver(farmDetailsSchema),
     defaultValues: {
       region: undefined,
-      longitude: 0,
-      latitude: 0,
+      longitude: undefined,
+      latitude: undefined,
       crop_type: "",
-      crop_source: "",
-      origin: "",
+      crop_source: undefined,
+      origin: undefined,
       tree_type: "",
       tree_variety: "",
-      soil_type: "",
+      soil_type: undefined,
       farm_name: "",
       town_location: "",
       country: "Ethiopia",
       total_size_hectares: 0,
       coffee_area_hectares: 0,
-      altitude_meters: "Above 2200",
+      altitude_meters: undefined,
       capacity_kg: 0,
       avg_annual_temp: 0,
       annual_rainfall_mm: 0,
       polygon_coords: [],
     },
   });
-  const [_latitude, setLatitude] = useState(0);
-  const [_longitude, setLongitude] = useState(0);
-  const { reset, trigger } = form;
+
+  const { trigger } = form;
+
+  const farmName = useWatch({
+    control: form.control,
+    name: "farm_name",
+    defaultValue: "",
+  });
 
   const calculateCenter = (polygons: PolygonCoord[][]) => {
     if (!polygons.length || !polygons[0].length)
@@ -129,83 +147,12 @@ export default function StepOne() {
     return area / 10000;
   };
 
-  useEffect(() => {
-    const savedProfile: any = getFromLocalStorage(USER_PROFILE_KEY, {});
-    if (
-      savedProfile &&
-      savedProfile.id &&
-      savedProfile.email &&
-      savedProfile.first_name &&
-      savedProfile.last_name &&
-      savedProfile.phone &&
-      savedProfile.verification_status &&
-      savedProfile.avatar_url &&
-      savedProfile.userType &&
-      savedProfile.onboarding_stage &&
-      savedProfile.last_login_at
-    ) {
-      setUserProfile(savedProfile);
-    } else {
-      setUserProfile(null);
-    }
-
-    if (savedProfile?.onboarding_stage === "farm_profile") {
-      localStorage.removeItem("farm-id");
-    }
-
-    const savedData = getFromLocalStorage<FarmDetailsFormData>(
-      "step-one",
-      {} as FarmDetailsFormData,
-    );
-    if (savedData && Object.keys(savedData).length > 0 && isBackButtonClicked) {
-      reset({
-        ...savedData,
-        polygon_coords: Array.isArray(savedData.polygon_coords)
-          ? savedData.polygon_coords
-          : [],
-        region: savedData.region,
-        crop_source: savedData.crop_source,
-        origin: savedData.origin,
-        soil_type: savedData.soil_type,
-        altitude_meters: savedData.altitude_meters,
-        crop_type: savedData.crop_type,
-        tree_type: savedData.tree_type,
-        tree_variety: savedData.tree_variety,
-        farm_name: savedData.farm_name,
-        town_location: savedData.town_location,
-        country: savedData.country,
-        total_size_hectares: savedData.total_size_hectares || 0,
-        coffee_area_hectares: savedData.coffee_area_hectares || 0,
-        capacity_kg: savedData.capacity_kg || 0,
-        avg_annual_temp: savedData.avg_annual_temp || 0,
-        annual_rainfall_mm: savedData.annual_rainfall_mm || 0,
-        latitude: savedData.latitude,
-        longitude: savedData.longitude,
-      });
-    }
-
-    const savedFarmPhotos: string[] = getFromLocalStorage("farm-photos", []);
-    if (savedFarmPhotos.length > 0) {
-      const loadedPhotos: FileWithPreview[] = savedFarmPhotos.map(
-        (url, index) => ({
-          file: new File([], `photo_${index}`),
-          preview: url,
-          type: url.endsWith(".pdf") ? "pdf" : "image",
-        }),
-      );
-      setFarmPhotos(loadedPhotos);
-    }
-  }, [reset]);
-
   const validateFiles = (): { isValid: boolean; error?: APIErrorResponse } => {
     setGovFileError("");
     setLandFileError("");
     setFarmPhotoError("");
 
-    if (
-      govFiles.length === 0 &&
-      userProfile?.onboarding_stage === "farm_profile"
-    ) {
+    if (govRegFiles.length === 0) {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -220,10 +167,7 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    if (
-      landFiles.length === 0 &&
-      userProfile?.onboarding_stage === "farm_profile"
-    ) {
+    if (landRightsFiles.length === 0) {
       const error: APIErrorResponse = {
         success: false,
         error: {
@@ -238,8 +182,23 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    const oversizedGovFiles = govFiles.some(
-      (file) => file.size > 5 * 1024 * 1024,
+    if (farmPhotos.length === 0) {
+      const error: APIErrorResponse = {
+        success: false,
+        error: {
+          message: "At least one farm photo is required",
+          details: "Please upload at least one farm photo",
+          code: 400,
+          hint: "The file must be in JPG or PNG format, up to 5MB",
+        },
+      };
+      setFarmPhotoError(error.error.message);
+      errorMessage(error);
+      return { isValid: false, error };
+    }
+
+    const oversizedGovFiles = govRegFiles.some(
+      (file) => file.file.size > 5 * 1024 * 1024,
     );
     if (oversizedGovFiles) {
       const error: APIErrorResponse = {
@@ -256,8 +215,8 @@ export default function StepOne() {
       return { isValid: false, error };
     }
 
-    const oversizedLandFiles = landFiles.some(
-      (file) => file.size > 5 * 1024 * 1024,
+    const oversizedLandFiles = landRightsFiles.some(
+      (file) => file.file.size > 5 * 1024 * 1024,
     );
     if (oversizedLandFiles) {
       const error: APIErrorResponse = {
@@ -295,15 +254,135 @@ export default function StepOne() {
     return { isValid: true };
   };
 
-  const handleFarmPhotosSelected = (selectedPhotos: File[]) => {
-    const newPhotos: FileWithPreview[] = selectedPhotos.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      type: file.type === "application/pdf" ? "pdf" : "image",
-    }));
-    setFarmPhotos(newPhotos);
-    setFarmPhotoError("");
+  const fetchFirstFarm = async () => {
+    setIsLoadingFiles(true);
+    try {
+      if (loading || !user) {
+        return;
+      }
+
+      const response: any = await apiService().get(
+        "/onboarding/seller/get-first-farm",
+        xfmrId ? xfmrId : "",
+      );
+
+      if (response.success) {
+        const farm = response.data.farm;
+
+        const polygonCoords = Array.isArray(farm.polygon_coords)
+          ? farm.polygon_coords
+          : [];
+
+        form.reset({
+          farm_name: farm.farm_name,
+          polygon_coords: polygonCoords,
+          region: farm.region,
+          crop_source: farm.crop_source,
+          origin: farm.origin,
+          soil_type: farm.soil_type,
+          altitude_meters: farm.altitude_meters,
+          crop_type: farm.crop_type,
+          tree_type: farm.tree_type,
+          tree_variety: farm.tree_variety,
+          town_location: farm.town_location,
+          country: farm.country,
+          total_size_hectares: farm.total_size_hectares,
+          coffee_area_hectares: farm.coffee_area_hectares,
+          capacity_kg: farm.capacity_kg,
+          avg_annual_temp: farm.avg_annual_temp,
+          annual_rainfall_mm: farm.annual_rainfall_mm,
+          latitude: farm.latitude,
+          longitude: farm.longitude,
+        });
+
+        saveToLocalStorage(FARM_ID_KEY, farm.id);
+
+        if (farm.kyc_documents?.length > 0) {
+          const govRegFilesTemp: FileWithPreview[] = [];
+          const landRightsFilesTemp: FileWithPreview[] = [];
+
+          await Promise.all(
+            farm.kyc_documents.map(async (doc: any) => {
+              try {
+                const res = await fetch(doc.doc_url);
+                if (!res.ok) throw new Error(`Failed to fetch ${doc.doc_url}`);
+                const blob = await res.blob();
+                const fileName =
+                  doc.doc_url.split("/").pop() || `document_${doc.id}`;
+                const file = new File([blob], fileName, { type: blob.type });
+                const preview = URL.createObjectURL(file);
+                const type = file.type === "application/pdf" ? "pdf" : "image";
+
+                const fileWithPreview: FileWithPreview = {
+                  file,
+                  preview,
+                  type,
+                };
+
+                if (doc.doc_type === "government_registration") {
+                  govRegFilesTemp.push(fileWithPreview);
+                } else if (doc.doc_type === "land_rights") {
+                  landRightsFilesTemp.push(fileWithPreview);
+                }
+              } catch (err) {
+                console.error(
+                  `[AddFarm] Error fetching document ${doc.doc_url}:`,
+                  err,
+                );
+              }
+            }),
+          );
+
+          setGovRegFiles(govRegFilesTemp);
+          setLandRightsFiles(landRightsFilesTemp);
+        }
+
+        if (farm.photos?.length > 0) {
+          const photosTemp: (FileWithPreview | null)[] = await Promise.all(
+            farm.photos.map(async (photo: any) => {
+              try {
+                const res = await fetch(photo.photo_url);
+                if (!res.ok)
+                  throw new Error(`Failed to fetch ${photo.photo_url}`);
+                const blob = await res.blob();
+                const fileName =
+                  photo.photo_url.split("/").pop() || `farm_photo_${photo.id}`;
+                const file = new File([blob], fileName, { type: blob.type });
+                const preview = URL.createObjectURL(file);
+                const type = file.type === "application/pdf" ? "pdf" : "image";
+                return { file, preview, type } as FileWithPreview;
+              } catch (err) {
+                console.error(
+                  `[AddFarm] Error fetching farm photo ${photo.photo_url}:`,
+                  err,
+                );
+                return null;
+              }
+            }),
+          );
+          const validPhotos = photosTemp.filter(
+            (photo): photo is FileWithPreview => photo !== null,
+          );
+          setFarmPhotos(validPhotos);
+        }
+      } else {
+        throw new Error(response.message || "Failed to fetch farm data");
+      }
+    } catch (error: any) {
+      errorMessage(error as APIErrorResponse);
+    } finally {
+      setIsLoadingFiles(false); // Stop loading
+    }
   };
+
+  useEffect(() => {
+    if (
+      (user?.onboarding_stage !== undefined && existingFarmId) ||
+      isBackButtonClicked
+    ) {
+      fetchFirstFarm();
+    }
+  }, [user?.onboarding_stage, isBackButtonClicked, existingFarmId]);
 
   const onSubmit = async (data: FarmDetailsFormData) => {
     setIsSubmitting(true);
@@ -312,14 +391,63 @@ export default function StepOne() {
       const isValid = await trigger();
       if (!isValid) {
         const errors = form.formState.errors;
-        if (errors.polygon_coords) {
+        const fieldOrder: (keyof FarmDetailsFormData)[] = [
+          "farm_name",
+          "town_location",
+          "country",
+          "region",
+          "altitude_meters",
+          "polygon_coords",
+          "latitude",
+          "longitude",
+          "total_size_hectares",
+          "coffee_area_hectares",
+          "crop_type",
+          "crop_source",
+          "origin",
+          "capacity_kg",
+          "avg_annual_temp",
+          "annual_rainfall_mm",
+          "tree_type",
+          "tree_variety",
+          "soil_type",
+        ];
+
+        const fieldLabels: Partial<Record<keyof FarmDetailsFormData, string>> =
+          {
+            farm_name: "Farm Name",
+            town_location: "Town or Farm Location",
+            country: "Country",
+            region: "Region",
+            altitude_meters: "Altitude",
+            polygon_coords: "Farm Boundary Map",
+            latitude: "Latitude",
+            longitude: "Longitude",
+            total_size_hectares: "Total Farm Size",
+            coffee_area_hectares: "Total Coffee Size",
+            crop_type: "Crop Type",
+            crop_source: "Crop Source",
+            origin: "Origin",
+            capacity_kg: "Crop Capacity",
+            avg_annual_temp: "Average Annual Temperature",
+            annual_rainfall_mm: "Annual Rainfall",
+            tree_type: "Tree Type",
+            tree_variety: "Tree Variety",
+            soil_type: "Soil Type",
+          };
+        const missingFields = fieldOrder
+          .filter((field) => errors[field])
+          .map((field) => fieldLabels[field] || field)
+          .join(", ");
+
+        if (missingFields) {
           const error: APIErrorResponse = {
             success: false,
             error: {
-              message: "Farm boundary map is required",
-              details: "Please draw the farm boundary on the map",
+              message: `Fill the missing fields: ${missingFields}`,
+              details: "Please complete all required fields before submitting",
               code: 400,
-              hint: "Use the map interface to outline your farm's boundaries",
+              hint: "Check the form for highlighted errors",
             },
           };
           errorMessage(error);
@@ -349,55 +477,50 @@ export default function StepOne() {
         }
       }
 
-      govFiles.forEach((file) => {
-        formData.append("government_registration", file);
+      govRegFiles.forEach((file) => {
+        formData.append("government_registration", file.file);
       });
 
-      landFiles.forEach((file) => {
-        formData.append("land_rights", file);
+      landRightsFiles.forEach((file) => {
+        formData.append("land_rights", file.file);
       });
 
       farmPhotos.forEach((photo) => {
         formData.append("farm_photos", photo.file);
       });
 
-      const govFilePaths = govFiles.map((file) => URL.createObjectURL(file));
-      const landFilePaths = landFiles.map((file) => URL.createObjectURL(file));
-      const farmPhotoPaths = farmPhotos.map((photo) => photo.preview);
-      saveToLocalStorage("gov-files", govFilePaths);
-      saveToLocalStorage("land-files", landFilePaths);
-      saveToLocalStorage("farm-photos", farmPhotoPaths);
-
-      const existingFarmId = getFromLocalStorage("farm-id", "");
-
-      if (userProfile?.onboarding_stage === undefined && !existingFarmId) {
+      if (
+        effectiveOnboardingStage === "farm_profile" &&
+        !existingFarmId &&
+        !isBackButtonClicked
+      ) {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/farm-details",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          xfmrId ? xfmrId : "",
         );
+
         setUser({
           ...user!,
           onboarding_stage: "crops_to_sell",
         });
 
-        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+        const farmerProfile1: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
         if (farmerProfile1) {
-          saveToLocalStorage("farmerProfile", {
+          saveToLocalStorage(FARMER_PROFILE_KEY, {
             ...farmerProfile1,
             onboarding_stage: "crops_to_sell",
           });
         }
 
-        saveToLocalStorage("step-one", data);
-        if (response.data?.farm?.id) {
-          saveToLocalStorage("farm-id", response.data.farm.id);
-        }
+        saveToLocalStorage(STEP_ONE_KEY, data);
+        saveToLocalStorage(FARM_ID_KEY, response.data.farm.id);
+        saveToLocalStorage(BACK_BUTTON_CLICKED_KEY, "false");
+        saveToLocalStorage(CURRENT_STEP_KEY, "crops_to_sell");
+
         navigate("/onboarding/step-two");
         successMessage("Farm details saved successfully!");
-        saveToLocalStorage("is-back-button-clicked", "false");
-        localStorage.setItem("current-step", JSON.stringify("crops_to_sell"));
       } else {
         formData.append("farmId", existingFarmId);
 
@@ -405,7 +528,7 @@ export default function StepOne() {
           "/sellers/farms/update-farm",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          xfmrId ? xfmrId : "",
         );
 
         setUser({
@@ -413,127 +536,32 @@ export default function StepOne() {
           onboarding_stage: "crops_to_sell",
         });
 
-        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
+        const farmerProfile1: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
         if (farmerProfile1) {
-          saveToLocalStorage("farmerProfile", {
+          saveToLocalStorage(FARMER_PROFILE_KEY, {
             ...farmerProfile1,
             onboarding_stage: "crops_to_sell",
           });
         }
 
-        removeFromLocalStorage("current-step");
-        saveToLocalStorage("is-back-button-clicked", "false");
-        saveToLocalStorage("current-step", "crops_to_sell");
+        removeFromLocalStorage(CURRENT_STEP_KEY);
+        saveToLocalStorage(BACK_BUTTON_CLICKED_KEY, "false");
+        saveToLocalStorage(CURRENT_STEP_KEY, "crops_to_sell");
+
         navigate("/onboarding/step-two");
         successMessage("Farm data updated successfully!");
       }
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
     } finally {
-      saveToLocalStorage("step-one", data);
+      saveToLocalStorage(STEP_ONE_KEY, data);
       setIsSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    const fetchFirstFarm = async () => {
-      try {
-        if (loading || !user) {
-          return;
-        }
-
-        const farmerId =
-          user.userType === "agent" ? farmerProfile?.id : undefined;
-        const response: any = await apiService().get(
-          "/onboarding/seller/get-first-farm",
-          farmerId,
-        );
-
-        if (response.success) {
-          form.reset({
-            ...response.data.farm,
-            polygon_coords: Array.isArray(response.data.farm.polygon_coords)
-              ? response.data.farm.polygon_coords
-              : [],
-            region: response.data.farm.region,
-            crop_source: response.data.farm.crop_source,
-            origin: response.data.farm.origin,
-            soil_type: response.data.farm.soil_type,
-            altitude_meters: response.data.farm.altitude_meters,
-            crop_type: response.data.farm.crop_type,
-            tree_type: response.data.farm.tree_type,
-            tree_variety: response.data.farm.tree_variety,
-            farm_name: response.data.farm.farm_name,
-            town_location: response.data.farm.town_location,
-            country: response.data.farm.country,
-            total_size_hectares: response.data.farm.total_size_hectares,
-            coffee_area_hectares: response.data.farm.coffee_area_hectares,
-            capacity_kg: response.data.farm.capacity_kg,
-            avg_annual_temp: response.data.farm.avg_annual_temp,
-            annual_rainfall_mm: response.data.farm.annual_rainfall_mm,
-            latitude: response.data.farm.latitude,
-            longitude: response.data.farm.longitude,
-          });
-
-          setLatitude(response.data.farm.latitude);
-          setLongitude(response.data.farm.longitude);
-          saveToLocalStorage("farm-id", response.data.farm.id);
-
-          // Fetch farm photos if available
-          if (response.data.farm.photos?.length > 0) {
-            const photosTemp = await Promise.all(
-              response.data.farm.photos.map(async (photo: any) => {
-                try {
-                  const res = await fetch(photo.url);
-                  if (!res.ok) throw new Error(`Failed to fetch ${photo.url}`);
-                  const blob = await res.blob();
-                  const fileName =
-                    photo.url.split("/").pop() || `farm_photo_${photo.id}`;
-                  const file = new File([blob], fileName, { type: blob.type });
-                  const preview = URL.createObjectURL(file);
-                  const type =
-                    file.type === "application/pdf" ? "pdf" : "image";
-                  return { file, preview, type } as FileWithPreview;
-                } catch (err) {
-                  console.error(`Error fetching farm photo ${photo.url}:`, err);
-                  return null;
-                }
-              }),
-            );
-            const validPhotos = photosTemp.filter(
-              (photo): photo is FileWithPreview => photo !== null,
-            );
-            setFarmPhotos(validPhotos);
-            saveToLocalStorage(
-              "farm-photos",
-              validPhotos.map((photo) => photo.preview),
-            );
-          }
-        } else {
-          console.log(
-            "fetchFirstFarm: Failed to fetch farm",
-            response.error as APIErrorResponse,
-          );
-        }
-      } catch (error: any) {
-        console.log("fetchFirstFarm: Error", error as APIErrorResponse);
-      }
-    };
-
-    const existingFarmId = getFromLocalStorage("farm-id", "");
-
-    if (
-      (userProfile?.onboarding_stage !== undefined && existingFarmId) ||
-      isBackButtonClicked
-    ) {
-      fetchFirstFarm();
-    }
-  }, [form, userProfile?.onboarding_stage, user, loading, isBackButtonClicked]);
-
   return (
     <>
       <Stepper currentStep={1} />
-
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -563,11 +591,20 @@ export default function StepOne() {
                 <CardContent>
                   <FileUpload
                     onFilesSelected={(files) => {
-                      setGovFiles(files);
+                      setGovRegFiles(
+                        files.map((file) => ({
+                          file,
+                          preview: URL.createObjectURL(file),
+                          type:
+                            file.type === "application/pdf" ? "pdf" : "image",
+                        })),
+                      );
                       setGovFileError("");
                     }}
                     maxFiles={5}
                     maxSizeMB={5}
+                    initialFiles={govRegFiles}
+                    loading={isLoadingFiles} // Pass loading state
                   />
                   {govFileError && (
                     <p className="text-red-500 text-sm mt-2">{govFileError}</p>
@@ -575,8 +612,8 @@ export default function StepOne() {
                 </CardContent>
                 <CardFooter>
                   <div className="text-sm text-muted-foreground">
-                    {govFiles.length > 0
-                      ? `${govFiles.length} files selected`
+                    {govRegFiles.length > 0
+                      ? `${govRegFiles.length} files selected`
                       : "No files selected"}
                   </div>
                 </CardFooter>
@@ -592,11 +629,20 @@ export default function StepOne() {
                 <CardContent>
                   <FileUpload
                     onFilesSelected={(files) => {
-                      setLandFiles(files);
+                      setLandRightsFiles(
+                        files.map((file) => ({
+                          file,
+                          preview: URL.createObjectURL(file),
+                          type:
+                            file.type === "application/pdf" ? "pdf" : "image",
+                        })),
+                      );
                       setLandFileError("");
                     }}
                     maxFiles={5}
                     maxSizeMB={5}
+                    initialFiles={landRightsFiles}
+                    loading={isLoadingFiles} // Pass loading state
                   />
                   {landFileError && (
                     <p className="text-red-500 text-sm mt-2">{landFileError}</p>
@@ -604,8 +650,8 @@ export default function StepOne() {
                 </CardContent>
                 <CardFooter>
                   <div className="text-sm text-muted-foreground">
-                    {landFiles.length > 0
-                      ? `${landFiles.length} files selected`
+                    {landRightsFiles.length > 0
+                      ? `${landRightsFiles.length} files selected`
                       : "No files selected"}
                   </div>
                 </CardFooter>
@@ -628,10 +674,21 @@ export default function StepOne() {
                 </CardHeader>
                 <CardContent>
                   <FileUpload
-                    onFilesSelected={handleFarmPhotosSelected}
+                    onFilesSelected={(files) => {
+                      setFarmPhotos(
+                        files.map((file) => ({
+                          file,
+                          preview: URL.createObjectURL(file),
+                          type:
+                            file.type === "application/pdf" ? "pdf" : "image",
+                        })),
+                      );
+                      setFarmPhotoError("");
+                    }}
                     maxFiles={6}
                     maxSizeMB={5}
                     initialFiles={farmPhotos}
+                    loading={isLoadingFiles} // Pass loading state
                   />
                   {farmPhotoError && (
                     <p className="text-red-500 text-sm mt-2">
@@ -725,50 +782,7 @@ export default function StepOne() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="total_size_hectares"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total farm size (hectare)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          value={field.value}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const parsedValue =
-                              value === "" ? 0.1 : Number(value);
-                            field.onChange(parsedValue);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="coffee_area_hectares"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total coffee size (hectare)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          value={field.value}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const parsedValue =
-                              value === "" ? 0.1 : Number(value);
-                            field.onChange(parsedValue);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
                 <FormField
                   control={form.control}
                   name="altitude_meters"
@@ -777,7 +791,6 @@ export default function StepOne() {
                       <FormLabel>Altitude</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue="Above 2200"
                         value={field.value}
                       >
                         <FormControl>
@@ -817,7 +830,6 @@ export default function StepOne() {
                                 shouldValidate: true,
                               });
 
-                              // Calculate and set center coordinates
                               const center = calculateCenter(polygons);
                               form.setValue("latitude", center.lat, {
                                 shouldValidate: true,
@@ -839,7 +851,7 @@ export default function StepOne() {
                           }}
                           initialPolygons={field.value}
                           center={{ lat: 9.03, lng: 38.74 }}
-                          farmName={form.getValues("farm_name") || "Addis farm"}
+                          farmName={farmName || "New farm"}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500" />
@@ -860,7 +872,7 @@ export default function StepOne() {
                           step="any"
                           {...field}
                           disabled
-                          value={field.value.toFixed(6)}
+                          value={field.value?.toFixed(6) ?? ""}
                           placeholder="Calculated from boundary"
                         />
                       </FormControl>
@@ -880,7 +892,7 @@ export default function StepOne() {
                           step="any"
                           {...field}
                           disabled
-                          value={field.value.toFixed(6)}
+                          value={field.value?.toFixed(6) ?? ""}
                           placeholder="Calculated from boundary"
                         />
                       </FormControl>
@@ -895,6 +907,50 @@ export default function StepOne() {
           <div className="mb-6">
             <h4 className="font-medium mb-4 text-gray-700">Crop environment</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="total_size_hectares"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total farm size (hectare)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        value={field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const parsedValue =
+                            value === "" ? 0.1 : Number(value);
+                          field.onChange(parsedValue);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="coffee_area_hectares"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total coffee size (hectare)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        value={field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const parsedValue =
+                            value === "" ? 0.1 : Number(value);
+                          field.onChange(parsedValue);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="crop_type"
@@ -1068,20 +1124,16 @@ export default function StepOne() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tree Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue="Sun Grown"
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select tree type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Shade Grown">Shade-grown</SelectItem>
-                        <SelectItem value="Sun Grown">Sun-grown</SelectItem>
-                        <SelectItem value="Mixed">Mixed</SelectItem>
+                        <SelectItem value="shade_grown">Shade-grown</SelectItem>
+                        <SelectItem value="sun_grown">Sun-grown</SelectItem>
+                        <SelectItem value="mixed">Mixed</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

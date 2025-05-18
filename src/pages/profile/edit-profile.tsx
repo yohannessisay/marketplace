@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Upload, User } from "lucide-react";
@@ -28,6 +28,7 @@ import { APIErrorResponse } from "@/types/api";
 import { getFromLocalStorage } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 const SkeletonProfileForm = () => (
   <div className="space-y-8 shadow-lg px-8 rounded-md py-4">
@@ -86,8 +87,19 @@ const SkeletonProfileForm = () => (
   </div>
 );
 
+interface ProfileData {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  telegram?: string;
+  about_me?: string;
+  address?: string;
+}
+
 export default function EditProfile() {
   const navigation = useNavigate();
+  const { successMessage, errorMessage } = useNotification();
   const [isClient, setIsClient] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -96,8 +108,19 @@ export default function EditProfile() {
     null,
   );
   const { user, setUser } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
-  const { successMessage, errorMessage } = useNotification();
+
+  const farmerProfile: any = useMemo(
+    () => getFromLocalStorage(FARMER_PROFILE_KEY, {}),
+    [],
+  );
+
+  const profileSource = useMemo(
+    () =>
+      (user && user.userType === "agent"
+        ? farmerProfile
+        : user || {}) as ProfileData,
+    [user, farmerProfile],
+  );
 
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
@@ -129,10 +152,10 @@ export default function EditProfile() {
       if (response.success && response.data) {
         const { profile } = response.data;
         const profileData: ProfileInfoFormData = {
-          first_name: user.first_name || "",
-          last_name: user.last_name || "",
-          email: user.email || "",
-          phone: user.phone || "",
+          first_name: profileSource.first_name || "",
+          last_name: profileSource.last_name || "",
+          email: profileSource.email || "",
+          phone: profileSource.phone || "",
           telegram: profile.telegram || "",
           about_me: profile.about_me || "",
           address: profile.address || "",
@@ -165,10 +188,6 @@ export default function EditProfile() {
 
   useEffect(() => {
     setIsClient(true);
-    const storedImage = localStorage.getItem("profile-image");
-    if (storedImage) {
-      setProfileImage(storedImage);
-    }
     if (!initialData) {
       fetchProfileData();
     }

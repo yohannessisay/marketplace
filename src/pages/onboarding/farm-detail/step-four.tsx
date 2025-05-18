@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Upload, User } from "lucide-react";
@@ -30,124 +30,88 @@ import { apiService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
 import ConfirmationModal from "@/components/modals/ConfrmationModal";
+import {
+  BACK_BUTTON_CLICKED_KEY,
+  FARMER_PROFILE_KEY,
+  HAS_COMPLETED_STEP_THREE_KEY,
+  USER_PROFILE_KEY,
+} from "@/types/constants";
 
-interface ProfileInfo {
-  id: string;
-  telegram: string;
-  about_me: string;
-  address: string;
-  profile_image?: string;
-  created_at: string;
-  updated_at: string;
+interface ProfileData {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  telegram?: string;
+  about_me?: string;
+  address?: string;
 }
 
 export default function StepFour() {
-  const navigation = useNavigate();
-  const [isClient, setIsClient] = useState(false);
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [profileInfo, setProfileInfo] = useState<ProfileInfo | undefined>();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user, setUser } = useAuth();
   const { successMessage, errorMessage } = useNotification();
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+  const { user, setUser, loading } = useAuth();
+
+  const farmerProfile: any = useMemo(
+    () => getFromLocalStorage(FARMER_PROFILE_KEY, {}),
+    [],
+  );
+
+  const profileSource = useMemo(
+    () =>
+      (user && user.userType === "agent"
+        ? farmerProfile
+        : user || {}) as ProfileData,
+    [user, farmerProfile],
+  );
+
+  const xfmrId = farmerProfile.id ?? "";
 
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
     defaultValues: {
-      first_name: farmerProfile.first_name || "",
-      last_name: farmerProfile.last_name || "",
-      email: farmerProfile.email || "",
-      phone: farmerProfile.phone || "",
+      first_name: profileSource.first_name || "",
+      last_name: profileSource.last_name || "",
+      email: profileSource.email || "",
+      phone: profileSource.phone || "",
       telegram: "",
       about_me: "",
       address: "",
     },
   });
 
-  const fetchProfileInfo = async () => {
-    try {
-      const response: any = await apiService().get(
-        "/onboarding/seller/get-profile",
-        user?.userType === "agent" ? farmerProfile?.id : "",
-      );
-      setProfileInfo(response.data.profile);
-      form.reset({
-        first_name: farmerProfile.first_name || "",
-        last_name: farmerProfile.last_name || "",
-        email: farmerProfile.email || "",
-        phone: farmerProfile.phone || "",
-        telegram: response.data.profile.telegram || "",
-        about_me: response.data.profile.about_me || "",
-        address: response.data.profile.address || "",
-      });
-      if (response.data.profile.avatar_url) {
-        setProfileImage(response.data.profile.avatar_url);
-        localStorage.setItem("profile-image", response.data.profile.avatar_url);
-      }
-    } catch (error: any) {
-      console.error("Failed to fetch profile info:", error);
-      errorMessage(error as APIErrorResponse);
-    }
-  };
-
-  const loadSavedData = () => {
-    const savedData = getFromLocalStorage("step-four", {});
-    if (Object.keys(savedData).length > 0) {
-      const loadedData: ProfileInfoFormData = {
-        first_name: (savedData as any).first_name || "",
-        last_name: (savedData as any).last_name || "",
-        phone: (savedData as any).phone || "",
-        email: (savedData as any).email || "",
-        telegram: (savedData as any).telegram || "",
-        about_me: (savedData as any).about_me || "",
-        address: (savedData as any).address || "",
-      };
-      form.setValue("telegram", loadedData.telegram);
-      form.setValue("about_me", loadedData.about_me);
-      form.setValue("address", loadedData.address);
-      const savedImage = localStorage.getItem("profile-image");
-      if (savedImage) {
-        setProfileImage(savedImage);
-      }
-    }
-  };
-
   useEffect(() => {
-    setIsClient(true);
-    if (user) {
-      const isBackButtonClicked =
-        getFromLocalStorage("back-button-clicked", {}) === "true";
-      const effectiveOnboardingStage =
-        user.userType === "agent" && farmerProfile?.id
-          ? farmerProfile.onboarding_stage
-          : user.onboarding_stage;
-
-      if (effectiveOnboardingStage === "completed" && isBackButtonClicked) {
-        fetchProfileInfo();
-      }
-      loadSavedData();
-    } else {
-      console.warn("No user found in auth context");
+    if (profileSource && !loading && !form.formState.isDirty) {
+      form.reset({
+        first_name: profileSource.first_name || "",
+        last_name: profileSource.last_name || "",
+        email: profileSource.email || "",
+        phone: profileSource.phone || "",
+        telegram: profileSource.telegram || "",
+        about_me: profileSource.about_me || "",
+        address: profileSource.address || "",
+      });
     }
-  }, [user, form]);
+  }, [profileSource, form, loading]);
 
-  const handleFilesSelected = (selectedFiles: File[]) => {
+  const handleFilesSelected = useCallback((selectedFiles: File[]) => {
     const file = selectedFiles[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
         setProfileImage(imageUrl);
-        localStorage.setItem("profile-image", imageUrl);
       };
       reader.readAsDataURL(file);
+      setFiles([file]);
     }
-    setFiles((prev) => [...prev, ...selectedFiles]);
-  };
+  }, []);
 
-  const clearLocalStorageExcept = (keysToKeep: string[]) => {
+  const clearLocalStorageExcept = useCallback((keysToKeep: string[]) => {
     const keptData: { [key: string]: any } = {};
     keysToKeep.forEach((key) => {
       const data = localStorage.getItem(key);
@@ -159,44 +123,41 @@ export default function StepFour() {
     Object.keys(keptData).forEach((key) => {
       localStorage.setItem(key, keptData[key]);
     });
-  };
+  }, []);
 
-  const onSubmit = async (data: ProfileInfoFormData) => {
-    try {
-      setIsSubmitting(true);
-      const formData = new FormData();
-      for (const key in data) {
-        if (Object.prototype.hasOwnProperty.call(data, key)) {
-          formData.append(key, String(data[key as keyof ProfileInfoFormData]));
+  const onSubmit = useCallback(
+    async (data: ProfileInfoFormData) => {
+      try {
+        setIsSubmitting(true);
+        const formData = new FormData();
+        for (const key in data) {
+          if (Object.prototype.hasOwnProperty.call(data, key)) {
+            formData.append(
+              key,
+              String(data[key as keyof ProfileInfoFormData]),
+            );
+          }
         }
-      }
-      files.forEach((file) => {
-        formData.append("avatar_image", file);
-      });
+        files.forEach((file) => {
+          formData.append("avatar_image", file);
+        });
 
-      if (
-        user?.onboarding_stage === "avatar_image" ||
-        user?.userType === "agent"
-      ) {
         const response: any = await apiService().postFormData(
           "/onboarding/seller/profile",
           formData,
           true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          xfmrId,
         );
 
         if (user && user.userType === "agent" && farmerProfile) {
-          const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
-          if (farmerProfile1) {
-            saveToLocalStorage("farmerProfile", {
-              ...farmerProfile1,
-              onboarding_stage: "completed",
-              avatar_url: response.data.profile.avatar_image.url,
-              telegram: response.data.profile.telegram,
-              address: response.data.profile.address,
-              about_me: response.data.profile.about_me,
-            });
-          }
+          saveToLocalStorage(FARMER_PROFILE_KEY, {
+            ...farmerProfile,
+            onboarding_stage: "completed",
+            avatar_url: response.data.profile.avatar_image.url,
+            telegram: response.data.profile.telegram,
+            address: response.data.profile.address,
+            about_me: response.data.profile.about_me,
+          });
         } else {
           setUser({
             ...user!,
@@ -209,73 +170,45 @@ export default function StepFour() {
         }
 
         successMessage("Registration completed successfully!");
-        clearLocalStorageExcept(["farmerProfile", "userProfile"]);
-        navigation("/seller-dashboard");
-      } else {
-        formData.append("id", profileInfo?.id || "");
-
-        const response: any = await apiService().patchFormData(
-          "/sellers/profile/update-profile",
-          formData,
-          true,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
-        );
-
-        if (user && user.userType === "agent" && farmerProfile) {
-          const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
-          if (farmerProfile1) {
-            saveToLocalStorage("farmerProfile", {
-              ...farmerProfile1,
-              onboarding_stage: "completed",
-              avatar_url: response.data.profile.avatar_image.url,
-              telegram: response.data.profile.telegram,
-              address: response.data.profile.address,
-              about_me: response.data.profile.about_me,
-            });
-          }
-        } else {
-          setUser({
-            ...user!,
-            onboarding_stage: "completed",
-            avatar_url: response.data.profile.avatar_image.url,
-            telegram: response.data.profile.telegram,
-            address: response.data.profile.address,
-            about_me: response.data.profile.about_me,
-          });
-        }
-
-        successMessage("Profile data updated successfully");
-        clearLocalStorageExcept(["farmerProfile", "userProfile"]);
-        navigation("/seller-dashboard");
+        clearLocalStorageExcept([FARMER_PROFILE_KEY, USER_PROFILE_KEY]);
+        navigate("/seller-dashboard");
+      } catch (error: any) {
+        console.error("Submission error:", error);
+        errorMessage(error as APIErrorResponse);
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (error: any) {
-      console.error("Submission error:", error);
-      errorMessage(error as APIErrorResponse);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    [
+      files,
+      user,
+      farmerProfile,
+      xfmrId,
+      setUser,
+      successMessage,
+      errorMessage,
+      clearLocalStorageExcept,
+      navigate,
+    ],
+  );
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = useCallback(() => {
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleModalConfirm = () => {
+  const handleModalConfirm = useCallback(() => {
     form.handleSubmit(onSubmit)();
-  };
+  }, [form, onSubmit]);
 
-  const handleModalCancel = () => {
+  const handleModalCancel = useCallback(() => {
     setIsModalOpen(false);
-  };
+  }, []);
 
-  const goBack = () => {
-    localStorage.setItem("back-button-clicked", "true");
-    navigation("/onboarding/step-three");
-  };
-
-  if (!isClient) {
-    return null;
-  }
+  const goBack = useCallback(() => {
+    saveToLocalStorage(HAS_COMPLETED_STEP_THREE_KEY, "true");
+    saveToLocalStorage(BACK_BUTTON_CLICKED_KEY, "true");
+    navigate("/onboarding/step-three");
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-primary/5 pt-26">
@@ -313,7 +246,7 @@ export default function StepFour() {
                       <div className="w-40 h-40 rounded-full bg-gray-100 flex items-center justify-center mb-4 overflow-hidden">
                         {profileImage ? (
                           <img
-                            src={profileImage || "/placeholder.svg"}
+                            src={profileImage}
                             alt="Profile"
                             className="w-full h-full object-cover"
                           />

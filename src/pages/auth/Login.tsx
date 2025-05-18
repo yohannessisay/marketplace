@@ -11,9 +11,18 @@ import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
 import { useState } from "react";
 import { Eye, EyeOff, MoveLeft } from "lucide-react";
-import { saveToLocalStorage } from "@/lib/utils";
+import {
+  getFromLocalStorage,
+  removeFromLocalStorage,
+  saveToLocalStorage,
+} from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
-import { SIGNUP_PROFILE_KEY, USER_PROFILE_KEY } from "@/types/constants";
+import {
+  OTP_TIMER_KEY,
+  OTP_TIMER_RESETED_KEY,
+  SIGNUP_PROFILE_KEY,
+  USER_PROFILE_KEY,
+} from "@/types/constants";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
 
@@ -29,6 +38,7 @@ const Login = () => {
   const location = useLocation();
   const { successMessage, errorMessage } = useNotification();
   const [showPassword, setShowPassword] = useState(false);
+  const otp_timer: any = getFromLocalStorage(OTP_TIMER_KEY, {});
 
   const queryParams = new URLSearchParams(location.search);
   const redirectTo = queryParams.get("redirectTo");
@@ -92,6 +102,7 @@ const Login = () => {
       }
 
       navigate(finalRedirect);
+
       saveToLocalStorage("current-step", user.onboarding_stage);
       saveToLocalStorage(USER_PROFILE_KEY, user);
     } catch (error: unknown) {
@@ -101,6 +112,10 @@ const Login = () => {
         "Email verification is required for this account"
       ) {
         saveToLocalStorage(SIGNUP_PROFILE_KEY, data.email);
+        if (otp_timer) {
+          removeFromLocalStorage(OTP_TIMER_KEY);
+          saveToLocalStorage(OTP_TIMER_RESETED_KEY, "true");
+        }
         navigate("/otp");
         successMessage("Verify your email to continue");
       } else {
@@ -150,7 +165,7 @@ const Login = () => {
                 id="email"
                 type="text"
                 {...register("email")}
-                placeholder="someone@test.com"
+                placeholder="someone@company.com"
                 className={`w-full p-3 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 ${
                   errors.email ? "border-red-500" : ""
                 }`}

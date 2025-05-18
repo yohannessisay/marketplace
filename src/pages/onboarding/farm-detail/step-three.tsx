@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +27,14 @@ import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
+import {
+  BACK_BUTTON_CLICKED_KEY,
+  CURRENT_STEP_KEY,
+  FARMER_PROFILE_KEY,
+  HAS_COMPLETED_STEP_THREE_KEY,
+  HAS_COMPLETED_STEP_TWO_KEY,
+  STEP_THREE_KEY,
+} from "@/types/constants";
 
 interface BankAccount {
   id: string;
@@ -42,12 +49,31 @@ interface BankAccount {
 }
 
 export default function StepThree() {
-  const navigation = useNavigate();
+  const navigate = useNavigate();
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const { successMessage, errorMessage } = useNotification();
   const { user, loading, setUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+
+  const isBackButtonClicked = useMemo(
+    () => getFromLocalStorage(BACK_BUTTON_CLICKED_KEY, {}) === "true",
+    [],
+  );
+  const hasCompletedStepThree = useMemo(
+    () => getFromLocalStorage(HAS_COMPLETED_STEP_THREE_KEY, {}) === "true",
+    [],
+  );
+  const farmerProfile: any = useMemo(
+    () => getFromLocalStorage(FARMER_PROFILE_KEY, {}),
+    [],
+  );
+
+  const effectiveOnboardingStage =
+    user?.userType === "agent"
+      ? farmerProfile.onboarding_stage
+      : user?.onboarding_stage;
+
+  const xfmrId = farmerProfile.id ?? "";
 
   const form = useForm<BankInfoFormData>({
     resolver: zodResolver(bankInfoSchema),
@@ -61,16 +87,15 @@ export default function StepThree() {
     },
   });
 
-  const fetchBankAccount = async () => {
+  const fetchBankAccount = useCallback(async () => {
     try {
       const response: any = await apiService().get(
         "/onboarding/seller/get-bank-information",
-        user?.userType === "agent" ? farmerProfile?.id : "",
+        xfmrId,
       );
       const bankAccountData = response.data.bank_account;
       if (bankAccountData) {
         setBankAccount(bankAccountData);
-        // Populate form with fetched data
         form.setValue(
           "account_holder_name",
           bankAccountData.account_holder_name || "",
@@ -89,18 +114,18 @@ export default function StepThree() {
         (error as APIErrorResponse).error || "Failed to fetch bank account",
       );
     }
-  };
+  }, [xfmrId, form]);
 
-  const loadSavedData = () => {
-    const savedData = getFromLocalStorage("step-three", {});
+  const loadSavedData = useCallback(() => {
+    const savedData: any = getFromLocalStorage(STEP_THREE_KEY, {});
     if (Object.keys(savedData).length > 0) {
       const loadedData: BankInfoFormData = {
-        account_holder_name: (savedData as any).account_holder_name || "",
-        bank_name: (savedData as any).bank_name || "",
-        account_number: (savedData as any).account_number || "",
-        branch_name: (savedData as any).branch_name || "",
-        is_primary: (savedData as any).is_primary === "no" ? "no" : "yes",
-        swift_code: (savedData as any).swift_code || "",
+        account_holder_name: savedData.account_holder_name || "",
+        bank_name: savedData.bank_name || "",
+        account_number: savedData.account_number || "",
+        branch_name: savedData.branch_name || "",
+        is_primary: savedData.is_primary === "no" ? "no" : "yes",
+        swift_code: savedData.swift_code || "",
       };
       form.setValue("account_holder_name", loadedData.account_holder_name);
       form.setValue("bank_name", loadedData.bank_name);
@@ -109,52 +134,60 @@ export default function StepThree() {
       form.setValue("is_primary", loadedData.is_primary);
       form.setValue("swift_code", loadedData.swift_code);
     }
-  };
+  }, [form]);
 
   useEffect(() => {
-    const laterStages = ["avatar_image", "bank_information", "completed"];
-    const effectiveOnboardingStage =
-      user?.userType === "agent" && farmerProfile?.id
-        ? farmerProfile.onboarding_stage
-        : user?.onboarding_stage;
-
-    if (laterStages.includes(effectiveOnboardingStage)) {
+    if (
+      !loading &&
+      ((effectiveOnboardingStage === "bank_information" &&
+        isBackButtonClicked) ||
+        hasCompletedStepThree)
+    ) {
       fetchBankAccount();
     }
     loadSavedData();
-  }, [loading]);
-
-  useEffect(() => {
-    loadSavedData();
-  }, []);
+  }, [
+    loading,
+    user?.onboarding_stage,
+    user?.userType,
+    farmerProfile?.onboarding_stage,
+    isBackButtonClicked,
+    hasCompletedStepThree,
+    fetchBankAccount,
+    loadSavedData,
+  ]);
 
   const onSubmit = async (data: BankInfoFormData) => {
     try {
       setIsSubmitting(true);
-      const currentStep: any = getFromLocalStorage("current-step", {});
 
-      if (currentStep === "bank_information") {
+      if (
+        effectiveOnboardingStage === "bank_information" ||
+        !isBackButtonClicked
+      ) {
         await apiService().post(
           "/onboarding/seller/bank-information",
           data,
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          xfmrId,
         );
 
-        successMessage("Bank details saved successfully!");
         setUser({
           ...user!,
           onboarding_stage: "avatar_image",
         });
-        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
-        if (farmerProfile1) {
-          saveToLocalStorage("farmerProfile", {
-            ...farmerProfile1,
+
+        if (farmerProfile) {
+          saveToLocalStorage(FARMER_PROFILE_KEY, {
+            ...farmerProfile,
             onboarding_stage: "avatar_image",
           });
         }
-        saveToLocalStorage("step-three", data);
-        saveToLocalStorage("current-step", "avatar_image");
-        navigation("/onboarding/step-four");
+
+        saveToLocalStorage(STEP_THREE_KEY, data);
+        saveToLocalStorage(CURRENT_STEP_KEY, "avatar_image");
+        saveToLocalStorage(HAS_COMPLETED_STEP_THREE_KEY, "true");
+        successMessage("Bank details saved successfully!");
+        navigate("/onboarding/step-four");
       } else {
         if (!bankAccount?.id) {
           errorMessage({
@@ -171,7 +204,7 @@ export default function StepThree() {
         await apiService().patch(
           "/sellers/banks/update-bank-information",
           { ...data, id: bankAccount.id },
-          user?.userType === "agent" && farmerProfile ? farmerProfile.id : "",
+          xfmrId,
         );
 
         setUser({
@@ -179,16 +212,18 @@ export default function StepThree() {
           onboarding_stage: "avatar_image",
         });
 
-        const farmerProfile1: any = getFromLocalStorage("farmerProfile", {});
-        if (farmerProfile1) {
-          saveToLocalStorage("farmerProfile", {
-            ...farmerProfile1,
+        if (farmerProfile) {
+          saveToLocalStorage(FARMER_PROFILE_KEY, {
+            ...farmerProfile,
             onboarding_stage: "avatar_image",
           });
         }
-        saveToLocalStorage("step-three", data);
+
+        saveToLocalStorage(STEP_THREE_KEY, data);
+        saveToLocalStorage(HAS_COMPLETED_STEP_THREE_KEY, "true");
+
         successMessage("Bank account data updated successfully");
-        navigation("/onboarding/step-four");
+        navigate("/onboarding/step-four");
       }
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
@@ -198,8 +233,9 @@ export default function StepThree() {
   };
 
   const goBack = () => {
-    saveToLocalStorage("back-button-clicked", "true");
-    navigation("/onboarding/step-two");
+    saveToLocalStorage(BACK_BUTTON_CLICKED_KEY, "true");
+    saveToLocalStorage(HAS_COMPLETED_STEP_TWO_KEY, "true");
+    navigate("/onboarding/step-two");
   };
 
   return (

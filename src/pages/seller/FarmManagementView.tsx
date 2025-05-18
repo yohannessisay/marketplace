@@ -24,6 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { SkeletonCardContent, SkeletonPhotoGallery } from "./skeletons";
 import { RequestEditModal } from "@/components/modals/RequestEditModal";
 import { Farm } from "@/types/farm";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 function PhotoGallery({
   farmId,
@@ -138,7 +139,7 @@ export default function FarmSellerView() {
   const farmId = params.id as string | undefined;
   const { user } = useAuth();
   const farmerProfile: any = useMemo(
-    () => getFromLocalStorage("farmerProfile", {}),
+    () => getFromLocalStorage(FARMER_PROFILE_KEY, {}),
     [],
   );
 

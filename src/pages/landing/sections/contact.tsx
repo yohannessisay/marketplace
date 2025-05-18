@@ -1,144 +1,246 @@
+"use client";
+
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Coffee, Mail, MapPin, Phone } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useNotification } from "@/hooks/useNotification";
+import { apiService } from "@/services/apiService";
+import { Send } from "lucide-react";
 
-export default function ContactSection() {
+const formSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  phone: z.string().min(10, { message: "Please enter a valid phone number." }),
+  user_type: z.string().min(1, "Please select user type"),
+  country: z.string().min(1, "Please enter your country"),
+  message: z
+    .string()
+    .min(10, { message: "Message must be at least 10 characters." }),
+});
+
+type ContactFormValues = z.infer<typeof formSchema>;
+
+interface ContactModalProps {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}
+
+export default function ContactModal({ open, setOpen }: ContactModalProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { successMessage, errorMessage } = useNotification();
+  const form = useForm<ContactFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      message: "",
+      user_type: "",
+      country: "",
+    },
+  });
+
+  async function onSubmit(data: ContactFormValues) {
+    setIsSubmitting(true);
+    try {
+      const result: any = await apiService().postWithoutAuth(
+        "/general/contact-us",
+        data,
+      );
+      if (result && result.success) {
+        successMessage("Message sent successfully");
+        form.reset();
+        setOpen(false);
+      }
+    } catch {
+      errorMessage("Something went wrong please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
-    <section id="contact" className="py-20 bg-white overflow-hidden">
-      <div className="container">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Get In Touch</h2>
-              <p className="text-gray-600 text-lg max-w-md">
-                Have questions about AfroValley? Our team is here to help you navigate the world of blockchain-powered coffee trading.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-amber-100 flex items-center justify-center flex-shrink-0">
-                  <Mail className="h-5 w-5 text-amber-700" />
-                </div>
-                <div>
-                  <h4 className="font-medium">Email Us</h4>
-                  <p className="text-gray-600 text-sm">info@afrovalley.com</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-amber-100 flex items-center justify-center flex-shrink-0">
-                  <Phone className="h-5 w-5 text-amber-700" />
-                </div>
-                <div>
-                  <h4 className="font-medium">Call Us</h4>
-                  <p className="text-gray-600 text-sm">+254 (0) 123 456 789</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-amber-100 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="h-5 w-5 text-amber-700" />
-                </div>
-                <div>
-                  <h4 className="font-medium">Visit Us</h4>
-                  <p className="text-gray-600 text-sm">Nairobi, Kenya</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-amber-100 flex items-center justify-center flex-shrink-0">
-                  <Coffee className="h-5 w-5 text-amber-700" />
-                </div>
-                <div>
-                  <h4 className="font-medium">Trading Hours</h4>
-                  <p className="text-gray-600 text-sm">Mon-Fri: 8am - 6pm</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-amber-50 rounded-xl p-6 border border-amber-100">
-              <h3 className="font-medium text-lg mb-3">Join Our Community</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                Stay updated with the latest news, market trends, and EUDR policy updates.
-              </p>
-              <div className="flex gap-3">
-                <Input 
-                  type="email" 
-                  placeholder="Your email" 
-                  className="rounded-full border-amber-200 focus:border-amber-500"
-                />
-                <Button className="rounded-full mt-1 hover:border-amber-700 bg-amber-700 hover:white hover:text-amber-700">
-                  Subscribe
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-6 lg:p-8">
-              <h3 className="text-xl font-semibold mb-6">Send Us a Message</h3>
-              
-              <form className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium text-gray-700">
-                      Full Name
-                    </label>
-                    <Input 
-                      id="name" 
-                      placeholder="Your name" 
-                      className="rounded-md border-gray-300"
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-[500px] bg-white rounded-xl border border-amber-200">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
+            What can we help you with?
+          </DialogTitle>
+          <DialogDescription className="text-gray-600 pt-1">
+            Fill out the form below and we’ll get back to you as soon as
+            possible.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-900">Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="John Doe"
+                      className="border-amber-200 focus:border-amber-700 rounded-md"
+                      {...field}
                     />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                      Email Address
-                    </label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      placeholder="Your email" 
-                      className="rounded-md border-gray-300"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="subject" className="text-sm font-medium text-gray-700">
-                    Subject
-                  </label>
-                  <Input 
-                    id="subject" 
-                    placeholder="How can we help?" 
-                    className="rounded-md border-gray-300"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="message" className="text-sm font-medium text-gray-700">
-                    Message
-                  </label>
-                  <Textarea 
-                    id="message" 
-                    rows={5} 
-                    placeholder="Your message..." 
-                    className="rounded-md border-gray-300"
-                  />
-                </div>
-                
-                <div className="pt-2">
-                  <Button className="w-full rounded-md hover:border-amber-700 bg-amber-700 hover:white hover:text-amber-700">
-                    Send Message
-                  </Button>
-                </div>
-              </form>
+                  </FormControl>
+                  <FormMessage className="text-amber-700" />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-900">Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="john.doe@example.com"
+                        type="email"
+                        className="border-amber-200 focus:border-amber-700 rounded-md"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-amber-700" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-900">Phone</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="(123) 456-7890"
+                        className="border-amber-200 focus:border-amber-700 rounded-md"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-amber-700" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="user_type"
+                render={({ field }) => (
+                  <FormItem id="userType">
+                    <FormLabel className="text-gray-900">User Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="border-amber-200 focus:border-amber-700 rounded-md">
+                          <SelectValue placeholder="Select User Type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-white border-amber-200">
+                        <SelectItem value="seller">Seller</SelectItem>
+                        <SelectItem value="buyer">Buyer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-amber-700" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-900">Country</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Your country"
+                        className="border-amber-200 focus:border-amber-700 rounded-md"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-amber-700" />
+                  </FormItem>
+                )}
+              />
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
+            <FormField
+              control={form.control}
+              name="message"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-900">Message</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="How can we help you?"
+                      className="min-h-[120px] border-amber-200 focus:border-amber-700 rounded-md"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-amber-700" />
+                </FormItem>
+              )}
+            />
+            <DialogFooter className="pt-4 flex gap-4 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setOpen(false)}
+                className="flex-1 rounded-md border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 rounded-md bg-amber-700 hover:bg-white hover:text-amber-700 hover:border-amber-700 border text-white"
+              >
+                {isSubmitting ? (
+                  "Sending..."
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Send className="h-4 w-4" />
+                    Shoot us a Message
+                  </span>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

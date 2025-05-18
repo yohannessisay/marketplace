@@ -17,6 +17,7 @@ export type FileUploadProps = {
   maxSizeMB?: number;
   className?: string;
   initialFiles?: FileWithPreview[];
+  loading?: boolean;
 };
 
 export function FileUpload({
@@ -25,6 +26,7 @@ export function FileUpload({
   maxSizeMB = 5,
   className,
   initialFiles = [],
+  loading = false,
 }: FileUploadProps) {
   const [files, setFiles] = useState<FileWithPreview[]>(initialFiles);
   const [isDragging, setIsDragging] = useState(false);
@@ -32,6 +34,13 @@ export function FileUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
+  // Only set initialFiles on mount, not on every change
+  useEffect(() => {
+    if (files.length === 0 && initialFiles.length > 0) {
+      setFiles(initialFiles);
+    }
+  }, [initialFiles]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -119,6 +128,11 @@ export function FileUpload({
       if (onFilesSelected) {
         onFilesSelected(updatedFiles.map((f) => f.file));
       }
+
+      // Clear file input to allow re-selection of the same file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     },
     [files, maxFiles, onFilesSelected, validateFiles],
   );
@@ -136,9 +150,6 @@ export function FileUpload({
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processFiles(e.target.files);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 
@@ -154,7 +165,6 @@ export function FileUpload({
     }
   };
 
-  // Trim file name to 40 characters
   const trimFileName = (name: string, maxLength: number = 40): string => {
     if (name.length <= maxLength) return name;
     return name.substring(0, maxLength - 3) + "...";
@@ -188,9 +198,15 @@ export function FileUpload({
           onChange={handleFileInputChange}
           accept="image/*,.pdf"
           multiple={maxFiles > 1}
+          disabled={loading}
         />
 
-        {files.length === 0 && (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="animate-spin h-10 w-10 border-t-2 border-b-2 border-primary rounded-full"></div>
+            <p className="text-sm text-gray-600">Loading files...</p>
+          </div>
+        ) : files.length === 0 ? (
           <div className="flex flex-col items-center justify-center space-y-4">
             <Upload className="h-10 w-10 text-gray-400" />
             <div className="text-center">
@@ -199,6 +215,7 @@ export function FileUpload({
                 variant="outline"
                 className="text-primary hover:text-primary/80"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
               >
                 Click to upload
               </Button>
@@ -208,16 +225,7 @@ export function FileUpload({
               PDF or images up to {maxSizeMB}MB (max {maxFiles} files)
             </p>
           </div>
-        )}
-
-        {error && (
-          <div className="mt-4 flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
-
-        {files.length > 0 && (
+        ) : (
           <div className={cn("mt-6 space-y-4", files.length === 0 && "mt-0")}>
             {files.map((file, index) => (
               <div
@@ -252,6 +260,7 @@ export function FileUpload({
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => removeFile(index)}
+                  disabled={loading}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -263,10 +272,18 @@ export function FileUpload({
                 variant="outline"
                 className="mt-4"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
               >
                 Add More Files
               </Button>
             )}
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <p className="text-sm">{error}</p>
           </div>
         )}
       </div>

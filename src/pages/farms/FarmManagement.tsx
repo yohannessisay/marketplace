@@ -21,6 +21,7 @@ import {
   AlertCircle,
   PencilLine,
   CalendarX,
+  Star,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -581,9 +582,12 @@ const FarmManagement: React.FC = () => {
                           </div>
                         )}
                         {listing.grade && (
-                          <div className="flex items-center text-slate-600">
-                            <span className="mr-2 text-slate-400">★</span>
-                            <span>Grade: {listing.grade}</span>
+                          <div className="flex gap-1 items-center text-slate-600">
+                            <Star
+                              className="text-yellow-300 h-4 w-4"
+                              fill="yellow"
+                            />
+                            <span>{listing.grade}</span>
                           </div>
                         )}
                         {listing.created_at && (
