@@ -30,6 +30,12 @@ import { SampleRequestItem } from "./my-orders/sample-request-item";
 import { EmptyState } from "./my-orders/empty-state";
 import { LoadingSkeleton } from "./my-orders/loading-skeleton";
 import { FileUpdateModal } from "@/components/modals/FileUpdateModal";
+import {
+  BidFilterState,
+  FavoriteFilterState,
+  OrderFilterState,
+  SampleFilterState,
+} from "@/types/orders";
 
 export interface Buyer {
   first_name?: string;
@@ -178,21 +184,6 @@ interface PaginationData {
   totalPages: number;
 }
 
-enum SampleRequestDeliveryStatus {
-  PENDING = "pending",
-  INPROGRESS = "inprogress",
-  DELIVERED = "delivered",
-  CANCELLED = "cancelled",
-  ACCEPTED = "accepted",
-}
-
-enum OrderBidStatus {
-  PENDING = "pending",
-  ACCEPTED = "accepted",
-  REJECTED = "rejected",
-  EXPIRED = "expired",
-}
-
 enum OrderProgressStatus {
   OrderPlaced = "order_placed",
   ContractSigned = "contract_signed",
@@ -204,35 +195,6 @@ enum OrderProgressStatus {
   DocumentationsCompleted = "documentations_completed",
   PaymentCompleted = "payment_completed",
   DeliveryCompleted = "delivery_completed",
-}
-
-interface OrderFilterState {
-  status?: string;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  progressStatus?: OrderProgressStatus;
-}
-
-interface SampleFilterState {
-  status?: SampleRequestDeliveryStatus;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-interface BidFilterState {
-  status?: OrderBidStatus;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-interface FavoriteFilterState {
-  listingStatus?: string;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
 }
 
 export default function OrdersPage() {
@@ -321,11 +283,11 @@ export default function OrdersPage() {
     bids: BidFilterState;
     favorites: FavoriteFilterState;
   }>({
-    current: { status: "", coffeeVariety: "" },
-    historical: { status: "", coffeeVariety: "" },
-    sample: { status: undefined, coffeeVariety: "" },
-    bids: { status: undefined, coffeeVariety: "" },
-    favorites: { coffeeVariety: "" },
+    current: { status: "", coffeeOrigin: "" },
+    historical: { status: "", coffeeOrigin: "" },
+    sample: { status: undefined, coffeeOrigin: "" },
+    bids: { status: undefined, coffeeOrigin: "" },
+    favorites: { coffeeOrigin: "" },
   });
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
@@ -411,8 +373,8 @@ export default function OrdersPage() {
         limit: activePagination.limit.toString(),
         search: encodeURIComponent(activeSearchTerm),
         ...(filters.current.status && { status: filters.current.status }),
-        ...(filters.current.coffeeVariety && {
-          coffee_variety: filters.current.coffeeVariety,
+        ...(filters.current.coffeeOrigin && {
+          origin: filters.current.coffeeOrigin,
         }),
         ...(filters.current.dateFrom && {
           date_from: filters.current.dateFrom,
@@ -473,8 +435,8 @@ export default function OrdersPage() {
         limit: historyPagination.limit.toString(),
         search: encodeURIComponent(historySearchTerm),
         ...(filters.historical.status && { status: filters.historical.status }),
-        ...(filters.historical.coffeeVariety && {
-          coffee_variety: filters.historical.coffeeVariety,
+        ...(filters.historical.coffeeOrigin && {
+          origin: filters.historical.coffeeOrigin,
         }),
         ...(filters.historical.dateFrom && {
           date_from: filters.historical.dateFrom,
@@ -539,8 +501,8 @@ export default function OrdersPage() {
         ...(filters.sample.status && {
           delivery_status: filters.sample.status,
         }),
-        ...(filters.sample.coffeeVariety && {
-          coffee_variety: filters.sample.coffeeVariety,
+        ...(filters.sample.coffeeOrigin && {
+          origin: filters.sample.coffeeOrigin,
         }),
         ...(filters.sample.dateFrom && { date_from: filters.sample.dateFrom }),
         ...(filters.sample.dateTo && { date_to: filters.sample.dateTo }),
@@ -589,8 +551,8 @@ export default function OrdersPage() {
         limit: bidPagination.limit.toString(),
         search: encodeURIComponent(bidSearchTerm),
         ...(filters.bids.status && { status: filters.bids.status }),
-        ...(filters.bids.coffeeVariety && {
-          coffee_variety: filters.bids.coffeeVariety,
+        ...(filters.bids.coffeeOrigin && {
+          origin: filters.bids.coffeeOrigin,
         }),
         ...(filters.bids.dateFrom && { date_from: filters.bids.dateFrom }),
         ...(filters.bids.dateTo && { date_to: filters.bids.dateTo }),
@@ -647,8 +609,8 @@ export default function OrdersPage() {
         ...(filters.favorites.listingStatus && {
           listing_status: filters.favorites.listingStatus,
         }),
-        ...(filters.favorites.coffeeVariety && {
-          coffee_variety: filters.favorites.coffeeVariety,
+        ...(filters.favorites.coffeeOrigin && {
+          origin: filters.favorites.coffeeOrigin,
         }),
         ...(filters.favorites.dateFrom && {
           date_from: filters.favorites.dateFrom,
@@ -805,45 +767,45 @@ export default function OrdersPage() {
           className="mb-6"
           onValueChange={handleTabChange}
         >
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="flex flex-wrap justify-between gap-2 p-2 bg-gray-100 rounded-md sm:grid sm:grid-cols-5 sm:gap-4 sm:p-4 w-full">
             <TabsTrigger
               value="current"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <Clock className="h-4 w-4 mr-2" />
+              <Clock className="h-4 w-4 mr-1 sm:mr-2" />
               Current Orders
             </TabsTrigger>
             <TabsTrigger
               value="historical"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <ShoppingBag className="h-4 w-4 mr-2" />
+              <ShoppingBag className="h-4 w-4 mr-1 sm:mr-2" />
               Order History
             </TabsTrigger>
             <TabsTrigger
               value="sample"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <File className="h-4 w-4 mr-2" />
+              <File className="h-4 w-4 mr-1 sm:mr-2" />
               Sample Requests
             </TabsTrigger>
             <TabsTrigger
               value="bids"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <Hand className="h-4 w-4 mr-2" />
+              <Hand className="h-4 w-4 mr-1 sm:mr-2" />
               All Bids
             </TabsTrigger>
             <TabsTrigger
               value="favorites"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <Heart className="h-4 w-4 mr-2" />
+              <Heart className="h-4 w-4 mr-1 sm:mr-2" />
               Favorites
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="current" className="mt-6">
+          <TabsContent value="current" className="mt-33 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <div className="text-sm text-muted-foreground font-medium">
                 {activeLoading ? (
@@ -973,7 +935,7 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="historical" className="mt-6">
+          <TabsContent value="historical" className="mt-33 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <div className="text-sm text-muted-foreground font-medium">
                 {historyLoading ? (
@@ -1106,7 +1068,7 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="sample" className="mt-6">
+          <TabsContent value="sample" className="mt-33 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <div className="text-sm text-muted-foreground font-medium">
                 {sampleLoading ? (
@@ -1230,7 +1192,7 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="bids" className="mt-6">
+          <TabsContent value="bids" className="mt-33 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <div className="text-sm text-muted-foreground font-medium">
                 {bidLoading ? (
@@ -1358,7 +1320,7 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="favorites" className="mt-6">
+          <TabsContent value="favorites" className="mt-33 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
               <div className="text-sm text-muted-foreground font-medium">
                 {favoritesLoading ? (

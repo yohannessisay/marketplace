@@ -38,7 +38,7 @@ type AccountDetails = z.infer<typeof accountSchema>;
 export default function SettingsPage() {
   const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
   const [isAccountSubmitting, setIsAccountSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(" profiled");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [kycDocuments, setKYCDocuments] = useState<any[]>([]);
@@ -259,6 +259,23 @@ export default function SettingsPage() {
     { id: "account", label: "Account", icon: Settings },
   ];
 
+  const isProfileFormDisabled = true;
+
+  const formatVerificationStatus = (status: string) => {
+    switch (status) {
+      case "inprogress":
+        return "In Progress";
+      case "completed":
+        return "Completed";
+      case "failed":
+        return "Failed";
+      case "pending":
+        return "Pending";
+      default:
+        return status;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-primary/5">
       <Header />
@@ -317,6 +334,25 @@ export default function SettingsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {/* Verification Status Card */}
+                    {user.verification_status && (
+                      <Card className="mb-6 bg-gray-50 border border-gray-300">
+                        <CardContent className="p-4">
+                          <h4 className="font-medium text-gray-800">
+                            KYC Verification Status:{" "}
+                            {formatVerificationStatus(user.verification_status)}
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-2">
+                            Your KYC verification is currently{" "}
+                            {formatVerificationStatus(
+                              user.verification_status,
+                            ).toLowerCase()}
+                            . You cannot edit your profile until the
+                            verification process is updated.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
                     <Form {...profileForm}>
                       <form
                         onSubmit={profileForm.handleSubmit(onProfileSubmit)}
@@ -326,6 +362,7 @@ export default function SettingsPage() {
                           <FormField
                             control={profileForm.control}
                             name="company_name"
+                            disabled={isProfileFormDisabled}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>
@@ -333,7 +370,11 @@ export default function SettingsPage() {
                                   <span className="text-red-500">*</span>
                                 </FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Company" {...field} />
+                                  <Input
+                                    placeholder="Company"
+                                    {...field}
+                                    disabled={isProfileFormDisabled}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -342,6 +383,7 @@ export default function SettingsPage() {
                           <FormField
                             control={profileForm.control}
                             name="country"
+                            disabled={isProfileFormDisabled}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>
@@ -349,7 +391,11 @@ export default function SettingsPage() {
                                   <span className="text-red-500">*</span>
                                 </FormLabel>
                                 <FormControl>
-                                  <Input placeholder="USA" {...field} />
+                                  <Input
+                                    placeholder="USA"
+                                    {...field}
+                                    disabled={isProfileFormDisabled}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -358,6 +404,7 @@ export default function SettingsPage() {
                           <FormField
                             control={profileForm.control}
                             name="position"
+                            disabled={isProfileFormDisabled}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>
@@ -365,7 +412,11 @@ export default function SettingsPage() {
                                   <span className="text-red-500">*</span>
                                 </FormLabel>
                                 <FormControl>
-                                  <Input placeholder="CEO" {...field} />
+                                  <Input
+                                    placeholder="CEO"
+                                    {...field}
+                                    disabled={isProfileFormDisabled}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -374,6 +425,7 @@ export default function SettingsPage() {
                           <FormField
                             control={profileForm.control}
                             name="website_url"
+                            disabled={isProfileFormDisabled}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>
@@ -383,6 +435,7 @@ export default function SettingsPage() {
                                   <Input
                                     placeholder="https://buyer.com"
                                     {...field}
+                                    disabled={isProfileFormDisabled}
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -392,6 +445,7 @@ export default function SettingsPage() {
                           <FormField
                             control={profileForm.control}
                             name="company_address"
+                            disabled={isProfileFormDisabled}
                             render={({ field }) => (
                               <FormItem className="col-span-2">
                                 <FormLabel>
@@ -402,6 +456,7 @@ export default function SettingsPage() {
                                   <Input
                                     placeholder="123, Address, Country"
                                     {...field}
+                                    disabled={isProfileFormDisabled}
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -411,11 +466,16 @@ export default function SettingsPage() {
                           <FormField
                             control={profileForm.control}
                             name="telegram"
+                            disabled={isProfileFormDisabled}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Telegram</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="@buyer" {...field} />
+                                  <Input
+                                    placeholder="@buyer"
+                                    {...field}
+                                    disabled={isProfileFormDisabled}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -424,6 +484,7 @@ export default function SettingsPage() {
                           <FormField
                             control={profileForm.control}
                             name="about_me"
+                            disabled={isProfileFormDisabled}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>About Me</FormLabel>
@@ -431,6 +492,7 @@ export default function SettingsPage() {
                                   <Textarea
                                     placeholder="Tell us more about yourself"
                                     {...field}
+                                    disabled={isProfileFormDisabled}
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -445,7 +507,8 @@ export default function SettingsPage() {
                             onClick={() => profileForm.reset()}
                             disabled={
                               isProfileSubmitting ||
-                              !profileForm.formState.isDirty
+                              !profileForm.formState.isDirty ||
+                              isProfileFormDisabled
                             }
                           >
                             Reset
@@ -454,7 +517,8 @@ export default function SettingsPage() {
                             type="submit"
                             disabled={
                               isProfileSubmitting ||
-                              !profileForm.formState.isDirty
+                              !profileForm.formState.isDirty ||
+                              isProfileFormDisabled
                             }
                           >
                             {isProfileSubmitting

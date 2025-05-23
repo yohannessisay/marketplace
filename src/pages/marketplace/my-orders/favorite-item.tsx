@@ -19,29 +19,31 @@ export const FavoriteItem = ({
 
   return (
     <Card className="mb-4 overflow-hidden transition-all duration-200 hover:shadow-md">
-      <CardContent className="p-5">
-        <div className="flex justify-between items-start">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div className="flex-1">
-            <div className="flex items-center mb-2">
-              <h3 className="font-bold text-lg">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center mb-2 gap-2">
+              <h3 className="font-bold text-base sm:text-lg">
                 {item.listing?.coffee_variety || "Unknown Coffee"}
               </h3>
-              {item.listing?.listing_status === "active" && (
-                <Badge
-                  variant="outline"
-                  className="ml-2 bg-green-500 text-white border-0"
-                >
-                  Active Listing
-                </Badge>
-              )}
-              {item.listing?.is_organic && (
-                <Badge
-                  variant="outline"
-                  className="ml-2 bg-green-500 text-white border-0"
-                >
-                  Organic
-                </Badge>
-              )}
+              <div className="flex gap-2">
+                {item.listing?.listing_status === "active" && (
+                  <Badge
+                    variant="outline"
+                    className="bg-green-500 text-white border-0"
+                  >
+                    Active Listing
+                  </Badge>
+                )}
+                {item.listing?.is_organic && (
+                  <Badge
+                    variant="outline"
+                    className="bg-green-500 text-white border-0"
+                  >
+                    Organic
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="text-sm text-muted-foreground">
               {item.listing?.farm?.farm_name || "Unknown Farm"}
@@ -50,8 +52,8 @@ export const FavoriteItem = ({
                 : ""}
             </div>
           </div>
-          <div className="text-right">
-            <div className="font-bold text-lg text-green-600">
+          <div className="text-left sm:text-right">
+            <div className="font-bold text-base sm:text-lg text-green-600">
               ${item.listing?.price_per_kg?.toFixed(2) || "N/A"}/kg
             </div>
             <div className="text-sm text-muted-foreground">
@@ -74,17 +76,19 @@ export const FavoriteItem = ({
         </div>
 
         <Separator className="my-3" />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <User className="h-4 w-4 mr-1 text-muted-foreground" />
-            <span className="text-sm font-medium">
-              {item.listing.seller?.first_name || "Unknown"}{" "}
-              {item.listing.seller?.last_name || ""}
-            </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-1 text-muted-foreground" />
+              <span className="text-sm font-medium">
+                {item.listing.seller?.first_name || "Unknown"}{" "}
+                {item.listing.seller?.last_name || ""}
+              </span>
+            </div>
             {item.listing.seller && (
               <Link
                 to={`/sellers/${item.listing.seller.first_name?.toLowerCase()}-${item.listing.seller.last_name?.toLowerCase()}`}
-                className="ml-2 text-xs text-green-600 hover:text-green-700 font-medium"
+                className="text-xs text-green-600 hover:text-green-700 font-medium"
               >
                 View Seller
               </Link>
@@ -105,7 +109,7 @@ export const FavoriteItem = ({
 
         {isExpanded && (
           <div className="mt-4 pt-4 border-t animate-in fade-in-50 duration-300">
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <h4 className="text-sm font-semibold mb-2">Listing Details</h4>
                 <div className="space-y-2">
@@ -155,9 +159,11 @@ export const FavoriteItem = ({
                 </div>
               </div>
             </div>
-            <div className="mt-4 flex justify-end space-x-3">
+            <div className="mt-4 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
               <Link to={`/listing/${item.listing_id}`}>
-                <Button variant="outline">View Listing</Button>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  View Listing
+                </Button>
               </Link>
             </div>
           </div>

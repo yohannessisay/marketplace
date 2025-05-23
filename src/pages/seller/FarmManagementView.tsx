@@ -79,30 +79,30 @@ function PhotoGallery({
   };
 
   return (
-    <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-6">
-      <div className="flex flex-col gap-4 p-4">
+    <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-4 sm:mb-6">
+      <div className="flex flex-col gap-4 p-3 sm:p-4">
         {photos && photos.length > 0 ? (
           <div className="relative">
             <img
               src={photos[activePhotoIndex].photo_url || "/placeholder.svg"}
               alt={`Farm ${activePhotoIndex + 1}`}
-              className="w-full h-100 object-cover rounded-lg"
+              className="w-full h-48 sm:h-64 md:h-80 object-cover rounded-lg"
             />
           </div>
         ) : (
           <img
             src="/placeholder.svg"
             alt="No photo"
-            className="w-full h-64 object-cover rounded-lg"
+            className="w-full h-48 sm:h-64 object-cover rounded-lg"
           />
         )}
       </div>
-      <div className="flex p-2 space-x-2 overflow-x-auto ml-3">
+      <div className="flex p-2 space-x-2 overflow-x-auto ml-2 sm:ml-3">
         {photos &&
           photos.map((photo, index) => (
-            <div key={photo.id} className="relative">
+            <div key={photo.id} className="relative flex-shrink-0">
               <button
-                className={`flex-shrink-0 bg-card w-20 h-20 rounded border-2 ${
+                className={`bg-card w-16 h-16 sm:w-20 sm:h-20 rounded border-2 ${
                   index === activePhotoIndex
                     ? "border-primary"
                     : "border-transparent"
@@ -116,11 +116,11 @@ function PhotoGallery({
                 />
               </button>
               <button
-                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 cursor-pointer"
+                className="absolute -top-1 -right-1 sm:top-0 sm:right-0 bg-red-500 text-white rounded-full p-1 cursor-pointer"
                 onClick={() => handleDeletePhoto(photo.id)}
                 disabled={isDeleting}
               >
-                <X size={13} />
+                <X size={12} />
               </button>
             </div>
           ))}
@@ -177,40 +177,44 @@ export default function FarmSellerView() {
   }, [fetchData]);
 
   if (!farm && !isFetching) {
-    return <div className="text-center py-12">Farm not found</div>;
+    return (
+      <div className="text-center py-12 text-sm sm:text-base">
+        Farm not found
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-primary/5 p-8">
+    <div className="min-h-screen bg-primary/5 px-4 sm:px-6 lg:px-8 py-8">
       <Header />
-      <main className="container px-4 md:px-24 py-8 pt-20">
+      <main className="mx-auto max-w-7xl py-6 sm:py-8 pt-16 sm:pt-20">
         {isFetching ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-15">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               <Card>
                 <SkeletonPhotoGallery />
                 <SkeletonCardContent />
               </Card>
             </div>
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6">
               <Card>
                 <SkeletonCardContent />
               </Card>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               <Card>
                 <PhotoGallery farmId={farmId!} photos={farm!.photos} />
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                       {farm!.farm_name}
                     </h2>
                   </div>
-                  <div className="space-y-4 mb-6">
-                    <p className="text-gray-700">
+                  <div className="space-y-4 mb-4 sm:mb-6">
+                    <p className="text-gray-700 text-sm sm:text-base">
                       {farm!.farm_name} is located in{" "}
                       {farm!.town_location || "Unknown Location"},{" "}
                       {farm!.region || "Unknown Region"},{" "}
@@ -221,114 +225,116 @@ export default function FarmSellerView() {
                         : "unknown quantity"}
                       .
                     </p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Total Size
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.total_size_hectares
                             ? `${farm!.total_size_hectares} hectares`
                             : "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Coffee Area
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.coffee_area_hectares
                             ? `${farm!.coffee_area_hectares} hectares`
                             : "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Altitude
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.altitude_meters || "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Crop Type
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.crop_type || "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Tree Variety
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.tree_variety || "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Soil Type
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.soil_type || "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Annual Temperature
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.avg_annual_temp
                             ? `${farm!.avg_annual_temp}°C`
                             : "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Annual Rainfall
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.annual_rainfall_mm
                             ? `${farm!.annual_rainfall_mm} mm`
                             : "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Capacity
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.capacity_kg
                             ? `${farm!.capacity_kg} kg`
                             : "N/A"}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Origin
                         </h4>
-                        <p className="text-gray-900">{farm!.origin || "N/A"}</p>
+                        <p className="text-gray-900 text-sm sm:text-base">
+                          {farm!.origin || "N/A"}
+                        </p>
                       </div>
                     </div>
                   </div>
                   {farm!.kyc_documents.length > 0 && (
                     <>
-                      <Separator className="my-4" />
+                      <Separator className="my-3 sm:my-4" />
                       <div>
-                        <h3 className="text-md font-medium text-gray-900 mb-2">
+                        <h3 className="text-sm sm:text-md font-medium text-gray-900 mb-2">
                           KYC Documents
                         </h3>
                         <div className="space-y-2">
                           {farm!.kyc_documents.map((doc) => (
                             <div
                               key={doc.id}
-                              className="flex justify-between items-center p-2 bg-gray-50 rounded-md"
+                              className="flex justify-between items-center p-2 bg-gray-50 rounded-md text-xs sm:text-sm"
                             >
-                              <span className="text-sm text-gray-700">
+                              <span className="text-gray-700">
                                 {doc.doc_type}
                               </span>
-                              <span className="text-sm font-medium text-gray-700">
+                              <span className="font-medium text-gray-700">
                                 {doc.verified ? "Verified" : "Not Verified"}
                               </span>
                             </div>
@@ -340,23 +346,25 @@ export default function FarmSellerView() {
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-1 space-y-6">
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Farm Info</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">
+                    Farm Info
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           KYC Verification Status
                         </h4>
                         <div className="mt-1">
                           {farm!.verification_status === "approved" && (
                             <Badge
                               variant="default"
-                              className="gap-1 text-[14px]"
+                              className="gap-1 text-xs sm:text-sm"
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               Approved
@@ -365,7 +373,7 @@ export default function FarmSellerView() {
                           {farm!.verification_status === "pending" && (
                             <Badge
                               variant="warning"
-                              className="gap-1 text-[14px]"
+                              className="gap-1 text-xs sm:text-sm"
                             >
                               <Clock className="h-3.5 w-3.5" />
                               Pending
@@ -374,7 +382,7 @@ export default function FarmSellerView() {
                           {farm!.verification_status === "rejected" && (
                             <Badge
                               variant="destructive"
-                              className="gap-1 text-[14px]"
+                              className="gap-1 text-xs sm:text-sm"
                             >
                               <XCircle className="h-3.5 w-3.5" />
                               Rejected
@@ -383,29 +391,31 @@ export default function FarmSellerView() {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Created On
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {new Date(farm!.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Country
                         </h4>
-                        <p className="text-gray-900">{farm!.country}</p>
+                        <p className="text-gray-900 text-sm sm:text-base">
+                          {farm!.country}
+                        </p>
                       </div>
                     </div>
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Edit Request
                         </h4>
                         <div className="mt-1">
                           {farm!.admin_edit_request_approval_status ===
                             "allowed" && (
-                            <Badge className="gap-1 text-[14px]">
+                            <Badge className="gap-1 text-xs sm:text-sm">
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               Allowed
                             </Badge>
@@ -414,7 +424,7 @@ export default function FarmSellerView() {
                             "requested" && (
                             <Badge
                               variant="warning"
-                              className="gap-1 text-[14px]"
+                              className="gap-1 text-xs sm:text-sm"
                             >
                               <Clock className="h-3.5 w-3.5" />
                               Requested
@@ -424,7 +434,7 @@ export default function FarmSellerView() {
                             "rejected" && (
                             <Badge
                               variant="destructive"
-                              className="gap-1 text-[14px]"
+                              className="gap-1 text-xs sm:text-sm"
                             >
                               <XCircle className="h-3.5 w-3.5" />
                               Rejected
@@ -434,7 +444,7 @@ export default function FarmSellerView() {
                             "expired" && (
                             <Badge
                               variant="outline"
-                              className="gap-1 text-[14px]"
+                              className="gap-1 text-xs sm:text-sm"
                             >
                               <CalendarX className="h-3.5 w-3.5" />
                               Expired
@@ -444,7 +454,7 @@ export default function FarmSellerView() {
                             "not_requested" && (
                             <Badge
                               variant="outline"
-                              className="gap-1 text-[14px]"
+                              className="gap-1 text-xs sm:text-sm"
                             >
                               <PencilLine className="h-3.5 w-3.5" />
                               Not Requested
@@ -453,31 +463,35 @@ export default function FarmSellerView() {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Region
                         </h4>
-                        <p className="text-gray-900">{farm!.region || "N/A"}</p>
+                        <p className="text-gray-900 text-sm sm:text-base">
+                          {farm!.region || "N/A"}
+                        </p>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-500">
                           Town
                         </h4>
-                        <p className="text-gray-900">
+                        <p className="text-gray-900 text-sm sm:text-base">
                           {farm!.town_location || "N/A"}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-6">
+                  <div className="mt-4 sm:mt-6">
                     {farm!.admin_edit_request_approval_status === "allowed" ? (
                       <Link to={`/edit-farm/${farm!.id}`}>
-                        <Button className="w-full">Edit Farm</Button>
+                        <Button className="w-full text-sm sm:text-base">
+                          Edit Farm
+                        </Button>
                       </Link>
                     ) : farm!.admin_edit_request_approval_status ===
                         "requested" ||
                       farm!.admin_edit_request_approval_status === "expired" ? (
-                      <Button className="w-full" disabled>
+                      <Button className="w-full text-sm sm:text-base" disabled>
                         {farm!.admin_edit_request_approval_status ===
                         "requested"
                           ? "Edit Requested"
@@ -487,40 +501,40 @@ export default function FarmSellerView() {
                             : "Request Rejected"}
                       </Button>
                     ) : farm!.verification_status === "pending" ? (
-                      <div className="space-y-4 rounded-lg bg-amber-100 p-4 mt-4">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="h-5 w-5 text-amber-900 mt-0.5 flex-shrink-0" />
+                      <div className="space-y-3 sm:space-y-4 rounded-lg bg-amber-100 p-3 sm:p-4 mt-4">
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-900 mt-0.5 flex-shrink-0" />
                           <div>
-                            <h4 className="text-sm font-medium text-amber-800">
+                            <h4 className="text-xs sm:text-sm font-medium text-amber-800">
                               KYC is Pending
                             </h4>
-                            <p className="mt-1 text-sm text-amber-800">
+                            <p className="mt-1 text-xs sm:text-sm text-amber-800">
                               Request edit access to modify this farm.
                             </p>
                           </div>
                         </div>
                         <Button
-                          className="w-full"
+                          className="w-full text-sm sm:text-base"
                           onClick={() => setIsModalOpen(true)}
                         >
                           Request Edit Access
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-4 rounded-lg bg-green-100 p-4 mt-4">
-                        <div className="flex items-start gap-3">
-                          <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div className="space-y-3 sm:space-y-4 rounded-lg bg-green-100 p-3 sm:p-4 mt-4">
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mt-0.5 flex-shrink-0" />
                           <div>
-                            <h4 className="text-sm font-medium text-green-800">
+                            <h4 className="text-xs sm:text-sm font-medium text-green-800">
                               KYC Verified
                             </h4>
-                            <p className="mt-1 text-sm text-green-700">
+                            <p className="mt-1 text-xs sm:text-sm text-green-700">
                               Request edit access to modify this verified farm.
                             </p>
                           </div>
                         </div>
                         <Button
-                          className="w-full"
+                          className="w-full text-sm sm:text-base"
                           onClick={() => setIsModalOpen(true)}
                         >
                           Request Edit Access

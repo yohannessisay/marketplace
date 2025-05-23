@@ -10,7 +10,7 @@ import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import Cookies from "js-cookie";
 import { useState } from "react";
-import { Eye, EyeOff, MoveLeft } from "lucide-react";
+import { Eye, EyeOff, HomeIcon } from "lucide-react";
 import {
   getFromLocalStorage,
   removeFromLocalStorage,
@@ -18,8 +18,10 @@ import {
 } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
 import {
+  ACCESS_TOKEN_KEY,
   OTP_TIMER_KEY,
   OTP_TIMER_RESETED_KEY,
+  REFRESH_TOKEN_KEY,
   SIGNUP_PROFILE_KEY,
   USER_PROFILE_KEY,
 } from "@/types/constants";
@@ -51,9 +53,19 @@ const Login = () => {
       localStorage.clear();
       successMessage("Login successful!");
 
-      const { access_token, refresh_token, user } = response.data;
-      Cookies.set("accessToken", access_token, { expires: 1 / 48 });
-      Cookies.set("refreshToken", refresh_token, { expires: 1 });
+      const { access_token, refresh_token, expires_in, user } = response.data;
+
+      const accessTokenExpires = new Date(Date.now() + expires_in * 1000);
+      const refreshTokenExpires = new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000,
+      );
+
+      Cookies.set(ACCESS_TOKEN_KEY, access_token, {
+        expires: accessTokenExpires,
+      });
+      Cookies.set(REFRESH_TOKEN_KEY, refresh_token, {
+        expires: refreshTokenExpires,
+      });
 
       let defaultRedirect = "/home";
       if (user?.userType === "seller") {
@@ -135,18 +147,16 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Image Section - Hidden on mobile & tablet, visible on desktop (lg+) */}
       <div
         className="hidden lg:flex w-1/2 bg-cover bg-center rounded-r-2xl shadow-lg"
         style={{ backgroundImage: "url('/images/login.png')" }}
       ></div>
 
-      {/* Right Form Section - Full width on mobile, half width on tablet+ */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-4">
         <div className="w-full max-w-md shadow-lg rounded-lg p-6 bg-white border border-green-200">
           <div className="flex justify-end">
             <Link to={"/"}>
-              <MoveLeft
+              <HomeIcon
                 className="hover:bg-primary hover:text-white text-primary cursor-pointer border rounded-full p-1 shadow-md"
                 size={36}
               />

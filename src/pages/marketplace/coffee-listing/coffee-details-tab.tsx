@@ -6,17 +6,17 @@ interface CoffeeDetailsTabProps {
 
 export function CoffeeDetailsTab({ listing }: CoffeeDetailsTabProps) {
   return (
-    <div className="p-6 space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <h4 className="text-sm font-medium text-muted-foreground">Variety</h4>
-          <p>{listing?.coffee_variety}</p>
+          <p>{listing?.coffee_variety || "N/A"}</p>
         </div>
         <div>
           <h4 className="text-sm font-medium text-muted-foreground">
             Processing
           </h4>
-          <p>{listing?.processing_method}</p>
+          <p>{listing?.processing_method || "N/A"}</p>
         </div>
         <div>
           <h4 className="text-sm font-medium text-muted-foreground">
@@ -40,9 +40,8 @@ export function CoffeeDetailsTab({ listing }: CoffeeDetailsTabProps) {
           <h4 className="text-sm font-medium text-muted-foreground">
             Ready By
           </h4>
-          <p>{listing?.readiness_date.slice(0,10) || "N/A"}</p>
+          <p>{listing?.readiness_date?.slice(0, 10) || "N/A"}</p>
         </div>
-
         <div>
           <h4 className="text-sm font-medium text-muted-foreground">Organic</h4>
           <p>{listing?.is_organic ? "Yes" : "No"}</p>

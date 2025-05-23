@@ -516,7 +516,6 @@ export default function StepOne() {
 
         saveToLocalStorage(STEP_ONE_KEY, data);
         saveToLocalStorage(FARM_ID_KEY, response.data.farm.id);
-        saveToLocalStorage(BACK_BUTTON_CLICKED_KEY, "false");
         saveToLocalStorage(CURRENT_STEP_KEY, "crops_to_sell");
 
         navigate("/onboarding/step-two");
@@ -531,21 +530,7 @@ export default function StepOne() {
           xfmrId ? xfmrId : "",
         );
 
-        setUser({
-          ...user!,
-          onboarding_stage: "crops_to_sell",
-        });
-
-        const farmerProfile1: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
-        if (farmerProfile1) {
-          saveToLocalStorage(FARMER_PROFILE_KEY, {
-            ...farmerProfile1,
-            onboarding_stage: "crops_to_sell",
-          });
-        }
-
         removeFromLocalStorage(CURRENT_STEP_KEY);
-        saveToLocalStorage(BACK_BUTTON_CLICKED_KEY, "false");
         saveToLocalStorage(CURRENT_STEP_KEY, "crops_to_sell");
 
         navigate("/onboarding/step-two");
@@ -565,7 +550,7 @@ export default function StepOne() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 shadow-lg px-8 rounded-md py-4 bg-white"
+          className="space-y-8 shadow-lg px-4 sm:px-6 lg:px-8 rounded-md py-4 bg-white max-w-full overflow-x-hidden"
         >
           <div className="mb-10">
             <div className="mb-2">
@@ -580,8 +565,8 @@ export default function StepOne() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <Card className="max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+              <Card className="w-full">
                 <CardHeader>
                   <CardTitle>Government registration documents</CardTitle>
                   <CardDescription>
@@ -604,7 +589,7 @@ export default function StepOne() {
                     maxFiles={5}
                     maxSizeMB={5}
                     initialFiles={govRegFiles}
-                    loading={isLoadingFiles} // Pass loading state
+                    loading={isLoadingFiles}
                   />
                   {govFileError && (
                     <p className="text-red-500 text-sm mt-2">{govFileError}</p>
@@ -619,7 +604,7 @@ export default function StepOne() {
                 </CardFooter>
               </Card>
 
-              <Card className="max-w-2xl mx-auto">
+              <Card className="w-full">
                 <CardHeader>
                   <CardTitle>Land right documents</CardTitle>
                   <CardDescription>
@@ -642,7 +627,7 @@ export default function StepOne() {
                     maxFiles={5}
                     maxSizeMB={5}
                     initialFiles={landRightsFiles}
-                    loading={isLoadingFiles} // Pass loading state
+                    loading={isLoadingFiles}
                   />
                   {landFileError && (
                     <p className="text-red-500 text-sm mt-2">{landFileError}</p>
@@ -688,7 +673,7 @@ export default function StepOne() {
                     maxFiles={6}
                     maxSizeMB={5}
                     initialFiles={farmPhotos}
-                    loading={isLoadingFiles} // Pass loading state
+                    loading={isLoadingFiles}
                   />
                   {farmPhotoError && (
                     <p className="text-red-500 text-sm mt-2">
@@ -1146,11 +1131,7 @@ export default function StepOne() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tree Variety</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue="typica"
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select tree variety" />
@@ -1181,11 +1162,7 @@ export default function StepOne() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Soil Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue="Forest (Dark) Soil"
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select soil type" />

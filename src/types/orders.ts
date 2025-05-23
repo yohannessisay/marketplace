@@ -158,7 +158,7 @@ export interface PaginationData {
 
 export interface OrderFilterState {
   status?: string;
-  coffeeVariety?: string;
+  coffeeOrigin?: string;
   dateFrom?: string;
   dateTo?: string;
   progressStatus?: OrderProgressStatus;
@@ -166,21 +166,21 @@ export interface OrderFilterState {
 
 export interface SampleFilterState {
   status?: SampleRequestDeliveryStatus;
-  coffeeVariety?: string;
+  coffeeOrigin?: string;
   dateFrom?: string;
   dateTo?: string;
 }
 
 export interface BidFilterState {
   status?: OrderBidStatus;
-  coffeeVariety?: string;
+  coffeeOrigin?: string;
   dateFrom?: string;
   dateTo?: string;
 }
 
 export interface FavoriteFilterState {
   listingStatus?: string;
-  coffeeVariety?: string;
+  coffeeOrigin?: string;
   dateFrom?: string;
   dateTo?: string;
 }

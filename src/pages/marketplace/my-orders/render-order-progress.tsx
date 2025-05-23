@@ -83,8 +83,8 @@ export const renderOrderProgress = (
   };
 
   return (
-    <Card className="mt-6">
-      <CardContent className="pt-6">
+    <Card className="mt-4 sm:mt-6">
+      <CardContent className="pt-4 sm:pt-6 px-4 sm:px-5">
         <h4 className="text-sm font-semibold mb-4">Order Progress</h4>
         <div className="space-y-4">
           {steps.map((step, index) => {
@@ -122,7 +122,7 @@ export const renderOrderProgress = (
                   )}
                 </div>
                 <div className="flex-1">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <span
                       className={`text-sm font-medium ${
                         isCompleted
@@ -134,76 +134,84 @@ export const renderOrderProgress = (
                     >
                       {step.label}
                     </span>
-                    {step.key === OrderProgressStatus.ContractSigned &&
-                      hasContract && (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {step.key === OrderProgressStatus.ContractSigned &&
+                        hasContract && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={() => handlePreviewClick("contract")}
+                          >
+                            View Contract
+                          </Button>
+                        )}
+                      {step.key === OrderProgressStatus.ContractSigned &&
+                        isOrderPlaced &&
+                        !hasContract &&
+                        !isDeliveryCompleted && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={() => handleUploadClick("contract")}
+                          >
+                            Upload Contract
+                          </Button>
+                        )}
+                      {step.key === OrderProgressStatus.ContractSigned &&
+                        isOrderPlaced &&
+                        hasContract &&
+                        !isDeliveryCompleted && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={() => handleUpdateClick("contract")}
+                          >
+                            Update Contract
+                          </Button>
+                        )}
+                      {isDocumentsStep &&
+                        (isCompleted || isContainerArrivedToPort) &&
+                        hasDocuments && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={() => handlePreviewClick("documents")}
+                          >
+                            View Documents
+                          </Button>
+                        )}
+                      {isPaymentStep && hasPaymentSlip && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handlePreviewClick("contract")}
+                          className="w-full sm:w-auto"
+                          onClick={() => handlePreviewClick("payment_slip")}
                         >
-                          View Contract
+                          View Payment Slip
                         </Button>
                       )}
-                    {step.key === OrderProgressStatus.ContractSigned &&
-                      isOrderPlaced &&
-                      !hasContract &&
-                      !isDeliveryCompleted && (
+                      {shouldShowPaymentUploadButton && (
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => handleUploadClick("contract")}
+                          className="w-full sm:w-auto"
+                          onClick={() => {
+                            if (hasPaymentSlip) {
+                              handleUpdateClick("payment_slip");
+                            }
+                            handleUploadClick("payment_slip");
+                          }}
                         >
-                          Upload Contract
+                          {hasPaymentSlip
+                            ? "Update Payment Slip"
+                            : "Upload Payment Slip"}
                         </Button>
                       )}
-                    {step.key === OrderProgressStatus.ContractSigned &&
-                      isOrderPlaced &&
-                      hasContract &&
-                      !isDeliveryCompleted && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleUpdateClick("contract")}
-                        >
-                          Update Contract
-                        </Button>
-                      )}
-                    {isDocumentsStep &&
-                      (isCompleted || isContainerArrivedToPort) &&
-                      hasDocuments && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePreviewClick("documents")}
-                        >
-                          View Documents
-                        </Button>
-                      )}
-                    {isPaymentStep && hasPaymentSlip && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePreviewClick("payment_slip")}
-                      >
-                        View Payment Slip
-                      </Button>
-                    )}
-                    {shouldShowPaymentUploadButton && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => {
-                          if (hasPaymentSlip) {
-                            handleUpdateClick("payment_slip");
-                          }
-                          handleUploadClick("payment_slip");
-                        }}
-                      >
-                        {hasPaymentSlip
-                          ? "Update Payment Slip"
-                          : "Upload Payment Slip"}
-                      </Button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>

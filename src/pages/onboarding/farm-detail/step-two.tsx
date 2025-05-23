@@ -93,6 +93,7 @@ export default function StepTwo() {
     getFromLocalStorage(BACK_BUTTON_CLICKED_KEY, {}) === "true";
   const hasCompletedStepTwo =
     getFromLocalStorage(HAS_COMPLETED_STEP_TWO_KEY, {}) === "true";
+
   const existingListingId = getFromLocalStorage(CROP_ID_KEY, "");
   const existingFarmId = getFromLocalStorage(FARM_ID_KEY, "");
   const effectiveOnboardingStage =
@@ -408,20 +409,6 @@ export default function StepTwo() {
           xfmrId ? xfmrId : "",
         );
 
-        if (user?.userType !== "agent") {
-          setUser({
-            ...user!,
-            onboarding_stage: "bank_information",
-          });
-        }
-
-        if (farmerProfile) {
-          saveToLocalStorage(FARMER_PROFILE_KEY, {
-            ...farmerProfile,
-            onboarding_stage: "bank_information",
-          });
-        }
-
         removeFromLocalStorage(BACK_BUTTON_CLICKED_KEY);
         saveToLocalStorage(STEP_TWO_KEY, data);
         saveToLocalStorage(HAS_COMPLETED_STEP_TWO_KEY, "true");
@@ -673,42 +660,26 @@ export default function StepTwo() {
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Crop Year</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button variant="outline" className="w-full">
-                              {field.value || "Select a year"}
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <div className="p-3">
-                            <Select
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                              }}
-                              value={field.value}
-                            >
-                              <SelectTrigger className="w-70">
-                                <SelectValue placeholder="Select year" />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-[300px] overflow-y-auto w-70">
-                                {Array.from({ length: 2 }, (_, i) => {
-                                  const year = new Date().getFullYear() - i;
-                                  return (
-                                    <SelectItem
-                                      key={year}
-                                      value={year.toString()}
-                                    >
-                                      {year}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a year" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[300px] overflow-y-auto">
+                          {Array.from({ length: 2 }, (_, i) => {
+                            const year = new Date().getFullYear() - i;
+                            return (
+                              <SelectItem key={year} value={year.toString()}>
+                                {year}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -778,10 +749,16 @@ export default function StepTwo() {
                         <Input
                           type="number"
                           min={0}
+                          max={100}
                           value={field.value}
-                          onChange={(e) =>
-                            field.onChange(Number(e.target.value) || 0)
-                          }
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            const clampedValue = Math.min(
+                              100,
+                              Math.max(0, isNaN(value) ? 0 : value),
+                            );
+                            field.onChange(clampedValue);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -851,16 +828,16 @@ export default function StepTwo() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <div className="flex flex-wrap gap-4">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 w-full">
                           {aromaColumns.map((column, colIndex) => (
                             <div
                               key={colIndex}
-                              className="flex flex-col gap-2 min-w-[150px]"
+                              className="flex flex-col gap-1.5 sm:gap-2 w-full"
                             >
                               {column.map((aroma) => (
                                 <div
                                   key={aroma}
-                                  className="flex items-center space-x-2"
+                                  className="flex items-center space-x-1.5 sm:space-x-2"
                                 >
                                   <Checkbox
                                     id={aroma}
@@ -876,7 +853,12 @@ export default function StepTwo() {
                                       field.onChange(newValue);
                                     }}
                                   />
-                                  <label htmlFor={aroma}>{aroma}</label>
+                                  <label
+                                    htmlFor={aroma}
+                                    className="text-sm sm:text-base text-gray-700 truncate"
+                                  >
+                                    {aroma}
+                                  </label>
                                 </div>
                               ))}
                             </div>

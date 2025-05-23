@@ -66,7 +66,20 @@ export const FilterMenu = ({
       : isCurrentOrderTab
         ? ["pending", "completed", "cancelled"]
         : [];
-  const coffeeVarieties = ["Yirgacheffe", "Sidamo", "Guji", "Harrar", "Jimma"];
+  const coffeeOrigins = [
+    "Gomma, Jimma",
+    "Mana, Jimma",
+    "Limu, Jimma",
+    "Gera, Jimma",
+    "Adola-reda, Guji",
+    "Urga, Guji",
+    "Shakiso, Guji",
+    "Hambela, Guji",
+    "West Hararghe, Harrar",
+    "Sidama",
+    "Yirgachefe",
+    "",
+  ];
   const listingStatusOptions = ["active", "inactive"];
   const progressStatusOptions = Object.values(OrderProgressStatus);
 
@@ -84,21 +97,21 @@ export const FilterMenu = ({
     return currentFilters;
   };
 
-  const getFilterStateWithoutCoffeeVariety = () => {
+  const getFilterStateWithoutCoffeeOrigin = () => {
     if (isOrderTab) {
-      const { coffeeVariety: _coffeeVariety, ...rest } =
+      const { coffeeOrigin: _coffeeOrigin, ...rest } =
         currentFilters as OrderFilterState;
       return rest;
     } else if (isSampleTab) {
-      const { coffeeVariety: _coffeeVariety, ...rest } =
+      const { coffeeOrigin: _coffeeOrigin, ...rest } =
         currentFilters as SampleFilterState;
       return rest;
     } else if (isBidsTab) {
-      const { coffeeVariety: _coffeeVariety, ...rest } =
+      const { coffeeOrigin: _coffeeOrigin, ...rest } =
         currentFilters as BidFilterState;
       return rest;
     } else if (isFavoritesTab) {
-      const { coffeeVariety: _coffeeVariety, ...rest } =
+      const { coffeeOrigin: _coffeeOrigin, ...rest } =
         currentFilters as FavoriteFilterState;
       return rest;
     }
@@ -139,7 +152,7 @@ export const FilterMenu = ({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64 p-4">
+      <DropdownMenuContent className="w-64 sm:w-72 p-4">
         <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {statusOptions.length > 0 && (
@@ -181,44 +194,41 @@ export const FilterMenu = ({
         )}
         {(isOrderTab || isSampleTab || isBidsTab || isFavoritesTab) && (
           <div className="mb-2">
-            <label className="text-sm font-medium">Coffee Variety</label>
+            <label className="text-sm font-medium">Coffee Origin</label>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-full justify-between">
                   {(isOrderTab &&
-                    (currentFilters as OrderFilterState).coffeeVariety) ||
+                    (currentFilters as OrderFilterState).coffeeOrigin) ||
                     (isSampleTab &&
-                      (currentFilters as SampleFilterState).coffeeVariety) ||
+                      (currentFilters as SampleFilterState).coffeeOrigin) ||
                     (isBidsTab &&
-                      (currentFilters as BidFilterState).coffeeVariety) ||
+                      (currentFilters as BidFilterState).coffeeOrigin) ||
                     (isFavoritesTab &&
-                      (currentFilters as FavoriteFilterState).coffeeVariety) ||
-                    "All Varieties"}
+                      (currentFilters as FavoriteFilterState).coffeeOrigin) ||
+                    "All Origins"}
                   <ChevronDown className="h-4 w-4 ml-2" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem
                   onClick={() =>
-                    handleFilterChange(
-                      tab,
-                      getFilterStateWithoutCoffeeVariety(),
-                    )
+                    handleFilterChange(tab, getFilterStateWithoutCoffeeOrigin())
                   }
                 >
-                  All Varieties
+                  All Origins
                 </DropdownMenuItem>
-                {coffeeVarieties.map((variety) => (
+                {coffeeOrigins.map((origin) => (
                   <DropdownMenuItem
-                    key={variety}
+                    key={origin || "empty"}
                     onClick={() =>
                       handleFilterChange(tab, {
                         ...currentFilters,
-                        coffeeVariety: variety,
+                        coffeeOrigin: origin || undefined,
                       })
                     }
                   >
-                    {variety}
+                    {origin || "None"}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>

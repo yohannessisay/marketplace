@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { debounce } from "lodash";
 import { Search, Coffee, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,15 +32,30 @@ import { FilterState } from "@/types/types";
 import { LoadingCard } from "./marketplace-skeleton";
 import { ListingCard } from "./ListingCard";
 import { CoffeeListing } from "@/types/coffee";
+import { ErrorBoundary } from "./ErrorBoundary";
 
-const varieties = [
-  "Arabica",
-  "Robusta",
-  "Ethiopian Heirloom",
-  "Bourbon",
-  "SL-28",
-  "Typica",
-  "Gesha",
+const coffeeOrigins = [
+  "Gomma, Jimma",
+  "Mana, Jimma",
+  "Limu, Jimma",
+  "Gera, Jimma",
+  "Adola-reda, Guji",
+  "Urga, Guji",
+  "Shakiso, Guji",
+  "Hambela, Guji",
+  "West Hararghe, Harrar",
+  "Sidama",
+  "Yirgachefe",
+];
+
+const coffeeRegions = ["Oromia", "SNNPR"];
+const gradeOptions = [
+  "Grade 1",
+  "Grade 2",
+  "Grade 3",
+  "Grade 4",
+  "Grade 5",
+  "UG",
 ];
 const processingMethods = ["Washed", "Natural", "Honey", "Sun-dried"];
 
@@ -54,6 +70,9 @@ export default function CoffeeMarketplace() {
     is_organic: "",
     min_price: "",
     max_price: "",
+    origin: "",
+    region: "",
+    grade: "",
   });
   const [isLoading, setIsLoading] = React.useState(true);
   const [authMessage, setAuthMessage] = React.useState("");
@@ -70,6 +89,11 @@ export default function CoffeeMarketplace() {
   }>({});
 
   const { user: loggedInUser, loading: authLoading } = useAuth();
+
+  // In-memory cache for API responses
+  const cache = React.useRef<
+    Map<string, { listings: CoffeeListing[]; totalPages: number }>
+  >(new Map());
 
   const checkFavoriteStatus = async (listingIds: string[]) => {
     if (
@@ -116,7 +140,27 @@ export default function CoffeeMarketplace() {
     }
   };
 
-  const fetchListings = async () => {
+  const fetchListings = React.useCallback(async () => {
+    const cacheKey = `${currentPage}-${JSON.stringify(filters)}-${searchQuery}`;
+    if (cache.current.has(cacheKey)) {
+      const cached = cache.current.get(cacheKey)!;
+      setListings(cached.listings);
+      setTotalPages(cached.totalPages);
+      setCurrentPage(
+        cached.listings.length === 0
+          ? 1
+          : Math.min(currentPage, cached.totalPages),
+      );
+      setIsLoading(false);
+      if (cached.listings.length > 0) {
+        const listingIds = cached.listings.map((listing: any) => listing.id);
+        await checkFavoriteStatus(listingIds);
+      } else {
+        setFavoriteState({});
+      }
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -136,6 +180,9 @@ export default function CoffeeMarketplace() {
           }),
         ...(filters.min_price && { min_price: filters.min_price }),
         ...(filters.max_price && { max_price: filters.max_price }),
+        ...(filters.origin && { origin: filters.origin }),
+        ...(filters.region && { region: filters.region }),
+        ...(filters.grade && { grade: filters.grade }),
       });
 
       const response: any = await apiService().getWithoutAuth(
@@ -144,12 +191,30 @@ export default function CoffeeMarketplace() {
 
       if (response.success) {
         const listings = response.data.listings || [];
+        const totalPages = Math.max(
+          1,
+          response.data.pagination.totalPages || 1,
+        );
+
+        // Warn if page number is invalid
+        if (response.data.pagination.page > totalPages) {
+          console.warn(
+            `API returned invalid page number: ${response.data.pagination.page} > ${totalPages}`,
+          );
+        }
+
+        cache.current.set(cacheKey, { listings, totalPages });
         setListings(listings);
-        setTotalPages(response.data.pagination.totalPages || 1);
-        setCurrentPage(response.data.pagination.page || 1);
+        setTotalPages(totalPages);
+        setCurrentPage(
+          listings.length === 0
+            ? 1
+            : Math.min(
+                Math.max(1, response.data.pagination.page || 1),
+                totalPages,
+              ),
+        );
         if (listings.length === 0) {
-          setTotalPages(1);
-          setCurrentPage(1);
           setFavoriteState({});
         } else {
           const listingIds = listings.map((listing: any) => listing.id);
@@ -175,13 +240,23 @@ export default function CoffeeMarketplace() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, searchQuery, filters]);
+
+  // Debounced fetchListings
+  const debouncedFetchListings = React.useCallback(
+    debounce(fetchListings, 300),
+    [fetchListings],
+  );
 
   React.useEffect(() => {
     if (!authLoading) {
-      fetchListings();
+      debouncedFetchListings();
     }
-  }, [currentPage, searchQuery, filters, authLoading]);
+    // Cleanup debounce on unmount
+    return () => {
+      debouncedFetchListings.cancel();
+    };
+  }, [debouncedFetchListings, authLoading]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,6 +296,9 @@ export default function CoffeeMarketplace() {
       is_organic: "",
       min_price: "",
       max_price: "",
+      origin: "",
+      region: "",
+      grade: "",
     });
     setSearchQuery("");
     setPriceError(null);
@@ -228,7 +306,25 @@ export default function CoffeeMarketplace() {
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const getPaginationRange = () => {
+    const maxPagesToShow = 5;
+    const halfRange = Math.floor(maxPagesToShow / 2);
+    let start = Math.max(1, currentPage - halfRange);
+    let end = Math.min(totalPages, start + maxPagesToShow - 1);
+
+    // Adjust start if end is less than maxPagesToShow
+    if (end - start + 1 < maxPagesToShow) {
+      start = Math.max(1, totalPages - maxPagesToShow + 1);
+      end = totalPages;
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
   const hasActiveFilters = Object.values(filters).some((value) => value !== "");
@@ -324,10 +420,10 @@ export default function CoffeeMarketplace() {
 
   if (authLoading) {
     return (
-      <div className="flex flex-col min-h-screen bg-primary/5 p-8">
+      <div className="flex flex-col min-h-screen bg-primary/5 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Header />
-        <main className="flex-grow container mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <main className="flex-grow container mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {Array.from({ length: 6 }).map((_, index) => (
               <LoadingCard key={index} />
             ))}
@@ -339,54 +435,92 @@ export default function CoffeeMarketplace() {
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col min-h-screen bg-primary/5 p-1 pt-20">
+      <div className="flex flex-col min-h-screen bg-primary/5 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Header />
-        <main className="flex-grow container mx-auto px-4 py-6">
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-slate-800">
+        <main className="flex-grow container mx-auto pt-28 sm:pt-20">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">
               Coffee Marketplace
             </h2>
-            <p className="text-slate-600 mt-2">
+            <p className="text-slate-600 mt-1 sm:mt-2 text-sm sm:text-base">
               Discover premium coffee directly from African farmers
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
+          <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
             {/* Filters Sidebar */}
-            <div className="md:sticky md:top-20 self-start">
+            <div className="w-full md:w-64 lg:w-72 md:sticky md:top-20 self-start">
               <Card className="w-full">
-                <CardContent className="pt-6 space-y-4">
+                <CardContent className="pt-4 sm:pt-6 space-y-3 sm:space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="variety">Coffee Variety</Label>
+                    <Label htmlFor="origin" className="text-sm sm:text-base">
+                      Coffee Origins
+                    </Label>
                     <Select
-                      value={filters.variety}
+                      value={filters.origin}
                       onValueChange={(value) =>
-                        handleFilterChange("variety", value)
+                        handleFilterChange("origin", value)
                       }
                     >
-                      <SelectTrigger id="variety" className="w-full">
-                        <SelectValue placeholder="All Varieties" />
+                      <SelectTrigger
+                        id="origin"
+                        className="w-full text-sm sm:text-base py-2 sm:py-2.5"
+                      >
+                        <SelectValue placeholder="All Origins" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Varieties</SelectItem>
-                        {varieties.map((variety) => (
-                          <SelectItem key={variety} value={variety}>
-                            {variety}
+                        <SelectItem value="all">All Origins</SelectItem>
+                        {coffeeOrigins.map((origin) => (
+                          <SelectItem key={origin} value={origin}>
+                            {origin}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="processing">Processing Method</Label>
+                    <Label htmlFor="region" className="text-sm sm:text-base">
+                      Region
+                    </Label>
+                    <Select
+                      value={filters.region}
+                      onValueChange={(value) =>
+                        handleFilterChange("region", value)
+                      }
+                    >
+                      <SelectTrigger
+                        id="region"
+                        className="w-full text-sm sm:text-base py-2 sm:py-2.5"
+                      >
+                        <SelectValue placeholder="All Regions" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Regions</SelectItem>
+                        {coffeeRegions.map((region) => (
+                          <SelectItem key={region} value={region}>
+                            {region}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="processing"
+                      className="text-sm sm:text-base"
+                    >
+                      Processing Method
+                    </Label>
                     <Select
                       value={filters.processing_method}
                       onValueChange={(value) =>
                         handleFilterChange("processing_method", value)
                       }
                     >
-                      <SelectTrigger id="processing" className="w-full">
+                      <SelectTrigger
+                        id="processing"
+                        className="w-full text-sm sm:text-base py-2 sm:py-2.5"
+                      >
                         <SelectValue placeholder="All Methods" />
                       </SelectTrigger>
                       <SelectContent>
@@ -401,14 +535,19 @@ export default function CoffeeMarketplace() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="organic">Organic</Label>
+                    <Label htmlFor="organic" className="text-sm sm:text-base">
+                      Organic
+                    </Label>
                     <Select
                       value={filters.is_organic}
                       onValueChange={(value) =>
                         handleFilterChange("is_organic", value)
                       }
                     >
-                      <SelectTrigger id="organic" className="w-full">
+                      <SelectTrigger
+                        id="organic"
+                        className="w-full text-sm sm:text-base py-2 sm:py-2.5"
+                      >
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
                       <SelectContent>
@@ -418,9 +557,36 @@ export default function CoffeeMarketplace() {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="min-price">Min Price ($/kg)</Label>
+                    <Label htmlFor="grade" className="text-sm sm:text-base">
+                      Grade
+                    </Label>
+                    <Select
+                      value={filters.grade}
+                      onValueChange={(value) =>
+                        handleFilterChange("grade", value)
+                      }
+                    >
+                      <SelectTrigger
+                        id="grade"
+                        className="w-full text-sm sm:text-base py-2 sm:py-2.5"
+                      >
+                        <SelectValue placeholder="All grades" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Grades</SelectItem>
+                        {gradeOptions.map((grade) => (
+                          <SelectItem key={grade} value={grade}>
+                            {grade}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="min-price" className="text-sm sm:text-base">
+                      Min Price ($/kg)
+                    </Label>
                     <Input
                       id="min-price"
                       type="number"
@@ -430,11 +596,14 @@ export default function CoffeeMarketplace() {
                         handleFilterChange("min_price", e.target.value)
                       }
                       min={0}
+                      className="text-sm sm:text-base py-2 sm:py-2.5"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="max-price">Max Price ($/kg)</Label>
+                    <Label htmlFor="max-price" className="text-sm sm:text-base">
+                      Max Price ($/kg)
+                    </Label>
                     <Input
                       id="max-price"
                       type="number"
@@ -444,19 +613,20 @@ export default function CoffeeMarketplace() {
                         handleFilterChange("max_price", e.target.value)
                       }
                       min={0}
+                      className="text-sm sm:text-base py-2 sm:py-2.5"
                     />
                   </div>
 
                   {priceError && (
                     <Alert
                       variant="destructive"
-                      className="bg-red-50 border-red-200 rounded-lg mt-4"
+                      className="bg-red-50 border-red-200 rounded-lg mt-3 sm:mt-4"
                     >
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle className="text-red-800 font-semibold">
+                      <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <AlertTitle className="text-red-800 font-semibold text-sm sm:text-base">
                         Invalid Price Range
                       </AlertTitle>
-                      <AlertDescription className="text-red-700">
+                      <AlertDescription className="text-red-700 text-xs sm:text-sm">
                         {priceError}
                       </AlertDescription>
                     </Alert>
@@ -465,7 +635,7 @@ export default function CoffeeMarketplace() {
                   <Button
                     onClick={resetFilters}
                     variant="outline"
-                    className="w-full"
+                    className="w-full text-sm sm:text-base py-2 sm:py-2.5"
                   >
                     Clear Filters
                   </Button>
@@ -474,15 +644,15 @@ export default function CoffeeMarketplace() {
             </div>
 
             {/* Listings & Search */}
-            <div className="space-y-6">
+            <div className="flex-1 space-y-4 sm:space-y-6">
               <form onSubmit={handleSearchSubmit} className="relative bg-white">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-slate-400" />
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
                 </div>
                 <Input
                   type="text"
                   placeholder="Search for coffee variety, farm name ..."
-                  className="pl-9"
+                  className="pl-9 text-sm sm:text-base py-2 sm:py-2.5"
                   value={searchQuery}
                   onChange={handleSearchChange}
                 />
@@ -494,11 +664,11 @@ export default function CoffeeMarketplace() {
                     variant="destructive"
                     className="bg-red-50 border-red-200 rounded-lg max-w-md w-full"
                   >
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle className="text-red-800 font-semibold">
+                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <AlertTitle className="text-red-800 font-semibold text-sm sm:text-base">
                       Error
                     </AlertTitle>
-                    <AlertDescription className="text-red-700">
+                    <AlertDescription className="text-red-700 text-xs sm:text-sm">
                       {error}. Please try again or refresh the page.
                     </AlertDescription>
                   </Alert>
@@ -508,18 +678,20 @@ export default function CoffeeMarketplace() {
               <div>
                 {isLoading ? (
                   <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                    <p className="text-slate-600">Loading listings...</p>
+                    <div className="h-4 w-4 sm:h-5 sm:w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    <p className="text-slate-600 text-sm sm:text-base">
+                      Loading listings...
+                    </p>
                   </div>
                 ) : (
-                  <p className="text-slate-600">
+                  <p className="text-slate-600 text-sm sm:text-base">
                     {listings.length}{" "}
                     {listings.length === 1 ? "listing" : "listings"} found
                   </p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {isLoading
                   ? Array.from({ length: 6 }).map((_, index) => (
                       <LoadingCard key={index} />
@@ -548,8 +720,11 @@ export default function CoffeeMarketplace() {
               </div>
 
               {listings.length > 0 && totalPages > 1 && (
-                <Pagination className="mt-6">
+                <Pagination className="mt-4 sm:mt-6">
                   <PaginationContent>
+                    {isLoading && (
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    )}
                     <PaginationItem>
                       <PaginationPrevious
                         onClick={() =>
@@ -557,18 +732,21 @@ export default function CoffeeMarketplace() {
                         }
                         className={
                           currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : ""
+                            ? "pointer-events-none opacity-50 text-sm sm:text-base"
+                            : "text-sm sm:text-base"
                         }
+                        aria-label="Go to previous page"
                       />
                     </PaginationItem>
-                    {Array.from({ length: totalPages }).map((_, index) => (
-                      <PaginationItem key={index}>
+                    {getPaginationRange().map((page) => (
+                      <PaginationItem key={page}>
                         <PaginationLink
-                          onClick={() => handlePageChange(index + 1)}
-                          isActive={currentPage === index + 1}
+                          onClick={() => handlePageChange(page)}
+                          isActive={currentPage === page}
+                          className="text-sm sm:text-base"
+                          aria-label={`Go to page ${page}`}
                         >
-                          {index + 1}
+                          {page}
                         </PaginationLink>
                       </PaginationItem>
                     ))}
@@ -581,9 +759,10 @@ export default function CoffeeMarketplace() {
                         }
                         className={
                           currentPage === totalPages
-                            ? "pointer-events-none opacity-50"
-                            : ""
+                            ? "pointer-events-none opacity-50 text-sm sm:text-base"
+                            : "text-sm sm:text-base"
                         }
+                        aria-label="Go to next page"
                       />
                     </PaginationItem>
                   </PaginationContent>
@@ -592,28 +771,32 @@ export default function CoffeeMarketplace() {
 
               {listings.length === 0 && !isLoading && !error && (
                 <div className="flex justify-center">
-                  <Alert className="mt-8 bg-white border-slate-200 rounded-lg max-w-md w-full">
-                    <Coffee className="h-6 w-6 text-slate-400" />
-                    <AlertTitle className="text-xl font-semibold text-slate-700">
+                  <Alert className="mt-6 sm:mt-8 bg-white border-slate-200 rounded-lg max-w-md w-full">
+                    <Coffee className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400" />
+                    <AlertTitle className="text-lg sm:text-xl font-semibold text-slate-700">
                       {hasSearchOrFilters
                         ? "No listings match your criteria"
                         : "No coffee listings available"}
                     </AlertTitle>
-                    <AlertDescription className="text-slate-500 mt-2">
+                    <AlertDescription className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base">
                       {hasSearchOrFilters
                         ? "Try adjusting your search or filters to find more listings."
                         : "Check back later for new coffee listings."}
                     </AlertDescription>
-                    <div className="mt-4">
+                    <div className="mt-3 sm:mt-4">
                       {hasSearchOrFilters ? (
-                        <Button onClick={resetFilters} variant="default">
+                        <Button
+                          onClick={resetFilters}
+                          variant="default"
+                          className="text-sm sm:text-base"
+                        >
                           Clear All Filters
                         </Button>
                       ) : (
                         <Button
                           onClick={() => fetchListings()}
                           variant="default"
-                          className="bg-emerald-600 hover:bg-emerald-700"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-sm sm:text-base"
                         >
                           Refresh
                         </Button>
@@ -643,50 +826,4 @@ export default function CoffeeMarketplace() {
       </div>
     </ErrorBoundary>
   );
-}
-
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; errorMessage: string }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, errorMessage: "" };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, errorMessage: error.message };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex justify-center mt-8">
-          <Alert className="bg-white border-slate-200 rounded-lg max-w-md w-full">
-            <AlertCircle className="h-6 w-6 text-red-400" />
-            <AlertTitle className="text-xl font-semibold text-slate-700">
-              Something went wrong
-            </AlertTitle>
-            <AlertDescription className="text-slate-500 mt-2">
-              {this.state.errorMessage || "An unexpected error occurred."}
-            </AlertDescription>
-            <div className="mt-4">
-              <Button
-                onClick={() => window.location.reload()}
-                variant="default"
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                Refresh Page
-              </Button>
-            </div>
-          </Alert>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
 }

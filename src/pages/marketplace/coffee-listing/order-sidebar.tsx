@@ -79,13 +79,13 @@ export function OrderSidebar({
 
   return (
     <div className="space-y-6">
-      <Card className="top-6">
-        <CardContent className="pb-3 pl-6 pr-6">
+      <Card>
+        <CardContent className="p-4 sm:p-6">
           <div className="mb-4 flex justify-between items-start">
             <Badge
               variant="outline"
               className={cn(
-                "text-sm font-medium",
+                "text-xs sm:text-sm font-medium",
                 listing?.listing_status === "active"
                   ? "bg-green-400 text-white border-green-200"
                   : "bg-orange-300 text-gray-800 border-gray-200",
@@ -108,12 +108,14 @@ export function OrderSidebar({
             <img
               src={primaryPhoto}
               alt={listing?.coffee_variety}
-              className="w-full h-40 object-cover rounded-lg"
+              className="w-full h-32 sm:h-40 object-cover rounded-lg"
             />
           </div>
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h2 className="text-xl font-bold">{listing?.coffee_variety}</h2>
+              <h2 className="text-lg sm:text-xl font-bold">
+                {listing?.coffee_variety}
+              </h2>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Coffee className="h-4 w-4 mr-1" />
                 {listing?.bean_type}
@@ -128,12 +130,12 @@ export function OrderSidebar({
             </Badge>
           </div>
           <div className="flex items-baseline mb-4">
-            <span className="text-2xl font-bold text-primary">
+            <span className="text-xl sm:text-2xl font-bold text-primary">
               ${listing?.price_per_kg}
             </span>
-            <span className="ml-1 text-muted-foreground">/kg</span>
+            <span className="ml-1 text-sm text-muted-foreground">/kg</span>
             {listing?.is_organic && (
-              <Badge className="ml-2 bg-green-500 text-white border-0">
+              <Badge className="ml-2 bg-green-500 text-white border-0 text-xs sm:text-sm">
                 Organic
               </Badge>
             )}
@@ -203,8 +205,10 @@ export function OrderSidebar({
         listing?.listing_discount &&
         listing?.listing_discount.length > 0 && (
           <Card>
-            <CardContent className="p-6">
-              <h3 className="text-md font-medium mb-3">Volume Discounts</h3>
+            <CardContent className="p-4 sm:p-6">
+              <h3 className="text-md sm:text-lg font-medium mb-3">
+                Volume Discounts
+              </h3>
               <div className="space-y-2">
                 {listing?.listing_discount.map((discount: any, idx: number) => (
                   <div
@@ -220,7 +224,7 @@ export function OrderSidebar({
                   </div>
                 ))}
               </div>
-              <div className="mt-3 text-xs text-muted-foreground">
+              <div className="mt-3 text-xs sm:text-sm text-muted-foreground">
                 Volume discounts are automatically applied at checkout.
               </div>
             </CardContent>
@@ -228,8 +232,10 @@ export function OrderSidebar({
         )}
 
       <Card>
-        <CardContent className="p-6">
-          <h3 className="text-lg font-medium mb-4">About the Seller</h3>
+        <CardContent className="p-4 sm:p-6">
+          <h3 className="text-md sm:text-lg font-medium mb-4">
+            About the Seller
+          </h3>
           <div className="flex items-center mb-2">
             <img
               src={listing?.seller?.avatar_url_csv || "/placeholder.svg"}
@@ -237,7 +243,7 @@ export function OrderSidebar({
               className="w-10 h-10 rounded-full mr-3"
             />
             <div>
-              <div className="font-semibold">
+              <div className="font-semibold text-sm sm:text-base">
                 {listing?.seller?.first_name} {listing?.seller?.last_name}
               </div>
               <div className="text-xs text-muted-foreground">
@@ -262,7 +268,7 @@ export function OrderSidebar({
 
       {user?.userType === "seller" && listing?.seller.id === user?.id && (
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <Link to={`/manage-listing/${listing.id}`}>
               <Button variant="outline" className="w-full mt-2">
                 Manage Listing
@@ -276,10 +282,12 @@ export function OrderSidebar({
         (orderStatus.status === "completed" ||
           orderStatus.status === "delivered") && (
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center mb-3">
                 <Award size={20} className="text-primary mr-2" />
-                <h3 className="text-md font-medium">Purchase Certificate</h3>
+                <h3 className="text-md sm:text-lg font-medium">
+                  Purchase Certificate
+                </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
                 Download your certificate of purchase for this premium coffee

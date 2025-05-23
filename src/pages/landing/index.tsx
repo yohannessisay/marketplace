@@ -28,17 +28,10 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header scrolled={scrolled} />
-      <main className="flex-grow p-24">
+      <main className="flex-grow px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
         <Hero setIsContactModalOpen={setIsContactModalOpen} />
-        {/* <Marketplace />
-        <Features />
-        <About />
-        <EUDRSection />
-        <Testimonials />
-        <ContactSection /> */}
       </main>
       <ContactModal open={isContactModalOpen} setOpen={setIsContactModalOpen} />
-      {/* <Footer /> */}
     </div>
   );
 };

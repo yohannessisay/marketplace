@@ -35,7 +35,6 @@ export function FileUpload({
 
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
-  // Only set initialFiles on mount, not on every change
   useEffect(() => {
     if (files.length === 0 && initialFiles.length > 0) {
       setFiles(initialFiles);
@@ -129,7 +128,6 @@ export function FileUpload({
         onFilesSelected(updatedFiles.map((f) => f.file));
       }
 
-      // Clear file input to allow re-selection of the same file
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -165,10 +163,36 @@ export function FileUpload({
     }
   };
 
-  const trimFileName = (name: string, maxLength: number = 40): string => {
+  const trimFileName = (name: string): string => {
+    const width = window.innerWidth;
+    let maxLength = 40;
+    if (width < 640) {
+      maxLength = 20;
+    } else if (width < 768) {
+      maxLength = 25;
+    } else if (width < 1024) {
+      maxLength = 30;
+    }
+
     if (name.length <= maxLength) return name;
     return name.substring(0, maxLength - 3) + "...";
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setFiles((prevFiles) =>
+        prevFiles.map((file) => ({
+          ...file,
+          preview: file.preview,
+        })),
+      );
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -179,10 +203,10 @@ export function FileUpload({
   }, [files]);
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full max-w-full", className)}>
       <div
         className={cn(
-          "border-2 border-dashed rounded-lg p-6",
+          "border-2 border-dashed rounded-lg p-4 sm:p-6",
           isDragging ? "border-primary bg-primary/5" : "border-gray-300",
           "transition-colors duration-200",
           "relative",
@@ -202,51 +226,67 @@ export function FileUpload({
         />
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="animate-spin h-10 w-10 border-t-2 border-b-2 border-primary rounded-full"></div>
-            <p className="text-sm text-gray-600">Loading files...</p>
+          <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4 min-h-[76px] sm:min-h-[96px]">
+            <div className="flex items-center justify-between rounded-lg border p-3 sm:p-4">
+              <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                <div className="h-6 w-6 sm:h-8 sm:w-8 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
+                <div className="min-w-0">
+                  <div className="h-4 sm:h-5 w-32 sm:w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 sm:h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+              <div className="h-6 w-6 sm:h-8 sm:w-8 bg-gray-200 rounded-full animate-pulse flex-shrink-0"></div>
+            </div>
           </div>
         ) : files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <Upload className="h-10 w-10 text-gray-400" />
+          <div className="flex flex-col items-center justify-center space-y-3 sm:space-y-4">
+            <Upload className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
             <div className="text-center">
               <Button
                 type="button"
                 variant="outline"
-                className="text-primary hover:text-primary/80"
+                className="text-primary hover:text-primary/80 text-xs sm:text-sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
               >
                 Click to upload
               </Button>
-              <span className="text-gray-500"> or drag and drop</span>
+              <span className="text-gray-500 text-xs sm:text-sm">
+                {" "}
+                or drag and drop
+              </span>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-xs sm:text-sm text-gray-500">
               PDF or images up to {maxSizeMB}MB (max {maxFiles} files)
             </p>
           </div>
         ) : (
-          <div className={cn("mt-6 space-y-4", files.length === 0 && "mt-0")}>
+          <div
+            className={cn(
+              "mt-4 sm:mt-6 space-y-3 sm:space-y-4",
+              files.length === 0 && "mt-0",
+            )}
+          >
             {files.map((file, index) => (
               <div
                 key={`${file.file.name}-${index}`}
-                className="flex items-center justify-between rounded-lg border p-4"
+                className="flex items-center justify-between rounded-lg border p-3 sm:p-4"
               >
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                   {file.type === "pdf" ? (
-                    <FileIcon className="h-8 w-8 text-primary" />
+                    <FileIcon className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
                   ) : (
                     <img
                       src={file.preview}
                       alt="preview"
-                      className="h-8 w-8 rounded object-cover"
+                      className="h-6 w-6 sm:h-8 sm:w-8 rounded object-cover flex-shrink-0"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";
                       }}
                     />
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-xs sm:text-sm font-medium truncate">
                       {trimFileName(file.file.name)}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -258,11 +298,11 @@ export function FileUpload({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0"
                   onClick={() => removeFile(index)}
                   disabled={loading}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             ))}
@@ -270,7 +310,7 @@ export function FileUpload({
               <Button
                 type="button"
                 variant="outline"
-                className="mt-4"
+                className="mt-3 sm:mt-4 text-xs sm:text-sm w-full sm:w-auto"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
               >
@@ -281,9 +321,9 @@ export function FileUpload({
         )}
 
         {error && (
-          <div className="mt-4 flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <p className="text-sm">{error}</p>
+          <div className="mt-3 sm:mt-4 flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+            <p className="text-xs sm:text-sm">{error}</p>
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -29,14 +29,15 @@ import { z } from "zod";
 import { FileUpload } from "@/components/common/file-upload";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
+import ConfirmationModal from "@/components/modals/ConfrmationModal";
 
 type CompanyDetails = z.infer<typeof buyerOnboardingSchema>;
 
 export default function CompanyVerification() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   const [files, setFiles] = useState<File[]>([]);
-
   const navigate = useNavigate();
   const { setUser } = useAuth();
 
@@ -53,53 +54,74 @@ export default function CompanyVerification() {
     },
   });
 
-  const onSubmit = async (data: CompanyDetails) => {
-    setIsSubmitting(true);
+  const onSubmit = useCallback(
+    async (data: CompanyDetails) => {
+      setIsSubmitting(true);
 
-    const formData = new FormData();
+      const formData = new FormData();
 
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== "") {
-        formData.append(key, value);
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== "") {
+          formData.append(key, value);
+        }
+      });
+
+      files.forEach((file) => {
+        formData.append("company_registration", file);
+      });
+
+      try {
+        const response: any = await apiService().postFormData(
+          "/onboarding/buyer/complete-onboarding",
+          formData,
+          true,
+        );
+
+        setUser({ ...response.data.buyer });
+
+        successMessage(
+          "Your company verification has been submitted successfully.",
+        );
+        navigate("/market-place");
+      } catch (error) {
+        console.error("Error submitting form:", error);
+        errorMessage(error as APIErrorResponse);
+      } finally {
+        setIsSubmitting(false);
       }
-    });
+    },
+    [files, setUser, successMessage, errorMessage, navigate],
+  );
 
-    files.forEach((file) => {
-      formData.append("company_registration", file);
-    });
+  const handleFormSubmit = useCallback(() => {
+    setIsModalOpen(true);
+  }, []);
 
-    try {
-      const response: any = await apiService().postFormData(
-        "/onboarding/buyer/complete-onboarding",
-        formData,
-        true,
-      );
+  const handleModalConfirm = useCallback(() => {
+    form.handleSubmit(onSubmit)();
+    setIsModalOpen(false);
+  }, [form, onSubmit]);
 
-      setUser({ ...response.data.buyer });
-
-      successMessage(
-        "Your company verification has been submitted successfully.",
-      );
-      navigate("/market-place");
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      errorMessage(error as APIErrorResponse);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleModalCancel = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-primary/5 p-8">
+    <div className="min-h-screen bg-primary/5 px-4 sm:px-6 lg:px-8 py-6">
       <Header />
-      <main className="max-w-3xl mx-auto px-4 py-8 mt-10">
+      <main className="max-w-4xl mx-auto py-6 sm:py-8 lg:py-10 mt-10 sm:mt-8 lg:mt-10">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form
+            onSubmit={form.handleSubmit(handleFormSubmit)}
+            className="space-y-6 sm:space-y-8"
+          >
             {/* Step 1 - Upload Documents */}
-            <Card>
+            <Card className="w-full">
               <CardHeader>
-                <CardTitle>Upload Company KYC Documents</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl lg:text-2xl">
+                  Upload Company KYC Documents
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base">
                   Upload an image. Drag and drop or click to select a file.
                 </CardDescription>
               </CardHeader>
@@ -113,7 +135,7 @@ export default function CompanyVerification() {
                 />
               </CardContent>
               <CardFooter className="flex justify-between">
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   {files.length > 0
                     ? `${files.length} files selected`
                     : "No file selected"}
@@ -122,27 +144,35 @@ export default function CompanyVerification() {
             </Card>
 
             {/* Step 2 - Company Details */}
-            <Card>
+            <Card className="w-full">
               <CardHeader>
-                <div className="text-sm font-medium text-gray-500">Step 2</div>
-                <CardTitle>Company details</CardTitle>
-                <CardDescription>
-                  Check and fill in details about your company, position and
+                <div className="text-xs sm:text-sm font-medium text-gray-500">
+                  Step 2
+                </div>
+                <CardTitle className="text-lg sm:text-xl lg:text-2xl">
+                  Company Details
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base">
+                  Check and fill in details about your company, position, and
                   website
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <FormField
                     control={form.control}
                     name="company_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className="text-sm sm:text-base">
                           Company name<span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="Company" {...field} />
+                          <Input
+                            placeholder="Company"
+                            {...field}
+                            className="text-sm sm:text-base"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -154,11 +184,11 @@ export default function CompanyVerification() {
                     name="country"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className="text-sm sm:text-base">
                           Country<span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} className="text-sm sm:text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -170,12 +200,12 @@ export default function CompanyVerification() {
                     name="position"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className="text-sm sm:text-base">
                           Your position in company
                           <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} className="text-sm sm:text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -187,9 +217,15 @@ export default function CompanyVerification() {
                     name="website_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Website or social media link</FormLabel>
+                        <FormLabel className="text-sm sm:text-base">
+                          Website or social media link
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="https://company.com" {...field} />
+                          <Input
+                            placeholder="https://company.com"
+                            {...field}
+                            className="text-sm sm:text-base"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -200,12 +236,12 @@ export default function CompanyVerification() {
                     control={form.control}
                     name="company_address"
                     render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>
+                      <FormItem className="sm:col-span-2">
+                        <FormLabel className="text-sm sm:text-base">
                           Company address<span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} className="text-sm sm:text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -217,9 +253,11 @@ export default function CompanyVerification() {
                     name="telegram"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Telegram</FormLabel>
+                        <FormLabel className="text-sm sm:text-base">
+                          Telegram
+                        </FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} className="text-sm sm:text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -231,9 +269,14 @@ export default function CompanyVerification() {
                     name="about_me"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>About Me</FormLabel>
+                        <FormLabel className="text-sm sm:text-base">
+                          About Me
+                        </FormLabel>
                         <FormControl>
-                          <Textarea {...field} />
+                          <Textarea
+                            {...field}
+                            className="text-sm sm:text-base"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -244,20 +287,28 @@ export default function CompanyVerification() {
             </Card>
 
             {/* Action Buttons */}
-            <div className="flex justify-end space-x-4">
+            <div className="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
               <Button
-                type="button"
-                variant="outline"
-                className="border-gray-300 text-gray-700"
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto text-sm sm:text-base"
               >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Save"}
               </Button>
             </div>
           </form>
         </Form>
+
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={handleModalCancel}
+          title="Confirm Company Verification"
+          message="Once submitted, you cannot edit the data you have entered until you submit an edit request. Please ensure all information is correct before proceeding."
+          confirmText="Proceed"
+          cancelText="Cancel"
+          onConfirm={handleModalConfirm}
+          isDestructive={false}
+        />
       </main>
     </div>
   );

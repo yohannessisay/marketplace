@@ -114,4 +114,7 @@ export interface FilterState {
   is_organic: string;
   min_price: string;
   max_price: string;
+  origin: string;
+  region: string;
+  grade: string;
 }

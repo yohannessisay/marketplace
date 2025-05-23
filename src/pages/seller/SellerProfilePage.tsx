@@ -112,7 +112,7 @@ export default function SellerProfilePage() {
     setError(null);
 
     try {
-      const [sellerResponse, farmsResponse, listingsResponse, reviewsResponse]:any =
+      const [sellerResponse, farmsResponse, listingsResponse, reviewsResponse]: any =
         await Promise.all([
           apiService().getWithoutAuth(
             `/sellers/profile/get-profile-details?sellerId=${sellerId}`,
@@ -274,17 +274,17 @@ export default function SellerProfilePage() {
   };
 
   const SkeletonLoader = () => (
-    <div className="bg-primary/5 p-8 min-h-screen animate-pulse">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white my-12">
+    <div className="bg-primary/5 px-4 sm:px-6 lg:px-8 py-8 min-h-screen animate-pulse">
+      <div className="max-w-7xl mx-auto bg-white rounded-md">
         <div className="h-12 bg-gray-200 rounded w-3/4 mb-8"></div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-6">
+          <div>
             <div className="h-64 bg-gray-200 rounded mb-4"></div>
             <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
             <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
             <div className="h-4 bg-gray-200 rounded w-3/4"></div>
           </div>
-          <div className="lg:col-span-1">
+          <div>
             <div className="h-96 bg-gray-200 rounded"></div>
           </div>
         </div>
@@ -295,35 +295,35 @@ export default function SellerProfilePage() {
   if (loading) return <SkeletonLoader />;
   if (error || !seller)
     return (
-      <div className="p-8 text-center text-red-500">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 text-center text-red-500">
         {error || "No seller found."}
       </div>
     );
 
   return (
-    <div className="bg-primary/5 p-8 min-h-screen">
+    <div className="bg-primary/5 px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white my-15 rounded-md">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+      <main className="max-w-7xl mx-auto bg-white rounded-md">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
             <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="flex items-center mb-4">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-center mb-4">
                   <img
                     src={seller.avatar_url_csv || "/placeholder.svg"}
                     alt={`${seller.first_name} ${seller.last_name}`}
-                    className="w-16 h-16 rounded-full mr-4 object-cover"
+                    className="w-16 h-16 rounded-full object-cover mb-4 sm:mb-0 sm:mr-4"
                   />
-                  <div>
-                    <h2 className="text-2xl font-bold">{`${seller.first_name} ${seller.last_name}`}</h2>
-                    <div className="flex items-center text-sm text-muted-foreground">
+                  <div className="text-center sm:text-left">
+                    <h2 className="text-xl sm:text-2xl font-bold">{`${seller.first_name} ${seller.last_name}`}</h2>
+                    <div className="flex items-center justify-center sm:justify-start text-sm text-muted-foreground">
                       <Star className="h-4 w-4 mr-1 text-yellow-500 fill-current" />
                       {seller.rating} ({seller.total_reviews} reviews)
                     </div>
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground space-y-2">
+                <div className="text-sm text-muted-foreground space-y-2 text-center sm:text-left">
                   <p>
                     <b>Email:</b> {seller.email}
                   </p>
@@ -341,7 +341,7 @@ export default function SellerProfilePage() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid grid-cols-3 w-full">
                 <TabsTrigger value="farms">Farms</TabsTrigger>
                 <TabsTrigger value="listings">Coffee Listings</TabsTrigger>
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
@@ -349,7 +349,7 @@ export default function SellerProfilePage() {
 
               <TabsContent value="farms" className="border rounded-md mt-2">
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     {farms.length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground">
                         No farms listed for this seller.
@@ -358,8 +358,8 @@ export default function SellerProfilePage() {
                       <div className="space-y-4">
                         {farms.map((farm) => (
                           <Card key={farm.id} className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
+                            <div className="flex flex-col sm:flex-row justify-between items-start">
+                              <div className="mb-4 sm:mb-0">
                                 <h3 className="font-bold text-lg">
                                   {farm.farm_name}
                                 </h3>
@@ -386,7 +386,7 @@ export default function SellerProfilePage() {
 
               <TabsContent value="listings" className="border rounded-md mt-2">
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     {listings.length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground">
                         No active listings available.
@@ -405,15 +405,15 @@ export default function SellerProfilePage() {
                               "/placeholder.svg";
                             return (
                               <Card key={listing.id} className="p-4">
-                                <div className="flex items-start space-x-4">
+                                <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4">
                                   <img
                                     src={primaryPhoto}
                                     alt={listing.coffee_variety}
                                     className="w-24 h-24 object-cover rounded-lg"
                                   />
                                   <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                      <div>
+                                    <div className="flex flex-col sm:flex-row justify-between items-start">
+                                      <div className="mb-4 sm:mb-0">
                                         <h3 className="font-bold text-lg">
                                           {listing.coffee_variety}
                                         </h3>
@@ -427,7 +427,7 @@ export default function SellerProfilePage() {
                                           kg
                                         </div>
                                       </div>
-                                      <div className="text-right">
+                                      <div className="text-center sm:text-right">
                                         <div className="font-bold text-lg text-primary">
                                           ${listing.price_per_kg.toFixed(2)}/kg
                                         </div>
@@ -441,7 +441,7 @@ export default function SellerProfilePage() {
                                     <Link to={`/listing/${listing.id}`}>
                                       <Button
                                         variant="outline"
-                                        className="mt-2"
+                                        className="mt-2 w-full sm:w-auto"
                                       >
                                         View Listing
                                       </Button>
@@ -459,7 +459,7 @@ export default function SellerProfilePage() {
 
               <TabsContent value="reviews" className="border rounded-md mt-2">
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     {reviews.length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground">
                         No reviews available for this seller.
@@ -469,8 +469,8 @@ export default function SellerProfilePage() {
                         {reviews.map((review) => (
                           <Card key={review.id} className="p-4">
                             <div className="flex flex-col space-y-2">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
+                              <div className="flex flex-col sm:flex-row items-center justify-between">
+                                <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3 mb-2 sm:mb-0">
                                   <img
                                     src={
                                       review.reviewer?.avatar_url_csv ||
@@ -479,11 +479,11 @@ export default function SellerProfilePage() {
                                     alt={review.reviewer?.name || "Reviewer"}
                                     className="w-10 h-10 rounded-full object-cover"
                                   />
-                                  <div>
+                                  <div className="text-center sm:text-left">
                                     <span className="font-semibold text-slate-800">
                                       {review.reviewer?.name || "Anonymous"}
                                     </span>
-                                    <div className="flex mt-1">
+                                    <div className="flex justify-center sm:justify-start mt-1">
                                       {[...Array(5)].map((_, i) => (
                                         <Star
                                           key={i}
@@ -518,15 +518,15 @@ export default function SellerProfilePage() {
           </div>
 
           {user?.userType === "seller" || user?.userType === "agent" ? null : (
-            <>
-              <div className="mt-4">
+            <div className="mt-4">
+              <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center">
                     <MessageCircle size={20} className="mr-2 text-primary" />
                     Chat with Seller
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6">
                   <div className="h-60 overflow-y-auto mb-4 flex flex-col-reverse">
                     {chatMessages.length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground h-full flex items-center justify-center">
@@ -546,7 +546,7 @@ export default function SellerProfilePage() {
                             }`}
                           >
                             <div
-                              className={`max-w-xs lg:max-w-md rounded-lg px-4 py-2 ${
+                              className={`max-w-[80%] sm:max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
                                 message.sender === "buyer"
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-muted text-foreground"
@@ -584,7 +584,7 @@ export default function SellerProfilePage() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Input
                         value={chatMessage}
                         onChange={(e) => setChatMessage(e.target.value)}
@@ -594,16 +594,16 @@ export default function SellerProfilePage() {
                       />
                       <Button
                         onClick={handleSendMessage}
-                        className="ml-3"
                         disabled={chatMessage === ""}
+                        className="w-full sm:w-auto"
                       >
                         <Send size={16} />
                       </Button>
                     </div>
                   )}
                 </CardContent>
-              </div>
-            </>
+              </Card>
+            </div>
           )}
         </div>
       </main>

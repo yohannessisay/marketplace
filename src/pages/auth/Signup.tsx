@@ -23,7 +23,7 @@ import { buyerSchema, sellerSchema } from "@/types/validation/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
-import { InfoIcon, MoveLeft } from "lucide-react";
+import { LucideHome, InfoIcon } from "lucide-react";
 import { APIErrorResponse } from "@/types/api";
 import { SIGNUP_PROFILE_KEY } from "@/types/constants";
 import { saveToLocalStorage } from "@/lib/utils";
@@ -174,36 +174,32 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Left Side - Image */}
       <div
-        className="hidden md:flex w-1/2 bg-cover bg-center  rounded-r-2xl shadow-lg"
+        className="hidden lg:flex w-full lg:w-1/2 bg-cover bg-center rounded-r-2xl shadow-lg"
         style={{ backgroundImage: "url('/images/registration.png')" }}
       ></div>
 
-      {/* Right Side - Form */}
-      <div className="flex w-full md:w-1/2 items-center justify-center bg-white p-8">
-        <div className="max-w-md w-full border border-green-200 shadow-md rounded-md p-4">
-          {/* Logo */}
-          <div className="flex justify-end">
+      <div className="flex w-full lg:w-1/2 items-center justify-center bg-white px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="w-full max-w-md sm:max-w-lg border border-green-200 shadow-md rounded-lg p-4 sm:p-6 lg:p-8">
+          <div className="flex justify-end mb-4">
             <Link to={"/"}>
-              <MoveLeft
+              <LucideHome
                 className="hover:bg-primary hover:text-white text-primary cursor-pointer border rounded-full p-1 shadow-md"
-                size={36}
+                size={32}
               />
             </Link>
           </div>
-          <div className="mb-6 text-center">
-            <h2 className="text-3xl font-bold text-gray-800">
+          <div className="mb-4 sm:mb-6 text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
               <span className="text-green-600">Afro</span>valley
             </h2>
           </div>
 
-          {/* Role Selection */}
-          <div className="flex mb-4 space-x-2">
+          <div className="flex mb-4 space-x-2 sm:space-x-3">
             <Button
               type="button"
               variant={role === "buyer" ? "default" : "outline"}
-              className={`flex-1 ${role === "buyer" ? "bg-gray-900" : ""}`}
+              className={`flex-1 text-sm sm:text-base py-2 sm:py-2.5 ${role === "buyer" ? "bg-gray-900" : ""}`}
               onClick={() => handleRoleChange("buyer")}
             >
               Sign up as Buyer
@@ -211,30 +207,33 @@ export default function SignupPage() {
             <Button
               type="button"
               variant={role === "seller" ? "default" : "outline"}
-              className={`flex-1 ${role === "seller" ? "bg-gray-900" : ""}`}
+              className={`flex-1 text-sm sm:text-base py-2 sm:py-2.5 ${role === "seller" ? "bg-gray-900" : ""}`}
               onClick={() => handleRoleChange("seller")}
             >
               Sign up as Seller
             </Button>
           </div>
 
-          {/* Buyer Form */}
           {role === "buyer" && (
             <Form {...buyerForm}>
               <form
                 onSubmit={buyerForm.handleSubmit(onBuyerSubmit)}
-                className="space-y-4"
+                className="space-y-3 sm:space-y-4"
               >
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <FormField
                     control={buyerForm.control}
                     name="first_name"
                     render={({ field }) => (
                       <FormItem id="first_name">
                         <FormControl>
-                          <Input placeholder="First name*" {...field} />
+                          <Input
+                            placeholder="First name*"
+                            className="text-sm sm:text-base py-2 sm:py-2.5"
+                            {...field}
+                          />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs sm:text-sm" />
                       </FormItem>
                     )}
                   />
@@ -245,9 +244,13 @@ export default function SignupPage() {
                     render={({ field }) => (
                       <FormItem id="last_name">
                         <FormControl>
-                          <Input placeholder="Last name*" {...field} />
+                          <Input
+                            placeholder="Last name*"
+                            className="text-sm sm:text-base py-2 sm:py-2.5"
+                            {...field}
+                          />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs sm:text-sm" />
                       </FormItem>
                     )}
                   />
@@ -259,9 +262,14 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem id="phone">
                       <FormControl>
-                        <Input placeholder="Phone*" type="tel" {...field} />
+                        <Input
+                          placeholder="Phone*"
+                          type="tel"
+                          className="text-sm sm:text-base py-2 sm:py-2.5"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -272,9 +280,14 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem id="email">
                       <FormControl>
-                        <Input placeholder="Email*" type="email" {...field} />
+                        <Input
+                          placeholder="Email*"
+                          type="email"
+                          className="text-sm sm:text-base py-2 sm:py-2.5"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -289,6 +302,7 @@ export default function SignupPage() {
                           <Input
                             placeholder="Password*"
                             type={buyerPasswordVisible ? "text" : "password"}
+                            className="text-sm sm:text-base py-2 sm:py-2.5"
                             {...field}
                             value={field.value ?? ""}
                           />
@@ -299,14 +313,14 @@ export default function SignupPage() {
                             tabIndex={-1}
                           >
                             {buyerPasswordVisible ? (
-                              <EyeOff size={18} />
+                              <EyeOff size={16} />
                             ) : (
-                              <Eye size={18} />
+                              <Eye size={16} />
                             )}
                           </button>
                         </div>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -323,6 +337,7 @@ export default function SignupPage() {
                             type={
                               buyerConfirmPasswordVisible ? "text" : "password"
                             }
+                            className="text-sm sm:text-base py-2 sm:py-2.5"
                             {...field}
                             value={field.value ?? ""}
                           />
@@ -335,14 +350,14 @@ export default function SignupPage() {
                             tabIndex={-1}
                           >
                             {buyerConfirmPasswordVisible ? (
-                              <EyeOff size={18} />
+                              <EyeOff size={16} />
                             ) : (
-                              <Eye size={18} />
+                              <Eye size={16} />
                             )}
                           </button>
                         </div>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -353,9 +368,13 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem id="companyName">
                       <FormControl>
-                        <Input placeholder="Company name" {...field} />
+                        <Input
+                          placeholder="Company name"
+                          className="text-sm sm:text-base py-2 sm:py-2.5"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -365,13 +384,15 @@ export default function SignupPage() {
                   name="preferredCurrency"
                   render={({ field }) => (
                     <FormItem id="preferredCurrency">
-                      <FormLabel>Preferred Currency</FormLabel>
+                      <FormLabel className="text-sm sm:text-base">
+                        Preferred Currency
+                      </FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full text-sm sm:text-base py-2 sm:py-2.5">
                             <SelectValue placeholder="Select currency" />
                           </SelectTrigger>
                         </FormControl>
@@ -383,7 +404,7 @@ export default function SignupPage() {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -392,7 +413,7 @@ export default function SignupPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full my-4"
+                  className="w-full my-3 sm:my-4 text-sm sm:text-base py-2 sm:py-2.5"
                 >
                   {isSubmitting ? "Creating account..." : "Sign Up"}
                 </Button>
@@ -400,23 +421,26 @@ export default function SignupPage() {
             </Form>
           )}
 
-          {/* Seller Form */}
           {role === "seller" && (
             <Form {...sellerForm}>
               <form
                 onSubmit={sellerForm.handleSubmit(onSellerSubmit)}
-                className="space-y-4"
+                className="space-y-3 sm:space-y-4"
               >
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <FormField
                     control={sellerForm.control}
                     name="first_name"
                     render={({ field }) => (
                       <FormItem id="first_name">
                         <FormControl>
-                          <Input placeholder="First name*" {...field} />
+                          <Input
+                            placeholder="First name*"
+                            className="text-sm sm:text-base py-2 sm:py-2.5"
+                            {...field}
+                          />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs sm:text-sm" />
                       </FormItem>
                     )}
                   />
@@ -427,9 +451,13 @@ export default function SignupPage() {
                     render={({ field }) => (
                       <FormItem id="last_name">
                         <FormControl>
-                          <Input placeholder="Last name*" {...field} />
+                          <Input
+                            placeholder="Last name*"
+                            className="text-sm sm:text-base py-2 sm:py-2.5"
+                            {...field}
+                          />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs sm:text-sm" />
                       </FormItem>
                     )}
                   />
@@ -441,9 +469,14 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem id="phone">
                       <FormControl>
-                        <Input placeholder="Phone*" type="tel" {...field} />
+                        <Input
+                          placeholder="Phone*"
+                          type="tel"
+                          className="text-sm sm:text-base py-2 sm:py-2.5"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -454,9 +487,14 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem id="email">
                       <FormControl>
-                        <Input placeholder="Email*" type="email" {...field} />
+                        <Input
+                          placeholder="Email*"
+                          type="email"
+                          className="text-sm sm:text-base py-2 sm:py-2.5"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -471,6 +509,7 @@ export default function SignupPage() {
                           <Input
                             placeholder="Password*"
                             type={sellerPasswordVisible ? "text" : "password"}
+                            className="text-sm sm:text-base py-2 sm:py-2.5"
                             {...field}
                             value={field.value ?? ""}
                           />
@@ -481,14 +520,14 @@ export default function SignupPage() {
                             tabIndex={-1}
                           >
                             {sellerPasswordVisible ? (
-                              <EyeOff size={18} />
+                              <EyeOff size={16} />
                             ) : (
-                              <Eye size={18} />
+                              <Eye size={16} />
                             )}
                           </button>
                         </div>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -505,6 +544,7 @@ export default function SignupPage() {
                             type={
                               sellerConfirmPasswordVisible ? "text" : "password"
                             }
+                            className="text-sm sm:text-base py-2 sm:py-2.5"
                             {...field}
                             value={field.value ?? ""}
                           />
@@ -517,14 +557,14 @@ export default function SignupPage() {
                             tabIndex={-1}
                           >
                             {sellerConfirmPasswordVisible ? (
-                              <EyeOff size={18} />
+                              <EyeOff size={16} />
                             ) : (
-                              <Eye size={18} />
+                              <Eye size={16} />
                             )}
                           </button>
                         </div>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-xs sm:text-sm" />
                     </FormItem>
                   )}
                 />
@@ -533,7 +573,7 @@ export default function SignupPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full my-4"
+                  className="w-full my-3 sm:my-4 text-sm sm:text-base py-2 sm:py-2.5"
                 >
                   {isSubmitting ? "Creating account..." : "Sign Up"}
                 </Button>
@@ -541,18 +581,17 @@ export default function SignupPage() {
             </Form>
           )}
 
-          <h3 className="my-6 flex justify-center">
-            <InfoIcon className="mr-2 text-orange-400"></InfoIcon>You are
-            currently filling the form as{" "}
-            <span className="text-gray-500 font-semibold  ml-2 border rounded-md px-2 shadow-md   ">
+          <h3 className="my-4 sm:my-6 flex justify-center items-center text-sm sm:text-base">
+            <InfoIcon className="mr-2 text-orange-400 w-4 h-4 sm:w-5 sm:h-5" />
+            You are currently filling the form as
+            <span className="text-gray-500 font-semibold ml-2 border rounded-md px-2 py-1 text-xs sm:text-sm shadow-md">
               {role.toUpperCase()}
             </span>
           </h3>
 
-          {/* Sign-in Option */}
-          <p className="mt-4 text-center text-gray-600">
+          <p className="mt-3 sm:mt-4 text-center text-gray-600 text-sm sm:text-base">
             Already have an account?{" "}
-            <Link to="/login" className="font-semibold text-green-500 ">
+            <Link to="/login" className="font-semibold text-green-500">
               Sign in
             </Link>
           </p>

@@ -67,6 +67,12 @@ import { FilePreviewModal } from "@/components/modals/FilePreviewModal";
 import { ReviewModal } from "../marketplace/review-modal";
 import { FileUpdateModal } from "@/components/modals/FileUpdateModal";
 import { FARMER_PROFILE_KEY } from "@/types/constants";
+import {
+  BidFilterState,
+  FavoriteFilterState,
+  OrderFilterState,
+  SampleFilterState,
+} from "@/types/orders";
 
 interface Seller {
   first_name?: string;
@@ -223,35 +229,6 @@ enum OrderProgressStatus {
   DeliveryCompleted = "delivery_completed",
 }
 
-interface OrderFilterState {
-  status?: string;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  progressStatus?: OrderProgressStatus;
-}
-
-interface SampleFilterState {
-  status?: SampleRequestDeliveryStatus;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-interface BidFilterState {
-  status?: OrderBidStatus;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-interface FavoriteFilterState {
-  listingStatus?: string;
-  coffeeVariety?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}
-
 export default function OrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
@@ -317,11 +294,11 @@ export default function OrdersPage() {
     bids: BidFilterState;
     favorites: FavoriteFilterState;
   }>({
-    current: { status: "", coffeeVariety: "" },
-    historical: { status: "", coffeeVariety: "" },
-    sample: { status: undefined, coffeeVariety: "" },
-    bids: { status: undefined, coffeeVariety: "" },
-    favorites: { coffeeVariety: "" },
+    current: { status: "", coffeeOrigin: "" },
+    historical: { status: "", coffeeOrigin: "" },
+    sample: { status: undefined, coffeeOrigin: "" },
+    bids: { status: undefined, coffeeOrigin: "" },
+    favorites: { coffeeOrigin: "" },
   });
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
@@ -358,6 +335,7 @@ export default function OrdersPage() {
   const farmerProfile: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
 
   const fmrId = farmerProfile ? farmerProfile.id : undefined;
+
   const fetchActiveOrders = useCallback(async () => {
     if (!user) {
       setActiveError("User not authenticated");
@@ -379,8 +357,8 @@ export default function OrdersPage() {
         limit: activePagination.limit.toString(),
         search: encodeURIComponent(activeSearchTerm),
         ...(filters.current.status && { status: filters.current.status }),
-        ...(filters.current.coffeeVariety && {
-          coffee_variety: filters.current.coffeeVariety,
+        ...(filters.current.coffeeOrigin && {
+          origin: filters.current.coffeeOrigin,
         }),
         ...(filters.current.dateFrom && {
           date_from: filters.current.dateFrom,
@@ -449,8 +427,8 @@ export default function OrdersPage() {
         limit: historyPagination.limit.toString(),
         search: encodeURIComponent(historySearchTerm),
         ...(filters.historical.status && { status: filters.historical.status }),
-        ...(filters.historical.coffeeVariety && {
-          coffee_variety: filters.historical.coffeeVariety,
+        ...(filters.historical.coffeeOrigin && {
+          origin: filters.historical.coffeeOrigin,
         }),
         ...(filters.historical.dateFrom && {
           date_from: filters.historical.dateFrom,
@@ -523,8 +501,8 @@ export default function OrdersPage() {
         ...(filters.sample.status && {
           delivery_status: filters.sample.status,
         }),
-        ...(filters.sample.coffeeVariety && {
-          coffee_variety: filters.sample.coffeeVariety,
+        ...(filters.sample.coffeeOrigin && {
+          origin: filters.sample.coffeeOrigin,
         }),
         ...(filters.sample.dateFrom && { date_from: filters.sample.dateFrom }),
         ...(filters.sample.dateTo && { date_to: filters.sample.dateTo }),
@@ -588,8 +566,8 @@ export default function OrdersPage() {
         limit: bidsPagination.limit.toString(),
         search: encodeURIComponent(bidsSearchTerm),
         ...(filters.bids.status && { status: filters.bids.status }),
-        ...(filters.bids.coffeeVariety && {
-          coffee_variety: filters.bids.coffeeVariety,
+        ...(filters.bids.coffeeOrigin && {
+          origin: filters.bids.coffeeOrigin,
         }),
         ...(filters.bids.dateFrom && { date_from: filters.bids.dateFrom }),
         ...(filters.bids.dateTo && { date_to: filters.bids.dateTo }),
@@ -828,12 +806,19 @@ export default function OrdersPage() {
         : isCurrentOrderTab
           ? ["pending", "completed", "cancelled"]
           : [];
-    const coffeeVarieties = [
-      "Yirgacheffe",
-      "Sidamo",
-      "Guji",
-      "Harrar",
-      "Jimma",
+    const coffeeOrigins = [
+      "Gomma, Jimma",
+      "Mana, Jimma",
+      "Limu, Jimma",
+      "Gera, Jimma",
+      "Adola-reda, Guji",
+      "Urga, Guji",
+      "Shakiso, Guji",
+      "Hambela, Guji",
+      "West Hararghe, Harrar",
+      "Sidama",
+      "Yirgachefe",
+      "",
     ];
     const listingStatusOptions = ["active", "inactive"];
     const progressStatusOptions = Object.values(OrderProgressStatus);
@@ -853,21 +838,21 @@ export default function OrdersPage() {
       return currentFilters;
     };
 
-    const getFilterStateWithoutCoffeeVariety = () => {
+    const getFilterStateWithoutCoffeeOrigin = () => {
       if (isOrderTab) {
-        const { coffeeVariety: _coffeeVariety, ...rest } =
+        const { coffeeOrigin: _coffeeOrigin, ...rest } =
           currentFilters as OrderFilterState;
         return rest;
       } else if (isSampleTab) {
-        const { coffeeVariety: _coffeeVariety, ...rest } =
+        const { coffeeOrigin: _coffeeOrigin, ...rest } =
           currentFilters as SampleFilterState;
         return rest;
       } else if (isBidsTab) {
-        const { coffeeVariety: _coffeeVariety, ...rest } =
+        const { coffeeOrigin: _coffeeOrigin, ...rest } =
           currentFilters as BidFilterState;
         return rest;
       } else if (isFavoritesTab) {
-        const { coffeeVariety: _coffeeVariety, ...rest } =
+        const { coffeeOrigin: _coffeeOrigin, ...rest } =
           currentFilters as FavoriteFilterState;
         return rest;
       }
@@ -908,7 +893,7 @@ export default function OrdersPage() {
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-64 p-4">
+        <DropdownMenuContent className="w-64 sm:w-72 p-4">
           <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {statusOptions.length > 0 && (
@@ -951,20 +936,19 @@ export default function OrdersPage() {
           )}
           {(isOrderTab || isSampleTab || isBidsTab || isFavoritesTab) && (
             <div className="mb-2">
-              <label className="text-sm font-medium">Coffee Variety</label>
+              <label className="text-sm font-medium">Coffee Origin</label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
                     {(isOrderTab &&
-                      (currentFilters as OrderFilterState).coffeeVariety) ||
+                      (currentFilters as OrderFilterState).coffeeOrigin) ||
                       (isSampleTab &&
-                        (currentFilters as SampleFilterState).coffeeVariety) ||
+                        (currentFilters as SampleFilterState).coffeeOrigin) ||
                       (isBidsTab &&
-                        (currentFilters as BidFilterState).coffeeVariety) ||
+                        (currentFilters as BidFilterState).coffeeOrigin) ||
                       (isFavoritesTab &&
-                        (currentFilters as FavoriteFilterState)
-                          .coffeeVariety) ||
-                      "All Varieties"}
+                        (currentFilters as FavoriteFilterState).coffeeOrigin) ||
+                      "All Origins"}
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -973,30 +957,30 @@ export default function OrdersPage() {
                     onClick={() =>
                       handleFilterChange(
                         tab,
-                        getFilterStateWithoutCoffeeVariety(),
+                        getFilterStateWithoutCoffeeOrigin(),
                       )
                     }
                   >
-                    All Varieties
+                    All Origins
                   </DropdownMenuItem>
-                  {coffeeVarieties.map((variety) => (
+                  {coffeeOrigins.map((origin) => (
                     <DropdownMenuItem
-                      key={variety}
+                      key={origin || "empty"}
                       onClick={() =>
                         handleFilterChange(tab, {
                           ...currentFilters,
-                          coffeeVariety: variety,
+                          coffeeOrigin: origin || undefined,
                         })
                       }
                     >
-                      {variety}
+                      {origin || "None"}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           )}
-          {isCurrentOrderTab && ( // Only render for current orders
+          {isCurrentOrderTab && (
             <div className="mb-2">
               <label className="text-sm font-medium">Progress Status</label>
               <DropdownMenu>
@@ -1223,9 +1207,11 @@ export default function OrdersPage() {
     };
 
     return (
-      <Card className="mt-6">
-        <CardContent className="pt-6">
-          <h4 className="text-sm font-semibold mb-4">Order Progress</h4>
+      <Card className="mt-4 sm:mt-6">
+        <CardContent className="pt-4 sm:pt-6 px-4 sm:px-5">
+          <h4 className="text-xs sm:text-sm font-semibold mb-4">
+            Order Progress
+          </h4>
           <div className="space-y-4">
             {steps.map((step, index) => {
               const isCompleted = index < completedSteps;
@@ -1260,13 +1246,13 @@ export default function OrdersPage() {
                 currentProgress === OrderProgressStatus.ContainerArrivedToPort;
 
               return (
-                <div key={step.key} className="flex items-center gap-3">
-                  <div className={`flex-shrink-0 ${statusClass}`}>
-                    <StatusIcon className="h-5 w-5" />
+                <div key={step.key} className="flex items-start gap-2 sm:gap-3">
+                  <div className={`flex-shrink-0 mt-1 ${statusClass}`}>
+                    <StatusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
-                  <div className="flex-1 flex items-center justify-between gap-2">
+                  <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <span
-                      className={`text-sm font-medium w-1/3 ${
+                      className={`text-xs sm:text-sm font-medium w-full sm:w-1/3 ${
                         isCompleted || isOrderCompleted || isDeliveryCompleted
                           ? "text-green-600"
                           : isCurrent
@@ -1276,11 +1262,12 @@ export default function OrdersPage() {
                     >
                       {step.label}
                     </span>
-                    <div className="flex items-center gap-2 justify-end">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-end w-full sm:w-auto">
                       {isContractStep && hasContract && (
                         <Button
                           variant="outline"
                           size="sm"
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                           onClick={() => handlePreviewClick("contract")}
                         >
                           View Contract
@@ -1290,6 +1277,7 @@ export default function OrdersPage() {
                         <Button
                           variant="default"
                           size="sm"
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                           onClick={() => {
                             if (hasContract) {
                               handleUpdateClick("contract");
@@ -1305,6 +1293,7 @@ export default function OrdersPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                           onClick={() => handlePreviewClick("documents")}
                         >
                           View Documents
@@ -1314,6 +1303,7 @@ export default function OrdersPage() {
                         <Button
                           variant="default"
                           size="sm"
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                           onClick={() => {
                             if (hasDocuments) {
                               handleUpdateClick("documents");
@@ -1331,6 +1321,7 @@ export default function OrdersPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                           onClick={() => handlePreviewClick("payment_slip")}
                         >
                           View Payment Slip
@@ -1539,11 +1530,11 @@ export default function OrdersPage() {
 
     return (
       <Card className="w-full">
-        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+        <CardContent className="flex flex-col items-center justify-center p-6 sm:p-8 text-center">
           <div className="rounded-full bg-muted p-3">
-            <Info className="h-8 w-8 text-muted-foreground" />
+            <Info className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
           </div>
-          <h3 className="mt-4 text-lg font-medium">
+          <h3 className="mt-4 text-base sm:text-lg font-medium">
             No{" "}
             {tabType === "current"
               ? "active orders"
@@ -1554,11 +1545,13 @@ export default function OrdersPage() {
                   : "bids"}{" "}
             found
           </h3>
-          <p className="mt-2 text-sm text-muted-foreground max-w-md">
+          <p className="mt-2 text-xs sm:text-sm text-muted-foreground max-w-md">
             {message}
           </p>
           <Link to="/market-place">
-            <Button className="mt-6">Browse Marketplace</Button>
+            <Button className="mt-4 sm:mt-6 text-xs sm:text-sm">
+              Browse Marketplace
+            </Button>
           </Link>
         </CardContent>
       </Card>
@@ -1796,11 +1789,11 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen pt-20 bg-primary/5 p-8">
+    <div className="min-h-screen pt-20 bg-primary/5 px-4 sm:px-6 lg:px-8">
       <Header />
-      <main className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">My Orders</h1>
+      <main className="container mx-auto py-6 max-w-full sm:max-w-5xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h1 className="text-xl sm:text-2xl font-bold">My Orders</h1>
         </div>
 
         <Tabs
@@ -1808,44 +1801,49 @@ export default function OrdersPage() {
           className="mb-6"
           onValueChange={handleTabChange}
         >
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="flex flex-wrap justify-between gap-2 p-2 bg-gray-100 rounded-md sm:grid sm:grid-cols-4 sm:gap-4 sm:p-4 w-full">
             <TabsTrigger
               value="current"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <Clock className="h-4 w-4 mr-2" />
+              <Clock className="h-4 w-4 mr-1 sm:mr-2" />
               Current Orders
             </TabsTrigger>
             <TabsTrigger
               value="historical"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <ShoppingBag className="h-4 w-4 mr-2" />
+              <ShoppingBag className="h-4 w-4 mr-1 sm:mr-2" />
               Order History
             </TabsTrigger>
             <TabsTrigger
               value="sample"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <File className="h-4 w-4 mr-2" />
+              <File className="h-4 w-4 mr-1 sm:mr-2" />
               Sample Requests
             </TabsTrigger>
             <TabsTrigger
               value="bids"
-              className="flex items-center justify-center h-12"
+              className="flex items-center justify-center h-12 text-xs sm:text-sm px-2 sm:px-4 py-2 font-medium transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md flex-1 sm:flex-none text-center"
             >
-              <Hand className="h-4 w-4 mr-2" />
+              <Hand className="h-4 w-4 mr-1 sm:mr-2" />
               All Bids
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="current" className="mt-6">
+          <TabsContent value="current" className="mt-23 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
-                {activeLoading
-                  ? "Loading..."
-                  : `${activeOrders.length} Active Orders`}
-              </p>
+              <div className="text-sm text-muted-foreground font-medium">
+                {activeLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : (
+                  `${activeOrders.length} Active Orders`
+                )}
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleActiveSearch}
@@ -1877,7 +1875,7 @@ export default function OrdersPage() {
               {activeLoading ? (
                 <SkeletonOrdersTable />
               ) : activeError ? (
-                <Card className="p-6 text-center text-red-500">
+                <Card className="p-6 text-center text-red-500 text-xs sm:text-sm">
                   {activeError}
                 </Card>
               ) : activeOrders.length > 0 ? (
@@ -1947,13 +1945,20 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="historical" className="mt-6">
+          <TabsContent value="historical" className="mt-23 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
-                {historyLoading
-                  ? "Loading..."
-                  : `${historicalOrders.length} Past Orders`}
-              </p>
+              <div className="text-sm text-muted-foreground font-medium">
+                {historyLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : historicalOrders.length === 0 ? (
+                  "No past orders"
+                ) : (
+                  `${historicalOrders.length} Past Orders`
+                )}
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleHistorySearch}
@@ -1985,7 +1990,7 @@ export default function OrdersPage() {
               {historyLoading ? (
                 <SkeletonOrdersTable />
               ) : historyError ? (
-                <Card className="p-6 text-center text-red-500">
+                <Card className="p-6 text-center text-red-500 text-xs sm:text-sm">
                   {historyError}
                 </Card>
               ) : historicalOrders.length > 0 ? (
@@ -2056,13 +2061,20 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="sample" className="mt-6">
+          <TabsContent value="sample" className="mt-23 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
-                {sampleLoading
-                  ? "Loading..."
-                  : `${sampleRequests.length} Sample Requests`}
-              </p>
+              <div className="text-sm text-muted-foreground font-medium">
+                {sampleLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : sampleRequests.length === 0 ? (
+                  "No sample requests"
+                ) : (
+                  `${sampleRequests.length} Sample Requests`
+                )}
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleSampleSearch}
@@ -2094,7 +2106,7 @@ export default function OrdersPage() {
               {sampleLoading ? (
                 <SkeletonSampleRequestsTable />
               ) : sampleError ? (
-                <Card className="p-6 text-center text-red-500">
+                <Card className="p-6 text-center text-red-500 text-xs sm:text-sm">
                   {sampleError}
                 </Card>
               ) : sampleRequests.length > 0 ? (
@@ -2164,11 +2176,20 @@ export default function OrdersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="bids" className="mt-6">
+          <TabsContent value="bids" className="mt-23 sm:mt-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 shadow-md bg-white p-2 rounded-md">
-              <p className="text-sm text-muted-foreground font-medium">
-                {bidsLoading ? "Loading..." : `${bids.length} Bids`}
-              </p>
+              <div className="text-sm text-muted-foreground font-medium">
+                {bidsLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                    Loading...
+                  </div>
+                ) : bids.length === 0 ? (
+                  "No bids"
+                ) : (
+                  `${bids.length} Bids`
+                )}
+              </div>
               <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                 <form
                   onSubmit={handleBidsSearch}
@@ -2200,32 +2221,52 @@ export default function OrdersPage() {
               {bidsLoading ? (
                 <SkeletonBidsTable />
               ) : bidsError ? (
-                <Card className="p-6 text-center text-red-500">
+                <Card className="p-6 text-center text-red-500 text-xs sm:text-sm">
                   {bidsError}
                 </Card>
               ) : bids.length > 0 ? (
                 <>
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Bid ID</TableHead>
-                            <TableHead>Listing</TableHead>
-                            <TableHead>Buyer</TableHead>
-                            <TableHead>Quantity</TableHead>
-                            <TableHead>Unit Price</TableHead>
-                            <TableHead>Total Amount</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Expires At</TableHead>
-                            <TableHead>Actions</TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Bid ID
+                            </TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Listing
+                            </TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Buyer
+                            </TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Quantity
+                            </TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Unit Price
+                            </TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Total Amount
+                            </TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Status
+                            </TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Expires At
+                            </TableHead>
+                            <TableHead className="text-xs sm:text-sm">
+                              Actions
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {bids.map((bid) => (
                             <TableRow key={bid.id}>
-                              <TableCell>{bid.id}</TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                {bid.id}
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm">
                                 <div>
                                   <Link
                                     to={`/manage-listing/${bid.listing_id}`}
@@ -2233,13 +2274,13 @@ export default function OrdersPage() {
                                   >
                                     {bid.listing?.coffee_variety || "Unknown"}
                                   </Link>
-                                  <div className="text-sm text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground">
                                     {bid.listing?.farm?.farm_name ||
                                       "Unknown Farm"}
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs sm:text-sm">
                                 {bid.buyer ? (
                                   <>
                                     {bid.buyer.first_name || "Unknown"}{" "}
@@ -2249,16 +2290,16 @@ export default function OrdersPage() {
                                   "Unknown"
                                 )}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs sm:text-sm">
                                 {bid.quantity_kg.toLocaleString()} kg
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs sm:text-sm">
                                 ${bid.unit_price.toFixed(2)}/kg
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs sm:text-sm">
                                 ${bid.total_amount.toLocaleString()}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs sm:text-sm">
                                 <Badge
                                   variant={
                                     bid.status === "accepted"
@@ -2269,16 +2310,17 @@ export default function OrdersPage() {
                                           ? "destructive"
                                           : "outline"
                                   }
+                                  className="text-xs sm:text-sm"
                                 >
                                   {bid.status.charAt(0).toUpperCase() +
                                     bid.status.slice(1)}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs sm:text-sm">
                                 {new Date(bid.expires_at).toLocaleDateString()}
                               </TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
+                              <TableCell className="text-xs sm:text-sm">
+                                <div className="flex flex-col sm:flex-row gap-2">
                                   <Button
                                     variant="default"
                                     size="sm"
@@ -2408,7 +2450,6 @@ export default function OrdersPage() {
               }
               xfmrId={fmrId}
             />
-
             <FilePreviewModal
               isOpen={previewModalOpen}
               onClose={handlePreviewModalClose}

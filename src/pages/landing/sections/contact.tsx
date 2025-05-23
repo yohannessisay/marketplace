@@ -88,12 +88,12 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[500px] bg-white rounded-xl border border-amber-200">
+      <DialogContent className="max-w-[90vw] sm:max-w-md md:max-w-lg bg-white rounded-xl border border-amber-200 p-4 sm:p-6 max-h-[80vh] sm:max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
+          <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-center">
             What can we help you with?
           </DialogTitle>
-          <DialogDescription className="text-gray-600 pt-1">
+          <DialogDescription className="text-gray-600 text-sm sm:text-base pt-1">
             Fill out the form below and we’ll get back to you as soon as
             possible.
           </DialogDescription>
@@ -101,41 +101,45 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
+            className="space-y-3 sm:space-y-4 py-4"
           >
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-900">Name</FormLabel>
+                  <FormLabel className="text-gray-900 text-sm sm:text-base">
+                    Name
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="John Doe"
-                      className="border-amber-200 focus:border-amber-700 rounded-md"
+                      className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage className="text-amber-700" />
+                  <FormMessage className="text-amber-700 text-xs sm:text-sm" />
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-900">Email</FormLabel>
+                    <FormLabel className="text-gray-900 text-sm sm:text-base">
+                      Email
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="john.doe@example.com"
                         type="email"
-                        className="border-amber-200 focus:border-amber-700 rounded-md"
+                        className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage className="text-amber-700" />
+                    <FormMessage className="text-amber-700 text-xs sm:text-sm" />
                   </FormItem>
                 )}
               />
@@ -144,15 +148,17 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-900">Phone</FormLabel>
+                    <FormLabel className="text-gray-900 text-sm sm:text-base">
+                      Phone
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="(123) 456-7890"
-                        className="border-amber-200 focus:border-amber-700 rounded-md"
+                        className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage className="text-amber-700" />
+                    <FormMessage className="text-amber-700 text-xs sm:text-sm" />
                   </FormItem>
                 )}
               />
@@ -161,13 +167,15 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                 name="user_type"
                 render={({ field }) => (
                   <FormItem id="userType">
-                    <FormLabel className="text-gray-900">User Type</FormLabel>
+                    <FormLabel className="text-gray-900 text-sm sm:text-base">
+                      User Type
+                    </FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="border-amber-200 focus:border-amber-700 rounded-md">
+                        <SelectTrigger className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5">
                           <SelectValue placeholder="Select User Type" />
                         </SelectTrigger>
                       </FormControl>
@@ -176,7 +184,7 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                         <SelectItem value="buyer">Buyer</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage className="text-amber-700" />
+                    <FormMessage className="text-amber-700 text-xs sm:text-sm" />
                   </FormItem>
                 )}
               />
@@ -185,15 +193,17 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-900">Country</FormLabel>
+                    <FormLabel className="text-gray-900 text-sm sm:text-base">
+                      Country
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Your country"
-                        className="border-amber-200 focus:border-amber-700 rounded-md"
+                        className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage className="text-amber-700" />
+                    <FormMessage className="text-amber-700 text-xs sm:text-sm" />
                   </FormItem>
                 )}
               />
@@ -203,36 +213,38 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
               name="message"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-900">Message</FormLabel>
+                  <FormLabel className="text-gray-900 text-sm sm:text-base">
+                    Message
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="How can we help you?"
-                      className="min-h-[120px] border-amber-200 focus:border-amber-700 rounded-md"
+                      className="min-h-[100px] sm:min-h-[120px] border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage className="text-amber-700" />
+                  <FormMessage className="text-amber-700 text-xs sm:text-sm" />
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-4 flex gap-4 w-full">
+            <DialogFooter className="pt-3 sm:pt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 w-full">
               <Button
                 variant="outline"
                 onClick={() => setOpen(false)}
-                className="flex-1 rounded-md border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white"
+                className="w-full sm:w-auto rounded-md border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white px-4 py-2 text-sm sm:text-base"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 rounded-md bg-amber-700 hover:bg-white hover:text-amber-700 hover:border-amber-700 border text-white"
+                className="w-full sm:w-auto rounded-md bg-amber-700 hover:bg-white hover:text-amber-700 hover:border-amber-700 border text-white px-4 py-2 text-sm sm:text-base"
               >
                 {isSubmitting ? (
                   "Sending..."
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <Send className="h-4 w-4" />
+                    <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                     Shoot us a Message
                   </span>
                 )}

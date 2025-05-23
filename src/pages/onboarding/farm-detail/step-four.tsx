@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Upload, User } from "lucide-react";
+import { Upload, User, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Stepper from "@/components/ui/stepper";
 import {
   profileInfoSchema,
@@ -34,6 +35,7 @@ import {
   BACK_BUTTON_CLICKED_KEY,
   FARMER_PROFILE_KEY,
   HAS_COMPLETED_STEP_THREE_KEY,
+  STEP_FOUR_KEY,
   USER_PROFILE_KEY,
 } from "@/types/constants";
 
@@ -52,6 +54,7 @@ export default function StepFour() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [hasSelectedFile, setHasSelectedFile] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { successMessage, errorMessage } = useNotification();
   const { user, setUser, loading } = useAuth();
@@ -85,7 +88,22 @@ export default function StepFour() {
   });
 
   useEffect(() => {
-    if (profileSource && !loading && !form.formState.isDirty) {
+    const savedData: any = getFromLocalStorage(STEP_FOUR_KEY, null);
+    if (savedData && !loading && !form.formState.isDirty) {
+      form.reset({
+        first_name: profileSource.first_name || "",
+        last_name: profileSource.last_name || "",
+        email: profileSource.email || "",
+        phone: profileSource.phone || "",
+        telegram: savedData.telegram || "",
+        about_me: savedData.about_me || "",
+        address: savedData.address || "",
+      });
+      if (savedData.profileImage) {
+        setProfileImage(savedData.profileImage);
+        setHasSelectedFile(savedData.hasSelectedFile || false);
+      }
+    } else if (profileSource && !loading && !form.formState.isDirty) {
       form.reset({
         first_name: profileSource.first_name || "",
         last_name: profileSource.last_name || "",
@@ -98,18 +116,27 @@ export default function StepFour() {
     }
   }, [profileSource, form, loading]);
 
-  const handleFilesSelected = useCallback((selectedFiles: File[]) => {
-    const file = selectedFiles[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        setProfileImage(imageUrl);
-      };
-      reader.readAsDataURL(file);
-      setFiles([file]);
-    }
-  }, []);
+  const handleFilesSelected = useCallback(
+    (selectedFiles: File[]) => {
+      const file = selectedFiles[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const imageUrl = event.target?.result as string;
+          setProfileImage(imageUrl);
+          setHasSelectedFile(true);
+          saveToLocalStorage(STEP_FOUR_KEY, {
+            ...form.getValues(),
+            profileImage: imageUrl,
+            hasSelectedFile: true,
+          });
+        };
+        reader.readAsDataURL(file);
+        setFiles([file]);
+      }
+    },
+    [form],
+  );
 
   const clearLocalStorageExcept = useCallback((keysToKeep: string[]) => {
     const keptData: { [key: string]: any } = {};
@@ -127,16 +154,31 @@ export default function StepFour() {
 
   const onSubmit = useCallback(
     async (data: ProfileInfoFormData) => {
+      if (files.length === 0 && !hasSelectedFile) {
+        errorMessage({
+          success: false,
+          error: {
+            message: "Profile photo is required",
+            details: "Please upload a profile photo to complete registration.",
+            code: 400,
+          },
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       try {
         setIsSubmitting(true);
         const formData = new FormData();
-        for (const key in data) {
-          if (Object.prototype.hasOwnProperty.call(data, key)) {
-            formData.append(
-              key,
-              String(data[key as keyof ProfileInfoFormData]),
-            );
-          }
+        const editableFields: (keyof ProfileInfoFormData)[] = [
+          "first_name",
+          "last_name",
+          "telegram",
+          "address",
+          "about_me",
+        ];
+        for (const key of editableFields) {
+          formData.append(key, String(data[key]));
         }
         files.forEach((file) => {
           formData.append("avatar_image", file);
@@ -181,6 +223,7 @@ export default function StepFour() {
     },
     [
       files,
+      hasSelectedFile,
       user,
       farmerProfile,
       xfmrId,
@@ -193,8 +236,18 @@ export default function StepFour() {
   );
 
   const handleFormSubmit = useCallback(() => {
+    const formData = form.getValues();
+    saveToLocalStorage(STEP_FOUR_KEY, {
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      telegram: formData.telegram,
+      address: formData.address,
+      about_me: formData.about_me,
+      profileImage: profileImage,
+      hasSelectedFile,
+    });
     setIsModalOpen(true);
-  }, []);
+  }, [form, profileImage, hasSelectedFile]);
 
   const handleModalConfirm = useCallback(() => {
     form.handleSubmit(onSubmit)();
@@ -205,10 +258,20 @@ export default function StepFour() {
   }, []);
 
   const goBack = useCallback(() => {
+    const formData = form.getValues();
+    saveToLocalStorage(STEP_FOUR_KEY, {
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      telegram: formData.telegram,
+      address: formData.address,
+      about_me: formData.about_me,
+      profileImage: profileImage,
+      hasSelectedFile,
+    });
     saveToLocalStorage(HAS_COMPLETED_STEP_THREE_KEY, "true");
     saveToLocalStorage(BACK_BUTTON_CLICKED_KEY, "true");
     navigate("/onboarding/step-three");
-  }, [navigate]);
+  }, [form, profileImage, hasSelectedFile, navigate]);
 
   return (
     <div className="min-h-screen bg-primary/5 pt-26">
@@ -273,6 +336,21 @@ export default function StepFour() {
                           }}
                         />
                       </label>
+
+                      {profileImage &&
+                        files.length === 0 &&
+                        hasSelectedFile && (
+                          <Alert
+                            variant="destructive"
+                            className="mt-4 bg-red-50 border-red-200 rounded-lg"
+                          >
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription className="text-red-700 text-xs">
+                              Please re-upload your profile photo to complete
+                              registration.
+                            </AlertDescription>
+                          </Alert>
+                        )}
                     </div>
                   </CardContent>
                 </Card>

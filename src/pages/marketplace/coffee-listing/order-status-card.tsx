@@ -16,7 +16,6 @@ export function OrderStatusCard({
 }: OrderStatusCardProps) {
   const { successMessage, errorMessage } = useNotification();
   const deleteOrder = async (id: string) => {
- 
     if (!id) return;
 
     try {
@@ -34,30 +33,26 @@ export function OrderStatusCard({
     }
   };
   return (
-    <div>
-      {/* Order details section */}
+    <div className="p-4 sm:p-6">
       <div className="border-t border-border pt-4 mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-medium">Your Order</h3>
-
-          {/* Order status badge */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
+          <h3 className="text-lg sm:text-xl font-medium">Your Order</h3>
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium uppercase ${
+            className={`px-2 py-1 rounded-full text-xs sm:text-sm font-medium uppercase ${
               orderStatus.status === "cancelled"
                 ? "bg-red-100 text-red-800"
                 : orderStatus.status === "completed" ||
-                  orderStatus.status === "delivered"
-                ? "bg-green-100 text-green-800"
-                : orderStatus.status === "shipping"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-yellow-100 text-yellow-800"
+                    orderStatus.status === "delivered"
+                  ? "bg-green-100 text-green-800"
+                  : orderStatus.status === "shipping"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-yellow-100 text-yellow-800"
             }`}
           >
             {orderStatus.status}
           </span>
         </div>
 
-        {/* Issue warning (for cancelled orders) */}
         {orderStatus.hasIssue && (
           <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
             <div className="flex">
@@ -76,7 +71,6 @@ export function OrderStatusCard({
           </div>
         )}
 
-        {/* Order details */}
         <div className="space-y-2">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Quantity</span>
@@ -109,7 +103,6 @@ export function OrderStatusCard({
         </div>
       </div>
 
-      {/* Call to action for delivered orders needing review */}
       {orderStatus.needsReview && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <div className="flex items-start">
@@ -128,7 +121,7 @@ export function OrderStatusCard({
                   onClick={() => setShowReviewModal(true)}
                   variant="outline"
                   size="sm"
-                  className="text-blue-700 bg-blue-100 hover:bg-blue-200 border-blue-200"
+                  className="text-blue-700 bg-blue-100 hover:bg-blue-200 border-blue-200 w-full sm:w-auto"
                 >
                   Leave Review
                 </Button>
@@ -138,7 +131,6 @@ export function OrderStatusCard({
         </div>
       )}
 
-      {/* Order Progress */}
       {!orderStatus.hasIssue && (
         <div className="space-y-3">
           <h4 className="text-sm font-medium">Order Progress</h4>
@@ -169,7 +161,6 @@ export function OrderStatusCard({
         </div>
       )}
 
-      {/* Tracking information for shipping orders */}
       {orderStatus.status === "shipping" && (
         <div className="mt-6 p-4 bg-blue-50 rounded-md">
           <div className="flex items-center mb-2">
@@ -198,7 +189,6 @@ export function OrderStatusCard({
         </div>
       )}
 
-      {/* Buttons for various order actions */}
       {(orderStatus.status === "pending" ||
         orderStatus.status === "confirmed" ||
         orderStatus.status === "processing") && (

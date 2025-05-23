@@ -30,7 +30,7 @@ interface Document {
   url: string;
   type: "image" | "pdf";
   name?: string;
-  isTemp?: boolean; // Flag to indicate temporary file
+  isTemp?: boolean;
 }
 
 type DocumentLabelKeys =
@@ -328,16 +328,16 @@ export function FileUpdateModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[1200px] h-[90vh] bg-white rounded-lg shadow-xl overflow-hidden">
-        <DialogHeader className="border-b pb-4">
-          <DialogTitle className="text-2xl font-semibold text-gray-800">
+      <DialogContent className="w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[1200px] max-h-[95vh] sm:max-h-[90vh] bg-white rounded-lg shadow-xl overflow-hidden">
+        <DialogHeader className="border-b pb-4 px-4 sm:px-6">
+          <DialogTitle className="text-xl sm:text-2xl font-semibold text-gray-800">
             {mode === "contract"
               ? "Update Contract"
               : mode === "payment_slip"
                 ? "Update Payment Slip"
                 : "Update Documents"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm sm:text-base">
             {mode === "contract"
               ? "View the current contract and upload a new one to replace it."
               : mode === "payment_slip"
@@ -345,9 +345,9 @@ export function FileUpdateModal({
                 : "View current documents and upload new ones to replace them."}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex h-[calc(90vh-120px)] overflow-hidden">
+        <div className="flex flex-col sm:flex-row h-[calc(95vh-120px)] sm:h-[calc(90vh-120px)] overflow-hidden">
           {/* Sidebar */}
-          <div className="w-1/3 border-r bg-gray-50 p-4 flex flex-col overflow-hidden">
+          <div className="w-full sm:w-1/3 border-b sm:border-b-0 sm:border-r bg-gray-50 p-4 flex flex-col overflow-hidden">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">
               Current Documents
             </h3>
@@ -421,7 +421,7 @@ export function FileUpdateModal({
             </div>
           </div>
           {/* Main Content: Preview and Upload */}
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -429,7 +429,7 @@ export function FileUpdateModal({
             ) : selectedDocument ? (
               <div className="h-full flex flex-col">
                 <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-lg font-medium text-gray-800 max-w-[70%] truncate">
+                  <h4 className="text-base sm:text-lg font-medium text-gray-800 max-w-[70%] truncate">
                     {selectedDocument.isTemp
                       ? `New ${getDocumentLabel(selectedDocument.key)} (Preview)`
                       : getDocumentLabel(selectedDocument.key)}
@@ -444,7 +444,7 @@ export function FileUpdateModal({
                     Download
                   </Button>
                 </div>
-                <div className="flex-1 overflow-hidden mb-4">
+                <div className="hidden sm:flex flex-1 overflow-hidden mb-4">
                   {selectedDocument.type === "pdf" ? (
                     <iframe
                       src={selectedDocument.url}
@@ -487,7 +487,7 @@ export function FileUpdateModal({
             )}
           </div>
         </div>
-        <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t">
+        <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t px-4 sm:px-6">
           <div className="flex justify-end gap-3 w-full">
             <Button
               variant="outline"

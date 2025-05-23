@@ -66,7 +66,7 @@ export default function CoffeeListingPage() {
         if (!isRetry && retryCount < 1) {
           console.log(`[CoffeeListingPage] Retrying listing ${listingId}`);
           setRetryCount(1);
-          setTimeout(() => fetchListingDetails(listingId, true), 1000); // Retry after 1s
+          setTimeout(() => fetchListingDetails(listingId, true), 1000);
         } else {
           setShowNotFound(true);
           setFetched(true);
@@ -115,17 +115,17 @@ export default function CoffeeListingPage() {
   };
 
   const SkeletonLoader = () => (
-    <div className="bg-primary/5 p-8 min-h-screen animate-pulse">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white my-12">
-        <div className="h-12 bg-gray-200 rounded w-3/4 mb-8"></div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="bg-primary/5 p-4 sm:p-6 lg:p-8 min-h-screen animate-pulse">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 bg-white my-8 sm:my-12 rounded-lg">
+        <div className="h-12 bg-gray-200 rounded w-3/4 mb-6 sm:mb-8"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           <div className="lg:col-span-2">
-            <div className="h-64 bg-gray-200 rounded mb-4"></div>
+            <div className="h-64 sm:h-80 md:h-96 bg-gray-200 rounded mb-4"></div>
             <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
             <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
             <div className="h-4 bg-gray-200 rounded w-3/4"></div>
           </div>
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 min-h-[600px]">
             <div className="h-96 bg-gray-200 rounded"></div>
           </div>
         </div>
@@ -135,23 +135,23 @@ export default function CoffeeListingPage() {
 
   const NotFoundUI = () => (
     <div
-      className="bg-primary/5 p-8 min-h-screen flex items-center justify-center"
+      className="bg-primary/5 p-4 sm:p-6 lg:p-8 min-h-screen flex items-center justify-center"
       role="alert"
       aria-live="polite"
     >
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
-        <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8 text-center">
+        <AlertTriangle className="w-12 h-12 sm:w-16 sm:h-16 text-yellow-500 mx-auto mb-4" />
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
           Listing Not Found
         </h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
           The coffee listing you’re looking for doesn’t exist or is no longer
           available.
         </p>
-        <div className="flex justify-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
           <Button
             onClick={() => navigate("/marketplace")}
-            className="bg-primary text-white hover:bg-primary/90"
+            className="w-full sm:w-auto"
           >
             Back to Marketplace
           </Button>
@@ -159,12 +159,12 @@ export default function CoffeeListingPage() {
             onClick={() => {
               if (id && retryCount < 1) {
                 setRetryCount(1);
-                setFetched(false); // Allow retry
+                setFetched(false);
                 fetchListingDetails(id, true);
               }
             }}
             variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
+            className="border-primary text-primary hover:bg-primary/10 w-full sm:w-auto"
             disabled={retryCount >= 1}
           >
             Retry
@@ -178,7 +178,7 @@ export default function CoffeeListingPage() {
   if (showNotFound || (!listing && fetched)) return <NotFoundUI />;
 
   return (
-    <div className="bg-primary/5 p-8 min-h-screen">
+    <div className="bg-primary/5 p-4 sm:p-6 lg:p-8 min-h-screen">
       {listing && (
         <>
           <Header
@@ -189,8 +189,8 @@ export default function CoffeeListingPage() {
             sellerReviews={listing.seller.total_reviews ?? 0}
           />
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white my-12">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 bg-white my-8 sm:my-12 rounded-lg relative">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               <div className="lg:col-span-2">
                 <CoffeeDetails
                   listing={listing}
@@ -199,7 +199,7 @@ export default function CoffeeListingPage() {
                 />
               </div>
 
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 min-h-[600px]">
                 <OrderSidebar
                   listing={listing}
                   demoOrderStatus={demoOrderStatus}

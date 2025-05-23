@@ -123,17 +123,28 @@ export type FarmDetailsFormData = z.infer<typeof farmDetailsSchema>;
 
 export const coffeeCropsSchema = z.object({
   farmId: z.string().min(1, "Farm ID is required"),
-  coffee_variety: z.string().min(1, "Coffee variety is required"),
+  coffee_variety: z
+    .string()
+    .min(1, "Coffee variety is required")
+    .regex(/^[A-Za-z\s]+$/, "Coffee variety must contain only letters"),
   grade: z.string().min(1, "Grade is required"),
   bean_type: z.string().min(1, "Bean type is required"),
   crop_year: z.string().min(1, "Crop year is required"),
   processing_method: z.string().min(1, "Processing method is required"),
   moisture_percentage: z
     .number()
-    .min(0, "Moisture percentage must be at least 0"),
+    .min(0, "Moisture percentage must be at least 0")
+    .max(100, "Moisture percentage must be less than or equal to 100"),
+
   screen_size: z.string().min(1, "Screen size is required"),
-  drying_method: z.string().min(1, "Drying method is required"),
-  wet_mill: z.string().min(1, "Wet mill is required"),
+  drying_method: z
+    .string()
+    .min(1, "Drying method is required")
+    .regex(/^[A-Za-z\s]+$/, "Drying method must contain only letters"),
+  wet_mill: z
+    .string()
+    .min(1, "Wet mill is required")
+    .regex(/^[A-Za-z\s]+$/, "Wet mill must contain only letters"),
   is_organic: z.string().min(1, "Organic status is required"),
   cup_aroma: z
     .array(z.string())

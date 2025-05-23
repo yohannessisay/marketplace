@@ -21,42 +21,42 @@ export function Hero({ setIsContactModalOpen }: HeroProps) {
   };
 
   return (
-    <section className="relative pt-14 md:pt-12 pb-16 md:pb-24 overflow-hidden">
+    <section className="relative py-8 sm:py-3 md:py-16 lg:py-20 overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-amber-50/50 to-white pointer-events-none" />
 
-      <div className="container relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="flex flex-col items-start space-y-6">
-            <div className="inline-flex items-center py-1.5 px-3 bg-amber-100 text-amber-800 rounded-md text-sm font-medium">
-              <Coffee className="w-4 h-4 mr-2" />
+      <div className="container relative z-10 mx-auto px-6 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center min-h-[calc(100vh-4rem)] sm:min-h-fit">
+          <div className="flex flex-col items-center sm:items-start justify-center space-y-5 sm:space-y-6 text-center sm:text-left">
+            <div className="inline-flex items-center py-1.5 px-3 bg-amber-100 text-amber-800 rounded-md text-sm sm:text-sm font-medium">
+              <Coffee className="w-4 h-4 sm:w-4 sm:h-4 mr-2" />
               Blockchain-powered coffee marketplace
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900">
               Connecting Coffee <span className="text-amber-700">Farmers</span>{" "}
               to Global <span className="text-amber-700">Markets</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-gray-600 max-w-xl">
+            <p className="text-base sm:text-base md:text-lg text-gray-600 max-w-full sm:max-w-lg">
               AfroValley empowers coffee farmers with fair trade opportunities
               through our blockchain-based marketplace that ensures
               transparency, and authenticity.
             </p>
 
-            <div className="flex flex-wrap gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 w-full sm:w-auto">
               <Button
                 onClick={() => handleNavigation("/market-place")}
                 disabled={isLoading}
-                className="rounded-md bg-amber-700 hover:bg-white hover:text-amber-700 hover:border-amber-700 border text-white px-6"
+                className="w-full sm:w-48 rounded-md bg-amber-700 hover:bg-white hover:text-amber-700 hover:border-amber-700 border text-white px-4 py-2 text-sm sm:text-base flex items-center justify-center"
               >
                 {isLoading ? "Loading..." : "Explore Marketplace"}
-                <ChevronRight className="ml-2 h-4 w-4" />
+                {!isLoading && <ChevronRight className="ml-2 h-4 w-4" />}
               </Button>
 
               <Button
                 variant="outline"
-                className="rounded-md border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white"
+                className="w-full sm:w-48 rounded-md border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white px-4 py-2 text-sm sm:text-base flex items-center justify-center"
                 onClick={() => setIsContactModalOpen(true)}
               >
                 Contact Us
@@ -64,26 +64,26 @@ export function Hero({ setIsContactModalOpen }: HeroProps) {
             </div>
           </div>
 
-          <div className="relative">
-            <div className="relative aspect-square md:aspect-[4/3] bg-amber-200/30 rounded-2xl overflow-hidden">
+          <div className="hidden sm:block relative">
+            <div className="relative aspect-[4/3] sm:aspect-[3/2] bg-amber-200/30 rounded-2xl overflow-hidden">
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
                   src={HeroImg}
                   alt="Hero Image"
                   className="w-full h-full object-cover"
                 />
-                <div className="text-amber-700/30 text-6xl font-bold">
+                <div className="text-amber-700/30 text-3xl sm:text-4xl md:text-5xl font-bold">
                   Bunaa
                 </div>
               </div>
             </div>
 
-            <div className="absolute -top-8 -right-8 bg-white rounded-xl p-3 shadow-lg">
-              <div className="bg-green-50 rounded-lg p-2 text-center">
-                <p className="text-green-800 font-medium">
-                  Blockchain Verified
+            <div className="absolute -top-3 sm:-top-4 lg:-top-6 -right-2 sm:-right-3 lg:-right-4 bg-white rounded-xl p-1.5 sm:p-2 shadow-lg">
+              <div className="bg-green-50 rounded-lg p-1 sm:p-1.5 text-center">
+                <p className="text-green-800 font-medium text-xs sm:text-sm">
+                  Blockchain Enabled
                 </p>
-                <div className="h-4 w-16 bg-green-200 rounded mt-1 mx-auto" />
+                <div className="h-2.5 w-10 sm:h-3 sm:w-12 bg-green-200 rounded mt-1 mx-auto" />
               </div>
             </div>
           </div>

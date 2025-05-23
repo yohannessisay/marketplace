@@ -154,7 +154,7 @@ export function FilePreviewModal({
         setIsLoading(false);
       }
     },
-    [handleFetchError],
+    [handleFetchError, xfmrId],
   );
 
   useEffect(() => {
@@ -198,9 +198,9 @@ export function FilePreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[1200px] h-[90vh] bg-white rounded-lg shadow-xl overflow-hidden">
-        <DialogHeader className="border-b pb-4">
-          <DialogTitle className="text-2xl font-semibold text-gray-800">
+      <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[1200px] max-h-[90vh] bg-white rounded-lg shadow-xl overflow-hidden p-0">
+        <DialogHeader className="border-b px-4 py-3 sm:px-6 sm:py-4">
+          <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">
             {mode === "contract"
               ? "View Contract"
               : mode === "payment_slip"
@@ -208,9 +208,9 @@ export function FilePreviewModal({
                 : "View Documents"}
           </DialogTitle>
         </DialogHeader>
-        <div className="flex h-[calc(90vh-80px)] overflow-hidden">
+        <div className="flex flex-col md:flex-row h-[calc(90vh-80px)] sm:h-[calc(90vh-96px)] overflow-hidden">
           {/* Sidebar */}
-          <div className="w-1/3 border-r bg-gray-50 p-4 flex flex-col overflow-hidden">
+          <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r bg-gray-50 p-4 flex flex-col overflow-hidden">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">
               Documents
             </h3>
@@ -236,18 +236,18 @@ export function FilePreviewModal({
                   >
                     <Button
                       variant="link"
-                      className="flex-1 justify-start text-left h-auto p-2 text-sm"
+                      className="flex-1 justify-start text-left h-auto p-2 text-sm truncate"
                       onClick={() => setSelectedDocument(doc)}
                     >
                       <FileText
-                        className={`h-4 w-4 mr-2 ${
+                        className={`h-4 w-4 mr-2 flex-shrink-0 ${
                           selectedDocument?.key === doc.key
                             ? "text-white"
                             : "text-gray-500"
                         }`}
                       />
                       <span
-                        className={`${
+                        className={`truncate ${
                           selectedDocument?.key === doc.key
                             ? "text-white"
                             : "text-gray-700"
@@ -263,7 +263,7 @@ export function FilePreviewModal({
                         e.stopPropagation();
                         handleDownload(doc, true);
                       }}
-                      className={`${
+                      className={`flex-shrink-0 ${
                         selectedDocument?.key === doc.key
                           ? "text-white"
                           : "text-gray-500 hover:text-primary"
@@ -280,40 +280,40 @@ export function FilePreviewModal({
             </div>
           </div>
           {/* Preview Area */}
-          <div className="flex-1 p-6 overflow-hidden">
+          <div className="flex-1 p-4 sm:p-6 overflow-hidden">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : selectedDocument ? (
               <div className="h-full flex flex-col overflow-hidden">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-lg font-medium text-gray-800 max-w-[70%]">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                  <h4 className="text-base sm:text-lg font-medium text-gray-800 max-w-[70%] truncate">
                     {getDocumentLabel(selectedDocument.key)}
                   </h4>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleDownload(selectedDocument)}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 w-full sm:w-auto"
                   >
                     <Download className="h-4 w-4" />
-                    Download
+                    <span className="hidden sm:inline">Download</span>
                   </Button>
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-hidden rounded-lg shadow-sm">
                   {selectedDocument.type === "pdf" ? (
                     <iframe
                       src={selectedDocument.url}
-                      className="w-full h-full border rounded-lg shadow-sm"
+                      className="w-full h-full border rounded-lg"
                       title={getDocumentLabel(selectedDocument.key)}
                     />
                   ) : (
-                    <div className="h-full flex items-center justify-center">
+                    <div className="h-full flex items-center justify-center bg-gray-100 rounded-lg">
                       <img
                         src={selectedDocument.url}
                         alt={getDocumentLabel(selectedDocument.key)}
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+                        className="max-w-full max-h-full object-contain rounded-lg"
                       />
                     </div>
                   )}
@@ -321,7 +321,9 @@ export function FilePreviewModal({
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500">No document selected</p>
+                <p className="text-gray-500 text-sm sm:text-base">
+                  No document selected
+                </p>
               </div>
             )}
           </div>

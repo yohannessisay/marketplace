@@ -162,7 +162,7 @@ export default function StepThree() {
       setIsSubmitting(true);
 
       if (
-        effectiveOnboardingStage === "bank_information" ||
+        effectiveOnboardingStage === "bank_information" &&
         !isBackButtonClicked
       ) {
         await apiService().post(
@@ -206,18 +206,6 @@ export default function StepThree() {
           { ...data, id: bankAccount.id },
           xfmrId,
         );
-
-        setUser({
-          ...user!,
-          onboarding_stage: "avatar_image",
-        });
-
-        if (farmerProfile) {
-          saveToLocalStorage(FARMER_PROFILE_KEY, {
-            ...farmerProfile,
-            onboarding_stage: "avatar_image",
-          });
-        }
 
         saveToLocalStorage(STEP_THREE_KEY, data);
         saveToLocalStorage(HAS_COMPLETED_STEP_THREE_KEY, "true");

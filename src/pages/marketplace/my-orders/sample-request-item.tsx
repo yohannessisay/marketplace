@@ -22,18 +22,18 @@ export const SampleRequestItem = ({
       <CardContent className="p-5">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <div className="flex items-center mb-2">
-              <h3 className="font-bold text-lg">
-                {item.coffee_listing?.coffee_variety || "Unknown Coffee"}
-              </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center mb-2 gap-2">
               {item.coffee_listing?.listing_status === "active" && (
                 <Badge
                   variant="outline"
-                  className="ml-2 bg-green-500 text-white border-0"
+                  className="sm:ml-2 bg-green-500 text-white border-0 w-fit"
                 >
                   Active Listing
                 </Badge>
               )}
+              <h3 className="font-bold text-lg">
+                {item.coffee_listing?.coffee_variety || "Unknown Coffee"}
+              </h3>
             </div>
             <div className="text-sm text-muted-foreground">
               {item.coffee_listing?.farm?.farm_name || "Unknown Farm"}
@@ -67,7 +67,9 @@ export const SampleRequestItem = ({
             <User className="h-4 w-4 mr-1 text-muted-foreground" />
             <span className="text-sm font-medium">
               {item.coffee_listing?.seller?.first_name || "Unknown"}{" "}
-              {item.coffee_listing?.seller?.last_name || ""}
+              <span className="hidden sm:inline">
+                {item.coffee_listing?.seller?.last_name || ""}
+              </span>
             </span>
             {item.coffee_listing?.seller && (
               <Link
@@ -150,7 +152,9 @@ export const SampleRequestItem = ({
                     <span className="text-muted-foreground">Seller:</span>
                     <span className="font-medium">
                       {item.coffee_listing?.seller?.first_name || "N/A"}{" "}
-                      {item.coffee_listing?.seller?.last_name || ""}
+                      <span className="hidden sm:inline">
+                        {item.coffee_listing?.seller?.last_name || ""}
+                      </span>
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">

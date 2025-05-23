@@ -47,30 +47,28 @@ export const OrderItem = ({
       <CardContent className="p-5">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <div className="flex items-center mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center mb-2 gap-2">
+              {(listing?.is_organic || (item as Order).listing?.is_organic) && (
+                <Badge
+                  variant="outline"
+                  className="sm:ml-2 bg-green-500 text-white border-0 w-fit"
+                >
+                  Organic
+                </Badge>
+              )}
+              {isBid && listing?.listing_status === "active" && (
+                <Badge
+                  variant="outline"
+                  className="sm:ml-2 bg-green-500 text-white border-0 w-fit"
+                >
+                  Active Listing
+                </Badge>
+              )}
               <h3 className="font-bold text-lg">
                 {isBid
                   ? listing?.coffee_variety || "Unknown Coffee"
                   : (item as Order).order_id || "Unknown Order"}
               </h3>
-              {(listing?.is_organic || (item as Order).listing?.is_organic) && (
-                <Badge
-                  variant="outline"
-                  className="ml-2 bg-green-500 text-white border-0"
-                >
-                  Organic
-                </Badge>
-              )}
-              {isBid
-                ? listing?.listing_status === "active" && (
-                    <Badge
-                      variant="outline"
-                      className="ml-2 bg-green-500 text-white border-0"
-                    >
-                      Active Listing
-                    </Badge>
-                  )
-                : ""}
             </div>
             {isBid && (
               <div className="text-sm text-muted-foreground">
@@ -122,12 +120,13 @@ export const OrderItem = ({
             <User className="h-4 w-4 mr-1 text-muted-foreground" />
             <span className="text-sm font-medium">
               {(isBid
-                ? (item as Bid).seller?.first_name +
-                  " " +
-                  (item as Bid).seller?.last_name
-                : (item as Order).seller?.first_name +
-                  " " +
-                  (item as Order).seller?.last_name) || "Unknown"}{" "}
+                ? (item as Bid).seller?.first_name
+                : (item as Order).seller?.first_name) || "Unknown"}{" "}
+              <span className="hidden sm:inline">
+                {(isBid
+                  ? (item as Bid).seller?.last_name
+                  : (item as Order).seller?.last_name) || ""}
+              </span>
             </span>
             {(isBid ? (item as Bid).seller : (item as Order)) && (
               <Link
