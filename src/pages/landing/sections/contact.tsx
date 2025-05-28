@@ -88,13 +88,13 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-[90vw] sm:max-w-md md:max-w-lg bg-white rounded-xl border border-amber-200 p-4 sm:p-6 max-h-[80vh] sm:max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-[90vw] sm:max-w-md md:max-w-lg bg-white rounded-xl border border-green-200 text-green-700 p-4 sm:p-6 max-h-[80vh] sm:max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-center">
             What can we help you with?
           </DialogTitle>
           <DialogDescription className="text-gray-600 text-sm sm:text-base pt-1">
-            Fill out the form below and we’ll get back to you as soon as
+            Fill out the form below and we'll get back to you as soon as
             possible.
           </DialogDescription>
         </DialogHeader>
@@ -114,11 +114,11 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                   <FormControl>
                     <Input
                       placeholder="John Doe"
-                      className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
+                      className="border-greetext-green-200 focus:border-green-700 text-green-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage className="text-amber-700 text-xs sm:text-sm" />
+                  <FormMessage className="text-green-700 text-xs sm:text-sm" />
                 </FormItem>
               )}
             />
@@ -133,13 +133,13 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="john.doe@example.com"
+                        placeholder="someone@company.com"
                         type="email"
-                        className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
+                        className="border-greetext-green-200 focus:border-green-700 text-green-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage className="text-amber-700 text-xs sm:text-sm" />
+                    <FormMessage className="text-green-700 text-xs sm:text-sm" />
                   </FormItem>
                 )}
               />
@@ -153,12 +153,12 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="(123) 456-7890"
-                        className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
+                        placeholder="+2519-83-66-4237"
+                        className="border-greetext-green-200 focus:border-green-700 text-green-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage className="text-amber-700 text-xs sm:text-sm" />
+                    <FormMessage className="text-green-700 text-xs sm:text-sm" />
                   </FormItem>
                 )}
               />
@@ -166,8 +166,8 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                 control={form.control}
                 name="user_type"
                 render={({ field }) => (
-                  <FormItem id="userType">
-                    <FormLabel className="text-gray-900 text-sm sm:text-base">
+                  <FormItem id="userType" className="min-w-[200px] sm:w-full">
+                    <FormLabel className="text-gray-900 text-sm sm:text-base cursor-pointer">
                       User Type
                     </FormLabel>
                     <Select
@@ -175,16 +175,20 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5">
+                        <SelectTrigger className="w-full border-greetext-green-200 focus:border-green-700 text-green-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5 cursor-pointer">
                           <SelectValue placeholder="Select User Type" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white border-amber-200">
-                        <SelectItem value="seller">Seller</SelectItem>
-                        <SelectItem value="buyer">Buyer</SelectItem>
+                      <SelectContent className="bg-white border-greetext-green-200 min-w-[200px]">
+                        <SelectItem value="seller" className="cursor-pointer">
+                          Seller
+                        </SelectItem>
+                        <SelectItem value="buyer" className="cursor-pointer">
+                          Buyer
+                        </SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage className="text-amber-700 text-xs sm:text-sm" />
+                    <FormMessage className="text-green-700 text-xs sm:text-sm" />
                   </FormItem>
                 )}
               />
@@ -199,11 +203,11 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                     <FormControl>
                       <Input
                         placeholder="Your country"
-                        className="border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
+                        className="border-greetext-green-200 focus:border-green-700 text-green-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage className="text-amber-700 text-xs sm:text-sm" />
+                    <FormMessage className="text-green-700 text-xs sm:text-sm" />
                   </FormItem>
                 )}
               />
@@ -219,26 +223,26 @@ export default function ContactModal({ open, setOpen }: ContactModalProps) {
                   <FormControl>
                     <Textarea
                       placeholder="How can we help you?"
-                      className="min-h-[100px] sm:min-h-[120px] border-amber-200 focus:border-amber-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
+                      className="min-h-[100px] sm:min-h-[120px] border-green-200 focus:border-green-700 rounded-md text-sm sm:text-base py-2 sm:py-2.5"
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage className="text-amber-700 text-xs sm:text-sm" />
+                  <FormMessage className="text-green-700 text-xs sm:text-sm" />
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-3 sm:pt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 w-full">
+            <DialogFooter className="pt-3 sm:pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
               <Button
                 variant="outline"
                 onClick={() => setOpen(false)}
-                className="w-full sm:w-auto rounded-md border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white px-4 py-2 text-sm sm:text-base"
+                className="w-full rounded-md px-4 py-2 text-sm sm:text-base"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto rounded-md bg-amber-700 hover:bg-white hover:text-amber-700 hover:border-amber-700 border text-white px-4 py-2 text-sm sm:text-base"
+                className="w-full rounded-md border text-white px-4 py-2 sm:text-base"
               >
                 {isSubmitting ? (
                   "Sending..."

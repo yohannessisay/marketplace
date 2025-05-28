@@ -164,21 +164,30 @@ export function CoffeeDetails({
   };
 
   return (
-    <div className="space-y-6 px-4 sm:px-6 lg:px-0">
+    <div className="space-y-6 px-0.1 sm:px-2 lg:px-0">
       <PhotoGallery
         photos={listing?.coffee_photo ?? []}
         isOrganic={listing?.is_organic ?? false}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-flex sm:gap-2">
-          <TabsTrigger value="details" className="text-xs sm:text-sm">
+        <TabsList className="grid grid-cols-3 gap-1 w-full sm:w-auto sm:inline-flex sm:gap-2">
+          <TabsTrigger
+            value="details"
+            className="text-xs sm:text-sm px-2 py-1 truncate"
+          >
             Coffee Details
           </TabsTrigger>
-          <TabsTrigger value="farm" className="text-xs sm:text-sm">
-            Farm Information
+          <TabsTrigger
+            value="farm"
+            className="text-xs sm:text-sm px-2 py-1 truncate"
+          >
+            Farm Info
           </TabsTrigger>
-          <TabsTrigger value="cup" className="text-xs sm:text-sm">
+          <TabsTrigger
+            value="cup"
+            className="text-xs sm:text-sm px-2 py-1 truncate"
+          >
             Cup Profile
           </TabsTrigger>
         </TabsList>

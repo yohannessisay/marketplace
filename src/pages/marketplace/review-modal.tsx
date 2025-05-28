@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star } from "lucide-react";
+import { Loader2, Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,20 +14,32 @@ import { Label } from "@/components/ui/label";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
+import { Review } from "@/types/types";
 
 interface ReviewModalProps {
   orderId: string;
-  type: string;
-  viewData:any
+  type: "add" | "view";
+  viewData: Review | null;
   sellerId: string | undefined;
-  onClose: () => void;
+  buyerId: string | undefined;
+  userType: "seller" | "buyer";
+  onClose: (submitted: boolean) => void;
 }
 
-export function ReviewModal({ orderId, sellerId, onClose, type, viewData }: ReviewModalProps) {
+export function ReviewModal({
+  orderId,
+  sellerId,
+  buyerId,
+  onClose,
+  type,
+  viewData,
+  userType,
+}: ReviewModalProps) {
   const [rating, setRating] = useState<number>(5);
   const [reviewComment, setReviewComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState<boolean>(false);
   const { successMessage, errorMessage } = useNotification();
 
   const validateForm = (): boolean => {
@@ -52,21 +64,44 @@ export function ReviewModal({ orderId, sellerId, onClose, type, viewData }: Revi
 
     setIsSubmitting(true);
     try {
-      await apiService().post("/buyers/ratings/rate-farmer", {
-        orderId,
-        sellerId,
-        rating,
-        comment: reviewComment.trim(),
-      });
+      let endpoint = "";
+      let payload = {};
+
+      if (userType === "seller") {
+        if (!buyerId) {
+          throw new Error("Buyer ID is required for seller reviews.");
+        }
+        endpoint = "/sellers/ratings/rate-buyer";
+        payload = {
+          orderId,
+          buyerId,
+          rating,
+          comment: reviewComment.trim(),
+        };
+      } else {
+        if (!sellerId) {
+          throw new Error("Seller ID is required for buyer reviews.");
+        }
+        endpoint = "/buyers/ratings/rate-farmer";
+        payload = {
+          orderId,
+          sellerId,
+          rating,
+          comment: reviewComment.trim(),
+        };
+      }
+
+      await apiService().post(endpoint, payload);
 
       successMessage("Review submitted successfully!");
-      onClose();
+      setSubmitted(true);
+      onClose(true);
     } catch (err) {
       const errorResponse = err as APIErrorResponse;
       errorMessage(errorResponse);
       setError(
         errorResponse.error?.message ||
-          "Failed to submit review. Please try again."
+          "Failed to submit review. Please try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -74,15 +109,25 @@ export function ReviewModal({ orderId, sellerId, onClose, type, viewData }: Revi
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={() => onClose(submitted)}>
+      {" "}
+      {/* Pass submitted status */}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {type === "view" ? "Review Details" : "Rate Your Experience"}
+            {type === "view"
+              ? userType === "seller" && viewData?.reviewer_seller_id
+                ? "Your Review of Buyer"
+                : userType === "seller" && viewData?.reviewer_buyer_id
+                  ? "Buyer's Review of You"
+                  : "Review Details"
+              : userType === "seller"
+                ? "Rate the Buyer"
+                : "Rate Your Experience"}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          {type === "view" ? (
+          {type === "view" && viewData ? (
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -90,25 +135,31 @@ export function ReviewModal({ orderId, sellerId, onClose, type, viewData }: Revi
                     key={star}
                     size={28}
                     className={`${
-                      (viewData?.rating ?? 0) >= star
+                      viewData.rating >= star
                         ? "text-yellow-400 fill-current"
                         : "text-muted"
                     }`}
                   />
                 ))}
                 <span className="ml-2 text-sm text-gray-600">
-                  {viewData?.rating} / 5
+                  {viewData.rating} / 5
                 </span>
               </div>
               <div>
                 <Label className="block mb-1">Review</Label>
                 <div className="bg-gray-50 border rounded-md p-3 text-gray-800">
-                  {viewData?.comment}
+                  {viewData.comment || "No comment provided."}
                 </div>
               </div>
-    
+              <div className="text-sm text-gray-600">
+                <p>
+                  Reviewed on:{" "}
+                  {new Date(viewData.created_at).toLocaleDateString()}
+                </p>
+              </div>
               <div className="flex justify-end pt-2">
-                <Button variant="outline" onClick={onClose}>
+                <Button variant="outline" onClick={() => onClose(submitted)}>
+                  {" "}
                   Close
                 </Button>
               </div>
@@ -122,7 +173,9 @@ export function ReviewModal({ orderId, sellerId, onClose, type, viewData }: Revi
               )}
               <div>
                 <Label className="block mb-2">
-                  How would you rate this seller and their coffee?
+                  {userType === "seller"
+                    ? "How would you rate this buyer?"
+                    : "How would you rate this seller and their coffee?"}
                 </Label>
                 <div className="flex space-x-2 mb-1">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -130,7 +183,7 @@ export function ReviewModal({ orderId, sellerId, onClose, type, viewData }: Revi
                       key={star}
                       type="button"
                       onClick={() => setRating(star)}
-                      className="focus:outline-none"
+                      className="focus:outline-none cursor-pointer"
                       disabled={isSubmitting}
                     >
                       <Star
@@ -156,19 +209,36 @@ export function ReviewModal({ orderId, sellerId, onClose, type, viewData }: Revi
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
                   className="mt-1"
-                  placeholder="Share your experience with this coffee and seller..."
+                  placeholder={
+                    userType === "seller"
+                      ? "Share your experience with this buyer..."
+                      : "Share your experience with this coffee and seller..."
+                  }
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {reviewComment.length}/500 characters
                 </p>
               </div>
-              <div className="flex justify-end space-x-3 pt-2">
-                <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => onClose(submitted)}
+                  disabled={isSubmitting}
+                  className="sm:flex-1 w-full sm:w-auto"
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? "Submitting..." : "Submit Review"}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="sm:flex-1 w-full sm:w-auto"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="animate-spin h-4 w-4" />
+                  ) : (
+                    "Submit Review"
+                  )}
                 </Button>
               </div>
             </>

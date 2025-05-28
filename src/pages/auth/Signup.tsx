@@ -581,10 +581,12 @@ export default function SignupPage() {
             </Form>
           )}
 
-          <h3 className="my-4 sm:my-6 flex justify-center items-center text-sm sm:text-base">
-            <InfoIcon className="mr-2 text-orange-400 w-4 h-4 sm:w-5 sm:h-5" />
-            You are currently filling the form as
-            <span className="text-gray-500 font-semibold ml-2 border rounded-md px-2 py-1 text-xs sm:text-sm shadow-md">
+          <h3 className="my-3 sm:my-6 flex flex-col xs:flex-row justify-center items-center gap-2 text-xs xs:text-sm sm:text-base">
+            <div className="flex items-center">
+              <InfoIcon className="mr-1 xs:mr-2 text-orange-400 w-3 h-3 xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
+              <span>You are currently filling the form as</span>
+            </div>
+            <span className="text-gray-500 font-semibold border rounded-md px-1.5 xs:px-2 py-0.5 xs:py-1 text-xxs xs:text-xs sm:text-sm shadow-md">
               {role.toUpperCase()}
             </span>
           </h3>

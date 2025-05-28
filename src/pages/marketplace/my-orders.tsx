@@ -20,7 +20,6 @@ import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/header";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
-import { ReviewModal } from "./review-modal";
 import { FileUploadModal } from "@/components/modals/FileUploadModal";
 import { FilePreviewModal } from "@/components/modals/FilePreviewModal";
 import { FilterMenu } from "./my-orders/filter";
@@ -32,10 +31,13 @@ import { LoadingSkeleton } from "./my-orders/loading-skeleton";
 import { FileUpdateModal } from "@/components/modals/FileUpdateModal";
 import {
   BidFilterState,
+  Favorite,
   FavoriteFilterState,
   OrderFilterState,
   SampleFilterState,
 } from "@/types/orders";
+import { Review, Reviews } from "@/types/types";
+import { ReviewModal } from "./review-modal";
 
 export interface Buyer {
   first_name?: string;
@@ -77,13 +79,6 @@ export interface OrderDocument {
   created_at: string;
 }
 
-export interface Review {
-  rating: number;
-  comment: string | null;
-  created_at: string;
-  reviewer_buyer_id: string | null;
-}
-
 export interface Order {
   id: string;
   order_id: string;
@@ -108,7 +103,7 @@ export interface Order {
   seller?: Seller;
   buyer?: Buyer;
   documents?: OrderDocument[];
-  reviews: Review[];
+  reviews: Reviews;
 }
 
 export interface SampleRequest {
@@ -167,14 +162,6 @@ export interface Seller {
   id: string;
   first_name: string;
   last_name: string;
-}
-
-export interface Favorite {
-  id: string;
-  listing_id: string;
-  buyer_id: string;
-  created_at: string;
-  listing: Listing;
 }
 
 interface PaginationData {
@@ -261,8 +248,9 @@ export default function OrdersPage() {
   const [favoritesSearchTerm, setFavoritesSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("current");
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [reviewType, setReviewType] = useState<string | null>(null);
+  const [reviewType, setReviewType] = useState<"add" | "view">("add");
   const [fetchedTabs, setFetchedTabs] = useState<{
     current: boolean;
     historical: boolean;
@@ -748,16 +736,21 @@ export default function OrdersPage() {
     setPreviewModalOpen(true);
   };
 
-  const openReviewModal = (order: Order, type: string) => {
+  const openReviewModal = (
+    order: Order,
+    type: "add" | "view",
+    review?: Review,
+  ) => {
     setSelectedOrder(order);
     setShowReviewModal(true);
-    setReviewType(type || "add");
+    setReviewType(type);
+    setSelectedReview(review || null);
   };
 
   return (
     <div className="min-h-screen pt-20 bg-primary/5 p-8">
       <Header />
-      <main className="container mx-auto px-4 py-6 max-w-5xl">
+      <main className="container mx-auto px-0.5 py-6 max-w-5xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Orders</h1>
         </div>
@@ -1453,14 +1446,19 @@ export default function OrdersPage() {
 
         {showReviewModal && selectedOrder && (
           <ReviewModal
-            viewData={selectedOrder.reviews[0]}
+            viewData={selectedReview}
             type={reviewType ?? "add"}
             orderId={selectedOrder.id}
             sellerId={selectedOrder.seller_id}
-            onClose={() => {
+            buyerId={selectedOrder.buyer_id}
+            userType={user?.userType === "seller" ? "seller" : "buyer"}
+            onClose={(submitted: boolean) => {
               setShowReviewModal(false);
               setSelectedOrder(null);
-              fetchActiveOrders();
+              setSelectedReview(null);
+              if (submitted) {
+                fetchHistoricalOrders();
+              }
             }}
           />
         )}

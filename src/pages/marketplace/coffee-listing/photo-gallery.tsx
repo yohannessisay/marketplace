@@ -14,7 +14,7 @@ export function PhotoGallery({ photos, isOrganic }: PhotoGalleryProps) {
 
   return (
     <div className="bg-card rounded-lg shadow-sm overflow-hidden">
-      <div className="flex flex-col gap-4 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 p-1 sm:p-2">
         {photos && photos.length > 0 ? (
           <div className="relative">
             <img

@@ -1,6 +1,8 @@
 import { ArrowLeft } from "lucide-react";
 import { Star } from "lucide-react";
 import { OrderStatus } from "@/types/order";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   demoOrderStatus: OrderStatus;
@@ -15,17 +17,20 @@ export function Header({
   sellerRating,
   sellerReviews,
 }: HeaderProps) {
+  const navigate = useNavigate();
+
   return (
     <header className="bg-card shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-0">
-          <button
-            onClick={() => window.history.back()}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/market-place")}
             className="flex items-center text-muted-foreground hover:text-primary cursor-pointer"
           >
             <ArrowLeft size={20} className="mr-1" />
             <span className="text-sm sm:text-base">Back to Marketplace</span>
-          </button>
+          </Button>
           <h1 className="text-lg sm:text-xl font-semibold text-foreground flex-1">
             Coffee Details
           </h1>

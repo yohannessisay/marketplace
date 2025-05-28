@@ -178,7 +178,7 @@ export default function CoffeeListingPage() {
   if (showNotFound || (!listing && fetched)) return <NotFoundUI />;
 
   return (
-    <div className="bg-primary/5 p-4 sm:p-6 lg:p-8 min-h-screen">
+    <div className="bg-primary/5 p-4 sm:p-10 lg:p-8 min-h-screen">
       {listing && (
         <>
           <Header
@@ -189,7 +189,7 @@ export default function CoffeeListingPage() {
             sellerReviews={listing.seller.total_reviews ?? 0}
           />
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 bg-white my-8 sm:my-12 rounded-lg relative">
+          <main className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-8 py-6 sm:py-8 bg-white my-8 sm:my-12 rounded-lg relative">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               <div className="lg:col-span-2">
                 <CoffeeDetails

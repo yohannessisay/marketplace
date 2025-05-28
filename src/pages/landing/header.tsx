@@ -42,13 +42,13 @@ export function Header({ scrolled }: HeaderProps) {
         <div className="hidden md:flex items-center gap-3 lg:gap-4">
           <Button
             variant="outline"
-            className="border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white px-3 py-1.5 text-sm lg:px-4 lg:py-2 lg:text-base"
+            className="px-3 py-1.5 text-sm lg:px-4 lg:py-2 lg:text-base"
             asChild
           >
             <Link to="/market-place">Go to Marketplace</Link>
           </Button>
           <Button
-            className="bg-amber-700 hover:text-amber-700 w-32 lg:w-40 px-3 py-1.5 text-sm lg:px-4 lg:py-2 lg:text-base"
+            className="w-32 lg:w-40 px-3 py-1.5 text-sm lg:px-4 lg:py-2 lg:text-base"
             asChild
           >
             <Link to={buttonLink}>{buttonText}</Link>
@@ -74,19 +74,12 @@ export function Header({ scrolled }: HeaderProps) {
       {isMenuOpen && (
         <div className="md:hidden bg-background/95 backdrop-blur-md py-4 px-4 sm:px-6">
           <div className="flex flex-col gap-3">
-            <Button
-              variant="outline"
-              className="border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white w-full py-2 text-base"
-              asChild
-            >
+            <Button variant="outline" className="w-full py-2 text-base" asChild>
               <Link to="/market-place" onClick={() => setIsMenuOpen(false)}>
                 Go to Marketplace
               </Link>
             </Button>
-            <Button
-              className="bg-amber-700 hover:text-amber-700 w-full py-2 text-base"
-              asChild
-            >
+            <Button className="w-full py-2 text-base" asChild>
               <Link to={buttonLink} onClick={() => setIsMenuOpen(false)}>
                 {buttonText}
               </Link>

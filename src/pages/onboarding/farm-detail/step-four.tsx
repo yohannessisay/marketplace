@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Upload, User, AlertCircle } from "lucide-react";
+import { Upload, User, AlertCircle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +31,7 @@ import { apiService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
 import ConfirmationModal from "@/components/modals/ConfrmationModal";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   BACK_BUTTON_CLICKED_KEY,
   FARMER_PROFILE_KEY,
@@ -73,6 +74,11 @@ export default function StepFour() {
   );
 
   const xfmrId = farmerProfile.id ?? "";
+
+  const isBackButtonClicked = useMemo(
+    () => getFromLocalStorage(BACK_BUTTON_CLICKED_KEY, {}) === "true",
+    [],
+  );
 
   const form = useForm<ProfileInfoFormData>({
     resolver: zodResolver(profileInfoSchema),
@@ -273,204 +279,282 @@ export default function StepFour() {
     navigate("/onboarding/step-three");
   }, [form, profileImage, hasSelectedFile, navigate]);
 
+  const renderSkeletonField = () => (
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-10 w-full" />
+    </div>
+  );
+
+  const renderSkeleton = () => (
+    <div className="space-y-8 shadow-lg px-8 rounded-md py-4">
+      <div className="mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="md:col-span-2">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {renderSkeletonField()}
+                {renderSkeletonField()}
+                {renderSkeletonField()}
+                {renderSkeletonField()}
+                {renderSkeletonField()}
+                {renderSkeletonField()}
+              </div>
+              <div className="mt-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-32 w-full" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center gap-4 mb-8 w-full">
+        <Button
+          type="button"
+          variant="outline"
+          disabled
+          className="flex-1 sm:flex-none"
+        >
+          <span className="truncate">loading...</span>
+        </Button>
+        <Button
+          type="submit"
+          disabled
+          className="flex-1 sm:flex-none my-4 sm:my-0"
+        >
+          <span className="truncate">loading...</span>
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-primary/5 pt-26">
       <Header />
-      <main className="container mx-auto p-4 max-w-5xl">
+      <main className="container mx-auto p-3 max-w-5xl">
         <Stepper currentStep={4} />
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleFormSubmit)}
-            className="space-y-8 shadow-lg px-8 rounded-md py-4"
-          >
-            <div className="mb-10">
-              <div className="mb-6">
-                <h2 className="text-green-600 font-medium">Step 4</h2>
-                <h3 className="text-xl text-gray-900 font-semibold">
-                  Complete your profile
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Add your personal information and profile photo
-                </p>
-              </div>
+          {isBackButtonClicked ? (
+            renderSkeleton()
+          ) : (
+            <form
+              onSubmit={form.handleSubmit(handleFormSubmit)}
+              className="space-y-8 shadow-lg px-8 rounded-md py-4"
+            >
+              <div className="mb-10">
+                <div className="mb-6">
+                  <h2 className="text-green-600 font-medium">Step 4</h2>
+                  <h3 className="text-xl text-gray-900 font-semibold">
+                    Complete your profile
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Add your personal information and profile photo
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="md:col-span-1">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="mb-4 text-center">
-                        <h4 className="font-medium mb-2">Profile Photo</h4>
-                        <p className="text-sm text-gray-500">
-                          Upload a clear photo of yourself
-                        </p>
-                      </div>
-
-                      <div className="w-40 h-40 rounded-full bg-gray-100 flex items-center justify-center mb-4 overflow-hidden">
-                        {profileImage ? (
-                          <img
-                            src={profileImage}
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-20 h-20 text-gray-400" />
-                        )}
-                      </div>
-
-                      <label htmlFor="profile-image" className="cursor-pointer">
-                        <div className="flex items-center gap-2 text-sm text-green-600">
-                          <Upload className="w-4 h-4" />
-                          <span>Upload photo</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card className="md:col-span-1">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="mb-4 text-center">
+                          <h4 className="font-medium mb-2">Profile Photo</h4>
+                          <p className="text-sm text-gray-500">
+                            Upload a clear photo of yourself
+                          </p>
                         </div>
-                        <Input
-                          id="profile-image"
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const selectedFiles = Array.from(
-                              e.target.files || [],
-                            );
-                            handleFilesSelected(selectedFiles);
-                          }}
+
+                        <div className="w-40 h-40 rounded-full bg-gray-100 flex items-center justify-center mb-4 overflow-hidden">
+                          {profileImage ? (
+                            <img
+                              src={profileImage}
+                              alt="Profile"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-20 h-20 text-gray-400" />
+                          )}
+                        </div>
+
+                        <label
+                          htmlFor="profile-image"
+                          className="cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 text-sm text-green-600">
+                            <Upload className="w-4 h-4" />
+                            <span>Upload photo</span>
+                          </div>
+                          <Input
+                            id="profile-image"
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const selectedFiles = Array.from(
+                                e.target.files || [],
+                              );
+                              handleFilesSelected(selectedFiles);
+                            }}
+                          />
+                        </label>
+
+                        {profileImage &&
+                          files.length === 0 &&
+                          hasSelectedFile && (
+                            <Alert
+                              variant="destructive"
+                              className="mt-4 bg-red-50 border-red-200 rounded-lg"
+                            >
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription className="text-red-700 text-xs">
+                                Please re-upload your profile photo to complete
+                                registration.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="md:col-span-2">
+                    <CardContent className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="first_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>First Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </label>
+                        <FormField
+                          control={form.control}
+                          name="last_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Last Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="email" disabled />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Phone Number</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="tel" disabled />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="telegram"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Telegram Address</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="address"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Address</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
-                      {profileImage &&
-                        files.length === 0 &&
-                        hasSelectedFile && (
-                          <Alert
-                            variant="destructive"
-                            className="mt-4 bg-red-50 border-red-200 rounded-lg"
-                          >
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription className="text-red-700 text-xs">
-                              Please re-upload your profile photo to complete
-                              registration.
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="md:col-span-2">
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="first_name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>First Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="last_name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Last Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="email" disabled />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
-                            <FormControl>
-                              <Input {...field} type="tel" disabled />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="telegram"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Telegram Address</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Address</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="mt-6">
-                      <FormField
-                        control={form.control}
-                        name="about_me"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Bio</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                {...field}
-                                placeholder="Tell us about yourself and your farm..."
-                                className="min-h-[120px]"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="mt-6">
+                        <FormField
+                          control={form.control}
+                          name="about_me"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bio</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  {...field}
+                                  placeholder="Tell us about yourself and your farm..."
+                                  className="min-h-[120px]"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-            </div>
 
-            <div className="flex justify-between mb-8">
-              <Button type="button" variant="outline" onClick={goBack}>
-                Back
-              </Button>
-              <Button type="submit" disabled={isSubmitting} className="my-4">
-                {isSubmitting ? "Registering..." : "Complete Registration"}
-              </Button>
-            </div>
-          </form>
+              <div className="flex justify-between items-center gap-4 mb-8 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={goBack}
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-none"
+                >
+                  <span className="truncate">Back</span>
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-none my-4 sm:my-0"
+                >
+                  <span className="inline-flex items-center justify-center w-full">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <span>Completing Registration...</span>
+                      </>
+                    ) : (
+                      "Complete Registration"
+                    )}
+                  </span>
+                </Button>
+              </div>
+            </form>
+          )}
         </Form>
 
         <ConfirmationModal

@@ -39,15 +39,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMobile } from "@/hooks/useMobile";
 import { chatService } from "@/services/chatService";
 import { getFromLocalStorage } from "@/lib/utils";
+import {
+  ACCESS_TOKEN_KEY,
+  FARMER_PROFILE_KEY,
+  REFRESH_TOKEN_KEY,
+} from "@/types/constants";
 
-// Define navigation item structure
 interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// Define navigation categories
 const navItems = {
   agentOnly: [
     { to: "/agent/farmer-management", label: "Farmer Management", icon: List },
@@ -67,12 +70,12 @@ const navItems = {
     { to: "/my-orders", label: "My Orders", icon: ShoppingBagIcon },
     { to: "/market-place", label: "Marketplace", icon: LucideShoppingBag },
     { to: "/chats", label: "Chats", icon: Send },
-  ] as NavItem[], // Removed Settings from buyerOnly
+  ] as NavItem[],
 };
 
 export default function Header() {
   const { user } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+  const farmerProfile: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
@@ -119,8 +122,8 @@ export default function Header() {
   const handleLogout = () => {
     const userType = user?.userType;
     localStorage.clear();
-    Cookies.remove("accessToken");
-    Cookies.remove("refreshToken");
+    Cookies.remove(ACCESS_TOKEN_KEY);
+    Cookies.remove(REFRESH_TOKEN_KEY);
     navigate(userType === "agent" ? "/agent/login" : "/login");
     setIsMenuOpen(false);
     if (chatService().isConnected()) {
@@ -219,7 +222,7 @@ export default function Header() {
                       {user.avatar_url ? (
                         <img
                           src={user.avatar_url}
-                          alt="User avatar"
+                          alt="AU"
                           className="rounded-full h-8 w-8 object-cover"
                         />
                       ) : (
@@ -246,6 +249,26 @@ export default function Header() {
                       <span className="text-xs text-gray-500 pl-7">
                         {user.email}
                       </span>
+                      <Separator className="my-2" />
+                      {isAgentWithFarmerProfile && (
+                        <div className="flex flex-col">
+                          <div className="pl-7 mt-1 flex gap-2">
+                            <span className="text-sm text-green-600 font-extrabold">
+                              Farmer:
+                            </span>
+                            <div className="text-sm font-medium text-gray-500">
+                              {farmerProfile.first_name}{" "}
+                              {farmerProfile.last_name}
+                            </div>
+                          </div>
+                          <div className="pl-7 mt-1 text-sm font-medium text-gray-500">
+                            <span className="text-sm text-green-600 font-extrabold mr-3">
+                              Email:
+                            </span>
+                            {farmerProfile.email}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <Separator className="my-2" />
                     {user.userType === "agent" && !isAgentWithFarmerProfile && (
@@ -263,7 +286,6 @@ export default function Header() {
                         Settings
                       </Link>
                     )}
-                    <Separator className="my-2" />
                     <DropdownMenuItem
                       onClick={handleLogout}
                       className="cursor-pointer flex items-center gap-2"
@@ -308,6 +330,54 @@ export default function Header() {
                 <SheetTitle className="flex items-center gap-2">
                   <Logo />
                 </SheetTitle>
+                {user && (
+                  <div className="flex flex-col gap-1 mt-4">
+                    <div className="flex items-center gap-2">
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt="AU"
+                          className="rounded-full h-5 w-5 object-cover"
+                        />
+                      ) : (
+                        <User2 className="text-green-400 h-5 w-5" />
+                      )}
+                      <span className="font-medium text-base">
+                        {user.first_name} {user.last_name}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500 pl-7">
+                      {user.email}
+                    </span>
+                    <Separator className="flex-1" />
+                    {isAgentWithFarmerProfile && (
+                      <div className="flex flex-col mt-2 w-full">
+                        <div className="flex items-center gap-2 w-full">
+                          <div className="flex flex-col pl-7">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-green-600 font-extrabold">
+                                Farmer:
+                              </span>
+                              <span className="text-sm font-medium text-gray-500">
+                                {farmerProfile.first_name}{" "}
+                                {farmerProfile.last_name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm text-green-600 font-extrabold">
+                                Email:
+                              </span>
+                              <span className="text-sm font-medium text-gray-500">
+                                {farmerProfile.email}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <Separator className="my-2" />
               </SheetHeader>
 
               <nav className="flex flex-col space-y-3 flex-grow">
@@ -364,7 +434,7 @@ export default function Header() {
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <LucideShoppingBag className="h-4 w-4 text-green-400" />
-                      Marketplace
+                      MarketplaceA
                     </Link>
                     <Link
                       to={loginUrl}

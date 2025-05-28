@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
+import { Loader2 } from "lucide-react";
 
 interface BidModalProps {
   listing: CoffeeListing | null;
@@ -233,7 +234,14 @@ export function BidModal({
             onClick={handleSubmit}
             className="w-full sm:w-28 h-9 sm:h-10"
           >
-            {isLoading ? "Placing Bid..." : "Place Bid"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span>Placing Bid...</span>
+              </>
+            ) : (
+              "Place Bid"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

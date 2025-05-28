@@ -112,21 +112,25 @@ export default function SellerProfilePage() {
     setError(null);
 
     try {
-      const [sellerResponse, farmsResponse, listingsResponse, reviewsResponse]: any =
-        await Promise.all([
-          apiService().getWithoutAuth(
-            `/sellers/profile/get-profile-details?sellerId=${sellerId}`,
-          ),
-          apiService().getWithoutAuth(
-            `/sellers/profile/get-farms?sellerId=${sellerId}`,
-          ),
-          apiService().getWithoutAuth(
-            `/sellers/profile/get-listings?sellerId=${sellerId}`,
-          ),
-          apiService().getWithoutAuth(
-            `/sellers/profile/get-reviews?sellerId=${sellerId}&page=1&limit=10`,
-          ),
-        ]);
+      const [
+        sellerResponse,
+        farmsResponse,
+        listingsResponse,
+        reviewsResponse,
+      ]: any = await Promise.all([
+        apiService().getWithoutAuth(
+          `/sellers/profile/get-profile-details?sellerId=${sellerId}`,
+        ),
+        apiService().getWithoutAuth(
+          `/sellers/profile/get-farms?sellerId=${sellerId}`,
+        ),
+        apiService().getWithoutAuth(
+          `/sellers/profile/get-listings?sellerId=${sellerId}`,
+        ),
+        apiService().getWithoutAuth(
+          `/sellers/profile/get-reviews?sellerId=${sellerId}&page=1&limit=10`,
+        ),
+      ]);
 
       if (sellerResponse.success && sellerResponse.data.seller) {
         setSeller(sellerResponse.data.seller);
@@ -304,7 +308,7 @@ export default function SellerProfilePage() {
     <div className="bg-primary/5 px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
       <Header />
 
-      <main className="max-w-7xl mx-auto bg-white rounded-md">
+      <main className="max-w-7xl mx-auto bg-white rounded-md mt-30">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
             <Card className="mb-6">
@@ -517,8 +521,10 @@ export default function SellerProfilePage() {
             </Tabs>
           </div>
 
-          {user?.userType === "seller" || user?.userType === "agent" ? null : (
-            <div className="mt-4">
+          {user?.userType === "seller" || user?.userType === "agent" ? (
+            ""
+          ) : (
+            <div className="pr-3 py-3">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center">

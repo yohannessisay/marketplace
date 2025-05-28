@@ -12,11 +12,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { sellerSchemaForAgent } from "@/types/validation/auth";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
-import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
+import { Loader2, ArrowLeftCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 type SellerFormValues = z.infer<typeof sellerSchemaForAgent>;
 
@@ -24,7 +25,7 @@ export default function FarmerSignupViaAgentPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { successMessage, errorMessage } = useNotification();
-
+  const { user } = useAuth();
   const sellerForm = useForm<SellerFormValues>({
     resolver: zodResolver(sellerSchemaForAgent),
     defaultValues: {
@@ -37,22 +38,15 @@ export default function FarmerSignupViaAgentPage() {
   });
 
   const onSellerSubmit = async (data: SellerFormValues) => {
+    if (!user) return;
+
     try {
-      const agent: any = getFromLocalStorage("userProfile", {});
       setIsSubmitting(true);
-      const response: any = await apiService().postWithoutAuth(
-        `/auth/signup?agentID=${agent.id}`,
-        {
-          ...data,
-          userType: "seller",
-        },
-      );
-      successMessage("Farmer Registered successfully");
-      saveToLocalStorage("current-step", "farm_profile");
-      saveToLocalStorage("farmerProfile", {
-        id: response.data.userId,
-        email: response.data.email,
+      await apiService().postWithoutAuth(`/auth/signup?agentID=${user?.id}`, {
+        ...data,
+        userType: "seller",
       });
+      successMessage("Farmer Registered successfully");
       navigate("/agent/farmer-management");
     } catch (error: unknown) {
       setIsSubmitting(false);
@@ -63,20 +57,23 @@ export default function FarmerSignupViaAgentPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Left Side - Image */}
       <div
         className="hidden md:flex w-1/2 bg-cover bg-center  rounded-r-2xl shadow-lg"
         style={{ backgroundImage: "url('/images/registration.png')" }}
       ></div>
 
-      {/* Right Side - Form */}
       <div className="flex w-full md:w-1/2 items-center justify-center bg-white p-8">
         <div className="max-w-md w-full border border-green-200 shadow-md rounded-md p-4">
-          {/* Logo */}
-          <div className="mb-6 text-center">
+          <div className="flex items-center justify-between mb-6">
+            <Link to="/agent/farmer-management">
+              <Button variant="ghost" size="icon">
+                <ArrowLeftCircle className="h-5 w-5" />
+              </Button>
+            </Link>
             <h2 className="text-3xl font-bold text-gray-800">
               <span className="text-green-600">Afro</span>valley
             </h2>
+            <div className="w-10"></div>
           </div>
 
           <Form {...sellerForm}>
@@ -84,7 +81,7 @@ export default function FarmerSignupViaAgentPage() {
               onSubmit={sellerForm.handleSubmit(onSellerSubmit)}
               className="space-y-4"
             >
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col md:grid md:grid-cols-2 md:gap-4 space-y-4 md:space-y-0">
                 <FormField
                   control={sellerForm.control}
                   name="first_name"
@@ -138,13 +135,19 @@ export default function FarmerSignupViaAgentPage() {
                 )}
               />
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full my-4"
               >
-                {isSubmitting ? "Creating account..." : "Sign Up"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Signing...</span>
+                  </>
+                ) : (
+                  "Sign Up"
+                )}
               </Button>
             </form>
           </Form>

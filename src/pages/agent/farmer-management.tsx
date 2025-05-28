@@ -93,27 +93,21 @@ export default function FarmersTable() {
       switch (farmerInfo.onboarding_stage) {
         case "not_started":
           navigate("/home");
-          saveToLocalStorage("current-step", "not_started");
           break;
         case "farm_profile":
           navigate("/onboarding/step-one");
-          saveToLocalStorage("current-step", "farm_profile");
           break;
         case "crops_to_sell":
           navigate("/onboarding/step-two");
-          saveToLocalStorage("current-step", "crops_to_sell");
           break;
         case "bank_information":
           navigate("/onboarding/step-three");
-          saveToLocalStorage("current-step", "bank_information");
           break;
         case "avatar_image":
           navigate("/onboarding/step-four");
-          saveToLocalStorage("current-step", "avatar_image");
           break;
         case "completed":
           navigate("/seller-dashboard");
-          saveToLocalStorage("current-step", "completed");
           break;
         default:
           break;

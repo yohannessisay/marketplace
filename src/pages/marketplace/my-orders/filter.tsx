@@ -19,6 +19,7 @@ import {
   SampleRequestDeliveryStatus,
 } from "@/types/orders";
 import { ChevronDown, Filter, X } from "lucide-react";
+import { useState } from "react";
 
 export const FilterMenu = ({
   tab,
@@ -48,6 +49,7 @@ export const FilterMenu = ({
   const isSampleTab = tab === "sample";
   const isBidsTab = tab === "bids";
   const isFavoritesTab = tab === "favorites";
+  const [isOpen, setIsOpen] = useState(false);
 
   const filterCount = Object.entries(currentFilters).filter(([key, value]) => {
     if (
@@ -136,8 +138,12 @@ export const FilterMenu = ({
     return currentFilters;
   };
 
+  const handleCloseMenu = () => {
+    setIsOpen(false);
+  };
+
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="h-10 relative">
           <Filter className="h-4 w-4 mr-2" />
@@ -152,8 +158,18 @@ export const FilterMenu = ({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64 sm:w-72 p-4">
-        <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+      <DropdownMenuContent className="w-64 sm:w-72 p-4 relative">
+        <div className="flex items-center justify-between mb-2">
+          <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+          <Button
+            variant="ghost"
+            className="block sm:hidden text-gray-500 hover:text-gray-700"
+            onClick={handleCloseMenu}
+            aria-label="Close filter menu"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
         <DropdownMenuSeparator />
         {statusOptions.length > 0 && (
           <div className="mb-2">

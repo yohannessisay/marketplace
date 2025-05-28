@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,13 +8,20 @@ import { Calendar, ChevronDown, Clock, Coffee, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { renderOrderProgress } from "./render-order-progress";
 import { Bid, Listing, Order } from "../my-orders";
+import { Review } from "@/types/types";
+import { useAuth } from "@/hooks/useAuth";
+import { TruncatableId } from "@/components/copier";
 
 interface OrderItemProps {
   item: Order | Bid;
   tabType: string;
   expandedOrderId: string;
   toggleOrderExpansion: (id: string) => void;
-  openReviewModal: (order: Order, type: string) => void;
+  openReviewModal: (
+    order: Order,
+    type: "add" | "view",
+    review?: Review,
+  ) => void;
   setModalMode: (mode: "contract" | "documents" | "payment_slip") => void;
   setCurrentOrderId: (orderId: string) => void;
   setUploadModalOpen: (open: boolean) => void;
@@ -37,6 +46,7 @@ export const OrderItem = ({
   const isOrderTab = tabType === "current" || tabType === "historical";
   const isBid = tabType === "bids";
   const isExpanded = expandedOrderId === item.id;
+  const { user } = useAuth();
 
   const listing: Listing | undefined = isBid
     ? (item as Bid).listing
@@ -189,9 +199,9 @@ export const OrderItem = ({
                     <span className="text-muted-foreground">
                       {isBid ? "Bid ID" : "Order ID"}:
                     </span>
-                    <span className="font-medium">
-                      {isBid ? item.id : (item as Order).order_id}
-                    </span>
+                    <TruncatableId
+                      id={isBid ? item.id : (item as Order).order_id}
+                    />
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Unit Price:</span>
@@ -269,50 +279,80 @@ export const OrderItem = ({
                 setUpdateModalOpen,
               )}
 
-            <div className="mt-4 flex justify-end space-x-3">
-              {tabType === "historical" && (
-                <>
-                  {(item as Order).reviews.length === 0 ? (
-                    <>
+            <div
+              className={
+                tabType === "historical"
+                  ? "mt-4 flex flex-col sm:flex-row justify-end gap-3 w-full"
+                  : "mt-4 flex flex-col sm:flex-row justify-end gap-3 sm:space-x-3 w-full"
+              }
+            >
+              {tabType === "historical" && user?.userType === "buyer" && (
+                <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:justify-end">
+                  <div className="grid grid-cols-1 sm:flex gap-3">
+                    {(item as Order).reviews.fromBuyer.length > 0 ? (
                       <Button
+                        onClick={() =>
+                          openReviewModal(
+                            item as Order,
+                            "view",
+                            (item as Order).reviews.fromBuyer[0],
+                          )
+                        }
+                        variant="outline"
+                        className="w-full sm:w-auto sm:flex-1"
+                      >
+                        View Your Review
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => openReviewModal(item as Order, "add")}
                         variant="default"
-                        onClick={() => openReviewModal(item as Order, "")}
+                        className="w-full sm:w-auto sm:flex-1"
                       >
-                        Review Seller
+                        Rate Seller
                       </Button>
+                    )}
+
+                    {(item as Order).reviews.fromSeller.length > 0 && (
                       <Button
-                        variant="ghost"
-                        onClick={() => handlePreviewDocs(item as Order)}
+                        onClick={() =>
+                          openReviewModal(
+                            item as Order,
+                            "view",
+                            (item as Order).reviews.fromSeller[0],
+                          )
+                        }
+                        variant="outline"
+                        className="w-full sm:w-auto sm:flex-1"
                       >
-                        View Documents
+                        View Seller's Review
                       </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handlePreviewDocs(item as Order)}
-                      >
-                        View Documents
-                      </Button>
-                      <Button
-                        onClick={() => openReviewModal(item as Order, "view")}
-                      >
-                        View Review
-                      </Button>
-                    </>
-                  )}
-                </>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={() => handlePreviewDocs(item as Order)}
+                    variant="outline"
+                    className="w-full sm:w-auto sm:flex-1"
+                  >
+                    View Documents
+                  </Button>
+                </div>
               )}
               {isBid && (
-                <Link to={`/listing/${item.listing_id}`}>
-                  <Button variant="outline">View Listing</Button>
+                <Link
+                  to={`/listing/${isBid ? (item as Bid).listing_id : (item as Order).listing_id}`}
+                  className="w-full sm:w-auto block sm:inline-block"
+                >
+                  <Button variant="outline" className="w-full sm:w-auto">
+                    View Listing{" "}
+                  </Button>
                 </Link>
               )}
             </div>
           </div>
         )}
-        <div className="flex items-center text-slate-500 text-sm mb-2">
+        <div className="flex items-center text-slate-500 text-sm mb-2 mt-4">
           <Coffee className="h-4 w-4 mr-1" />
           <span>{listing?.bean_type || "Unknown"}</span>
         </div>

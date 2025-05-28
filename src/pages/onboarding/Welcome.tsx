@@ -10,12 +10,14 @@ import {
   ChevronRight,
   Sparkles,
   Receipt,
+  Loader,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 
 interface StepItemProps {
   step: number;
@@ -99,6 +101,15 @@ const StepItem: React.FC<StepItemProps> = ({
 
 const WelcomePage: React.FC = () => {
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleButtonClick = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  };
+
   return (
     <div className="min-h-screen bg-primary/5 p-4 sm:p-6 lg:p-8">
       <Header />
@@ -172,7 +183,6 @@ const WelcomePage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Action buttons */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
           <Link
             to={
@@ -192,9 +202,20 @@ const WelcomePage: React.FC = () => {
             <Button
               size="lg"
               className="w-full sm:w-auto text-sm sm:text-base transition-all duration-200 flex items-center"
+              disabled={isLoading}
+              onClick={handleButtonClick}
             >
-              Let's Get Started
-              <ChevronRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+              {isLoading ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Let's Get Started
+                  <ChevronRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                </>
+              )}
             </Button>
           </Link>
         </div>

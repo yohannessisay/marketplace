@@ -23,7 +23,7 @@ import { createOTPValidationSchema } from "@/types/validation/auth";
 import { useNotification } from "@/hooks/useNotification";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "@/services/apiService";
-import { getFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
+import { getFromLocalStorage } from "@/lib/utils";
 import { APIErrorResponse } from "@/types/api";
 import {
   OTP_TIMER_KEY,
@@ -52,7 +52,6 @@ export default function OTPInputPage() {
     "false",
   );
 
-  // Function to start the timer with a given expiration time
   const startTimer = (expirationTime: number) => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -75,7 +74,6 @@ export default function OTPInputPage() {
     }, 1000);
   };
 
-  // Initial timer setup
   useEffect(() => {
     const email = getFromLocalStorage(SIGNUP_PROFILE_KEY, null);
     if (!email) {
@@ -130,11 +128,10 @@ export default function OTPInputPage() {
         email,
       });
 
-      saveToLocalStorage("current-step", "farm_profile");
       localStorage.removeItem(OTP_TIMER_KEY);
       localStorage.removeItem(SIGNUP_PROFILE_KEY);
       localStorage.removeItem(OTP_TIMER_RESETED_KEY);
-      successMessage("OTP verified successfully!");
+      successMessage("Email verified successfully!");
       navigate("/login");
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
@@ -145,7 +142,7 @@ export default function OTPInputPage() {
       ) {
         localStorage.removeItem(OTP_TIMER_KEY);
         localStorage.removeItem(OTP_TIMER_RESETED_KEY);
-        successMessage("Email already verified!");
+        successMessage("Email already verified, please login!");
         navigate("/login");
       } else {
         errorMessage(errorResponse);

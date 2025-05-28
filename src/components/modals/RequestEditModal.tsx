@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
+import { Loader2 } from "lucide-react";
 
 export type AdminEditRequestStatusType =
   | "not_requested"
@@ -143,7 +144,7 @@ export function RequestEditModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] xs:max-h-[85vh] lg:max-h-[100vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center">
             Request Edit Access for{" "}
@@ -169,23 +170,25 @@ export function RequestEditModal({
           </div>
           <div>
             <Label className="pb-2">Fields to Edit</Label>
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              {editableFields.map((field) => (
-                <div key={field.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={field.id}
-                    checked={selectedFields.includes(field.id)}
-                    onCheckedChange={(checked) => {
-                      setSelectedFields((prev) =>
-                        checked
-                          ? [...prev, field.id]
-                          : prev.filter((id) => id !== field.id),
-                      );
-                    }}
-                  />
-                  <Label htmlFor={field.id}>{field.label}</Label>
-                </div>
-              ))}
+            <div className="mt-2 max-h-[40vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                {editableFields.map((field) => (
+                  <div key={field.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={field.id}
+                      checked={selectedFields.includes(field.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedFields((prev) =>
+                          checked
+                            ? [...prev, field.id]
+                            : prev.filter((id) => id !== field.id),
+                        );
+                      }}
+                    />
+                    <Label htmlFor={field.id}>{field.label}</Label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -201,9 +204,13 @@ export function RequestEditModal({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full "
+            className="w-full"
           >
-            {isSubmitting ? "Submitting..." : "Submit Request"}
+            {isSubmitting ? (
+              <Loader2 className="animate-spin h-4 w-4" />
+            ) : (
+              "Submit Request"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

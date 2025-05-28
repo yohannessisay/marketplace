@@ -118,3 +118,19 @@ export interface FilterState {
   region: string;
   grade: string;
 }
+
+export interface Review {
+  id?: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer_buyer_id?: string | null;
+  reviewer_seller_id?: string | null;
+  reviewed_buyer_id?: string | null;
+  reviewed_seller_id?: string | null;
+}
+
+export interface Reviews {
+  fromSeller: Review[];
+  fromBuyer: Review[];
+}

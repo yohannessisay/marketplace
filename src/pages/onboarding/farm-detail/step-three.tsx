@@ -19,7 +19,11 @@ import {
   bankInfoSchema,
   type BankInfoFormData,
 } from "@/types/validation/seller-onboarding";
-import { saveToLocalStorage, getFromLocalStorage } from "@/lib/utils";
+import {
+  saveToLocalStorage,
+  getFromLocalStorage,
+  removeFromLocalStorage,
+} from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -27,14 +31,15 @@ import { useNotification } from "@/hooks/useNotification";
 import { apiService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { APIErrorResponse } from "@/types/api";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   BACK_BUTTON_CLICKED_KEY,
-  CURRENT_STEP_KEY,
   FARMER_PROFILE_KEY,
   HAS_COMPLETED_STEP_THREE_KEY,
   HAS_COMPLETED_STEP_TWO_KEY,
   STEP_THREE_KEY,
 } from "@/types/constants";
+import { Loader2 } from "lucide-react";
 
 interface BankAccount {
   id: string;
@@ -54,6 +59,7 @@ export default function StepThree() {
   const { successMessage, errorMessage } = useNotification();
   const { user, loading, setUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingBankData, setIsLoadingBankData] = useState(false);
 
   const isBackButtonClicked = useMemo(
     () => getFromLocalStorage(BACK_BUTTON_CLICKED_KEY, {}) === "true",
@@ -88,6 +94,7 @@ export default function StepThree() {
   });
 
   const fetchBankAccount = useCallback(async () => {
+    setIsLoadingBankData(true);
     try {
       const response: any = await apiService().get(
         "/onboarding/seller/get-bank-information",
@@ -113,6 +120,8 @@ export default function StepThree() {
       console.error(
         (error as APIErrorResponse).error || "Failed to fetch bank account",
       );
+    } finally {
+      setIsLoadingBankData(false);
     }
   }, [xfmrId, form]);
 
@@ -184,8 +193,8 @@ export default function StepThree() {
         }
 
         saveToLocalStorage(STEP_THREE_KEY, data);
-        saveToLocalStorage(CURRENT_STEP_KEY, "avatar_image");
         saveToLocalStorage(HAS_COMPLETED_STEP_THREE_KEY, "true");
+        removeFromLocalStorage(BACK_BUTTON_CLICKED_KEY);
         successMessage("Bank details saved successfully!");
         navigate("/onboarding/step-four");
       } else {
@@ -209,7 +218,8 @@ export default function StepThree() {
 
         saveToLocalStorage(STEP_THREE_KEY, data);
         saveToLocalStorage(HAS_COMPLETED_STEP_THREE_KEY, "true");
-
+        removeFromLocalStorage(BACK_BUTTON_CLICKED_KEY);
+        saveToLocalStorage(BACK_BUTTON_CLICKED_KEY, "false");
         successMessage("Bank account data updated successfully");
         navigate("/onboarding/step-four");
       }
@@ -226,153 +236,247 @@ export default function StepThree() {
     navigate("/onboarding/step-two");
   };
 
+  const renderSkeletonField = () => (
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-10 w-full" />
+    </div>
+  );
+
+  const renderSkeleton = () => (
+    <div className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white pt-10">
+      <div className="mb-10">
+        <div className="mb-6">
+          <h2 className="text-green-600 font-medium">Step 3</h2>
+          <h3 className="text-xl text-gray-900 font-semibold">
+            Provide your bank information
+          </h3>
+          <p className="text-sm text-gray-600">
+            Add your banking details for receiving payments from crop sales
+          </p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {renderSkeletonField()}
+              {renderSkeletonField()}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {renderSkeletonField()}
+              {renderSkeletonField()}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {renderSkeletonField()}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <div className="flex flex-row gap-4">
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="h-5 w-5 rounded-full" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="h-5 w-5 rounded-full" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex justify-between items-center gap-4 mb-8 w-full">
+        <Button
+          type="button"
+          variant="outline"
+          disabled
+          className="flex-1 sm:flex-none"
+        >
+          <span className="truncate">loading...</span>
+        </Button>
+        <Button
+          type="submit"
+          disabled
+          className="flex-1 sm:flex-none my-4 sm:my-0"
+        >
+          <span className="truncate">loading...</span>
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-primary/5 pt-26">
       <Header />
-      <main className="container mx-auto p-4 max-w-5xl">
+      <main className="container mx-auto p-2 max-w-5xl">
         <Stepper currentStep={3} />
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white pt-10"
-          >
-            <div className="mb-10">
-              <div className="mb-6">
-                <h2 className="text-green-600 font-medium">Step 3</h2>
-                <h3 className="text-xl text-gray-900 font-semibold">
-                  Provide your bank information
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Add your banking details for receiving payments from crop
-                  sales
-                </p>
+          {isLoadingBankData ? (
+            renderSkeleton()
+          ) : (
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-8 shadow-lg p-8 rounded-md py-4 bg-white pt-10"
+            >
+              <div className="mb-10">
+                <div className="mb-6">
+                  <h2 className="text-green-600 font-medium">Step 3</h2>
+                  <h3 className="text-xl text-gray-900 font-semibold">
+                    Provide your bank information
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Add your banking details for receiving payments from crop
+                    sales
+                  </p>
+                </div>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="account_holder_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Account Holder Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="bank_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Bank Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      <FormField
+                        control={form.control}
+                        name="account_number"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Account Number</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="branch_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Branch Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      <FormField
+                        control={form.control}
+                        name="swift_code"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Swift Code</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="is_primary"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <FormLabel>Is Primary?</FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={(value: "yes" | "no") =>
+                                  field.onChange(value)
+                                }
+                                value={field.value}
+                                className="flex flex-row gap-4 space-y-1"
+                              >
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="yes" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    Yes
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="no" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    No
+                                  </FormLabel>
+                                </FormItem>
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              <Card>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="account_holder_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Holder Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="bank_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Bank Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <FormField
-                      control={form.control}
-                      name="account_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="branch_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Branch Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <FormField
-                      control={form.control}
-                      name="swift_code"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Swift Code</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="is_primary"
-                      render={({ field }) => (
-                        <FormItem className="space-y-3">
-                          <FormLabel>Is Primary?</FormLabel>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={(value: "yes" | "no") =>
-                                field.onChange(value)
-                              }
-                              value={field.value}
-                              className="flex flex-row gap-4 space-y-1"
-                            >
-                              <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value="yes" />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  Yes
-                                </FormLabel>
-                              </FormItem>
-                              <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value="no" />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  No
-                                </FormLabel>
-                              </FormItem>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="flex justify-between mb-8">
-              <Button type="button" variant="outline" onClick={goBack}>
-                Back
-              </Button>
-              <Button type="submit" disabled={isSubmitting} className="my-4">
-                {isSubmitting ? "Saving..." : "Save and continue"}
-              </Button>
-            </div>
-          </form>
+              <div className="flex justify-between items-center gap-4 mb-8 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={goBack}
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-none"
+                >
+                  <span className="truncate">Back</span>
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-none my-4 sm:my-0"
+                >
+                  <span className="inline-flex items-center justify-center w-full">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      "Save and continue"
+                    )}
+                  </span>
+                </Button>
+              </div>
+            </form>
+          )}
         </Form>
       </main>
     </div>

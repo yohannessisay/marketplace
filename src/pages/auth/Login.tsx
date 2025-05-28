@@ -83,7 +83,6 @@ const Login = () => {
             defaultRedirect = "/seller-dashboard";
             break;
           case "farm_profile":
-            saveToLocalStorage("current-step", "farm_profile");
             break;
           default:
             break;
@@ -94,7 +93,6 @@ const Login = () => {
         switch (user?.onboarding_stage) {
           case "company_verification":
             defaultRedirect = "/company-verification";
-            saveToLocalStorage("current-step", "company_verification");
             break;
           case "completed":
             defaultRedirect = "/market-place";
@@ -115,7 +113,6 @@ const Login = () => {
 
       navigate(finalRedirect);
 
-      saveToLocalStorage("current-step", user.onboarding_stage);
       saveToLocalStorage(USER_PROFILE_KEY, user);
     } catch (error: unknown) {
       const errorResponse = error as APIErrorResponse;
@@ -202,7 +199,7 @@ const Login = () => {
               />
               <button
                 type="button"
-                className="absolute top-10 right-3 text-gray-500"
+                className="absolute top-10 right-3 text-gray-500 cursor-pointer"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
               >

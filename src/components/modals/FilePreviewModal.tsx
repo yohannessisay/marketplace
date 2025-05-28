@@ -280,7 +280,11 @@ export function FilePreviewModal({
             </div>
           </div>
           {/* Preview Area */}
-          <div className="flex-1 p-4 sm:p-6 overflow-hidden">
+          <div
+            className={`flex-1 p-4 sm:p-6 overflow-hidden ${
+              mode === "documents" ? "hidden lg:block" : ""
+            }`}
+          >
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />

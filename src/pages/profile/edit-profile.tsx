@@ -177,7 +177,6 @@ export default function EditProfile() {
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
         setProfileImage(imageUrl);
-        localStorage.setItem("profile-image", imageUrl);
         setFile(selectedFile);
       };
       reader.readAsDataURL(selectedFile);
@@ -314,7 +313,7 @@ export default function EditProfile() {
 
   return (
     <div className="min-h-screen bg-white">
-      <main className="container mx-auto p-4 sm:p-6">
+      <main className="container mx-auto p-1 sm:p-1">
         {initialData ? (
           <Form {...form}>
             <form

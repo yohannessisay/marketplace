@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod"; // Import Shadcn UI components
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import {
   passwordSchema,
@@ -22,8 +22,8 @@ const CreatePassword = () => {
   });
   const { successMessage, errorMessage } = useNotification();
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // State to toggle confirm password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const onSubmit = (data: PasswordValidationType) => {
     if (data.password !== data.confirmPassword) {

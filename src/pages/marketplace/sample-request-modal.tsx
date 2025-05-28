@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Coffee } from "lucide-react";
+import { Coffee, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,13 +12,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiService } from "@/services/apiService";
 import { useNotification } from "@/hooks/useNotification";
 import { APIErrorResponse } from "@/types/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 interface SampleRequestModalProps {
   open: boolean;
@@ -28,6 +38,19 @@ interface SampleRequestModalProps {
   farmName: string;
 }
 
+const sampleRequestSchema = z.object({
+  listingId: z.string().min(1, "Listing ID is required"),
+  deliveryAddress: z.string().min(1, "Delivery address is required"),
+  phone: z.string().min(1, "Phone number is required"),
+  weight: z
+    .number({ invalid_type_error: "Weight must be a number" })
+    .min(0.1, "Weight must be at least 0.1kg")
+    .max(2, "Weight cannot exceed 2kg"),
+  notes: z.string().optional(),
+});
+
+type SampleRequestFormData = z.infer<typeof sampleRequestSchema>;
+
 export default function SampleRequestModal({
   open,
   onClose,
@@ -35,71 +58,50 @@ export default function SampleRequestModal({
   coffeeName,
   farmName,
 }: SampleRequestModalProps) {
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    listingId: "",
-    deliveryAddress: "",
-    phone: "",
-    weight: "",
-    notes: "",
-  });
   const { successMessage, errorMessage } = useNotification();
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const form = useForm<SampleRequestFormData>({
+    resolver: zodResolver(sampleRequestSchema),
+    defaultValues: {
+      listingId: "",
+      deliveryAddress: "",
+      phone: "",
+      weight: 0.5,
+      notes: "",
+    },
+    mode: "onChange",
+  });
 
   React.useEffect(() => {
     if (open && user) {
-      setFormData((prev) => ({
-        ...prev,
+      form.reset({
         listingId,
-        deliveryAddress: prev.deliveryAddress || user.address || "",
-        phone: prev.phone || user.phone || "",
-        weight: prev.weight || "",
-        notes: prev.notes || "",
-      }));
+        deliveryAddress: user.address || "",
+        phone: user.phone || "",
+        weight: 0.5,
+        notes: "",
+      });
     } else if (open) {
-      setFormData({
+      form.reset({
         listingId,
         deliveryAddress: "",
         phone: "",
-        weight: "",
+        weight: 0.5,
         notes: "",
       });
     }
-  }, [open, user, listingId]);
-  const navigate = useNavigate();
+  }, [open, user, listingId, form]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  const handleSubmit = async (data: SampleRequestFormData) => {
     try {
-      if (!formData.deliveryAddress || !formData.phone || !formData.weight) {
-        errorMessage("Please fill in all required fields.");
-        return;
-      }
-
-      const weight = parseFloat(formData.weight);
-      if (isNaN(weight) || weight <= 0) {
-        errorMessage("Please enter a valid weight.");
-        return;
-      }
-
       await apiService().post("/marketplace/listings/request-sample", {
-        listingId: formData.listingId,
-        delivery_address: formData.deliveryAddress,
-        phone: formData.phone,
-        weight: parseFloat(formData.weight),
-        note: formData.notes,
+        listingId: data.listingId,
+        delivery_address: data.deliveryAddress,
+        phone: data.phone,
+        weight: data.weight,
+        note: data.notes,
       });
 
       successMessage("Your sample request has been sent to the seller.");
@@ -107,8 +109,6 @@ export default function SampleRequestModal({
       navigate("/market-place");
     } catch (error: any) {
       errorMessage(error as APIErrorResponse);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -127,85 +127,123 @@ export default function SampleRequestModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-3">
-          <div className="space-y-2">
-            <Label htmlFor="deliveryAddress" className="required">
-              Delivery Address
-            </Label>
-            <Textarea
-              id="deliveryAddress"
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4 mt-3"
+          >
+            <FormField
+              control={form.control}
               name="deliveryAddress"
-              placeholder="Enter your full delivery address"
-              value={formData.deliveryAddress}
-              onChange={handleChange}
-              className="min-h-[80px]"
-              required
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="required">Delivery Address</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      id="deliveryAddress"
+                      placeholder="Enter your full delivery address"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="required">
-              Phone Number
-            </Label>
-            <Input
-              id="phone"
+            <FormField
+              control={form.control}
               name="phone"
-              type="tel"
-              placeholder="Enter your phone number"
-              value={formData.phone}
-              onChange={handleChange}
-              required
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="required">Phone Number</FormLabel>
+                  <FormControl>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="Enter your phone number"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="weight" className="required">
-              Sample Weight (kg)
-            </Label>
-            <Input
-              id="weight"
+            <FormField
+              control={form.control}
               name="weight"
-              type="number"
-              min="0.1"
-              max="2"
-              step="0.1"
-              placeholder="Enter desired sample weight, max is 2 kgs"
-              value={formData.weight}
-              onChange={handleChange}
-              required
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="required">Sample Weight (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      id="weight"
+                      type="number"
+                      min="0.1"
+                      max="2"
+                      step="0.1"
+                      placeholder="Enter desired sample weight, max is 2 kgs"
+                      value={field.value}
+                      onChange={(e) =>
+                        field.onChange(parseFloat(e.target.value))
+                      }
+                    />
+                  </FormControl>
+                  <p className="text-xs text-slate-500">
+                    Standard sample size is 0.5kg
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <p className="text-xs text-slate-500">
-              Standard sample size is 0.5kg
-            </p>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Additional Notes</Label>
-            <Textarea
-              id="notes"
+            <FormField
+              control={form.control}
               name="notes"
-              placeholder="Any specific requirements or questions for the seller"
-              value={formData.notes}
-              onChange={handleChange}
-              className="min-h-[80px]"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Additional Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      id="notes"
+                      placeholder="Any specific requirements or questions for the seller"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <DialogFooter className="grid grid-cols-2 gap-3 mb-3 mt-10">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="w-full"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? "Submitting..." : "Submit Request"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter className="grid grid-cols-2 gap-3 mb-3 mt-10">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={form.formState.isSubmitting}
+                className="w-full"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="w-full"
+              >
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  "Submit Request"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

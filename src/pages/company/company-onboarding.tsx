@@ -30,6 +30,7 @@ import { FileUpload } from "@/components/common/file-upload";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
 import ConfirmationModal from "@/components/modals/ConfrmationModal";
+import { Loader2 } from "lucide-react";
 
 type CompanyDetails = z.infer<typeof buyerOnboardingSchema>;
 
@@ -109,13 +110,12 @@ export default function CompanyVerification() {
   return (
     <div className="min-h-screen bg-primary/5 px-4 sm:px-6 lg:px-8 py-6">
       <Header />
-      <main className="max-w-4xl mx-auto py-6 sm:py-8 lg:py-10 mt-10 sm:mt-8 lg:mt-10">
+      <main className="max-w-4xl mx-auto py-6 sm:py-8 lg:py-10 mt-12 sm:mt-8 lg:mt-10">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleFormSubmit)}
             className="space-y-6 sm:space-y-8"
           >
-            {/* Step 1 - Upload Documents */}
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl lg:text-2xl">
@@ -293,7 +293,14 @@ export default function CompanyVerification() {
                 disabled={isSubmitting}
                 className="w-full sm:w-auto text-sm sm:text-base"
               >
-                {isSubmitting ? "Submitting..." : "Save"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  "Complete Registration"
+                )}
               </Button>
             </div>
           </form>

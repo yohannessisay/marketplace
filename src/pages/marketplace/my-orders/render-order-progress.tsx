@@ -100,7 +100,9 @@ export const renderOrderProgress = (
             const hasContract = order.documents?.some(
               (doc) => doc.type === "contract",
             );
-            const hasDocuments = order.documents!.length > 0;
+            const hasDocuments =
+              order.documents!.filter((doc) => doc.type !== "contract").length >
+              0;
 
             const shouldShowPaymentUploadButton =
               isDocumentationsCompleted &&

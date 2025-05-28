@@ -1,4 +1,3 @@
- 
 import { Search, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -41,18 +40,18 @@ export function MessageThreadList({
 
   // Skeleton loader for loading state
   const renderLoadingCards = () => (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {[...Array(3)].map((_, index) => (
-        <Card key={index} className="h-30 rounded-sm">
-          <CardContent className="p-4 flex items-start space-x-3 animate-pulse">
-            <div className="h-10 w-10 rounded-full bg-gray-200" />
-            <div className="flex-1 flex flex-col space-y-2">
+        <Card key={index} className="rounded-sm">
+          <CardContent className="p-3 sm:p-4 flex items-start space-x-2 sm:space-x-3 animate-pulse">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-200" />
+            <div className="flex-1 flex flex-col space-y-1 sm:space-y-2">
               <div className="flex items-baseline justify-between">
-                <div className="h-4 w-1/3 bg-gray-200 rounded" />
-                <div className="h-3 w-1/4 bg-gray-200 rounded" />
+                <div className="h-3 sm:h-4 w-1/3 bg-gray-200 rounded" />
+                <div className="h-2 sm:h-3 w-1/4 bg-gray-200 rounded" />
               </div>
-              <div className="h-3 w-1/2 bg-gray-200 rounded" />
-              <div className="h-4 w-3/4 bg-gray-200 rounded" />
+              <div className="h-2 sm:h-3 w-1/2 bg-gray-200 rounded" />
+              <div className="h-3 sm:h-4 w-3/4 bg-gray-200 rounded" />
             </div>
           </CardContent>
         </Card>
@@ -61,12 +60,14 @@ export function MessageThreadList({
   );
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="border-b pb-3">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Messages</h3>
+    <div className="h-full flex flex-col max-w-3xl mx-auto">
+      <div className="border-b pb-2 sm:pb-3 px-2 sm:px-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-4 gap-2">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900">
+            Messages
+          </h3>
           <Select value={messageFilter} onValueChange={setMessageFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-full sm:w-[140px] text-xs sm:text-sm">
               <SelectValue placeholder="All Messages" />
             </SelectTrigger>
             <SelectContent>
@@ -76,28 +77,28 @@ export function MessageThreadList({
           </Select>
         </div>
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-2.5 top-2.5 h-3 sm:h-4 w-3 sm:w-4 text-gray-500" />
           {searchQuery && (
             <button
-              className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-500"
+              className="absolute right-2.5 top-2.5 h-3 sm:h-4 w-3 sm:w-4 text-gray-500"
               onClick={() => setSearchQuery("")}
             >
-              <X size={16} />
+              <X size={12} className="sm:h-4 sm:w-4" />
             </button>
           )}
           <Input
             placeholder="Search by sender..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 pr-8"
+            className="pl-7 sm:pl-8 pr-7 sm:pr-8 text-xs sm:text-sm h-8 sm:h-10"
           />
         </div>
       </div>
-      <div className="overflow-y-auto flex-grow p-4 space-y-4">
+      <div className="overflow-y-auto flex-grow p-2 sm:p-4 space-y-3 sm:space-y-4">
         {loading ? (
           renderLoadingCards()
         ) : filteredThreads.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
+          <div className="text-center py-8 sm:py-10 text-gray-500 text-xs sm:text-sm">
             No messages found.
           </div>
         ) : (
@@ -111,20 +112,21 @@ export function MessageThreadList({
             return (
               <Card
                 key={thread.id}
-                className={`cursor-pointer hover:bg-gray-50 h-30 rounded-sm ${
+                className={`cursor-pointer hover:bg-gray-50 rounded-sm ${
                   activeMessageThread === thread.id ? "bg-emerald-50" : ""
                 }`}
                 onClick={() => setActiveMessageThread(thread.id)}
               >
-                <CardContent className="p-4 flex items-start space-x-3">
-                  <Avatar className="h-10 w-10">
+                <CardContent className="p-3 sm:p-4 flex items-start space-x-2 sm:space-x-3">
+                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                     {thread.buyerAvatar ? (
                       <img
                         src={thread.buyerAvatar.split(",")[0]}
                         alt={thread.buyerName}
+                        className="object-cover"
                       />
                     ) : (
-                      <AvatarFallback className="bg-gray-200 text-gray-600">
+                      <AvatarFallback className="bg-gray-200 text-gray-600 text-xs sm:text-sm">
                         {thread.buyerName.charAt(0)}
                       </AvatarFallback>
                     )}
@@ -132,7 +134,7 @@ export function MessageThreadList({
                   <div className="flex-1 flex flex-col">
                     <div className="flex items-baseline justify-between">
                       <p
-                        className={`text-sm font-medium ${
+                        className={`text-xs sm:text-sm font-medium ${
                           thread.unread > 0
                             ? "text-emerald-900"
                             : "text-gray-900"
@@ -140,7 +142,7 @@ export function MessageThreadList({
                       >
                         {thread.buyerName}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
                         {new Date(thread.lastMessageTime).toLocaleString(
                           "en-US",
                           {
@@ -149,21 +151,20 @@ export function MessageThreadList({
                             day: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
-                            second: "2-digit",
                             hour12: true,
                           },
                         )}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                       {thread.buyerCompany || "Farmer"}
                     </p>
-                    <p className="mt-1 text-sm text-gray-600 truncate">
+                    <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-600 truncate">
                       {messagePreview}
                     </p>
                     {thread.unread > 0 && (
-                      <div className="mt-2">
-                        <Badge variant="default">
+                      <div className="mt-1 sm:mt-2">
+                        <Badge variant="default" className="text-xs sm:text-sm">
                           {thread.unread} new{" "}
                           {thread.unread === 1 ? "message" : "messages"}
                         </Badge>

@@ -28,14 +28,14 @@ export function Hero({ setIsContactModalOpen }: HeroProps) {
       <div className="container relative z-10 mx-auto px-6 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center min-h-[calc(100vh-4rem)] sm:min-h-fit">
           <div className="flex flex-col items-center sm:items-start justify-center space-y-5 sm:space-y-6 text-center sm:text-left">
-            <div className="inline-flex items-center py-1.5 px-3 bg-amber-100 text-amber-800 rounded-md text-sm sm:text-sm font-medium">
+            <div className="inline-flex items-center py-1.5 px-3 bg-green-100 text-green-800 rounded-md text-sm sm:text-sm font-medium">
               <Coffee className="w-4 h-4 sm:w-4 sm:h-4 mr-2" />
               Blockchain-powered coffee marketplace
             </div>
 
             <h1 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900">
-              Connecting Coffee <span className="text-amber-700">Farmers</span>{" "}
-              to Global <span className="text-amber-700">Markets</span>
+              Connecting Coffee <span className="text-green-600">Farmers</span>{" "}
+              to Global <span className="text-green-600">Markets</span>
             </h1>
 
             <p className="text-base sm:text-base md:text-lg text-gray-600 max-w-full sm:max-w-lg">
@@ -48,7 +48,7 @@ export function Hero({ setIsContactModalOpen }: HeroProps) {
               <Button
                 onClick={() => handleNavigation("/market-place")}
                 disabled={isLoading}
-                className="w-full sm:w-48 rounded-md bg-amber-700 hover:bg-white hover:text-amber-700 hover:border-amber-700 border text-white px-4 py-2 text-sm sm:text-base flex items-center justify-center"
+                className="w-full sm:w-48 rounded-md px-4 py-2 text-sm sm:text-base flex items-center justify-center"
               >
                 {isLoading ? "Loading..." : "Explore Marketplace"}
                 {!isLoading && <ChevronRight className="ml-2 h-4 w-4" />}
@@ -56,7 +56,7 @@ export function Hero({ setIsContactModalOpen }: HeroProps) {
 
               <Button
                 variant="outline"
-                className="w-full sm:w-48 rounded-md border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white px-4 py-2 text-sm sm:text-base flex items-center justify-center"
+                className="w-full sm:w-48 rounded-md px-4 py-2 text-sm sm:text-base flex items-center justify-center"
                 onClick={() => setIsContactModalOpen(true)}
               >
                 Contact Us

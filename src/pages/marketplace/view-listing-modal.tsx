@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Map, Coffee, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Map,
+  Coffee,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -472,9 +479,11 @@ export default function ListingDetailModal({
                   }
                   className="w-full sm:flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base"
                 >
-                  {user && isviewLoading
-                    ? "Loading..."
-                    : "View Listing Details"}
+                  {user && isviewLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    "View Listing Details"
+                  )}
                 </Button>
               )}
             </div>

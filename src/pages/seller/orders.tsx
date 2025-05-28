@@ -73,6 +73,7 @@ import {
   OrderFilterState,
   SampleFilterState,
 } from "@/types/orders";
+import { Review, Reviews } from "@/types/types";
 
 interface Seller {
   first_name?: string;
@@ -137,14 +138,7 @@ interface Order {
   seller?: Seller;
   buyer?: Buyer;
   documents?: OrderDocument[];
-  reviews: Review[];
-}
-
-export interface Review {
-  rating: number;
-  comment: string | null;
-  created_at: string;
-  reviewer_buyer_id: string | null;
+  reviews: Reviews;
 }
 
 interface SampleRequest {
@@ -279,7 +273,7 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<string>("current");
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [reviewType, setReviewType] = useState<string | null>(null);
+  const [reviewType, setReviewType] = useState<"add" | "view">("add");
 
   const [fetchedTabs, setFetchedTabs] = useState<{
     current: boolean;
@@ -300,6 +294,7 @@ export default function OrdersPage() {
     bids: { status: undefined, coffeeOrigin: "" },
     favorites: { coffeeOrigin: "" },
   });
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -323,10 +318,15 @@ export default function OrdersPage() {
     setCurrentOrderId(null);
   }, []);
 
-  const openReviewModal = (order: Order, type: string) => {
+  const openReviewModal = (
+    order: Order,
+    type: "add" | "view",
+    review?: Review,
+  ) => {
     setSelectedOrder(order);
     setShowReviewModal(true);
-    setReviewType(type || "add");
+    setReviewType(type);
+    setSelectedReview(review || null);
   };
 
   const { successMessage, errorMessage } = useNotification();
@@ -794,6 +794,7 @@ export default function OrdersPage() {
     const isBidsTab = tab === "bids";
     const isFavoritesTab = tab === "favorites";
     const isCurrentOrderTab = tab === "current";
+    const [isOpen, setIsOpen] = useState(false);
 
     const filterCount = Object.values(currentFilters).filter(
       (value) => value !== undefined && value !== "",
@@ -877,8 +878,12 @@ export default function OrdersPage() {
       return currentFilters;
     };
 
+    const handleCloseMenu = () => {
+      setIsOpen(false);
+    };
+
     return (
-      <DropdownMenu>
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="h-10 relative">
             <Filter className="h-4 w-4 mr-2" />
@@ -893,8 +898,18 @@ export default function OrdersPage() {
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-64 sm:w-72 p-4">
-          <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+        <DropdownMenuContent className="w-64 sm:w-72 p-4 relative">
+          <div className="flex items-center justify-between mb-2">
+            <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+            <Button
+              variant="ghost"
+              className="block sm:hidden text-gray-500 hover:text-gray-700" // Visible only on small screens
+              onClick={handleCloseMenu}
+              aria-label="Close filter menu"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
           <DropdownMenuSeparator />
           {statusOptions.length > 0 && (
             <div className="mb-2">
@@ -1484,28 +1499,64 @@ export default function OrdersPage() {
               {tabType === "current" && renderOrderProgress(item)}
 
               <div className="flex justify-end gap-3 mt-4">
-                {tabType === "historical" &&
-                  (item as Order).reviews.length !== 0 && (
+                {tabType === "historical" && user?.userType === "seller" && (
+                  <div className="w-full flex flex-col sm:flex-row sm:justify-end gap-3 mt-4">
+                    <div className="w-full grid grid-cols-1 sm:flex sm:w-auto gap-3">
+                      {item.reviews.fromSeller.length > 0 ? (
+                        <Button
+                          onClick={() =>
+                            openReviewModal(
+                              item,
+                              "view",
+                              item.reviews.fromSeller[0],
+                            )
+                          }
+                          variant="outline"
+                          className="w-full sm:w-auto"
+                        >
+                          View Your Review
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => openReviewModal(item, "add")}
+                          variant="default"
+                          className="w-full sm:w-auto"
+                        >
+                          Rate Buyer
+                        </Button>
+                      )}
+
+                      {item.reviews.fromBuyer.length > 0 && (
+                        <Button
+                          onClick={() =>
+                            openReviewModal(
+                              item,
+                              "view",
+                              item.reviews.fromBuyer[0],
+                            )
+                          }
+                          variant="outline"
+                          className="w-full sm:w-auto"
+                        >
+                          View Buyer's Review
+                        </Button>
+                      )}
+                    </div>
+
                     <Button
-                      onClick={() => openReviewModal(item as Order, "view")}
+                      onClick={() => handlePreviewDocs(item)}
                       variant="outline"
+                      className="w-full sm:w-auto"
                     >
-                      View Review
+                      View Documents
                     </Button>
-                  )}
-                {tabType === "historical" && (
-                  <Button
-                    onClick={() => handlePreviewDocs(item as Order)}
-                    variant="outline"
-                  >
-                    View Documents
-                  </Button>
+                  </div>
                 )}
               </div>
             </div>
           )}
 
-          <div className="flex items-center text-slate-500 text-sm mb-2">
+          <div className="flex items-center text-slate-500 text-sm mb-2 mt-4">
             <Coffee className="h-4 w-4 mr-1" />
             <span>{listing?.bean_type || "Unknown"}</span>
           </div>
@@ -2416,14 +2467,19 @@ export default function OrdersPage() {
 
         {showReviewModal && selectedOrder && (
           <ReviewModal
-            viewData={selectedOrder.reviews[0]}
+            viewData={selectedReview}
             type={reviewType ?? "add"}
             orderId={selectedOrder.id}
             sellerId={selectedOrder.seller_id}
-            onClose={() => {
+            buyerId={selectedOrder.buyer_id}
+            userType={user?.userType === "seller" ? "seller" : "buyer"}
+            onClose={(submitted: boolean) => {
               setShowReviewModal(false);
               setSelectedOrder(null);
-              fetchActiveOrders();
+              setSelectedReview(null);
+              if (submitted) {
+                fetchHistoricalOrders();
+              }
             }}
           />
         )}
