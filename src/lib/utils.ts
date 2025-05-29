@@ -1,3 +1,4 @@
+import { USER_PROFILE_KEY } from "@/types/constants";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -72,7 +73,7 @@ interface UserProfile {
 }
 
 export function getUserId() {
-  const userProfile = localStorage.getItem("userProfile");
+  const userProfile = localStorage.getItem(USER_PROFILE_KEY);
   if (!userProfile) {
     console.warn("[CoffeeDetails] No userProfile in localStorage");
     return null;
@@ -88,7 +89,7 @@ export function getUserId() {
 }
 
 export function getUserProfile() {
-  const userProfile = localStorage.getItem("userProfile");
+  const userProfile = localStorage.getItem(USER_PROFILE_KEY);
   if (!userProfile) {
     console.warn("[CoffeeDetails] No userProfile in localStorage");
     return null;

@@ -42,6 +42,7 @@ import { getFromLocalStorage } from "@/lib/utils";
 import EditProfile from "../profile/edit-profile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequestEditModal } from "@/components/modals/RequestEditModal";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 interface Farm {
   id: string;
@@ -807,12 +808,8 @@ const FarmManagement: React.FC = () => {
     "not_requested" | "requested" | "allowed" | "expired" | "rejected"
   >("not_requested");
 
-  const user: any = getFromLocalStorage("userProfile", {});
-  let fmrId = null;
-  if (user && user.userType === "agent") {
-    const farmer: any = getFromLocalStorage("farmerProfile", {});
-    fmrId = farmer ? farmer.id : null;
-  }
+  const farmer: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
+  const fmrId = farmer ? farmer.id : null;
 
   const fetchFarms = async (searchValue = farmSearch) => {
     try {

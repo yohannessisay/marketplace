@@ -5,6 +5,7 @@ import {
   APISuccessResponse,
   SocketChatMessage,
 } from "@/types/api";
+import { ACCESS_TOKEN_KEY } from "@/types/constants";
 
 interface ChatServiceOptions {
   baseURL: string;
@@ -22,7 +23,7 @@ class ChatService {
   private initializeSocket(): void {
     if (this.socket) return;
 
-    const token = Cookies.get("accessToken");
+    const token = Cookies.get(ACCESS_TOKEN_KEY);
     if (!token) {
       console.warn("No access token found, redirecting to login");
       window.location.href = "/login";

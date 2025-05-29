@@ -14,6 +14,7 @@ import {
 } from "@/types/coffee-listing";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 interface ChatsPageProps {
   listingId?: string;
@@ -34,7 +35,7 @@ export default function ChatsPage({ listingId }: ChatsPageProps) {
 
   let fmrId = null;
   if (user && user.userType === "agent") {
-    const farmer: any = getFromLocalStorage("farmerProfile", {});
+    const farmer: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
     fmrId = farmer ? farmer.id : null;
   }
 

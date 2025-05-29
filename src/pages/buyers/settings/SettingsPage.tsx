@@ -166,7 +166,6 @@ export default function SettingsPage() {
           address: user!.address,
         };
         setUser(updatedUser);
-        localStorage.setItem("userProfile", JSON.stringify(updatedUser));
         successMessage("Your profile has been updated successfully.");
         profileForm.reset(data);
       } else {

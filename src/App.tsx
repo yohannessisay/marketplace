@@ -31,6 +31,7 @@ import { config } from "./lib/config";
 import { getFromLocalStorage } from "./lib/utils";
 import LandingPage from "./pages/landing";
 import FarmSellerView from "./pages/seller/FarmManagementView";
+import { FARMER_PROFILE_KEY } from "./types/constants";
 
 const Login = lazy(() => import("./pages/auth/Login"));
 const Signup = lazy(() => import("./pages/auth/Signup"));
@@ -103,7 +104,7 @@ const RouterContent: React.FC = () => {
   const { user } = useAuth();
   const currentStep = user?.onboarding_stage;
   const userType = user?.userType;
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+  const farmerProfile: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
   return (
     <Routes>
       {/* Public Routes */}

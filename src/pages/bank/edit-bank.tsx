@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { APIErrorResponse } from "@/types/api";
 import { useAuth } from "@/hooks/useAuth";
 import { getFromLocalStorage } from "@/lib/utils";
+import { FARMER_PROFILE_KEY } from "@/types/constants";
 
 const SkeletonBankForm = () => (
   <div className="space-y-8 shadow-lg px-8 rounded-md py-4">
@@ -86,7 +87,7 @@ export default function EditBank() {
   const { successMessage, errorMessage } = useNotification();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
-  const farmerProfile: any = getFromLocalStorage("farmerProfile", {});
+  const farmerProfile: any = getFromLocalStorage(FARMER_PROFILE_KEY, {});
   const form = useForm<BankInfoFormData>({
     resolver: zodResolver(bankInfoSchema),
     defaultValues: {

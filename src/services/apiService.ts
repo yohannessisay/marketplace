@@ -1,4 +1,5 @@
 import { APIErrorResponse, APISuccessResponse } from "@/types/api";
+import { ACCESS_TOKEN_KEY } from "@/types/constants";
 import Cookies from "js-cookie";
 
 class ApiService {
@@ -66,7 +67,7 @@ class ApiService {
   ): Promise<T> {
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (useAuth) {
-      const token = Cookies.get("accessToken");
+      const token = Cookies.get(ACCESS_TOKEN_KEY);
       if (!token) window.location.href = "/login";
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -105,7 +106,7 @@ class ApiService {
     const headers: HeadersInit = {};
 
     if (useAuth) {
-      const token = Cookies.get("accessToken");
+      const token = Cookies.get(ACCESS_TOKEN_KEY);
       if (!token) window.location.href = "/login";
       headers["Authorization"] = `Bearer ${token}`;
     }
