@@ -42,7 +42,6 @@ const FarmManagement = lazy(() => import("./pages/farms/FarmManagement"));
 const FarmDetails = lazy(() => import("./pages/farms/FarmDetails"));
 const UserProfile = lazy(() => import("./pages/profile/UserProfile"));
 const ChatsPage = lazy(() => import("./pages/chats/ChatsPage"));
-const AdminIndex = lazy(() => import("./pages/admin/order/index"));
 const SettingsPage = lazy(() => import("./pages/buyers/settings/SettingsPage"));
 const FarmProfilePage = lazy(
   () => import("./pages/farms/farm-profile/FarmProfilePage"),
@@ -50,7 +49,6 @@ const FarmProfilePage = lazy(
 const CompanyOnboarding = lazy(
   () => import("./pages/company/company-onboarding"),
 );
-const AdminLogin = lazy(() => import("./pages/auth/admin-login"));
 initializeApiService(config.VITE_API_BASE_URL);
 initializeChatService(config.VITE_SOCKET_URL);
 
@@ -111,7 +109,6 @@ const RouterContent: React.FC = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/agent/login" element={<AgentLogin />} />
-      <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/otp" element={<OTPInputPage />} />
       <Route path="/registration" element={<Signup />} />
 
@@ -137,18 +134,6 @@ const RouterContent: React.FC = () => {
         }
       />
 
-      <Route
-        path="/admin/home"
-        element={
-          <ProtectedRoute>
-            {userType === "admin" ? (
-              <AdminIndex />
-            ) : (
-              <Navigate to="/market-place" replace />
-            )}
-          </ProtectedRoute>
-        }
-      />
       <Route
         path="/onboarding"
         element={
