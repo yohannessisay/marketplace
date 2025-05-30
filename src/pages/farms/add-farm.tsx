@@ -384,7 +384,7 @@ export default function AddFarm() {
     return { isValid: true };
   };
 
-  const handleFormSubmit = (data: FarmDetailsFormData) => {
+  const handleFormSubmit = () => {
     setIsSubmitting(true);
     setIsModalOpen(true);
   };

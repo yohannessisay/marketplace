@@ -79,7 +79,7 @@ export default function AddCrop() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farmError, setFarmError] = useState<string | null>(null);
   const { user, loading } = useAuth();
-  const [discounts, setDiscounts] = useState<
+  const [discounts, _setDiscounts] = useState<
     { minimum_quantity_kg: number; discount_percentage: number; id: string }[]
   >([]);
 
